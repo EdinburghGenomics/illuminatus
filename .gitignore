@@ -1,0 +1,11 @@
+.idea/
+*.pyc
+__pycache__
+*.swp
+.nfs*
+*.sqlite
+*.touch
+
+tmp/
+.snakemake
+sge_output
