@@ -1,0 +1,5 @@
+The BaseMask extractor is using the files SampleSheet.csv and  RunInfo.xml to get the base-mask string
+
+This project is in python 2 and was set up initially as an experiment rather than a proper project.
+
+There is an updated version of RunInfoParser.py called RunInfoXMLParser.py which is used by the run info module

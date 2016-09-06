@@ -34,8 +34,3 @@ class RunInfoXMLParser:
 			elif self.run_info[ 'Instrument' ][0] == 'K':
                                 self.run_info[ 'Instrument' ] = 'hiseq4000'
 
-	def get_yaml(self):
-		out = 'RunID: ' + self.run_info[ 'RunId' ] + '\n' + \
-			'LaneCount: ' + self.run_info[ 'LaneCount' ] + '\n' + \
-			'Instrument: ' + self.run_info[ 'Instrument' ]
-		return out
