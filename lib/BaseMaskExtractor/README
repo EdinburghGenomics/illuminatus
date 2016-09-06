@@ -2,4 +2,7 @@ The BaseMask extractor is using the files SampleSheet.csv and  RunInfo.xml to ge
 
 This project is in python 2 and was set up initially as an experiment rather than a proper project.
 
+I didn't take the time to distill available runs to proper test cases. Instead I bruteforced my way through all runs from /ifs/seqdata/1607* to test the code and find any bugs.
+Testing a RUN includes: generating the base-mask and checking if it is present in the /ifs/runqc/RUN/qmakeBclToFastqLanes*.sh file.
+
 There is an updated version of RunInfoParser.py called RunInfoXMLParser.py which is used by the run info module
