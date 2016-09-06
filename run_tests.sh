@@ -7,6 +7,9 @@ cd "`dirname $0`"
 export RUN_SLOW_TESTS=${RUN_SLOW_TESTS:-0}
 export RUN_NETWORK_TESTS=${RUN_NETWORK_TESTS:-1}
 
+PYTHONPATH="`pwd`/../wiki-communication:`pwd`/lib"
+export PYTHONPATH
+
 #Test in Py3 only
 if [ "$*" == "" ] ; then
     python3 -munittest discover
