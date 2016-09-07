@@ -9,20 +9,52 @@ from RunInfo import RunInfo
 
 class TestRunINFO(unittest.TestCase):
 
-	TEST_DATA = 'seqdata_examples'
+    #Helper functions:
+    def use_run(self):
+        """Copies a selected run into a temporary folder
+           and sets self.current_run to the run id and
+           self.run_dir to the temporary dir.
+        """
+        cleanup_run()
+
+	    TEST_DATA = 'seqdata_examples'
+
+        lalalala
+        #Make a temp dir
+        #Clone the run folder into it
+        #Set the variables
+
+    def cleanup_run(self):
+        """If self.run_dir has been set, delete the temporary
+           folder.
+        """
+        if vars(self).get('run_dir'):
+            rmrf(self.run_dir)
+            self.run_dir = None
+
+    def tearDown(self):
+        """Avoid leaving temp files around.
+        """
+        cleanup_run()
 
 	def test_run_finished( self ):
-		run = '150602_M01270_0108_000000000-ADWKV'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._is_sequencing_finished() == False
+        """TODO - add comment here
+        """
 
-		run = '160603_M01270_0196_000000000-AKGDE'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._is_sequencing_finished() == True
+        use_run('150602_M01270_0108_000000000-ADWKV')
+        #Now you can change the files in self.run_dir if you like
+		run_info = RunInfo(self.current_run, run_path = self.run_dir)
+		self.assertFalse(run_info._is_sequencing_finished())
 
-		run = '160607_D00248_0174_AC9E4KANXX'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._is_sequencing_finished() == False
+		use_run('160603_M01270_0196_000000000-AKGDE')
+		run_info = RunInfo(self.current_run, run_path = self.run_dir)
+		self.assertTrue(run_info._is_sequencing_finished())
+
+		use_run('160607_D00248_0174_AC9E4KANXX')
+		run_info = RunInfo(self.current_run, run_path = self.run_dir)
+		self.assertFalse(run_info._is_sequencing_finished())
+
+    # TODO - adapt the following tests to use the helper functions
 
 	def test_is_new_run( self ):
 		run = '150602_M01270_0108_000000000-ADWKV'
