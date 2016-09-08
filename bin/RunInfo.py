@@ -13,7 +13,8 @@ class RunInfo:
 		# here the RunInfo.xml is parsed into an object
                 self.run_path_folder = os.path.join( run_path , run_folder )
                 RUNINFO_XML_LOCATION = os.path.join( self.run_path_folder , 'RunInfo.xml' )
-                self.runinfo_xml = RunInfoXMLParser( RUNINFO_XML_LOCATION )
+                if os.path.exists( RUNINFO_XML_LOCATION ):
+                        self.runinfo_xml = RunInfoXMLParser( RUNINFO_XML_LOCATION )
 
 
 	def _is_sequencing_finished( self ):
@@ -21,11 +22,11 @@ class RunInfo:
 		# the following type of files exist in a run folder with the number varying depending on the number of reads:
 		# Basecalling_Netcopy_complete.txt
 		# ImageAnalysis_Netcopy_complete.txt
-		# 160630_K00166_0109_AHCWWGBBXX/RTARead1Complete.txt
-		# 160630_K00166_0109_AHCWWGBBXX/RTARead3Complete.txt
-		# 160630_K00166_0109_AHCWWGBBXX/RTARead2Complete.txt
-		# 160630_K00166_0109_AHCWWGBBXX/RTARead4Complete.txt
-		# 160628_D00248_0181_BC9HE2ANXX/RTAComplete.txt
+		# RUN/RTARead1Complete.txt
+		# RUN/RTARead3Complete.txt
+		# RUN/RTARead2Complete.txt
+		# RUN/RTARead4Complete.txt
+		# RUN/RTAComplete.txt
 
 		# however there were no runs where the RTAComplete.txt was not the last file written to the run folder.
 		# So will only check for this file to determine if run is finished or not
@@ -96,10 +97,16 @@ class RunInfo:
 		return "unknown"
 
 	def get_yaml(self):
-		out =   'RunID: ' + self.runinfo_xml.run_info[ 'RunId' ] + '\n' + \
-			'LaneCount: ' + self.runinfo_xml.run_info[ 'LaneCount' ] + '\n' + \
-			'Instrument: ' + self.runinfo_xml.run_info[ 'Instrument' ] + '\n' + \
-			'Status: ' +  self.get_status()
+		try:
+			out =   'RunID: ' + self.runinfo_xml.run_info[ 'RunId' ] + '\n' + \
+				'LaneCount: ' + self.runinfo_xml.run_info[ 'LaneCount' ] + '\n' + \
+				'Instrument: ' + self.runinfo_xml.run_info[ 'Instrument' ] + '\n' + \
+				'Status: ' +  self.get_status()
+		except AttributeError: # possible that the provided run folder was not a valid run folder e.g. did not contain a RunInfo.xml
+			out =   'RunID: ' + 'unknown' + '\n' + \
+				'LaneCount: ' + '0' + '\n' + \
+				'Instrument: ' + 'unknown' + '\n' + \
+				'Status: ' + 'unknown'
 		return out
 
 if __name__ == '__main__':
