@@ -1,72 +1,119 @@
 import unittest
-import sys
+import sys, os
 import glob
+from tempfile import mkdtemp
+from shutil import rmtree, copytree
 
 # import stuff from ../ directory
 sys.path.insert(0,'../bin/')
 
 from RunInfo import RunInfo
 
+DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')
+
 class TestRunINFO(unittest.TestCase):
 
-	TEST_DATA = 'seqdata_examples'
+    #Helper functions:
+    def use_run(self, run_id, copy=False, make_run_info=True):
+        """Inspect a run.
+           If copy=True, copies a selected run into a temporary folder first.
+           Sets self.current_run to the run id and
+           self.run_dir to the temporary run dir, temporary or otherwise.
+           Also returns a RunInfo object for you.
+        """
+        self.cleanup_run()
 
-	def test_run_finished( self ):
-		run = '150602_M01270_0108_000000000-ADWKV'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._is_sequencing_finished() == False
+        if copy:
+            #Make a temp dir
+            self.run_dir = self.tmp_dir = mkdtemp()
 
-		run = '160603_M01270_0196_000000000-AKGDE'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._is_sequencing_finished() == True
+            #Clone the run folder into it
+            copytree( os.path.join(DATA_DIR, run_id),
+                      os.path.join(self.run_dir, run_id),
+                      symlinks=True )
+        else:
+            self.run_dir = DATA_DIR
 
-		run = '160607_D00248_0174_AC9E4KANXX'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._is_sequencing_finished() == False
+        #Set the current_run variable
+        self.current_run = run_id
 
-	def test_is_new_run( self ):
-		run = '150602_M01270_0108_000000000-ADWKV'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._is_new_run() == True
+        #Presumably we want to inspect the new run, so do that too.
+        #If you want to change files around, do that then make a new RunInfo
+        #by copying the line below.
+        if make_run_info:
+            return RunInfo(self.current_run, run_path = self.run_dir)
 
-		run = '160603_M01270_0196_000000000-AKGDE'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._is_new_run() == False
+    def cleanup_run(self):
+        """If self.tmp_dir has been set, delete the temporary
+           folder. Either way, clear the currently set run.
+        """
+        if vars(self).get('tmp_dir'):
+            rmtree(self.tmp_dir)
 
-	def test_in_pipeline( self ):
-		run = '160606_K00166_0102_BHF22YBBXX'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._was_started() == True
+        self.run_dir = self.tmp_dir = None
+        self.current_run = None
 
-		run = '160603_M01270_0196_000000000-AKGDE'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._was_started() == False
+    def tearDown(self):
+        """Avoid leaving temp files around.
+        """
+        self.cleanup_run()
 
-	def test_is_restarted( self ):
-		run = '160607_D00248_0174_AC9E4KANXX'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._was_restarted() == True
+    def test_run_finished( self ):
+        """See if the finished/unfinished state of runs is correctly determined.
+        """
+        run_info = self.use_run('150602_M01270_0108_000000000-ADWKV')
+        self.assertFalse( run_info._is_sequencing_finished() )
 
-		run = '160606_K00166_0102_BHF22YBBXX'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._was_restarted() == False
+        run_info = self.use_run('160603_M01270_0196_000000000-AKGDE')
+        self.assertTrue( run_info._is_sequencing_finished() )
 
-	def test_is_finished( self ):
-		run = '160607_D00248_0174_AC9E4KANXX'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._was_finished() == True
+        run_info = self.use_run('160607_D00248_0174_AC9E4KANXX')
+        self.assertFalse( run_info._is_sequencing_finished() )
 
-		run = '160606_K00166_0102_BHF22YBBXX'
-		run_info = RunInfo(run, run_path = self.TEST_DATA)
-		assert run_info._was_finished() == False
+    def test_is_new_run( self ):
+        run_info = self.use_run('150602_M01270_0108_000000000-ADWKV')
+        self.assertTrue( run_info._is_new_run() )
 
-	def test_status( self ):
-		#get status for all run folders
-		runs = glob.glob('1*')
-		for run in runs:
-			run_info = RunInfo(run, run_path = self.TEST_DATA)
-			#print run, run_info.get_status()
+        run_info = self.use_run('160603_M01270_0196_000000000-AKGDE')
+        self.assertFalse( run_info._is_new_run() )
+
+    def test_in_pipeline( self ):
+        run_info = self.use_run('160606_K00166_0102_BHF22YBBXX')
+        self.assertTrue( run_info._was_started() )
+
+        run_info = self.use_run('160603_M01270_0196_000000000-AKGDE')
+        self.assertFalse( run_info._was_started() )
+
+    def test_is_restarted( self ):
+        run_info = self.use_run('160607_D00248_0174_AC9E4KANXX')
+        self.assertTrue( run_info._was_restarted() )
+
+        run_info = self.use_run('160606_K00166_0102_BHF22YBBXX')
+        self.assertFalse( run_info._was_restarted() )
+
+    def test_is_finished( self ):
+        run_info = self.use_run('160607_D00248_0174_AC9E4KANXX')
+        self.assertTrue( run_info._was_finished() )
+
+        run_info = self.use_run('160606_K00166_0102_BHF22YBBXX')
+        self.assertFalse( run_info._was_finished() )
+
+    def test_status( self ):
+        #get status for all run folders
+        runs = [ os.path.basename(r) for r in glob.glob(DATA_DIR + '/1*') ]
+        for run in runs:
+
+            run_info = self.use_run(run, copy=False)
+            print("%s: %s" % (run, run_info.get_status()) )
+
+            # If copy=True you can safely change files in self.run_dir.
+            run_info_new = self.use_run(run, copy=True)
+            # or...
+            #run_info_new = RunInfo(self.current_run, run_path = self.run_dir)
+
+            #TODO: I'm not suggesting this is a useful test. Just a placeholder.
+            self.assertEqual(run_info.get_status(), run_info_new.get_status())
 
 if __name__ == '__main__':
-	unittest.main()
+    unittest.main()
 
