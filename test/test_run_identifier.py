@@ -4,9 +4,8 @@ import glob
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
 
-# import stuff from ../ directory
-sys.path.insert(0,'../bin/')
-
+# Adding this to sys.path makes the test work if you just run it directly.
+sys.path.insert(0,'.')
 from RunInfo import RunInfo
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')

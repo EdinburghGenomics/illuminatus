@@ -4,7 +4,7 @@ set -u
 
 
 # A driver script that is to be called directly from the CRON.
-# It will go through all runs in SEQDATA_LOCATION and take an ction them.
+# It will go through all runs in SEQDATA_LOCATION and take action on them.
 # As a well behaved CRON job it should only output error messages
 # to stdout.
 # The script wants to run every 5 minutes or so.

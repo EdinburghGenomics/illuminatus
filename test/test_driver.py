@@ -1,41 +1,39 @@
+#!/usr/bin/env python3
+
 import unittest
-import sys
-import glob
-import os
+import sys, os, glob
 
-# import stuff from ../ directory
-sys.path.insert(0,'../bin/')
-global TEST_DATA
-TEST_DATA = 'seqdata_examples'
+sys.path.insert(0,'.')
+TEST_DATA = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')
 
-class TestDiver(unittest.TestCase):
+class TestDriver(unittest.TestCase):
 
-	def setUp( self ):
-		os.system("mkdir -p " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
-		os.system("rm " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/*")
+    def setUp( self ):
+        os.system("mkdir -p " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
+        os.system("rm " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/*")
 
-	def test_reads_finished( self ):
-		os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
-		assert os.system("/home/mberinsk/workspace/illuminatus/bin/doall.sh | grep 160606_K00166_0102_BHF22YBBXX | grep READS_FINISHED") == 0
-		
-	def test_in_pipeline( self ):
-		os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/lane{1..8}.started")
-		assert os.system("/home/mberinsk/workspace/illuminatus/bin/doall.sh | grep 160606_K00166_0102_BHF22YBBXX | grep IN_PIPELINE" ) == 0
+    def test_reads_finished( self ):
+        os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
+        assert os.system("/home/mberinsk/workspace/illuminatus/bin/driver.sh | grep 160606_K00166_0102_BHF22YBBXX | grep READS_FINISHED") == 0
 
-	def test_completed( self ):
-		os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/lane{1..8}.done")
-		assert os.system("/home/mberinsk/workspace/illuminatus/bin/doall.sh | grep 160606_K00166_0102_BHF22YBBXX | grep COMPLETE" ) == 0
+    def test_in_pipeline( self ):
+        os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/lane{1..8}.started")
+        assert os.system("/home/mberinsk/workspace/illuminatus/bin/driver.sh | grep 160606_K00166_0102_BHF22YBBXX | grep IN_PIPELINE" ) == 0
+
+    def test_completed( self ):
+        os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/lane{1..8}.done")
+        assert os.system("/home/mberinsk/workspace/illuminatus/bin/driver.sh | grep 160606_K00166_0102_BHF22YBBXX | grep COMPLETE" ) == 0
 
 class TestDriverNEW(unittest.TestCase):
 
-	def setUp( self ):
-		os.system("rm " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/*") 
-		os.system("rmdir " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
+    def setUp( self ):
+        os.system("rm " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/*")
+        os.system("rmdir " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
 
-	def test_new( self ):
-		assert os.system("/home/mberinsk/workspace/illuminatus/bin/doall.sh | grep 160606_K00166_0102_BHF22YBBXX | grep NEW") == 0
+    def test_new( self ):
+        assert os.system("/home/mberinsk/workspace/illuminatus/bin/driver.sh | grep 160606_K00166_0102_BHF22YBBXX | grep NEW") == 0
 
 
 if __name__ == '__main__':
-	unittest.main()
+    unittest.main()
 
