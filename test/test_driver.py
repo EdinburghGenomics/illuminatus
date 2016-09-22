@@ -5,49 +5,166 @@ import sys, os, glob
 
 import subprocess
 from tempfile import mkdtemp
-from shutil import rmtree
+from shutil import rmtree, copytree
 
 """Here we're using a Python script to test a shell script.  The shell script calls
    various programs.  Ideally we want to have a cunning way of catching and detecting
    the calls to those programs, similar to the way that Test::Mock works.
-   And I thinkl I know how to do it.
+   To this end, see the BinMocker class.
 """
 
 sys.path.insert(0,'.')
-TEST_DATA = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')
+VERBOSE = True
+DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')
+
+PROGS_TO_MOCK = """
+    BCL2FASTQPreprocessor.py BCL2FASTQPostprocessor.py BCL2FASTQCleanup.py BCL2FASTQRunner.sh
+""".split()
 
 class TestDriver(unittest.TestCase):
 
-    def setUp( self ):
-        os.system("mkdir -p " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
-        os.system("rm " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/*")
+    def setUp(self):
+        """Make a shadow folder, and in it have seqdata and fastqdata and log.
+           Initialize BinMocker.
+           Calculate the test environment needed to run the driver.sh script.
+        """
+        self.temp_dir = mkdtemp()
+        for d in ['seqdata', 'fastqdata', 'log']:
+            os.mkdir(os.path.join(self.temp_dir, d))
 
-    def test_reads_finished( self ):
-        os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
-        assert os.system("/home/mberinsk/workspace/illuminatus/bin/driver.sh | grep 160606_K00166_0102_BHF22YBBXX | grep READS_FINISHED") == 0
+        self.bm = BinMocker()
+        for p in PROGS_TO_MOCK: self.bm.add_mock(p)
 
-    def test_in_pipeline( self ):
-        os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/lane{1..8}.started")
-        assert os.system("/home/mberinsk/workspace/illuminatus/bin/driver.sh | grep 160606_K00166_0102_BHF22YBBXX | grep IN_PIPELINE" ) == 0
+        # Set the driver to run in our test harness. Note I can set
+        # BIN_LOCATION to more than one path.
+        self.environment = dict(
+                SEQDATA_LOCATION = os.path.join(self.temp_dir, 'seqdata'),
+                FASTQ_LOCATION = os.path.join(self.temp_dir, 'fastqdata'),
+                BIN_LOCATION = self.bm.mock_bin_dir + ':' + os.path.dirname(DRIVER),
+                LOG_DIR = os.path.join(self.temp_dir, 'log'), #this is redundant if...
+                MAINLOG = "/dev/stdout",
+            )
 
-    def test_completed( self ):
-        os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/lane{1..8}.done")
-        assert os.system("/home/mberinsk/workspace/illuminatus/bin/driver.sh | grep 160606_K00166_0102_BHF22YBBXX | grep COMPLETE" ) == 0
+    def tearDown(self):
+        """Remove the shadow folder and clean up the BinMocker
+        """
+        rmtree(self.temp_dir)
 
-class TestDriverNEW(unittest.TestCase):
+        self.bm.cleanup()
 
-    def setUp( self ):
-        os.system("rm " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/*")
-        os.system("rmdir " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
+    def bm_rundriver(self, expected_retval=0):
+        """A convenience wrapper around self.bm.runscript that sets the environment
+           appropriately and runs DRIVER and returns STDOUT split into an array.
+        """
+        retval = self.bm.runscript(DRIVER, set_path=False, env=self.environment)
+
+        #Where a file is missing it's always useful to see the error.
+        if retval == 127 or VERBOSE:
+            print("STDERR:")
+            print(self.bm.last_stderr)
+        if VERBOSE:
+            print("STDOUT:")
+            print(self.bm.last_stdout)
+
+        self.assertEqual(retval, expected_retval)
+
+        return self.bm.last_stdout.split("\n")
+
+    def copy_run(self, run):
+        """Utility function to add a run from seqdata_examples into TMP/seqdata
+        """
+        run_dir = os.path.join(os.path.dirname(__file__), 'seqdata_examples', run)
+
+        return copytree(run_dir,
+                        os.path.join(self.temp_dir, 'seqdata', run),
+                        symlinks = True )
+
+    def assertInStdout(self, *words):
+        """Assert that there is at least one line in stdout containing all these strings
+        """
+        o_split = self.bm.last_stdout.split("\n")
+
+        for w in words:
+            o_split = [ l for l in o_split if w in l ]
+
+        self.assertTrue(o_split)
+
+    ### And the actual tests ###
 
     def test_new( self ):
-        assert os.system("/home/mberinsk/workspace/illuminatus/bin/driver.sh | grep 160606_K00166_0102_BHF22YBBXX | grep NEW") == 0
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+
+        #We can remove the flag file to make it look like the run is stil going.
+        os.system("rm " + test_data + "/RTAComplete.txt")
+
+        self.bm_rundriver()
+
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "NEW")
+
+    def test_reads_finished(self):
+        """What do we expect driver.sh to do in this dir?
+        """
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+
+        # Not sure what this is for?  The sample read is complete.
+        #os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
+
+        self.bm_rundriver()
+
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READS_FINISHED")
+
+    def test_in_pipeline(self):
+
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+
+        #Mark the run as started.
+        os.system("mkdir -p " + test_data + "/pipeline")
+        os.system("touch " + test_data + "/pipeline/lane{1..8}.started")
+
+        self.bm_rundriver()
+
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "IN_PIPELINE")
+
+    def test_completed(self):
+
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+
+        os.system("mkdir -p " + test_data + "/pipeline")
+        os.system("touch " + test_data + "/pipeline/lane{1..8}.started")
+        os.system("touch " + test_data + "/pipeline/lane{1..8}.done")
+
+        self.bm_rundriver()
+
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "COMPLETE")
+
 
 class TestBinMocker(unittest.TestCase):
     """Internal testing for BinMocker helper
     """
     def test_bin_mocker(self):
-        
+        with BinMocker('foo', 'bad') as bm:
+            bm.add_mock('bad', fail=True)
+
+            res1 = bm.runscript('true')
+            self.assertEqual(res1, 0)
+            self.assertEqual(bm.last_stdout, '')
+            self.assertEqual(bm.last_stderr, '')
+            self.assertEqual(bm.last_calls, dict(foo=[], bad=[]))
+
+            #Now something that actually calls things
+            res2 = bm.runscript('echo 123 ; foo foo args ; echo 456 ; ( echo 888 >&2 ) ; bad dog ; bad doggy')
+            self.assertEqual(res2, 1)
+            self.assertEqual(bm.last_stdout.rstrip().split('\n'), ['123', '456'])
+            self.assertEqual(bm.last_stderr.rstrip().split('\n'), ['888'])
+            self.assertEqual(bm.last_calls['foo'], ["foo args"])
+            self.assertEqual(bm.last_calls['bad'], ["dog", "doggy"])
+
+            #Test that everything resets properly
+            res3 = bm.runscript('true')
+            self.assertEqual(res3, 0)
+            self.assertEqual(bm.last_stdout, '')
+            self.assertEqual(bm.last_stderr, '')
+            self.assertEqual(bm.last_calls, dict(foo=[], bad=[]))
 
 class BinMocker:
     """A helper class that provides a way to replace tools with dummy
@@ -61,32 +178,32 @@ class BinMocker:
             assert len(bm.last_calls['mycmd']) == 2
     """
 
-    def __init__(*mocks):
+    def __init__(self, *mocks):
         self.mock_bin_dir = mkdtemp()
 
         mockscript = '''
             #!/bin/sh
-            echo "###_MOCK### $0 $@" >&2
+            echo "`basename $0` $@" >> "`dirname $0`"/_MOCK_CALLS
         '''
 
         mockscript_fail = '''
             #!/bin/sh
-            echo "###_MOCK### $0 $@" >&2 ; exit 1
+            echo "`basename $0` $@" >> "`dirname $0`"/_MOCK_CALLS ; exit 1
         '''
 
-        with open(os.path.join(self.mock_bin_dir + "_MOCK")) as fh:
+        with open(os.path.join(self.mock_bin_dir, "_MOCK"), 'w') as fh:
             print(mockscript.strip(), file=fh)
 
             # copy R bits to X to achieve comod +x
-            mode = os.stat(fh).st_mode
-            os.chmod(fh, mode | (mode & 0o444) >> 2)
+            mode = os.stat(fh.fileno()).st_mode
+            os.chmod(fh.fileno(), mode | (mode & 0o444) >> 2)
 
-        with open(os.path.join(self.mock_bin_dir + "_MOCK_F")) as fh:
+        with open(os.path.join(self.mock_bin_dir, "_MOCK_F"), 'w') as fh:
             print(mockscript_fail.strip(), file=fh)
 
             # copy R bits to X to achieve comod +x
-            mode = os.stat(fh).st_mode
-            os.chmod(fh, mode | (mode & 0o444) >> 2)
+            mode = os.stat(fh.fileno()).st_mode
+            os.chmod(fh.fileno(), mode | (mode & 0o444) >> 2)
 
         self.mocks = set()
         for m in mocks:
@@ -100,22 +217,38 @@ class BinMocker:
         """Symlink the named script so that it will get called in
            place of the real version.
         """
+        symlink = os.path.join(self.mock_bin_dir, mock)
         target = "_MOCK_F" if fail else "_MOCK"
 
-        os.symlink(target, os.path.join(self.mock_bin_dir, mock))
+        #If the link already exists, remove it
+        try:
+            os.unlink(symlink)
+        except FileNotFoundError:
+            pass
+
+        os.symlink(target, symlink)
 
         self.mocks.add(mock)
 
-    def cleanup():
+    def cleanup(self):
         """Clean up
         """
         rmtree(self.mock_bin_dir)
         self.mock_bin_dir = None
 
-    def runscript(cmd, set_path=True, env=None):
+    def runscript(self, cmd, set_path=True, env=None):
         """Runs the specified command, which may contain shell syntax,
            and captures the output and the commands that were invoked.
+           By default, the mock scripts will be prepended to the PATH, but you
+           can alternatively modify the environment explicity.
         """
+        #Cleanup _MOCK_CALLS if found
+        calls_file = os.path.join(self.mock_bin_dir, "_MOCK_CALLS")
+        try:
+            os.unlink(calls_file)
+        except FileNotFoundError:
+            pass
+
         full_env = None
         if env:
             full_env = os.environ.copy()
@@ -135,40 +268,31 @@ class BinMocker:
                              env = full_env,
                              close_fds=True)
 
-        stdout, stderr = p.communicate()
+        self.last_stdout, self.last_stderr = p.communicate()
 
-        #Fish the MOCK stuff out of stderr
-        calls = [ [] for m in self.mocks ]
-        new_stderr = []
-        prefix = ''
-        for l in stderr.split("\n"):
-            if '###_MOCK### ' in l:
-                pre_bit, mock_bit = l.split('###_MOCK### ')
-                #This only matters if the script printed something without a trailing \n
-                prefix = prefix + pre_bit
+        #Fish the MOCK calls out of _MOCK_CALLS
+        calls = { m : [] for m in self.mocks }
+        try:
+            with open(calls_file) as fh:
+                for l in fh:
+                    mock_name, mock_args = l.rstrip('\n').split(' ', 1)
+                    calls[mock_name].append(mock_args)
+        except FileNotFoundError:
+            #So, nothing ran
+            pass
 
-                mock_name, mock_args = mock_bit.split(' ', 1)
-                calls[mock_name].append(mock_args)
-            else:
-                new_stderr.append(prefix + l)
-                prefix = ''
-        if prefix:
-            new_stderr.append(prefix)
-
-        #Stash the calls and stdout/stderr
         self.last_calls = calls
-        self.last_stderr = new_stderr
-        self.last_stdout = stdout.split("\n")
 
         #Return whatever the process returned
         return p.returncode
 
-    #Allow the class to be used in a "with" construct.
+    #Allow the class to be used in a "with" construct, though
+    #in a TestCase you probably want to use setup/teardown.
     def __enter__(self):
         return self
 
     def __exit__(self, *exc_info):
-        cleanup()
+        self.cleanup()
 
 if __name__ == '__main__':
     unittest.main()

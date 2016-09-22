@@ -9,18 +9,15 @@ set -u
 # to stdout.
 # The script wants to run every 5 minutes or so.
 
-SEQDATA_LOCATION=/home/mberinsk/workspace/illuminatus/test/seqdata_examples
-SEQDATA_LOCATION=/ifs/runqc/test_seqdata
-FASTQC_LOCATION=/ifs/runqc/test_runqc
+# Settings you probably need to override.
+SEQDATA_LOCATION="${SEQDATA_LOCATION:-/ifs/runqc/test_seqdata}"
+FASTQ_LOCATION="${FASTQ_LOCATION:-/ifs/runqc/test_runqc}"
+BIN_LOCATION="${BIN_LOCATION:-`dirname $0`}"
 
-RUN_INFO="python3 /home/mberinsk/workspace/illuminatus/bin/RunInfo.py"
+PATH="$BIN_LOCATION:$PATH"
 
-DEMULTIPLEXING_PREPROCESSOR="python3 /home/mberinsk/workspace/illuminatus/bin/demultiplexing_preprocessor.py"
-DEMULTIPLEXING_RUNNER="bash /home/mberinsk/workspace/illuminatus/bin/demultiplexing_runner.sh"
-DEMULTIPLEXING_POSTPROCESSOR="python3 /home/mberinsk/workspace/illuminatus/bin/demultiplexing_postprocessor.py"
-DEMULTIPLEXING_CLEANUP="python3 /home/mberinsk/workspace/illuminatus/bin/demultiplexing_cleanup.py"
-
-MAINLOG=/tmp/logs/autorun.`date +%Y%m%d`.log
+LOG_DIR="${LOG_DIR:-/tmp/logs}"
+MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 
 trap 'echo "=== `date`. Finished run; PID=$$ ===" >> "$MAINLOG"' EXIT
 
@@ -55,10 +52,9 @@ rotlog() {
 }
 
 # 5) Run the run info module for each run until we find something we can run the pipeline on.
-for run in $SEQDATA_LOCATION/*; 
-do
-  # invoke runinfo and collect some meta-information about the run 
-  RUNINFO_OUTPUT="`$RUN_INFO $run`"
+for run in $SEQDATA_LOCATION/* ; do
+  # invoke runinfo and collect some meta-information about the run
+  RUNINFO_OUTPUT="`RunInfo.py $run`"
 
   LANES=`grep ^LaneCount: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   STATUS=`grep ^Status: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
@@ -66,7 +62,7 @@ do
   INSTRUMENT=`grep ^Instrument: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
 
   echo "Folder $run contains $RUNID from machine $INSTRUMENT with $LANES lane(s) and status $STATUS" >> "$MAINLOG"
- 
+
   # define an action for each possible status that a run can have:
   # 1) new - this run is seen for the first time (sequencing might be done or is still in progress)
   # 2) reads_finished - sequencing has finished, the pipeline/ folder exists the pipeline was not started yet...
@@ -85,13 +81,13 @@ do
 
   if [[ $STATUS == reads_finished ]] ; then
     # need to kick off the demultiplexing here
-    DEMUX_OUTPUT_FOLDER="$FASTQC_LOCATION/$RUNID/demultiplexing/"
+    DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID/demultiplexing/"
     echo "\_READS_FINISHED starting demultiplexing for $run into $DEMUX_OUTPUT_FOLDER" >> $MAINLOG
     (
     mkdir -p $DEMUX_OUTPUT_FOLDER
-    $DEMULTIPLEXING_PREPROCESSOR $run $DEMUX_OUTPUT_FOLDER
-    $DEMULTIPLEXING_RUNNER $DEMUX_OUTPUT_FOLDER
-    #$DEMULTIPLEXING_POSTPROCESSOR $DEMUX_OUTPUT_FOLDER
+    BCL2FASTQPreprocessor.py $run $DEMUX_OUTPUT_FOLDER
+    BCL2FASTQRunner.sh $DEMUX_OUTPUT_FOLDER
+    #BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER
     ) && echo OK >> "$MAINLOG" && exit 0 || echo $FAIL >> "$MAINLOG"
   fi
 
@@ -109,10 +105,10 @@ do
     # the pipeline completed for this run ... nothing to be done ...
     echo "\_REDO $run" >> "$MAINLOG"
     (exit 1
-    $DEMULTIPLEXING_CLEANUP
-    $DEMULTIPLEXING_PREPROCESSOR
-    $DEMULTIPLEXING_RUNNER
-    $DEMULTIPLEXING_POSTPROCESSOR
+     BCL2FASTQCleanup.py
+     BCL2FASTQPreprocessor.py
+     BCL2FASTQRunner.sh
+     BCL2FASTQPreprocessor.py
     ) && echo OK >> "$MAINLOG" && exit 0 || echo FAIL >> "$MAINLOG"
   fi
 
