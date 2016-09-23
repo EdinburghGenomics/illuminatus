@@ -16,6 +16,8 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         # to replace this with tmpdir and to clean it up afterwards.
         self.out_dir = '/mock/out'
 
+        # See the errors in all their glory
+        self.maxDiff = None
 
     def test_miseq_1pool(self):
         """Run in 160603_M01270_0196_000000000-AKGDE is a MISEQ run with 1 pool
@@ -46,12 +48,13 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         # One would hope it could be added to the SampleSheet, under settings, but that's not supported.
         # So we'll need to put it into another settings file.
 
-        self.assertCountEqual(self.bcl2fastq_1command_split, [
+        self.assertCountEqual(self.bcl2fastq_command_split, [
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'" % self.out_dir ,
-                "--sample-sheet SampleSheet_lanes1.csv",
+                "--sample-sheet SampleSheet.csv",
                 "--use-bases-mask '1:Y300n,I10,Y300n'",
+                "--tiles=s_[1]",
                 "--barcode-mismatches 1",  # If anything?
                 "--fastq-compression-level 6", # Do we still need this? Yes.
             ])
@@ -73,18 +76,19 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         #Run with a subset of lanes...
         self.run_preprocessor(run_id, [1,2,3,4,8])
 
-        self.assertCountEqual(self.bcl2fastq_command_strings.keys(), ['lanes12348'])
+        self.assertEqual(self.pp.lanes, ['1', '2', '3', '4', '8'])
 
-        self.assertCountEqual(self.bcl2fastq_1command_split, [
+        self.assertCountEqual(self.bcl2fastq_command_split, [
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'" % self.out_dir ,
-                "--sample-sheet SampleSheet_lanes12348.csv",
+                "--sample-sheet SampleSheet.csv",
                 "--use-bases-mask '1:Y50n,I8,I8'",
                 "--use-bases-mask '2:Y50n,I8,I8'",
                 "--use-bases-mask '3:Y50n,I6nn,I8'",
                 "--use-bases-mask '4:Y50n,I8,I8'",
                 "--use-bases-mask '8:Y50n,I8,I8'",
+                "--tiles=s_[12348]",
                 "--barcode-mismatches 1",
                 "--fastq-compression-level 6",
             ])
@@ -95,11 +99,11 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         #Run with all lanes...
         self.run_preprocessor(run_id, None)
 
-        self.assertCountEqual(self.bcl2fastq_1command_split, [
+        self.assertCountEqual(self.bcl2fastq_command_split, [
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'" % self.out_dir ,
-                "--sample-sheet SampleSheet_lanes12345678.csv",
+                "--sample-sheet SampleSheet.csv",
                 "--use-bases-mask '1:Y50n,I8,I8'",
                 "--use-bases-mask '2:Y50n,I8,I8'",
                 "--use-bases-mask '3:Y50n,I6nn,I8'",
@@ -108,6 +112,7 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
                 "--use-bases-mask '6:Y50n,???'",
                 "--use-bases-mask '7:Y50n,???'",
                 "--use-bases-mask '8:Y50n,I8,I8'",
+                "--tiles=s_[12345678]",
                 "--barcode-mismatches 1",
                 "--fastq-compression-level 6",
             ])
@@ -121,6 +126,9 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
                                          lanes = lanes,
                                          dest = self.out_dir )
 
+        self.bcl2fastq_command_split = re.split(r'\s+(?=-)', self.pp.get_bcl2fastq_command())
+
+        """ Stuff related to splitting the sample sheet
         self.bcl2fastq_command_strings = { p : self.pp.get_partial_bcl2fastq_command(p, 'SampleSheet_{}.csv')
                                            for p in self.pp.get_parts() }
 
@@ -130,6 +138,7 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         self.bcl2fastq_1command_split = None
         if(len(self.bcl2fastq_command_split) == 1):
             self.bcl2fastq_1command_split, = self.bcl2fastq_command_split.values()
+        """
 
 
 ### See stuff in /home/mberinsk/workspace/new_raw_data_pipeline/BaseMaskExtractor/tests/

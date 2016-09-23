@@ -30,13 +30,15 @@ class BCL2FASTQPreprocessor:
         self.lanes = sorted(set( lanes or self._bme.get_lanes() ))
         self.lanes = [ str(l) for l in self.lanes ]
 
+        #FIXME = self._bme.get_lanes() seems to be broken, according to the
+        #test test_hiseq_all_lanes
         assert self.lanes
 
         # FIXME - this should be picked up from a configuration file or embedded
         # in the sample sheet.
         self.barcode_mismatches = 1
 
-    #FIXME - this is wrong, if we need to split the SS.
+    #Note - this won't work, if we need to split the SS.
     def get_bcl2fastq_command(self):
         """Return the full command string for BCL2FASTQ
         """
@@ -56,6 +58,9 @@ class BCL2FASTQPreprocessor:
             bm = self._bme.get_base_mask_for_lane(lane)
             cmd.append("--use-bases-mask '%s:%s'" % ( lane, bm ) )
 
+        #Add list of lanes to process, which is controlled by --tiles
+        cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]")
+
         return ' '.join(cmd)
 
     # Here's what I'd do if we do need to process and/or split the samplesheet:
@@ -63,8 +68,11 @@ class BCL2FASTQPreprocessor:
         """Returns a list of SampleSheet suffixes, like:
            [ 'indexLength_6_lanes3_readlen151_index6nn', ...]
         """
+        #We don't think we need to split.
+        return None
+
         #If we're only splitting by lanes this can just be eg. 'lanes1245'
-        return [ 'lanes' + ''.join(self.lanes) ]
+        #return [ 'lanes' + ''.join(self.lanes) ]
 
     def get_processed_samplesheet(self, ss_name):
         """Returns the content of the specified samplesheet
@@ -98,6 +106,7 @@ class BCL2FASTQPreprocessor:
 
         return ' '.join(cmd)
 
+
 def main():
     """ Usage BCL2FASTQPreprocessor.py <run_dir> <lane> [<lane> ...]
     """
@@ -105,23 +114,26 @@ def main():
 
     print("#Running bcl2fastq on %d lanes." % len(pp.lanes))
 
-    #Write partial SampleSheet files to ./split_samplesheets
-    try:
-        os.mkdir(os.path.join(run_dir, 'split_samplesheets'))
-    except FileExistsError:
-        pass
+    if pp.get_parts():
+        #Write partial SampleSheet files to ./split_samplesheets
+        try:
+            os.mkdir(os.path.join(run_dir, 'split_samplesheets'))
+        except FileExistsError:
+            pass
 
-    ss_template = os.path.join(run_dir, 'split_samplesheets', 'SampleSheet_{}.csv');
+        ss_template = os.path.join(run_dir, 'split_samplesheets', 'SampleSheet_{}.csv');
 
-    for ss_part in pp.get_parts():
+        for ss_part in pp.get_parts():
 
-        #print("Writing %s." % ss_template.format(ss_part))
+            #print("Writing %s." % ss_template.format(ss_part))
 
-        with open(ss_template.format(ss_part), 'w') as ss_fh:
-            print(pp.get_processed_samplesheet(ss_part), file=sf_fh)
+            with open(ss_template.format(ss_part), 'w') as ss_fh:
+                print(pp.get_processed_samplesheet(ss_part), file=sf_fh)
 
-        print(pp.get_partial_bcl2fastq_command(ss_part, ss_template))
+            print(pp.get_partial_bcl2fastq_command(ss_part, ss_template))
 
+    else:
+        print(pp.get_bcl2fastq_command())
 
 if __name__ == '__main__':
     main()
