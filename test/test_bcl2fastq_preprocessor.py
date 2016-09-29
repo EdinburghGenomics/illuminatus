@@ -128,17 +128,6 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
 
         self.bcl2fastq_command_split = re.split(r'\s+(?=-)', self.pp.get_bcl2fastq_command())
 
-        """ Stuff related to splitting the sample sheet
-        self.bcl2fastq_command_strings = { p : self.pp.get_partial_bcl2fastq_command(p, 'SampleSheet_{}.csv')
-                                           for p in self.pp.get_parts() }
-
-        self.bcl2fastq_command_split = { p : re.split(r'\s+(?=-)', cs)
-                                         for p, cs in self.bcl2fastq_command_strings.items() }
-
-        self.bcl2fastq_1command_split = None
-        if(len(self.bcl2fastq_command_split) == 1):
-            self.bcl2fastq_1command_split, = self.bcl2fastq_command_split.values()
-        """
 
 
 ### See stuff in /home/mberinsk/workspace/new_raw_data_pipeline/BaseMaskExtractor/tests/

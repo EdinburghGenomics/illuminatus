@@ -4,8 +4,7 @@
    and outputs the appropriate command line to run BCL2FASTQ.
    It may also edit and/or split the samplesheet, but we're hoping this
    will not be necessary.
-   ...Apparently it is, as there is no way to get bcl2fastq to demux just
-      one lane without making a split samplesheet.
+   If it is, see commit 5d8aebcd0d for my outline code to do this.
 """
 import os
 
@@ -38,9 +37,9 @@ class BCL2FASTQPreprocessor:
         # in the sample sheet.
         self.barcode_mismatches = 1
 
-    #Note - this won't work, if we need to split the SS.
     def get_bcl2fastq_command(self):
-        """Return the full command string for BCL2FASTQ
+        """Return the full command string for BCL2FASTQ.  The driver should
+           set PATH so that the right version of the software gets run.
         """
         cmd = ['bcl2fastq']
 
@@ -62,50 +61,6 @@ class BCL2FASTQPreprocessor:
         cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]")
 
         return ' '.join(cmd)
-
-    # Here's what I'd do if we do need to process and/or split the samplesheet:
-    def get_parts(self):
-        """Returns a list of SampleSheet suffixes, like:
-           [ 'indexLength_6_lanes3_readlen151_index6nn', ...]
-        """
-        #We don't think we need to split.
-        return None
-
-        #If we're only splitting by lanes this can just be eg. 'lanes1245'
-        #return [ 'lanes' + ''.join(self.lanes) ]
-
-    def get_processed_samplesheet(self, ss_name):
-        """Returns the content of the specified samplesheet
-        """
-        #Just now there's only one
-        assert [ss_name] == self.get_parts()
-
-        return "PROCESSED"
-
-    def get_partial_bcl2fastq_command(self, ss_name, ss_template="{}.csv"):
-        """Returns the content of the specified samplesheet
-        """
-        #Just now there's only one
-        assert [ss_name] == self.get_parts()
-
-        cmd = ['bcl2fastq']
-
-        #Add the abspath for the data folder
-        cmd.append("-R '%s'" % self._rundir)
-        if self._destdir:
-            cmd.append("-o '%s'" % self._destdir)
-        cmd.append("--sample-sheet %s" % ss_template.format(ss_name) )
-        cmd.append("--fastq-compression-level 6")
-
-        cmd.append("--barcode-mismatches %d" % self.barcode_mismatches )
-
-        #Add base masks per lane
-        for lane in self.lanes:
-            bm = self._bme.get_base_mask_for_lane(lane)
-            cmd.append("--use-bases-mask '%s:%s'" % ( lane, bm ) )
-
-        return ' '.join(cmd)
-
 
 def main():
     """ Usage BCL2FASTQPreprocessor.py <run_dir> <lane> [<lane> ...]
