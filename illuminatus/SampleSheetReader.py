@@ -25,10 +25,11 @@ class SampleSheetReader:
         'i5_index_id': 8
         }
         '''
-        self.samplesheet = self.get_samplesheet_data_object_from_column_mapping( self.column_mapping , self.samplesheet_data )
+        self.samplesheet = self._get_samplesheet_data_object_from_column_mapping( self.column_mapping , self.samplesheet_data )
 
-    def get_samplesheet_data_for_BaseMaskExtractor(self):
+    def get_index_lengths_by_lane(self):
         '''
+        Was get_samplesheet_data_for_BaseMaskExtractor
 
         will return
         { "lane_number" : [ index1length , index2length ] }
@@ -65,7 +66,7 @@ class SampleSheetReader:
                 L.error("while reading "+ csvFile + "\t" + e)
         return column_mapping, samplesheet_data
 
-    def get_samplesheet_data_object_from_column_mapping(self, column_mapping_dict , samplesheet_data ):
+    def _get_samplesheet_data_object_from_column_mapping(self, column_mapping_dict , samplesheet_data ):
         '''
         The Samplesheet data and column headers are now in memory and are passed on to this function.
         Will construct a general SampleSheet Object that can then be used to access Lanes/Pools/Indexes/etc.
