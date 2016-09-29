@@ -24,7 +24,7 @@ PROGS_TO_MOCK = """
 class TestDriver(unittest.TestCase):
 
     def setUp(self):
-        """Make a shadow folder, and in it have seqdata and fastqdata and log.
+        """Make a shadow folder, and in it have subdirs seqdata and fastqdata and log.
            Initialize BinMocker.
            Calculate the test environment needed to run the driver.sh script.
         """
@@ -36,7 +36,7 @@ class TestDriver(unittest.TestCase):
         for p in PROGS_TO_MOCK: self.bm.add_mock(p)
 
         # Set the driver to run in our test harness. Note I can set
-        # BIN_LOCATION to more than one path.
+        # $BIN_LOCATION to more than one path.
         self.environment = dict(
                 SEQDATA_LOCATION = os.path.join(self.temp_dir, 'seqdata'),
                 FASTQ_LOCATION = os.path.join(self.temp_dir, 'fastqdata'),
@@ -91,6 +91,12 @@ class TestDriver(unittest.TestCase):
 
     ### And the actual tests ###
 
+    def test_nop( self ):
+        """With no data, nothing should happen
+        """
+        self.bm_rundriver()
+
+
     def test_new( self ):
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
@@ -102,14 +108,28 @@ class TestDriver(unittest.TestCase):
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "NEW")
 
     def test_reads_finished(self):
-        """What do we expect driver.sh to do in this dir?
+        """A new run to process.
+             SampleSheet.csv should be converted to a symlink
+             A demultiplexing folder should appear in fastqdata
+             BCL2FASTQPreprocessor.py should be invoked
+             The log should say "READS_FINISHED"
         """
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
-        # Not sure what this is for?  The sample read is complete.
-        #os.system("touch " + TEST_DATA + "/160606_K00166_0102_BHF22YBBXX/pipeline/")
-
         self.bm_rundriver()
+
+        #Check samplesheet link
+        datadir = os.path.join(self.temp_dir, "datadir", "160606_K00166_0102_BHF22YBBXX")
+        self.assertEqual( os.readlink(os.path.join(datadir, "SampleSheet.csv")),
+                          "SampleSheet.csv.0" )
+
+        #Check demultiplexing folder
+        fastqdir = os.path.join(self.temp_dir, "fastqdir", "160606_K00166_0102_BHF22YBBXX")
+        self.assertTrue( os.path.isdir(os.path.join(fastqdir, "demultiplexing")) )
+
+        #Check invoking of preprocessor
+        self.assertEqual( self.bm.last_calls['BCL2FASTQPreprocessor.py'],
+                          "160606_K00166_0102_BHF22YBBXX " + os.path.join(fastqdir, "demultiplexing") )
 
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READS_FINISHED")
 
