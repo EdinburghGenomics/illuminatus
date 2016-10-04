@@ -7,6 +7,7 @@
    If it is, see commit 5d8aebcd0d for my outline code to do this.
 """
 import os
+import sys
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 
@@ -61,6 +62,8 @@ class BCL2FASTQPreprocessor:
         cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]")
 
         return ' '.join(cmd)
+    def get_parts(self):
+        return False
 
 def main():
     """ Usage BCL2FASTQPreprocessor.py <run_dir> <lane> [<lane> ...]

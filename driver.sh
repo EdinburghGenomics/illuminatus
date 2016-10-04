@@ -108,7 +108,7 @@ for run in $SEQDATA_LOCATION/* ; do
      BCL2FASTQCleanup.py
      BCL2FASTQPreprocessor.py
      BCL2FASTQRunner.sh
-     BCL2FASTQPreprocessor.py
+     BCL2FASTQPostprocessor.py
     ) && echo OK >> "$MAINLOG" && exit 0 || echo FAIL >> "$MAINLOG"
   fi
 
