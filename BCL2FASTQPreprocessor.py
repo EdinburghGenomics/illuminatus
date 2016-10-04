@@ -61,6 +61,8 @@ class BCL2FASTQPreprocessor:
         cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]")
 
         return ' '.join(cmd)
+    def get_parts(self):
+        return False
 
 def main():
     """ Usage BCL2FASTQPreprocessor.py <run_dir> <dest_dir> [<lane> ...]
