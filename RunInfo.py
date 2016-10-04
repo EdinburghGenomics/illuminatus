@@ -77,6 +77,13 @@ class RunInfo:
         if self._is_new_run():
             return "new"
 
+        # RUN IS 'reads_unfinished'
+        if not self._is_sequencing_finished() and not self._is_new_run():
+            #Double-check that there is no pipeline activity - the run is either still on the sequencer
+            #or has been aborted.
+            if not ( self._was_started() or self._was_finished() ):
+                return "reads_unfinished"
+
         # RUN IS 'reads_finished': if RTAComplete.txt is present and the demultiplexing has not started e.g. pipeline/lane?.started files do not exist
         if self._is_sequencing_finished() and not self._was_started() and not self._was_finished() and not self._is_new_run():
             return "reads_finished"
@@ -87,7 +94,7 @@ class RunInfo:
 
         # RUN IS 'complete':
         if self._is_sequencing_finished() and self._was_finished() and not self._was_restarted():
-                        return "complete"
+            return "complete"
 
         # RUN IS 'failed':
                 #if self._is_sequencing_finished() and not self._is_in_pipeline() and self._is_pipeline_finished():

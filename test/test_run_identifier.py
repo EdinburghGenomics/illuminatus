@@ -77,7 +77,7 @@ class TestRunINFO(unittest.TestCase):
         self.assertFalse( run_info._is_new_run() )
 
     def test_in_pipeline( self ):
-        run_info = self.use_run('160606_K00166_0102_BHF22YBBXX')
+        run_info = self.use_run('160607_D00248_0174_AC9E4KANXX')
         self.assertTrue( run_info._was_started() )
 
         run_info = self.use_run('160603_M01270_0196_000000000-AKGDE')
@@ -97,13 +97,36 @@ class TestRunINFO(unittest.TestCase):
         run_info = self.use_run('160606_K00166_0102_BHF22YBBXX')
         self.assertFalse( run_info._was_finished() )
 
+    def test_get_yaml(self):
+        """Ensure that the YAML output is what we expect.
+           Don't actually parse the YAML as we don't want the extra dependency.
+        """
+        run_info = self.use_run('160726_K00166_0120_BHCVH2BBXX', copy=True)
+
+        def dictify(s):
+            return dict(zip(s.split()[0::2], s.split()[1::2]))
+
+        expected = dictify("""
+            RunID: 160726_K00166_0120_BHCVH2BBXX
+            LaneCount: 8
+            Instrument: hiseq4000
+            Status: reads_unfinished
+        """)
+
+        self.assertEqual(dictify(run_info.get_yaml()), expected)
+
+        rmtree(os.path.join(self.run_dir, self.current_run, 'pipeline'))
+
+        expected['Status:'] = 'new'
+        self.assertEqual(dictify(run_info.get_yaml()), expected)
+
     def test_status( self ):
         #get status for all run folders
         runs = [ os.path.basename(r) for r in glob.glob(DATA_DIR + '/1*') ]
         for run in runs:
 
             run_info = self.use_run(run, copy=False)
-            print("%s: %s" % (run, run_info.get_status()) )
+            #print("%s: %s" % (run, run_info.get_status()) )
 
             # If copy=True you can safely change files in self.run_dir.
             run_info_new = self.use_run(run, copy=True)
