@@ -22,7 +22,7 @@ MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 trap 'echo "=== `date`. Finished run; PID=$$ ===" >> "$MAINLOG"' EXIT
 
 # 1) Refuse to run on a machine other than headnode1
-if [[ "${HOSTNAME%%.*}" != headnode1 ]] ; then
+if [[ "${NO_HOST_CHECK:-0}" = 1 && "${HOSTNAME%%.*}" != headnode1 ]] ; then
     echo "This script should only be run on headnode1"
     exit 1
 fi
@@ -73,14 +73,20 @@ for run in $SEQDATA_LOCATION/* ; do
 
   if [[ $STATUS == new ]] ; then
     # nothing for now but could send a notification email or create a pipeline/ folder...
-    echo "\_Creating pipeline/ folder for run $RUNID" >> $MAINLOG
+    echo "\_NEW $run. Creating $RUNID/pipeline folder." >> $MAINLOG
     (
       mkdir $run/pipeline/
     ) && echo "OK" >> "$MAINLOG" && exit 0 || echo $FAIL >> "$MAINLOG"
   fi
 
   if [[ $STATUS == reads_finished ]] ; then
-    # need to kick off the demultiplexing here
+    # Lock the run by writing pipeline/lane?.started per lane
+    ( cd $run/pipeline ; touch `for n in {1..8} ; do echo "lane${n}.started" ; done` )
+
+    # Sort out the SampleSheet
+    ( cd $run ; mv SampleSheet.csv SampleSheet.csv.0 && ln -s SampleSheet.csv.0 SampleSheet.csv )
+
+    # Now kick off the demultiplexing here
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID/demultiplexing/"
     echo "\_READS_FINISHED starting demultiplexing for $run into $DEMUX_OUTPUT_FOLDER" >> $MAINLOG
     (
@@ -102,13 +108,25 @@ for run in $SEQDATA_LOCATION/* ; do
   fi
 
   if [[ $STATUS == redo ]] ; then
-    # the pipeline completed for this run ... nothing to be done ...
+    # Some lanes need to be re-done ...
     echo "\_REDO $run" >> "$MAINLOG"
+
+    # Get a list of what needs redoing.
+    redo_list=""
+
+    # Remove all .redo files and corresponding .done files
+    for redo in $run/pipeline/lane?.redo ; do
+        rm -f ${df%.redo}.done ; rm $df
+
+        redo=${redo%.redo} ; redo=${redo##*[^0-9]}
+        redo_list="$redo_list $redo"
+    done
+
     (exit 1
-     BCL2FASTQCleanup.py
-     BCL2FASTQPreprocessor.py
+     BCL2FASTQCleanup.py //args for partial cleanup here//
+     BCL2FASTQPreprocessor.py $run $DEMUX_OUTPUT_FOLDER $redo_list
      BCL2FASTQRunner.sh
-     BCL2FASTQPreprocessor.py
+     BCL2FASTQPostprocessor.py
     ) && echo OK >> "$MAINLOG" && exit 0 || echo FAIL >> "$MAINLOG"
   fi
 

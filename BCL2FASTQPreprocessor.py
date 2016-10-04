@@ -6,7 +6,7 @@
    will not be necessary.
    If it is, see commit 5d8aebcd0d for my outline code to do this.
 """
-import os
+import os, sys
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 
@@ -63,32 +63,13 @@ class BCL2FASTQPreprocessor:
         return ' '.join(cmd)
 
 def main():
-    """ Usage BCL2FASTQPreprocessor.py <run_dir> <lane> [<lane> ...]
+    """ Usage BCL2FASTQPreprocessor.py <run_dir> <dest_dir> [<lane> ...]
     """
-    pp = BCL2FASTQPreprocessor(sys.argv[1], sys.argv[2:])
+    pp = BCL2FASTQPreprocessor(run_dir=sys.argv[1], dest=sys.argv[2], lanes=sys.argv[3:])
 
     print("#Running bcl2fastq on %d lanes." % len(pp.lanes))
 
-    if pp.get_parts():
-        #Write partial SampleSheet files to ./split_samplesheets
-        try:
-            os.mkdir(os.path.join(run_dir, 'split_samplesheets'))
-        except FileExistsError:
-            pass
-
-        ss_template = os.path.join(run_dir, 'split_samplesheets', 'SampleSheet_{}.csv');
-
-        for ss_part in pp.get_parts():
-
-            #print("Writing %s." % ss_template.format(ss_part))
-
-            with open(ss_template.format(ss_part), 'w') as ss_fh:
-                print(pp.get_processed_samplesheet(ss_part), file=sf_fh)
-
-            print(pp.get_partial_bcl2fastq_command(ss_part, ss_template))
-
-    else:
-        print(pp.get_bcl2fastq_command())
+    print(pp.get_bcl2fastq_command())
 
 if __name__ == '__main__':
     main()
