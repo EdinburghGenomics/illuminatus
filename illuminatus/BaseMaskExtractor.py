@@ -48,16 +48,16 @@ class BaseMaskExtractor:
             read1 = prefix + str( cycles1 - 1 ) + postfix
 
 
-            if self.rip.read_and_indexed["2"] == "N":
-                prefix  = "Y"
-                postfix = "n"
-                cycles2 = int(self.rip.read_and_length["2"])
-                read2 = prefix + str( cycles2 - 1 ) + postfix
-            elif self.rip.read_and_indexed["2"] == "Y":
-                prefix  = "I"
-                postfix = ""
-                cycles2 = int(self.rip.read_and_length["2"])
-                index_1_length = self.lane_length_dict[lane][0]
+        if self.rip.read_and_indexed["2"] == "N":
+            prefix  = "Y"
+            postfix = "n"
+            cycles2 = int(self.rip.read_and_length["2"])
+            read2 = prefix + str( cycles2 - 1 ) + postfix
+        elif self.rip.read_and_indexed["2"] == "Y":
+            prefix  = "I"
+            postfix = ""
+            cycles2 = int(self.rip.read_and_length["2"])
+            index_1_length = self.lane_length_dict[lane][0]
             #if index_1_length == 0:
             #    index_1_length = 6
             if index_1_length == 0:
@@ -65,7 +65,7 @@ class BaseMaskExtractor:
                     postfix = postfix.rjust(cycles2, 'n')
                     if number_of_reads > 3:
                         postfix = "I" + str(cycles2)
-                        read2 = postfix
+                    read2 = postfix
                 else:
                     padding = ( cycles2 - 6 )
                     postfix = postfix.rjust(padding, 'n')
@@ -92,8 +92,8 @@ class BaseMaskExtractor:
                 if index_2_length == 0:
                     if number_of_reads > 3:
                         postfix = postfix.rjust(cycles3, 'n')
-                    if index_1_length == 0:
-                        postfix = "I" + str(cycles3)
+                        if index_1_length == 0:
+                            postfix = "I" + str(cycles3)
                         read3 = postfix
                     else:
                         read3 = prefix + str( cycles3 - 0 ) + postfix

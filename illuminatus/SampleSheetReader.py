@@ -119,8 +119,14 @@ class SampleSheetReader:
                 #index2 = index2.replace("N","")
             except KeyError:
                 index2 = ""
-        index1 = index1.rstrip('N')
-        index2 = index2.rstrip('N')
+
+        # don't remove the N's from a sequence entirely NNNNNN 
+        # but remove from the end of e.g. AGTACNN
+        if len( index1.rstrip('N') ) > 0:
+            index1 = index1.rstrip('N')
+
+        if len( index1.rstrip('N') ) > 0: # if the first index is a dummy index, will assume second must be a dummy index
+            index2 = index2.rstrip('N')
 
         return [index1 , index2]
 
