@@ -61,8 +61,6 @@ class BCL2FASTQPreprocessor:
         cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]" + "_1011") #FIXME/DEBUG - need to remove _1011
 
         return ' '.join(cmd)
-    def get_parts(self):
-        return False
 
 class SGE_script_writer:
     """ this will write the generated demultiplexing command as a SGE submit script to <dest>/demultiplexing/demultiplex.sh
