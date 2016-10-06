@@ -93,7 +93,7 @@ for run in $SEQDATA_LOCATION/* ; do
     BCL2FASTQPreprocessor.py $run $DEMUX_OUTPUT_FOLDER
     echo "submitting to cluster" >> $MAINLOG
     BCL2FASTQRunner.sh $DEMUX_OUTPUT_FOLDER
-    #BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER
+    BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID
     ) && echo OK >> "$MAINLOG" && exit 0 || echo $FAIL >> "$MAINLOG"
   fi
 
@@ -126,7 +126,7 @@ for run in $SEQDATA_LOCATION/* ; do
      BCL2FASTQCleanup.py //args for partial cleanup here//
      BCL2FASTQPreprocessor.py $run $DEMUX_OUTPUT_FOLDER $redo_list
      BCL2FASTQRunner.sh
-     BCL2FASTQPostprocessor.py
+     BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID
     ) && echo OK >> "$MAINLOG" && exit 0 || echo FAIL >> "$MAINLOG"
   fi
 

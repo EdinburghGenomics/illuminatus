@@ -58,7 +58,7 @@ class BCL2FASTQPreprocessor:
             cmd.append("--use-bases-mask '%s:%s'" % ( lane, bm ) )
 
         #Add list of lanes to process, which is controlled by --tiles
-        cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]" + "_1011") #FIXME/DEBUG - need to remove _1011
+        cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]")# + "_1011") #FIXME/DEBUG - need to remove _1011
 
         return ' '.join(cmd)
 
