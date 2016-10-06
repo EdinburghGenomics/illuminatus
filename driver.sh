@@ -84,14 +84,14 @@ for run in $SEQDATA_LOCATION/* ; do
     ( cd $run/pipeline ; touch `for n in {1..8} ; do echo "lane${n}.started" ; done` )
 
     # Sort out the SampleSheet
-    ( cd $run ; mv SampleSheet.csv SampleSheet.csv.0 && ln -s SampleSheet.csv.0 SampleSheet.csv )
-
+    ( cd $run ; mv SampleSheet.csv SampleSheet.csv.0 && ln -s SampleSheet.csv.0 SampleSheet.csv ) && echo "samplesheet replaced" || echo "samplesheet not replaced" >> $MAINLOG
     # Now kick off the demultiplexing here
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID/demultiplexing/"
     echo "\_READS_FINISHED starting demultiplexing for $run into $DEMUX_OUTPUT_FOLDER" >> $MAINLOG
     (
     mkdir -p $DEMUX_OUTPUT_FOLDER
     BCL2FASTQPreprocessor.py $run $DEMUX_OUTPUT_FOLDER
+    echo "submitting to cluster" >> $MAINLOG
     BCL2FASTQRunner.sh $DEMUX_OUTPUT_FOLDER
     #BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER
     ) && echo OK >> "$MAINLOG" && exit 0 || echo $FAIL >> "$MAINLOG"
