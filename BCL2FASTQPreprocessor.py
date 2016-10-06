@@ -71,7 +71,7 @@ class SGE_script_writer:
     def __init__(self, dest, command):
         self.demux_destination = dest 
         self.command = command
-        self.sge_script_name = os.path.join ( self.demux_destination , "demultiplex.sh" )
+        self.sge_script_name = os.path.join ( self.demux_destination , "sge_demultiplex.sh" )
 
     def _prepare_sge_command( self, command ):
         sge_out_location = os.path.join( self.demux_destination , "sge_output/" )

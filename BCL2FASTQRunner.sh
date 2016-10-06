@@ -7,4 +7,6 @@
 cd $1
 
 mkdir sge_output/
-qsub demultiplex.sh
+
+# the script was prepared by the preprocessor
+qsub sge_demultiplex.sh
