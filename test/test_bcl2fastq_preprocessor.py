@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 import unittest
+from unittest.mock import Mock, patch
 import sys, os, glob, re
+from tempfile import mkdtemp
+from shutil import rmtree, copytree
+from io import StringIO
 
 # Adding this to sys.path makes the test work if you just run it directly.
 sys.path.insert(0,'.')
 from BCL2FASTQPreprocessor import BCL2FASTQPreprocessor
+from BCL2FASTQPreprocessor import main as pp_main
 
 class TestBCL2FASTQPreprocessor(unittest.TestCase):
 
@@ -116,6 +121,35 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
                 "--barcode-mismatches 1",
                 "--fastq-compression-level 6",
             ])
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_main(self, mocked_stdout):
+        """Test the main function. This is another one that writes a file
+           so make a temp dir for th file to go into.
+           Use run 160607_D00248_0174_AC9E4KANXX for this test.
+        """
+        #Make the temp dir
+        out_dir = mkdtemp()
+        #Add a hook to remove the temp directory even if the test fails
+        self.addCleanup(lambda: rmtree(out_dir))
+
+        data_dir = os.path.join(self.seqdata_dir, '160607_D00248_0174_AC9E4KANXX')
+
+        #Now we can run main(run_dir, dest)
+        pp_main(data_dir, out_dir)
+
+        script = os.path.join(out_dir, 'sge_demultiplex.sh')
+        self.assertTrue(os.path.exists(script))
+        self.assertTrue(os.access(script, os.X_OK))
+
+        with open(script) as fh:
+            script_lines = [l.rstrip() for l in list(fh)]
+
+        self.assertEqual(script_lines[0], '#!/bin/bash')
+
+        stdout_lines = mocked_stdout.getvalue().split('\n')
+
+        self.assertEqual(stdout_lines[0], '#Running bcl2fastq on 8 lanes.')
 
     # Helper functions
     def run_preprocessor(self, run_name, lanes):

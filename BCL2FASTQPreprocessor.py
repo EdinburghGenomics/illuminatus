@@ -6,7 +6,7 @@
    will not be necessary.
    If it is, see commit 5d8aebcd0d for my outline code to do this.
 """
-import os, sys
+import os, sys, re
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 
@@ -29,8 +29,6 @@ class BCL2FASTQPreprocessor:
         self.lanes = sorted(set( lanes or self._bme.get_lanes() ))
         self.lanes = [ str(l) for l in self.lanes ]
 
-        #FIXME = self._bme.get_lanes() seems to be broken, according to the
-        #test test_hiseq_all_lanes
         assert self.lanes
 
         # FIXME - this should be picked up from a configuration file or embedded
@@ -58,59 +56,61 @@ class BCL2FASTQPreprocessor:
             cmd.append("--use-bases-mask '%s:%s'" % ( lane, bm ) )
 
         #Add list of lanes to process, which is controlled by --tiles
-        cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]")# + "_1011") #FIXME/DEBUG - need to remove _1011
+        # FIXME - add the ability to append a tile number like _1011 for testing.
+        # Maybe set this in the same place as 'barcode_mismatches'?
+        cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]")# + "_1011")
 
         return ' '.join(cmd)
 
-class SGE_script_writer:
-    """ this will write the generated demultiplexing command as a SGE submit script to <dest>/demultiplexing/demultiplex.sh
-        with the new cluster this won't be needed
+def write_script(dest, pp):
+    """Writes out the script to a file called sge_demultiplex.sh in the dest directory.
+       And makes it executable.
     """
-    def __init__(self, dest, command):
-        self.demux_destination = dest 
-        self.command = command
-        self.sge_script_name = os.path.join ( self.demux_destination , "sge_demultiplex.sh" )
+    command = pp.get_bcl2fastq_command()
+    sge_script_name = os.path.join ( dest , "sge_demultiplex.sh" )
+    #This directory will be made for us by the driver script.
+    sge_out_location = os.path.join( dest , "sge_output/" )
 
-    def _prepare_sge_command( self, command ):
-        sge_out_location = os.path.join( self.demux_destination , "sge_output/" )
-        sge_commands = [
-        """#!/bin/bash""",
-        "#$ -cwd -v PATH -v LD_LIBRARY_PATH -sync yes -pe qc 8 -t 1-1 -q casava -N demultiplexing  -o " + sge_out_location + " -e " + sge_out_location,
-        """
-        echo $PWD
-        printenv""",
-        """
-        echo -e "\nSGE_TASK_ID=$SGE_TASK_ID\n"
+    #Using the .format(**locals()) trick is the easiest way to interpolate variables into strings.  Also remove indents
+    #with a regex.
+    sge_command = re.sub('\n\s+', '\n',
+    """#!/bin/bash
+       #$ -cwd -v PATH -v LD_LIBRARY_PATH -sync yes -pe qc 8 -t 1-1 -q casava
+       #$ -N demultiplexing  -o {sge_out_location} -e {sge_out_location}
 
-        if [ "$SGE_TASK_ID" -eq "1" ]; then
-            echo "Starting Casava for lane: 12345678 samplesheet: SampleSheet_in_HiSeq_format_forCasava2_17.csv  unalignedDirectoryName: Unaligned_SampleSheet_in_HiSeq_format_lanes12345678_readlen151_index6nn";
-        """,
-        "/ifs/software/linux_x86_64/Illumina_pipeline/bcl2fastq2-v2.17.1.14-bin/bin/"+command,
-        """
-        fi
-        """
-        ]
+       echo $PWD
+       printenv
+       echo -e "\\nSGE_TASK_ID=$SGE_TASK_ID\\n"
 
-        return "\n".join(sge_commands)
+       echo "Starting Casava for lane: {pp.lanes}."
+       set +x
 
-    def write(self):
-        sge_command = self._prepare_sge_command( self.command )
+       PATH="/ifs/software/linux_x86_64/Illumina_pipeline/bcl2fastq2-v2.17.1.14-bin/bin/:$PATH"
+       {command}
+    """).format(**locals())
 
-        f = open( self.sge_script_name, 'w' )
+    with open( sge_script_name, 'w' ) as f:
         f.write( sge_command )
-        f.close()
+        make_executable(f)
 
-def main():
+def make_executable(fh):
+    """Code snippet to achieve the equivalent of "chmod +x" on an open FH.
+       Copy R bits to X to achieve comod +x
+    """
+    mode = os.stat(fh.fileno()).st_mode
+    os.chmod(fh.fileno(), mode | (mode & 0o444) >> 2)
+
+
+def main(run_dir, dest, *lanes):
     """ Usage BCL2FASTQPreprocessor.py <run_dir> <dest_dir> [<lane> ...]
     """
-    pp = BCL2FASTQPreprocessor(run_dir=sys.argv[1], dest=sys.argv[2], lanes=sys.argv[3:])
+    pp = BCL2FASTQPreprocessor(run_dir, dest=dest, lanes=lanes)
 
     print("#Running bcl2fastq on %d lanes." % len(pp.lanes))
 
-    print(pp.get_bcl2fastq_command())
+    print("#Command will be: " + pp.get_bcl2fastq_command())
 
-    sge_script = SGE_script_writer( dest = sys.argv[2] , command = pp.get_bcl2fastq_command() )
-    sge_script.write()
+    write_script( dest=dest, pp=pp )
 
 if __name__ == '__main__':
-    main()
+    main(*sys.argv[1:])
