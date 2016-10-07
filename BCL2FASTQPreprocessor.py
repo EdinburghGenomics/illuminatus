@@ -62,55 +62,22 @@ class BCL2FASTQPreprocessor:
 
         return ' '.join(cmd)
 
-def write_script(dest, pp):
-    """Writes out the script to a file called sge_demultiplex.sh in the dest directory.
-       And makes it executable.
-    """
-    command = pp.get_bcl2fastq_command()
-    sge_script_name = os.path.join ( dest , "sge_demultiplex.sh" )
-    #This directory will be made for us by the driver script.
-    sge_out_location = os.path.join( dest , "sge_output/" )
-
-    #Using the .format(**locals()) trick is the easiest way to interpolate variables into strings.  Also remove indents
-    #with a regex.
-    sge_command = re.sub('\n\s+', '\n',
-    """#!/bin/bash
-       #$ -cwd -v PATH -v LD_LIBRARY_PATH -sync yes -pe qc 8 -t 1-1 -q casava
-       #$ -N demultiplexing  -o {sge_out_location} -e {sge_out_location}
-
-       echo $PWD
-       printenv
-       echo -e "\\nSGE_TASK_ID=$SGE_TASK_ID\\n"
-
-       echo "Starting Casava for lane: {pp.lanes}."
-       set +x
-
-       PATH="/ifs/software/linux_x86_64/Illumina_pipeline/bcl2fastq2-v2.17.1.14-bin/bin/:$PATH"
-       {command}
-    """).format(**locals())
-
-    with open( sge_script_name, 'w' ) as f:
-        f.write( sge_command )
-        make_executable(f)
-
-def make_executable(fh):
-    """Code snippet to achieve the equivalent of "chmod +x" on an open FH.
-       Copy R bits to X to achieve comod +x
-    """
-    mode = os.stat(fh.fileno()).st_mode
-    os.chmod(fh.fileno(), mode | (mode & 0o444) >> 2)
-
-
 def main(run_dir, dest, *lanes):
     """ Usage BCL2FASTQPreprocessor.py <run_dir> <dest_dir> [<lane> ...]
     """
     pp = BCL2FASTQPreprocessor(run_dir, dest=dest, lanes=lanes)
 
-    print("#Running bcl2fastq on %d lanes." % len(pp.lanes))
+    script_name = os.path.join( dest , "do_demultiplex.sh" )
 
-    print("#Command will be: " + pp.get_bcl2fastq_command())
+    lines = [
+        "#Running bcl2fastq on %d lanes." % len(pp.lanes),
+        pp.get_bcl2fastq_command()
+    ]
 
-    write_script( dest=dest, pp=pp )
+    with open( script_name, 'w' ) as fh:
+        for l in lines:
+            print(l)
+            print(l, file=fh)
 
 if __name__ == '__main__':
     main(*sys.argv[1:])

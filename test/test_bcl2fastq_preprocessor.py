@@ -125,7 +125,7 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
     @patch('sys.stdout', new_callable=StringIO)
     def test_main(self, mocked_stdout):
         """Test the main function. This is another one that writes a file
-           so make a temp dir for th file to go into.
+           so make a temp dir for the file to go into.
            Use run 160607_D00248_0174_AC9E4KANXX for this test.
         """
         #Make the temp dir
@@ -138,18 +138,18 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         #Now we can run main(run_dir, dest)
         pp_main(data_dir, out_dir)
 
-        script = os.path.join(out_dir, 'sge_demultiplex.sh')
+        script = os.path.join(out_dir, 'do_demultiplex.sh')
         self.assertTrue(os.path.exists(script))
-        self.assertTrue(os.access(script, os.X_OK))
+        #self.assertTrue(os.access(script, os.X_OK))
 
         with open(script) as fh:
             script_lines = [l.rstrip() for l in list(fh)]
 
-        self.assertEqual(script_lines[0], '#!/bin/bash')
+        self.assertEqual(script_lines[0], '#Running bcl2fastq on 8 lanes.')
 
-        stdout_lines = mocked_stdout.getvalue().split('\n')
+        stdout_lines = mocked_stdout.getvalue().rstrip('\n').split('\n')
 
-        self.assertEqual(stdout_lines[0], '#Running bcl2fastq on 8 lanes.')
+        self.assertEqual(stdout_lines, script_lines)
 
     # Helper functions
     def run_preprocessor(self, run_name, lanes):
