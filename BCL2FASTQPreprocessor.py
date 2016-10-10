@@ -6,7 +6,7 @@
    will not be necessary.
    If it is, see commit 5d8aebcd0d for my outline code to do this.
 """
-import os, sys, re
+import os, sys, re, csv
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 
@@ -33,7 +33,40 @@ class BCL2FASTQPreprocessor:
 
         # FIXME - this should be picked up from a configuration file or embedded
         # in the sample sheet.
-        self.barcode_mismatches = 1
+        # RE: using a configuration file for now (settings.txt)
+        settings_hash = self._parse_settingsFile()
+
+        # if bcl2fastq parameter names were ever to change (like they have in the past) we will need to adapt it in several places.
+        # Namely this function and in get_bcl2fastq_command()
+        if "--barcode-mismatches" in settings_hash:
+            self.barcode_mismatches = int( settings_hash[ "--barcode-mismatches" ] ) # I assume the error checking was handled during parsing, so here data is reliable.
+        else:
+            self.barcode_mismatches = 1
+
+    def _parse_settingsFile(self):
+        """ Not discussed the format of the file, yet.
+            For now will assume 1 bcl2fastq command per line. Parameter and value separated by space. Location: run_folder/settings.txt
+            e.g.:
+            --barcode-mismatches 1
+            --fastq-compression-level 6
+        """
+        ### TODO: needs exception handling
+        settingsFile = os.path.join( self._rundir , "settings.txt" )
+
+        if not os.path.exists( settingsFile ):
+            return None
+
+        # will fill up this hash:
+        demux_settings = {}
+        # e.g. demux_settings = { "--barcode-mismatches" : "1" , "--fastq-compression-level" : "6" }
+
+        # should probably use csvreader if format becomes more sophisticated
+        with open(settingsFile) as f:
+            for line in f:
+                settingsData = line.split(" ")
+                if len(settingsData) == 2: # settingsData: [ "--barcode-mismatches" , "1" ]
+                    demux_settings[ settingsData[0] ] = int( settingsData[1].rstrip("\n") )
+        return demux_settings
 
     def get_bcl2fastq_command(self):
         """Return the full command string for BCL2FASTQ.  The driver should
@@ -41,11 +74,13 @@ class BCL2FASTQPreprocessor:
         """
         cmd = ['bcl2fastq']
 
+
         #Add the abspath for the data folder
         cmd.append("-R '%s'" % self._rundir)
         if self._destdir:
             cmd.append("-o '%s'" % self._destdir)
-        cmd.append("--sample-sheet SampleSheet.csv")
+        #cmd.append("--sample-sheet SampleSheet.csv") # this samplesheet needs to either be copied or
+        cmd.append("--sample-sheet '%s'" % os.path.join( self._rundir , "SampleSheet.csv" ) )
         cmd.append("--fastq-compression-level 6")
 
         cmd.append("--barcode-mismatches %d" % self.barcode_mismatches )
