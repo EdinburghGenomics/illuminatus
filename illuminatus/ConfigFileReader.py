@@ -19,11 +19,11 @@ class ConfigFileReader:
         except:
             return None
     def get_all_options( self , section ):
-        ## 
+        ## return empty list if nothing was found 
         try:
             return self.Config.options(section)
         except:
-            return None
+            return []
 
 
 if __name__ == '__main__':
