@@ -72,7 +72,7 @@ class BCL2FASTQPreprocessor:
             replaced = False
             for option in cmd:
                 if ini_option in option:
-                    #print ("option "+ ini_option +" must be replaced")
+                    #print ("replacing from settings.ini option "+ ini_option)
                     if ini_option == "--tiles": ## special case for option --tile
                         delimiter="="
                     else:
@@ -80,7 +80,7 @@ class BCL2FASTQPreprocessor:
                     cmd[cmd.index(option)] = ini_option + delimiter + self.ini_settings.get_value( 'bcl2fastq', ini_option) 
                     replaced = True
             if not replaced: ## so must be appended
-                #print ("option " + ini_option + " must be appended")
+                #print ("appending from settings.ini " + ini_option)
                 cmd.append("%s %s" % (ini_option, self.ini_settings.get_value( 'bcl2fastq', ini_option)) )
                 
 
