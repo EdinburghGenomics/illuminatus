@@ -9,6 +9,8 @@
 import os, sys, re, csv
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
+from illuminatus.ConfigFileReader import ConfigFileReader
+
 
 class BCL2FASTQPreprocessor:
 
@@ -33,40 +35,10 @@ class BCL2FASTQPreprocessor:
 
         # FIXME - this should be picked up from a configuration file or embedded
         # in the sample sheet.
-        # RE: using a configuration file for now (settings.txt)
-        settings_hash = self._parse_settingsFile()
-
-        # if bcl2fastq parameter names were ever to change (like they have in the past) we will need to adapt it in several places.
-        # Namely this function and in get_bcl2fastq_command()
-        if "--barcode-mismatches" in settings_hash:
-            self.barcode_mismatches = int( settings_hash[ "--barcode-mismatches" ] ) # I assume the error checking was handled during parsing, so here data is reliable.
-        else:
-            self.barcode_mismatches = 1
-
-    def _parse_settingsFile(self):
-        """ Not discussed the format of the file, yet.
-            For now will assume 1 bcl2fastq command per line. Parameter and value separated by space. Location: run_folder/settings.txt
-            e.g.:
-            --barcode-mismatches 1
-            --fastq-compression-level 6
-        """
-        ### TODO: needs exception handling
-        settingsFile = os.path.join( self._rundir , "settings.txt" )
-
-        if not os.path.exists( settingsFile ):
-            return None
-
-        # will fill up this hash:
-        demux_settings = {}
-        # e.g. demux_settings = { "--barcode-mismatches" : "1" , "--fastq-compression-level" : "6" }
-
-        # should probably use csvreader if format becomes more sophisticated
-        with open(settingsFile) as f:
-            for line in f:
-                settingsData = line.split(" ")
-                if len(settingsData) == 2: # settingsData: [ "--barcode-mismatches" , "1" ]
-                    demux_settings[ settingsData[0] ] = int( settingsData[1].rstrip("\n") )
-        return demux_settings
+        # RE: using a configuration file (settings.ini)
+        ini_file = os.path.join( self._rundir , "settings.ini" )
+        self.ini_settings = ConfigFileReader( ini_file )
+        self.barcode_mismatches = 1
 
     def get_bcl2fastq_command(self):
         """Return the full command string for BCL2FASTQ.  The driver should
@@ -79,10 +51,8 @@ class BCL2FASTQPreprocessor:
         cmd.append("-R '%s'" % self._rundir)
         if self._destdir:
             cmd.append("-o '%s'" % self._destdir)
-        #cmd.append("--sample-sheet SampleSheet.csv") # this samplesheet needs to either be copied or
         cmd.append("--sample-sheet '%s'" % os.path.join( self._rundir , "SampleSheet.csv" ) )
         cmd.append("--fastq-compression-level 6")
-
         cmd.append("--barcode-mismatches %d" % self.barcode_mismatches )
 
         #Add base masks per lane
@@ -90,10 +60,29 @@ class BCL2FASTQPreprocessor:
             bm = self._bme.get_base_mask_for_lane(lane)
             cmd.append("--use-bases-mask '%s:%s'" % ( lane, bm ) )
 
-        #Add list of lanes to process, which is controlled by --tiles
+        # Add list of lanes to process, which is controlled by --tiles
         # FIXME - add the ability to append a tile number like _1011 for testing.
         # Maybe set this in the same place as 'barcode_mismatches'?
         cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]")# + "_1011")
+
+        ## now that the cmd array is complete will evaluate the settings.ini file
+        ## every setting must be either replaced or appended to the cmd array
+        ## this won't work with options that appear multiple times like --use-base-mask (don't think we need this though)
+        for ini_option in self.ini_settings.get_all_options('bcl2fastq'): # section in the ini file is bcl2fastq
+            replaced = False
+            for option in cmd:
+                if ini_option in option:
+                    #print ("option "+ ini_option +" must be replaced")
+                    if ini_option == "--tiles": ## special case for option --tile
+                        delimiter="="
+                    else:
+                        delimiter=" "
+                    cmd[cmd.index(option)] = ini_option + delimiter + self.ini_settings.get_value( 'bcl2fastq', ini_option) 
+                    replaced = True
+            if not replaced: ## so must be appended
+                #print ("option " + ini_option + " must be appended")
+                cmd.append("%s %s" % (ini_option, self.ini_settings.get_value( 'bcl2fastq', ini_option)) )
+                
 
         return ' '.join(cmd)
 
