@@ -92,10 +92,9 @@ for run in $SEQDATA_LOCATION/* ; do
     mkdir -p $DEMUX_OUTPUT_FOLDER
     BCL2FASTQPreprocessor.py $run $DEMUX_OUTPUT_FOLDER
     echo "submitting to cluster" >> $MAINLOG
-    ( cd $DEMUX_OUTPUT_FOLDER && BCL2FASTQRunner.sh )
+    ( cd $DEMUX_OUTPUT_FOLDER && BCL2FASTQRunner.sh ) && echo "cluster job finished" >> "$MAINLOG" || (echo "cluster job failed" >> "$MAINLOG" && exit 1)
     BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID
     ) && echo OK >> "$MAINLOG" && exit 0 || echo FAIL >> "$MAINLOG"
-    # FIXME: The FAIL message is not triggered if the bcl2fastq cluster job returns 1
   fi
 
   if [[ $STATUS == in_pipeline ]] ; then

@@ -11,8 +11,7 @@ if [ -z "${SGE_TASK_ID:-}" ] ; then
     #I humbly submit myself to the cluster.
     mkdir -p ./sge_output
     qsub "$0"
-    echo "DONE"
-    exit 0
+    exit $?
 fi
 
 #Actual cluster job
