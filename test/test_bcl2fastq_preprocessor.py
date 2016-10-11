@@ -5,6 +5,7 @@ import sys, os, glob, re
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
 from io import StringIO
+from os import remove
 
 # Adding this to sys.path makes the test work if you just run it directly.
 sys.path.insert(0,'.')
@@ -57,12 +58,38 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'" % self.out_dir ,
-                "--sample-sheet SampleSheet.csv",
-                "--use-bases-mask '1:Y300n,I10,Y300n'",
-                "--tiles=s_[1]",
-                "--barcode-mismatches 1",  # If anything?
+                "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
                 "--fastq-compression-level 6", # Do we still need this? Yes.
+                "--barcode-mismatches 1",  # If anything?
+                "--use-bases-mask '1:Y50n,I8,I8'",
+                "--tiles=s_[1]",
             ])
+
+    def test_settings_file(self):
+        """settings file test: Run in 160603_M01270_0196_000000000-AKGDE is a MISEQ run with 1 pool and 10-base barcodes.
+        """
+        run_id = '160607_D00248_0174_AC9E4KANXX'
+        ini_file = os.path.join(self.seqdata_dir ,run_id, "settings.ini")
+
+        f = open( ini_file , 'w')
+        f.write("[bcl2fastq]\n")
+        f.write("--barcode-mismatches: 100\n")
+        f.close()
+
+        self.run_preprocessor(run_id, [1])
+        self.assertCountEqual(self.bcl2fastq_command_split, [
+            "bcl2fastq",
+            "-R '%s/%s'" % (self.seqdata_dir, run_id),
+            "-o '%s'" % self.out_dir ,
+            "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
+            "--fastq-compression-level 6", # Do we still need this? Yes.
+            "--barcode-mismatches 100",  # If anything?
+            "--use-bases-mask '1:Y50n,I8,I8'",
+            "--tiles=s_[1]",
+        ])
+        self.addCleanup(lambda: remove( ini_file ) )
+
+
 
 
     def test_miseq_badlane(self):
@@ -87,7 +114,7 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'" % self.out_dir ,
-                "--sample-sheet SampleSheet.csv",
+                "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
                 "--use-bases-mask '1:Y50n,I8,I8'",
                 "--use-bases-mask '2:Y50n,I8,I8'",
                 "--use-bases-mask '3:Y50n,I6nn,I8'",
@@ -108,14 +135,14 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'" % self.out_dir ,
-                "--sample-sheet SampleSheet.csv",
+                "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
                 "--use-bases-mask '1:Y50n,I8,I8'",
                 "--use-bases-mask '2:Y50n,I8,I8'",
                 "--use-bases-mask '3:Y50n,I6nn,I8'",
                 "--use-bases-mask '4:Y50n,I8,I8'",
-                "--use-bases-mask '5:Y50n,???'",
-                "--use-bases-mask '6:Y50n,???'",
-                "--use-bases-mask '7:Y50n,???'",
+                "--use-bases-mask '5:Y50n,I8,I8'",
+                "--use-bases-mask '6:Y50n,I8,I8'",
+                "--use-bases-mask '7:Y50n,I8,I8'",
                 "--use-bases-mask '8:Y50n,I8,I8'",
                 "--tiles=s_[12345678]",
                 "--barcode-mismatches 1",

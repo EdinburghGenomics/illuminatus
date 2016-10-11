@@ -10,8 +10,8 @@ set -u
 # The script wants to run every 5 minutes or so.
 
 # Settings you probably need to override.
-SEQDATA_LOCATION="${SEQDATA_LOCATION:-/ifs/runqc/test_seqdata}"
-FASTQ_LOCATION="${FASTQ_LOCATION:-/ifs/runqc/test_runqc}"
+SEQDATA_LOCATION="${SEQDATA_LOCATION:-/ifs/runqc/test_seqdata/illuminatus}"
+FASTQ_LOCATION="${FASTQ_LOCATION:-/ifs/runqc/test_runqc/illuminatus}"
 BIN_LOCATION="${BIN_LOCATION:-`dirname $0`}"
 
 PATH="$BIN_LOCATION:$PATH"
@@ -92,9 +92,9 @@ for run in $SEQDATA_LOCATION/* ; do
     mkdir -p $DEMUX_OUTPUT_FOLDER
     BCL2FASTQPreprocessor.py $run $DEMUX_OUTPUT_FOLDER
     echo "submitting to cluster" >> $MAINLOG
-    ( cd $DEMUX_OUTPUT_FOLDER && BCL2FASTQRunner.sh )
+    ( cd $DEMUX_OUTPUT_FOLDER && BCL2FASTQRunner.sh ) && echo "cluster job finished" >> "$MAINLOG" || (echo "cluster job failed" >> "$MAINLOG" && exit 1)
     BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID
-    ) && echo OK >> "$MAINLOG" && exit 0 || echo $FAIL >> "$MAINLOG"
+    ) && echo OK >> "$MAINLOG" && exit 0 || echo FAIL >> "$MAINLOG"
   fi
 
   if [[ $STATUS == in_pipeline ]] ; then
