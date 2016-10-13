@@ -6,7 +6,7 @@
     projects_ready.txt is added listing the projects found
     projects_pending.txt is deleted if it exists
 """
-import os, sys, glob, re
+import os, sys, glob, re, time
 
 def main():
     """ Usage BCL2FASTQPostprocessor.py <run_dir> [prefix]
@@ -14,13 +14,13 @@ def main():
     demux_folder = sys.argv[1]
 
     #The prefix is normally the run name ie. the foilder name.
-    prefix = args[2] if len(sys.argv) > 2 else os.path.basename(demux_folder)
+    prefix = sys.argv[2] if len(sys.argv) > 2 else os.path.basename(demux_folder)
 
     #All renames need to be logged
     with open(os.path.join(demux_folder, 'renames.log'), 'a') as log_fh:
         log = lambda m: print(m, file=log_fh)
-        log("# %s renaming files in %s on %s", (
-               args[0],             demux_folder,
+        log("# %s renaming files in %s on %s" % (
+               sys.argv[0],             demux_folder,
                                           time.strftime('%Y-%m-%d %H:%M', time.localtime()) ))
 
         project_list = do_renames(demux_folder, prefix, log=log)
