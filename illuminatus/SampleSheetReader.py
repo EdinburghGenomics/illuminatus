@@ -133,15 +133,16 @@ class SampleSheetReader:
 
 class RunInfo:
     import xml.etree.ElementTree as ET
-    tree = ET.parse('/ifs/seqdata/160829_M01270_0226_000000000-ARGF3/RunInfo.xml')
-    root = tree.getroot()
 
     def __init__(self, RunInfoXmlFile):
         self.RunInfoXmlFile = RunInfoXmlFile
 
-    def getReadLength():
+        self.tree = ET.parse(RunInfoXmlFile)
+        self.root = tree.getroot()
+
+    def getReadLength(self):
         read_length_dict = {}
-        for read in root.iter('Read'):
+        for read in self.root.iter('Read'):
             read_length_dict [ read.attrib[ 'NumCycles' ] ] = read.attrib[ 'Number' ]
         return read_length_dict
 

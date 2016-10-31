@@ -1,0 +1,21 @@
+[Header]
+IEMFileVersion,4
+Investigator Name,AM
+Project Name
+Experiment Name,161025_M01270_229_AWVA4_K836
+Date,10/25/2016
+Workflow,GenerateFASTQ
+Application,FASTQ Only
+Assay,TruSeq DNA
+Description
+Chemistry,Amplicon
+
+[Reads]
+301
+301
+
+[Settings]
+
+[Data]
+Sample_ID,Sample_Name,Sample_Plate,Sample_Well,Sample_Project,index,I7_Index_ID,index2,I5_Index_ID,Description
+10623BV0004L01,,AWVA4,,10623,ATTACTCG,TP-D7-001,TAATCTTA,TP-D5-006,

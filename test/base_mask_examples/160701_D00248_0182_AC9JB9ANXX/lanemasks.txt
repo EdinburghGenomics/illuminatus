@@ -1,0 +1,8 @@
+1 Y125n,I6nn,nnnnnnnn,Y125n
+2 Y125n,I6nn,nnnnnnnn,Y125n
+3 Y125n,I6nn,nnnnnnnn,Y125n
+4 Y125n,I6nn,nnnnnnnn,Y125n
+5 Y125n,I6nn,nnnnnnnn,Y125n
+8 Y125n,I6nn,nnnnnnnn,Y125n
+6 Y125n,I8,I8,Y125n
+7 Y125n,I8,I8,Y125n

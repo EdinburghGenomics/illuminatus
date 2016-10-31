@@ -1,0 +1,8 @@
+2 Y50n,I6nn,nnnnnnnn
+3 Y50n,I6nn,nnnnnnnn
+5 Y50n,I6nn,nnnnnnnn
+7 Y50n,I6nn,nnnnnnnn
+8 Y50n,I6nn,nnnnnnnn
+1 Y50n,I8,I8
+4 Y50n,I8,I8
+6 Y50n,I8,I8

@@ -1,0 +1,21 @@
+[Header]
+IEMFileVersion,4
+Investigator Name,AM
+Project Name
+Experiment Name,160607_M01145_165_D230A_K680
+Date,6/7/2016
+Workflow,GenerateFASTQ
+Application,FASTQ Only
+Assay,TruSeq DNA
+Description
+Chemistry,Amplicon
+
+[Reads]
+51
+51
+
+[Settings]
+
+[Data]
+Sample_ID,Sample_Name,Sample_Plate,Sample_Well,Sample_Project,index,I7_Index_ID,index2,I5_Index_ID,Description
+10314BM0003L04,,D230A,,10314,GAATTCGT,TP-D7-006,CCTATCCT,TP-D5-003,

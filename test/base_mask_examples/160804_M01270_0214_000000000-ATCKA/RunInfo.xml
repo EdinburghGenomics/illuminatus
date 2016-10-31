@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<RunInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="2">
+  <Run Id="160804_M01270_0214_000000000-ATCKA" Number="214">
+    <Flowcell>000000000-ATCKA</Flowcell>
+    <Instrument>M01270</Instrument>
+    <Date>160804</Date>
+    <Reads>
+      <Read NumCycles="101" Number="1" IsIndexedRead="N" />
+      <Read NumCycles="6" Number="2" IsIndexedRead="Y" />
+    </Reads>
+    <FlowcellLayout LaneCount="1" SurfaceCount="2" SwathCount="1" TileCount="14" />
+  </Run>
+</RunInfo>

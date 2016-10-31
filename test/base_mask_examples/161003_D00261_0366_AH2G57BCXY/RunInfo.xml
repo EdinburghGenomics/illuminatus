@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<RunInfo xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="2">
+  <Run Id="161003_D00261_0366_AH2G57BCXY" Number="366">
+    <Flowcell>H2G57BCXY</Flowcell>
+    <Instrument>D00261</Instrument>
+    <Date>161003</Date>
+    <Reads>
+      <Read Number="1" NumCycles="101" IsIndexedRead="N" />
+      <Read Number="2" NumCycles="12" IsIndexedRead="Y" />
+    </Reads>
+    <FlowcellLayout LaneCount="2" SurfaceCount="2" SwathCount="2" TileCount="16" />
+    <AlignToPhiX>
+      <Lane>1</Lane>
+      <Lane>2</Lane>
+    </AlignToPhiX>
+  </Run>
+</RunInfo>
