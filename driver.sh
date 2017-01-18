@@ -27,18 +27,15 @@ if [[ "${NO_HOST_CHECK:-0}" = 1 && "${HOSTNAME%%.*}" != headnode1 && "${HOSTNAME
     exit 1
 fi
 
-# 2) If $0 is not a canonical path, gripe
-if [[ $(readlink -f "$0") != "$0" ]] ; then
-    echo "You need to run this script by absolute path: $(readlink -f "$0")"
-    exit 1
-fi
+# 2) Convert $0 to a canonical path
+me="$(readlink -f "$0")"
 
 # 3) Ensure that the directory is there for the main log file.
 mkdir -p `dirname "$MAINLOG"`
 
 # 4) We're good to go!
 echo >> "$MAINLOG"
-echo "=== `date`. Running $0; PID=$$ ===" >> "$MAINLOG"
+echo "=== `date`. Running $me; PID=$$ ===" >> "$MAINLOG"
 
 # To avoid logs piling up in all project folders, use logrotate to cycle out
 # the old ones. Assuming we let this run every 5 mins, 2016 logs is 7 days.

@@ -38,16 +38,19 @@ if [ "${FLOCK_ON:-0}" != 1 ] ; then
 fi
 
 # 2) Ensure that the directory is there for the rsync log
-mkdir -p "$LOG_DIR" ; 
+mkdir -p "$LOG_DIR" 
 echo "=== Running $0 at `date` ===" >> "$LOG_DIR"/rsync.log
 
 # 3) Run rsync. But just running rsync on everything will take way too long, so we need a smarter strategy.
 
 # 3a - Only look at the last 20 days fo runs
-newish_runs=($(find /ifs/seqdata/ -maxdepth 1 -mindepth 1 -type d -name 17*_*_*_* -mtime '-20'))
+newish_runs=($(find /ifs/seqdata/17*_*_*_* -maxdepth 0 -mindepth 0 -type d -mtime '-20'))
+
+echo "Starting rsync on ${newish_runs[@]}"
 
 # 3b - Rsync just the bare bones of these
-rsync -av --exclude='Data/*' --exclude='Images/*' --exclude='Thumbnail_Images/*' --exclude=RTAComplete.txt \
+rsync -av --exclude='Data/*' --exclude='Images/*' --exclude='Thumbnail_Images/*' --exclude='Logs/*' \
+    --exclude=RTAComplete.txt \
     "${newish_runs[@]}" /lustre/seqdata >> "$LOG_DIR"/rsync.log
 
 # 3c - Find any directory on /lustre where the RTAComplete.txt file is missing and do a full RSYNC
