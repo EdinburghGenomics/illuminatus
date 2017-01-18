@@ -22,8 +22,8 @@ MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 trap 'echo "=== `date`. Finished run; PID=$$ ===" >> "$MAINLOG"' EXIT
 
 # 1) Refuse to run on a machine other than headnode1
-if [[ "${NO_HOST_CHECK:-0}" = 1 && "${HOSTNAME%%.*}" != headnode1 ]] ; then
-    echo "This script should only be run on headnode1"
+if [[ "${NO_HOST_CHECK:-0}" = 1 && "${HOSTNAME%%.*}" != headnode1 && "${HOSTNAME%%.*}" != gseg-login0 ]] ; then
+    echo "This script should only be run on headnode1 or gseg-login0"
     exit 1
 fi
 
@@ -33,7 +33,7 @@ if [[ $(readlink -f "$0") != "$0" ]] ; then
     exit 1
 fi
 
-# 3) Ensure I the directory is there for the main log file.
+# 3) Ensure that the directory is there for the main log file.
 mkdir -p `dirname "$MAINLOG"`
 
 # 4) We're good to go!
