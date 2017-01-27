@@ -68,7 +68,7 @@ if flock -x -n $FLOCK_ON ; then
     # 2c) Rsync just the bare bones of these
     rsync -av --exclude='Data/*' --exclude='Images/*' --exclude='Thumbnail_Images/*' --exclude='Logs/*' \
         --exclude=RTAComplete.txt \
-        "${newish_runs[@]}" /lustre/seqdata >> "$LOG_DIR"/rsync.log
+        "${newish_runs[@]}" /lustre/seqdata >> "$LOG_DIR"/rsync.log 2>&1
 
     # 2d) Find any directory on /lustre where the RTAComplete.txt file is missing and do a full RSYNC
     #     if there is a corresponding RTAComplete.txt on /ifs.
@@ -78,7 +78,7 @@ if flock -x -n $FLOCK_ON ; then
             if [ -e "$src_run/RTAComplete.txt" ] ; then
                 #Now bring the whole run across. I considered explicitly copying RTAComplete.txt right at the end but
                 #it seems like overkill.
-                rsync -av "$src_run" /lustre/seqdata >> "$LOG_DIR"/rsync.log
+                rsync -av "$src_run" /lustre/seqdata >> "$LOG_DIR"/rsync.log 2>&1
             fi
         fi
     done
