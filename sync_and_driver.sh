@@ -86,7 +86,7 @@ if flock -x -n $FLOCK_ON ; then
     #echo "Leaving exclusive section, PID=$$"
     # Return to shared lock
     flock -s $FLOCK_ON
-else
+#else
     #echo "Failed to gain exclusive lock, PID=$$"
 fi
 
