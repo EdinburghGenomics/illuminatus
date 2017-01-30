@@ -1,17 +1,17 @@
 '''
 Created on 30 Apr 2013
+Updated Jan 2017
 
-@author: tcezard
+@author: tcezard, tbooth2, mberinsk
 '''
-import os
-import logging
-import re
+import os, re
+import configparser
 
 import rt
 from rt import AuthorizationError, InvalidUse
 
 
-# Servers
+""" All this gubbins now lives in the .ini file.
 RT_TEST_SERVER = "http://rt-test.genepool.private"
 RT_SERVER = "http://rt.genepool.private"
 
@@ -35,69 +35,98 @@ DELIVERY_CC = ""
 
 # Default owners
 PROJECT_OWNER = "pipeline"
-
+"""
 
 
 class RT_manager():
-    def __init__(self, test=False):
-        self.tracker = self._get_RT_connection(test)
+    def __init__(self, config_name):
+        """Communication with RT is managed via the RT module.
+           This wrapper picks up connection params from an .ini file,
+           which must exist before you can even instatiate the object.
 
-    def _get_RT_server(self, test=False):
-        """specify the server name"""
-        if test:
-            return RT_TEST_SERVER
-        else:
-            return RT_SERVER
+           To actually connect, either call connect() explicitly or say:
+             with RT_manager('test-rt') as rt_conn:
+                ...
+           to connect implicitly.
+        """
 
-
-    def _get_username_and_password(self):
-        """Catch the username and password to be used to login from a file in .rt_pass"""
-        file_name = os.path.join(os.path.expanduser('~'), '.rt_pass')
-        if os.path.exists(file_name):
-            with open(file_name) as open_file:
-                data = open_file.read()
-            if data:
-                username, password = data.strip().split()
-                return username, password
-            else:
-                AuthorizationError('file %s did not contain RT authentication' % file_name)
-        else:
-            raise AuthorizationError('file %s containing RT authentication was not found' % file_name)
+        self._config = self._get_config_from_ini(config_name)
 
 
-    def _get_RT_connection(self, test=False):
-        server_path = self._get_RT_server(test)
-        username, password = self._get_username_and_password()
-        path = os.path.join(server_path, 'REST', '1.0')
-        tracker = rt.Rt(path, username, password, default_queue=DEFAULT_QUEUE)
-        tracker.login()
-        return tracker
+    def connect(self):
+
+        self.server_path = self._config['server']
+        self.username, self.password = self._config['user'], self._config['pass']
+        self.default_queue = self._config['default_queue']
+
+        self.tracker = rt.Rt( '/'.join([self.server_path, 'REST', '1.0']),
+                              self.username,
+                              self.password,
+                              default_queue=self.default_queue)
+        self.tracker.login()
+
+        return self
+
+    #Allow us to use this in a 'with' clause.
+    def __enter__(self):
+        return self.connect()
+    def __exit__(self, *exc):
+        #Can you logout of RT? Do you want to?
+        pass
+
+    def _get_config_from_ini(self, section_name):
+
+        #Either read the confif pointed to by RT_SETTINGS or else the default.
+        #Don't attempt to read both, even though ConfigParser supports it.
+        file_name = os.environ.get('RT_SETTINGS')
+        file_name = file_name or os.path.join(os.path.expanduser('~'), '.rt_settings')
+
+        cp = configparser.ConfigParser()
+        if not cp.read(file_name):
+            raise AuthorizationError('unable to read configuration file %s' % file_name)
+
+        #A little validation
+        if section_name not in cp:
+            raise AuthorizationError('file %s contains no configuration section %s',
+                                           file_name,                           section_name)
+
+        conf_section = cp[section_name]
+
+        #A little more validation
+        if not all([conf_section.get(x) for x in 'server user pass default_queue'.split()]):
+            raise AuthorizationError('file %s did not contain all settings needed for RT authentication' %
+                                           file_name)
+
+        return conf_section
+
 
     """
     Added for illuminatus
     """
-    def find_or_create_run_ticket(self, run_id, subject ):
+    def find_or_create_run_ticket(self, run_id, subject):
         """Create a ticket for run only if it does not exist already"""
+        c = self._config
         ticket_id = self.search_run_ticket(run_id)
         if not ticket_id or int(ticket_id) < 1:
-            text = ""
-            kwargs = {"Subject": subject }
-            kwargs["Queue"] = RUN_QUEUE
-            kwargs["Requestor"] = RUN_REQUESTOR
-            kwargs["Cc"] = RUN_CC
-            kwargs["Text"] = text
-            ticket_id = self.tracker.create_ticket(**kwargs)
+            ticket_id = self.tracker.create_ticket(
+                Subject   = subject,
+                Queue     = c['run_queue'],
+                Requestor = c['requestor'],
+                Cc        = c.get('run_cc'),
+                Text      = "" )
         return ticket_id
 
     def search_run_ticket(self, run_id):
-        tickets = self.tracker.search(Queue=RUN_QUEUE)
-        valid_ticket = []
-        for ticket in tickets:
-            if run_id in ticket.get('Subject'):
-                valid_ticket.append(ticket)
-        if valid_ticket and len(valid_ticket) == 1:
-            return valid_ticket[0].get('id').strip('ticket/')
-        elif not valid_ticket:
+        """Search for a ticket referencing this run, and return the ticket number,
+           as an integer, or return None if there is no such ticket.
+        """
+        c = self._config
+        tickets = self.tracker.search(Queue=c['run_queue'])
+        valid_ticket = [ t for t in tickets if run_id in t.get('Subject', '') ]
+
+        if len(valid_ticket) == 1:
+            return int(valid_ticket[0].get('id').strip('ticket/'))
+        elif len(valid_ticket) == 0:
             return None
         else:
             raise InvalidUse("More than one open ticket for run %s" % run_id)
@@ -116,6 +145,10 @@ class RT_manager():
             pass # if the status is the same getting this exception
 
     def change_ticket_subject(self, ticket_id, subject):
+        """You can reply to a ticket with a one-off subject, or you can edit the
+           subject of the whole ticket. This does the latter. Think carefully about
+           which you need.
+        """
         kwargs = {"Subject": "%s " % (subject)}
         try:
             return self.tracker.edit_ticket(ticket_id, **kwargs)
