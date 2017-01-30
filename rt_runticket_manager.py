@@ -2,8 +2,7 @@
 import sys
 from argparse import ArgumentParser
 
-from illuminatus.rt_utils_runticket import Rt_manager
-
+from illuminatus.rt_utils import RT_manager
 
 
 def parse_args():
@@ -11,44 +10,39 @@ def parse_args():
     You can reply, comment, open, stall, resolve tickets.
     """
     argparser = ArgumentParser(description=description)
-    argparser.add_argument("-r", "--run_id", dest="run_id", type=str,
+    argparser.add_argument("-r", "--run_id", dest="run_id", required=True,
                             help="The run id of the ticket.")
     argparser.add_argument("--reply", dest="reply_message",
                             help="Set reply message for the ticket")
     argparser.add_argument("--comment", dest="comment_message",
                             help="Set comment message for the ticket")
-    argparser.add_argument("--subject=", dest="subject", default="",
+    argparser.add_argument("--subject", dest="subject", default="",
                             help="Set ticket subject (postfix)")
     argparser.add_argument("--status", dest="ticket_status",
                             help="Set status of the ticket")
     argparser.add_argument("--test", dest="test", action="store_true", default=True,
                             help="Set the script to create ticket on rt-test")
-    args = argparser.parse_args()
 
-    ## verify args ##
-    if not args.run_id:
-        print ( "run_id is missing" )
-        sys.exit(1)
-    return args
+    return argparser.parse_args()
 
-def main():
-    args = parse_args()
+def main(args):
 
-    run_id = args.run_id # "161004_K00166_0134_AHFJJ5BBXX"
-    reply_message = args.reply_message 
-    comment_message = args.comment_message 
-    subject_postfix = args.subject 
-    ticket_status = args.ticket_status 
+    run_id = args.run_id # eg. "161004_K00166_0134_AHFJJ5BBXX"
+    reply_message = args.reply_message
+    comment_message = args.comment_message
+    subject_postfix = args.subject
+    ticket_status = args.ticket_status
 
-    rt_manager = Rt_manager( test = args.test )
+    rt_manager = RT_manager( test = args.test )
     subject = "[Run %s] %s" % (run_id , subject_postfix)
 
     # get a ticket id for the run
     ticket_id = rt_manager.find_or_create_run_ticket( run_id , subject )
-    print("ticket_id is " + str(ticket_id))
+    print("ticket_id is {}".format(ticket_id))
 
-    # change Subject of ticket 
-    if subject_postfix:
+    # change Subject of ticket
+    # ??? is this the subject of the ticket or the subject of this reply?
+    if args.subject:
         rt_manager.change_ticket_subject ( ticket_id , subject )
         
     # reply to the ticket
@@ -64,4 +58,4 @@ def main():
         rt_manager.change_ticket_status( ticket_id , ticket_status )
 
 if __name__ == "__main__":
-    main()
+    main(parse_args())

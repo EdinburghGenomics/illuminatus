@@ -11,10 +11,6 @@ import rt
 from rt import AuthorizationError, InvalidUse
 
 
-
-
-
-
 # Servers
 RT_TEST_SERVER = "http://rt-test.genepool.private"
 RT_SERVER = "http://rt.genepool.private"
@@ -42,7 +38,7 @@ PROJECT_OWNER = "pipeline"
 
 
 
-class Rt_manager():
+class RT_manager():
     def __init__(self, test=False):
         self.tracker = self._get_RT_connection(test)
 
