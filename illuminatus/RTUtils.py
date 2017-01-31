@@ -49,9 +49,10 @@ class RT_manager():
                 ...
            to connect implicitly.
         """
-
+        self._config_name = config_name
         self._config = self._get_config_from_ini(config_name)
 
+        self.tracker = None
 
     def connect(self):
 
@@ -63,7 +64,9 @@ class RT_manager():
                               self.username,
                               self.password,
                               default_queue=self.default_queue)
-        self.tracker.login()
+
+        if not self.tracker.login():
+            raise AuthorizationError('login() failed on {_config_name} ({tracker.url})'.format(self))
 
         return self
 
@@ -83,19 +86,17 @@ class RT_manager():
 
         cp = configparser.ConfigParser()
         if not cp.read(file_name):
-            raise AuthorizationError('unable to read configuration file %s' % file_name)
+            raise AuthorizationError('unable to read configuration file {file_name}'.format(**locals()))
 
         #A little validation
         if section_name not in cp:
-            raise AuthorizationError('file %s contains no configuration section %s',
-                                           file_name,                           section_name)
+            raise AuthorizationError('file {file_name} contains no configuration section {section_name}'.format(**locals()))
 
         conf_section = cp[section_name]
 
         #A little more validation
         if not all([conf_section.get(x) for x in 'server user pass default_queue'.split()]):
-            raise AuthorizationError('file %s did not contain all settings needed for RT authentication' %
-                                           file_name)
+            raise AuthorizationError('file {file_name} did not contain all settings needed for RT authentication'.format(**locals()))
 
         return conf_section
 
@@ -103,8 +104,11 @@ class RT_manager():
     """
     Added for illuminatus
     """
-    def find_or_create_run_ticket(self, run_id, subject):
-        """Create a ticket for run only if it does not exist already"""
+    def find_or_create_run_ticket(self, run_id, subject, text=None):
+        """Create a ticket for run only if it does not exist already.
+           If text is specified it will be used as the request blurb,
+           or for existing tickets it will be added as a reply.
+        """
         c = self._config
         ticket_id = self.search_run_ticket(run_id)
         if not ticket_id or int(ticket_id) < 1:
@@ -113,7 +117,10 @@ class RT_manager():
                 Queue     = c['run_queue'],
                 Requestor = c['requestor'],
                 Cc        = c.get('run_cc'),
-                Text      = "" )
+                Text      = text or "" )
+        elif text is not None:
+            self.reply_to_ticket(ticket_id, text)
+
         return ticket_id
 
     def search_run_ticket(self, run_id):
@@ -121,24 +128,25 @@ class RT_manager():
            as an integer, or return None if there is no such ticket.
         """
         c = self._config
-        tickets = self.tracker.search(Queue=c['run_queue'])
-        valid_ticket = [ t for t in tickets if run_id in t.get('Subject', '') ]
+        tickets = self.tracker.search( Queue = c['run_queue'],
+                                       Subject__like = '%{}%'.format(run_id))
 
-        if len(valid_ticket) == 1:
-            return int(valid_ticket[0].get('id').strip('ticket/'))
-        elif len(valid_ticket) == 0:
-            return None
-        else:
-            raise InvalidUse("More than one open ticket for run %s" % run_id)
+        if len(tickets) == 1:
+            return int(tickets[0].get('id').strip('ticket/'))
+        elif len(tickets) > 1:
+            raise InvalidUse("More than one open ticket for run {}".format(run_id))
 
-    def reply_to_ticket(self, ticket_id, message):
-        return self.tracker.reply(ticket_id, text=message )
+        #Failing that...
+        return None
 
-    def comment_on_ticket(self, ticket_id, message):
-        return self.tracker.comment(ticket_id, text=message)
+    def reply_to_ticket(self, ticket_id, message, **kwargs):
+        return self.tracker.reply(ticket_id, text=message, **kwargs)
+
+    def comment_on_ticket(self, ticket_id, message, **kwargs):
+        return self.tracker.comment(ticket_id, text=message, **kwargs)
 
     def change_ticket_status(self, ticket_id, status):
-        kwargs = {"Status": status}
+        kwargs = dict( Status = status )
         try:
             return self.tracker.edit_ticket(ticket_id, **kwargs)
         except IndexError:
@@ -148,8 +156,10 @@ class RT_manager():
         """You can reply to a ticket with a one-off subject, or you can edit the
            subject of the whole ticket. This does the latter. Think carefully about
            which you need.
+           FIXME - fix this comment.
+           FIXME2 - why the extra space??
         """
-        kwargs = {"Subject": "%s " % (subject)}
+        kwargs = dict( Subject = "{} ".format(subject) )
         try:
             return self.tracker.edit_ticket(ticket_id, **kwargs)
         except IndexError:

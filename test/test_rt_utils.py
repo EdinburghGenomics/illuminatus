@@ -72,12 +72,8 @@ class TestRTUtils(unittest.TestCase):
         rtman.tracker.search.return_value = [ dict( Subject = "Run 9999_8888 foo",
                                                     id = "ticket/1234" ) ]
         res = rtman.search_run_ticket("9999_8888")
-        rtman.tracker.search.assert_called_with(Queue = "bfx-run")
+        rtman.tracker.search.assert_called_with(Queue = "bfx-run", Subject__like='%9999_8888%')
         self.assertEqual(res, 1234)
-
-        #And for a run that isn't in the list
-        res = rtman.search_run_ticket("0000_0000")
-        self.assertEqual(res, None)
 
     def test_find_or_create_run_ticket(self):
 

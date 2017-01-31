@@ -1,0 +1,44 @@
+The Illuminatus pipeline has to manage communication regarding the progres of the run.
+Aside from logging, it does this by sending messages via RT. All messages will be sent
+via the rt_runticket_manager.py script.
+
+See the "Progress reporter" and "Error reporter" sections on
+https://genowiki.is.ed.ac.uk/pages/viewpage.action?pageId=319660973
+
+Subject: Run <runid>
+Content:
+  Ticket for tracking execution of the Illumina pipeline for run 170120_K00166_0169_AHH2F2BBXX.
+
+  QC reports for this run will appear at:
+
+    <qc_page>
+Triggers-on: new->*
+
+
+Subject: Run <runid>. Run page create on the Wiki.
+Content:
+  This had the Samplesheet report, which includes info from the project page on the wiki,
+  specifically the actual project name in the link to the project page.
+  Need to see if we can make an equivalent link to the LIMS.
+
+  Also needs a link to the sample sheet, which may or may not be in the LIMS. I think we need to
+  provide it for inclusion in the MultiQC report.
+Triggers-on: Sample sheet available.
+
+** Should probably do this on ticket creation. We also want a mini report when lanes are
+  re-demultiplexed.
+
+What try with ./rt_runticket_manager.py?
+
+1) Retrieve ticket #2020 for run 161004_K00166_0134_AAAAAAAAAA
+
+DONE
+
+2) Add a comment to that ticket, and see if I get an email.
+
+DONE. RT test does not seem to be routing mail, but that's OK.
+
+3) Add a reply, with/without a subject.
+
+Hmmm. Seems one-time reply is not supported by the API, or at least not by the wrapper.
+Need to probe this. Checking out the Rt code from GIT on GSEG...
