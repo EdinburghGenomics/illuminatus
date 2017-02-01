@@ -13,9 +13,11 @@ def parse_args():
     argparser.add_argument("-r", "--run_id", required=True,
                             help="The run id of the ticket.")
     argparser.add_argument("--reply",
-                            help="Post reply message to the ticket")
+                            help="Post reply message to the ticket. " +
+                                 "Use @foo.txt to read the message from file foo.txt.")
     argparser.add_argument("--comment",
-                            help="Post comment message to the ticket")
+                            help="Post comment message to the ticket" +
+                                 "Use @foo.txt to read the message from file foo.txt.")
     argparser.add_argument("--subject",
                             help="Change the ticket subject (postfix)")
     argparser.add_argument("--status",
@@ -25,13 +27,30 @@ def parse_args():
 
     return argparser.parse_args()
 
+def resolve_msg(in_val):
+    """Replies and comments can be a literal string or "@./file" or "@-"
+       This function resolves them.
+    """
+    #Deal with None/""
+    if not in_val:
+        return None
+
+    if in_val == "@-":
+        return sys.stdin.read()
+    elif in_val.startswith("@"):
+        with open(in_val[1:]) as in_file:
+            return in_file.read()
+    else:
+        return in_val
+
 def main(args):
 
     run_id = args.run_id # eg. "161004_K00166_0134_AHFJJ5BBXX"
-    reply_message = args.reply
-    comment_message = args.comment
     subject_postfix = args.subject
     ticket_status = args.status
+
+    reply_message = resolve_msg(args.reply)
+    comment_message = resolve_msg(args.comment)
 
     #Determine subject for new ticket or else change of subject.
     if subject_postfix:
