@@ -17,10 +17,8 @@ def parse_args():
     argparser.add_argument("--comment",
                             help="Post comment message to the ticket")
     argparser.add_argument("--subject",
-                            help="Use this subject for your comment or reply")
-    argparser.add_argument("--change_subject",
                             help="Change the ticket subject (postfix)")
-    argparser.add_argument("--change_status",
+    argparser.add_argument("--status",
                             help="Change status of the ticket")
     argparser.add_argument("--test", action="store_true",
                             help="Set the script to connect to test-rt (as defined in rt_settings.ini)")
@@ -32,9 +30,8 @@ def main(args):
     run_id = args.run_id # eg. "161004_K00166_0134_AHFJJ5BBXX"
     reply_message = args.reply
     comment_message = args.comment
-    reply_subject = args.subject
-    subject_postfix = args.change_subject
-    ticket_status = args.change_status
+    subject_postfix = args.subject
+    ticket_status = args.status
 
     #Determine subject for new ticket or else change of subject.
     if subject_postfix:
@@ -42,29 +39,26 @@ def main(args):
     else:
         subject = "Run %s" % (run_id)
 
-    #Determine subject for just this reply
-    extra_args = dict()
-    if reply_subject:
-        extra_args['Subject'] = reply_subject
-
     with RT_manager( 'test-rt' if args.test else 'production-rt' ) as rtm:
 
-        # get a ticket id for the run
-        ticket_id = rtm.find_or_create_run_ticket( run_id , subject )
-        print("ticket_id is {}".format(ticket_id))
+        # if the ticket does not exist, create it with the supplied message
+        ticket_id, created = rtm.find_or_create_run_ticket( run_id , subject, reply_message )
 
-        # permanently change Subject of ticket
+        print("{} ticket_id is {}".format('New' if created else 'Existing', ticket_id))
+
+        # change Subject of ticket
         # Note that it is valid to pass --subject "" to clear the postfix
-        if subject_postfix is not None:
+        if not ( created or subject_postfix is None ):
             rtm.change_ticket_subject( ticket_id , subject )
 
-        # reply to the ticket
-        if reply_message:
-            rtm.reply_to_ticket( ticket_id , reply_message, **extra_args )
+        # reply to the ticket.
+        # Not if the ticket was created, as the message will already be in the blurb.
+        if reply_message and not created:
+            rtm.reply_to_ticket( ticket_id , reply_message )
 
         # comment on the ticket
         if comment_message:
-            rtm.comment_on_ticket( ticket_id , comment_message, **extra_args )
+            rtm.comment_on_ticket( ticket_id , comment_message )
 
         # change status of a ticket
         if ticket_status:

@@ -42,3 +42,8 @@ DONE. RT test does not seem to be routing mail, but that's OK.
 
 Hmmm. Seems one-time reply is not supported by the API, or at least not by the wrapper.
 Need to probe this. Checking out the Rt code from GIT on GSEG...
+
+Confirmed the REST API fundamentally does not support a one-time reply. Grrr.
+So, renaming the ticket really is the way to go.
+
+4) Make a new ticket with a reply.

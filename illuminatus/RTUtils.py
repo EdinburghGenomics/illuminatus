@@ -105,23 +105,24 @@ class RT_manager():
     Added for illuminatus
     """
     def find_or_create_run_ticket(self, run_id, subject, text=None):
-        """Create a ticket for run only if it does not exist already.
-           If text is specified it will be used as the request blurb,
-           or for existing tickets it will be added as a reply.
+        """Create a ticket for run if it does not exist already.
+           If text is specified it will be used as the request blurb for
+           the new ticket but if the ticket already existed it will be
+           ignored.
+           Returns a pair (ticket_id, created?).
         """
         c = self._config
         ticket_id = self.search_run_ticket(run_id)
-        if not ticket_id or int(ticket_id) < 1:
-            ticket_id = self.tracker.create_ticket(
+
+        if ticket_id:
+            return ticket_id, False
+
+        return int(self.tracker.create_ticket(
                 Subject   = subject,
                 Queue     = c['run_queue'],
                 Requestor = c['requestor'],
                 Cc        = c.get('run_cc'),
-                Text      = text or "" )
-        elif text is not None:
-            self.reply_to_ticket(ticket_id, text)
-
-        return ticket_id
+                Text      = text or ""      )), True
 
     def search_run_ticket(self, run_id):
         """Search for a ticket referencing this run, and return the ticket number,
@@ -132,18 +133,32 @@ class RT_manager():
                                        Subject__like = '%{}%'.format(run_id))
 
         if len(tickets) == 1:
-            return int(tickets[0].get('id').strip('ticket/'))
+            tid = int(tickets[0].get('id').strip('ticket/'))
+            return tid if tid > 0 else None
         elif len(tickets) > 1:
             raise InvalidUse("More than one open ticket for run {}".format(run_id))
 
         #Failing that...
         return None
 
-    def reply_to_ticket(self, ticket_id, message, **kwargs):
-        return self.tracker.reply(ticket_id, text=message, **kwargs)
+    def reply_to_ticket(self, ticket_id, message, subject=None):
+        """Sends a reply to the ticket.
+        """
+        if subject:
+            #The rest API does not support supplying a subject, but I can maybe
+            #hack around this? No, not easily.
+            raise NotImplementedError("RT REST API does not support setting subjects on replies.")
 
-    def comment_on_ticket(self, ticket_id, message, **kwargs):
-        return self.tracker.comment(ticket_id, text=message, **kwargs)
+        return self.tracker.reply(ticket_id, text=message)
+
+    def comment_on_ticket(self, ticket_id, message, subject=None):
+
+        if subject:
+            #The rest API does not support supplying a subject, but I can maybe
+            #hack around this? No, not easily.
+            raise NotImplementedError("RT REST API does not support setting subjects on replies.")
+
+        return self.tracker.comment(ticket_id, text=message)
 
     def change_ticket_status(self, ticket_id, status):
         kwargs = dict( Status = status )
@@ -153,12 +168,11 @@ class RT_manager():
             pass # if the status is the same getting this exception
 
     def change_ticket_subject(self, ticket_id, subject):
-        """You can reply to a ticket with a one-off subject, or you can edit the
-           subject of the whole ticket. This does the latter. Think carefully about
-           which you need.
-           FIXME - fix this comment.
-           FIXME2 - why the extra space??
+        """You can reply to a ticket with a one-off subject, but not via the
+           REST interface, which fundamentally does not support this.
+           This call permanently changes the ticket subject.
         """
+        #why the extra space?? I'm not sure but it looks to have been added deliberately.
         kwargs = dict( Subject = "{} ".format(subject) )
         try:
             return self.tracker.edit_ticket(ticket_id, **kwargs)
