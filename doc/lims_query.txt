@@ -1,0 +1,13 @@
+The lims_query.py script is not part of the design. For now I'm using it to
+work out how to get various bits of info from the LIMS. Probably this will
+end up being split into a utility library and a front-end at some point,
+and combined with stuff that Michael is working on.
+
+This raises the question of how do we deploy Illuminatus. At present you just
+checkout from GIT and run the scripts. You satisfy dependencies by installing
+them into you local Python, which on our machines is the shared VEnv in
+/lustre/software/python.
+
+If I make a basic setup.py, then I can create a clean VEnv in this directory,
+pip-install the dependencies into the VEnv, and then activate this to tinker
+with. Let's have a setup_venv.sh for now.

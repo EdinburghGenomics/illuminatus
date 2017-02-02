@@ -9,3 +9,4 @@ __pycache__
 tmp/
 .snakemake
 sge_output
+_py*_venv/

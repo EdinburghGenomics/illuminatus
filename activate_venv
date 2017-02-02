@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Bootstrap a new VEnv in ./_py3_venv suitable for running Illuminatus.
+# This should probably be made itno a setup.py with proper deployment etc.
+if [[ "$0" == "$BASH_SOURCE" ]] ; then
+    echo "You need to source this file, not run it."
+    exit 1
+fi
+
+if [ -e ./_py3_venv/bin/activate ] ; then
+    source ./_py3_venv/bin/activate
+else
+    echo "Bootstrapping new VEnv from `which python3`"
+    python3 -mvenv ./_py3_venv
+    source ./_py3_venv/bin/activate
+
+    pip3 install --upgrade pip
+    pip3 install Rt
+    pip3 install genologics
+fi
