@@ -35,6 +35,7 @@ def main(args):
     except FileNotFoundError as e:
         print(e)
 
+# FIXME - use the real version from illuminatus.LIMSQuery instead.
 def project_real_name(proj_id_list, name_list=None):
     """Resolves a list of project IDs to a name and URL
     """
@@ -42,12 +43,12 @@ def project_real_name(proj_id_list, name_list=None):
     if name_list:
         #Resolve without going to the LIMS
         for p in proj_id_list:
-            name_match = [ n for n in name_map if n.startswith(proj_id) ]
+            name_match = [ n for n in name_list if n.startswith(p) ]
             if len(name_match) == 1:
                 res[p] = dict( name = name_match[0],
                                url  = "http://foo.example.com/" + name_match[0] )
             else:
-                res[p] = dict( name = proj_id + "_UNKNOWN" )
+                res[p] = dict( name = p + "_UNKNOWN" )
     else:
         #TODO
         lookup_in_lims(proj_id_list, blah)
