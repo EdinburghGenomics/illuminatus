@@ -1,7 +1,13 @@
 #!/bin/bash
 
 # Bootstrap a new VEnv in ./_py3_venv suitable for running Illuminatus.
-# This should probably be made itno a setup.py with proper deployment etc.
+# This should probably be made into a setup.py with proper deployment etc.
+
+# After running this once, I can do, eg.:
+# ( cd ../genologics && python3 ./setup.py develop )
+# and now I can tinker with the genologics code from my GIT checkout
+# without impacting the system shared Python.
+
 if [[ "$0" == "$BASH_SOURCE" ]] ; then
     echo "You need to source this file, not run it."
     exit 1
@@ -17,4 +23,5 @@ else
     pip3 install --upgrade pip
     pip3 install Rt
     pip3 install genologics
+    pip3 install psycopg2
 fi
