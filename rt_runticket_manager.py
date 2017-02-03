@@ -58,7 +58,8 @@ def main(args):
     else:
         subject = "Run %s" % (run_id)
 
-    with RT_manager( 'test-rt' if args.test else 'production-rt' ) as rtm:
+    with RT_manager( 'test-rt' if args.test else
+                     os.environ.get('RT_SYSTEM', 'production-rt') ) as rtm:
 
         # if the ticket does not exist, create it with the supplied message
         ticket_id, created = rtm.find_or_create_run_ticket( run_id , subject, reply_message )
