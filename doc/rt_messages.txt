@@ -28,7 +28,8 @@ Triggers-on: Sample sheet available.
 ** Should probably do this on ticket creation. We also want a mini report when lanes are
   re-demultiplexed.
 
-What try with ./rt_runticket_manager.py?
+===
+What to try with ./rt_runticket_manager.py?
 
 1) Retrieve ticket #2020 for run 161004_K00166_0134_AAAAAAAAAA
 
@@ -44,6 +45,43 @@ Hmmm. Seems one-time reply is not supported by the API, or at least not by the w
 Need to probe this. Checking out the Rt code from GIT on GSEG...
 
 Confirmed the REST API fundamentally does not support a one-time reply. Grrr.
-So, renaming the ticket really is the way to go.
+So, renaming the ticket really is the way to go. Let's say this is a feature!
 
-4) Make a new ticket with a reply.
+4) Make a new ticket with a reply, so the reply becomes the request.
+
+Done
+
+5) Add a reply that comes from a file
+
+Done
+
+OK, I've now started incorporating this into driver.sh. As well as the success reporting we need to
+think about the error reporting.
+
+1) Can/should we flag up errors that are not specific to a given run. If so, how? Where? Can we send e-mail
+   from GSEG yet??
+2) Errors should be reported to the run ticket with at least:
+    Component/stage that failed, if only 'Illuminatus'
+    Where to look for the log, either the MAINLOG or the per-run log
+
+    TODO - think about where errors might occur and how to trap them neatly.
+    If a run hits an error it will stay in status IN_PIPELINE even though the pipeline has dropped it.
+    How to deal with this?
+
+    a) Have an error flag file that pushes the run into a new PIPELINE_ERROR status that we can easily spot
+    But if the pipeline is killed it maybe won't write the flag?
+    Could flock a file and check the lock still holds? - Lustre supports local flocking...
+
+    driver spots run needing action
+    driver writes and locks, say, the main log file
+    RunInfo.py knows to examine lock on the file, and if it finds a run IN_PIPELINE with the file
+    unlocked it reports it as PIPELINE_ERROR.
+    Checking a file lock in Python is easy, if badly documented:
+      fcntl.flock(open('/tmp/locktest', 'r'), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    And then catch the IOError. Python should drop the lock immediately as the file handle goes
+    out of scope, but you might want to make completely sure:
+    with open('/tmp/locktest', 'r') as lfh: fcntl.flock(lfh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+3) We should limit the number of errors reported. Definitely, jobs launched on the cluster
+   should not report their own errors. The caller should deal with problems by waiting on the job
+   to complete. My sbatch_wait.sh might help here when dealign with SLURM?

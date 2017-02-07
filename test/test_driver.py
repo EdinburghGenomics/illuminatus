@@ -15,11 +15,12 @@ from glob import glob
 """
 
 sys.path.insert(0,'.')
-VERBOSE = False
+VERBOSE = int(os.environ.get('VERBOSE', '0'))
 DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')
 
 PROGS_TO_MOCK = """
     BCL2FASTQPreprocessor.py BCL2FASTQPostprocessor.py BCL2FASTQCleanup.py BCL2FASTQRunner.sh
+    summarize_samplesheet.py rt_runticket_manager.py
 """.split()
 
 class TestDriver(unittest.TestCase):
@@ -64,6 +65,7 @@ class TestDriver(unittest.TestCase):
         retval = self.bm.runscript(DRIVER, set_path=False, env=self.environment)
 
         #Where a file is missing it's always useful to see the error.
+        #(status 127 is the standard shell return code for a command not found)
         if retval == 127 or VERBOSE:
             print("STDERR:")
             print(self.bm.last_stderr)
@@ -101,19 +103,25 @@ class TestDriver(unittest.TestCase):
 
     def test_nop( self ):
         """With no data, nothing should happen. At all.
+           The script will exit with status 1 as the glob pattern match will fail.
+           Currently there is no plan to e-mail on this type of error.
         """
-        self.bm_rundriver()
+        self.bm_rundriver(expected_retval=1)
 
         self.assertEqual(self.bm.last_calls, self.bm.empty_calls())
 
-    def test_new( self ):
+    def test_new(self, test_data=None):
         """A completely new run.  This should gain a ./pipeline folder
            which puts it into status reads_incomplete.
-        """
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+           Also the rt_runticket_manager.py and summarize_samplesheet.py programs should
+           be called but nothing else.
 
-        #We need to remove the flag file to make it look like the run is still going.
-        os.system("rm " + test_data + "/RTAComplete.txt")
+        """
+        if not test_data:
+            test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+
+            #We need to remove the flag file to make it look like the run is still going.
+            os.system("rm " + test_data + "/RTAComplete.txt")
 
         self.bm_rundriver()
 
@@ -124,8 +132,13 @@ class TestDriver(unittest.TestCase):
         self.assertTrue(os.path.isdir(
                                 os.path.join(test_data, 'pipeline') ))
 
+        #Sample sheet should be summarized
+        expected_calls = self.bm.empty_calls()
+        expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --reply @pipeline/sample_summary.txt']
+        expected_calls['summarize_samplesheet.py'] = ['']
+
         #But nothing else should happen
-        self.assertEqual(self.bm.last_calls, self.bm.empty_calls())
+        self.assertEqual(self.bm.last_calls, expected_calls)
 
     def test_reads_finished(self):
         """A run ready to go through the pipeline.
@@ -142,7 +155,7 @@ class TestDriver(unittest.TestCase):
         self.bm_rundriver()
 
         #Check samplesheet link.
-        #FIXME - or should the samplehseet be re-fetched from the LIMS?
+        #In real operation the file will be re-fetched from the LIMS.
         self.assertEqual( os.readlink(os.path.join(test_data, "SampleSheet.csv")),
                           "SampleSheet.csv.0" )
 
@@ -154,33 +167,24 @@ class TestDriver(unittest.TestCase):
         self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline', 'lane?.started')) ) )
 
         #Check invoking of preprocessor
-        self.assertEqual( self.bm.last_calls['BCL2FASTQPreprocessor.py'],
-                          [ test_data + " " + os.path.join(fastqdir, "demultiplexing") + "/" ]
+        self.assertEqual( self.bm.last_calls['BCL2FASTQPreprocessor.py'][0],
+                          test_data + " " + os.path.join(fastqdir, "demultiplexing") + "/"
                         )
+        self.assertEqual( len(self.bm.last_calls['BCL2FASTQPreprocessor.py']), 1)
 
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READS_FINISHED")
 
     def test_new_and_finished(self):
         """A run which is complete which has no pipeline folder.
         """
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+        #At the moment, the run will be treated as new, and the summary SampleSheet will
+        #be dropped into the pipeline/ directory. Only on the next iteration will the
+        #pipeline actually be started.
 
-        #At the moment, the run will be treated as new, and only on the next iteration will the
-        #pipeline be started.  I'm not sude if this is the desired behaviour or not??
+        #Therefore this test is the same as for test_new, but without removing the
+        #RTAComplete file.
+        self.test_new(self.copy_run("160606_K00166_0102_BHF22YBBXX"))
 
-        self.bm_rundriver()
-
-        # Copied from test_new...
-
-        #Run should be seen
-        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "NEW")
-
-        #Pipeline folder should appear
-        self.assertTrue(os.path.isdir(
-                                os.path.join(test_data, 'pipeline') ))
-
-        #But nothing else should happen
-        self.assertEqual(self.bm.last_calls, self.bm.empty_calls())
 
     def test_in_pipeline(self):
 
@@ -204,7 +208,9 @@ class TestDriver(unittest.TestCase):
 
         self.bm_rundriver()
 
-        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "COMPLETE")
+        #I'm not sure if the driver should log anything for completed runs, but for now it
+        #logs a message containing 'status complete'
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "status complete")
 
     @unittest.expectedFailure
     def test_redo(self):

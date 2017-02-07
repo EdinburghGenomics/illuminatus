@@ -1,0 +1,54 @@
+We need to have a system that directly fetches the sample sheet from the LIMS.
+This is because if a sample sheet is re-generated after a run starts then we want to
+avoid manually copying it over.
+
+Also, right now we have to have two sample sheets - one for the old pipeline and one for
+the new. They are generated in parallel but the new one is hidden. Down the line we might
+still want to do this because the 2500 machine needs a special format of sample sheet,
+but presumably we can use the 'regular' format for bcl2fastq/illuminatus and thus avoid
+having to deal with multiple formats right through our pipeline. (Failing that we can maybe
+convert up-front).
+
+How to fetch the sample sheet:
+
+1) sftp from clarity.genepool.private
+
+Needs: firewall change to enable login from gseg
+       suitable shell account on the VM
+       SSH key sharing (password-less)
+
+Pros:  simple to code
+Cons:  key sharing can be fiddly
+       maybe security implications
+
+2) GET from http://clarity.genepool.private
+
+Needs: small CGI script on the server, eg.
+       http://clarity.genepool.private/cgi-bin/get_sample_sheet.cgi?fcid=AAABBBCCC
+       policy for who can access that endpoint (allow/deny)
+
+Pros:  simple to code, no password/key sharing
+Cons:  ad-hoc script to maintain
+       not sure if we can add random scripts to that Apache server
+
+3) Fetch via API
+
+Needs: code to walk the API
+       sample sheet to be registered in the API database
+
+Pros: does not introduce any extra system requirements
+Cons: complex to code (but we need to code against the API anyway)
+
+We may have to do 1 or 2 and then later 3. Let's look at 2 for now.
+
+... I'd not thought about
+
+4) Fetch via SMB/CIFS.
+
+We're already exporting the sample sheets this way so that the sequencers can see them.
+Simply use 'smbclient' to grab the files. Or else Stewart will mount the share directly
+on the login node so the whole thing reduces to a simple file copy operation.
+
+Note that smbclient is already on headnode1, can easily be added to gseg-login0.
+
+Stewart will sort this out this week.
