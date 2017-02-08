@@ -19,6 +19,8 @@ FETCH = os.path.abspath(os.path.dirname(__file__) + '/../samplesheet_fetch.sh')
 class TestSamplesheetFetch(unittest.TestCase):
 
     def setUp(self):
+        self.maxDiff = None
+
         #Always make a fresh temporary folder to be working in
         oldcwd = os.getcwd()
         temp_dir = mkdtemp()
@@ -28,18 +30,52 @@ class TestSamplesheetFetch(unittest.TestCase):
             os.chdir(oldcwd)
             rmtree(temp_dir)
 
-        self.addCleanup(cleanup)
+        if os.environ.get("KEEPTMP"):
+            print(temp_dir)
+        else:
+            self.addCleanup(cleanup)
 
         self.last_stdout = self.last_stderr = None
+
+        #The script will find sample sheets in here...
+        self.ss_dir = "fs_root/samplesheets_bcl2fastq_format"
+        with open('genologics.conf', 'x') as cfh:
+            print("FS_ROOT=" + temp_dir + "/fs_root", file=cfh)
+        os.makedirs(self.ss_dir)
+        os.environ['GENOLOGICSRC'] = temp_dir + '/genologics.conf'
+
+        #The flowcell ID will always be XXXX
+        os.environ['FLOWCELLID'] = 'XXXX'
 
     def tearDown(self):
         #Cleanup of temp_dir is handled by the callback hook above
         pass
 
     def test_replace_original(self):
-        """When this script sees the run folder for the first time.
+        """When this script sees the run folder for the first time,
+           and there is a replacement available.
         """
 
+        touch('SampleSheet.csv')
+        touch(self.ss_dir + '/foo_XXXX.csv')
+        touch(self.ss_dir + '/bar_XXXX.csv', 'this one')
+
+        self.run_fetch()
+
+        self.assertTrue(os.path.isfile('SampleSheet.csv.0'))
+        self.assertTrue(os.path.isfile('SampleSheet.csv.1'))
+        self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.1')
+
+        self.assertEqual(self.last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
+        self.assertEqual(self.last_stdout[2], "SampleSheet.csv is now linked to new SampleSheet.csv.1")
+
+        with open("SampleSheet.csv") as fh:
+            self.assertEqual(fh.read().rstrip(), 'this one')
+
+    def test_keep_original(self):
+        """When this script sees the run folder for the first time,
+           and there is no replacement available.
+        """
         touch('SampleSheet.csv')
 
         self.run_fetch()
@@ -48,6 +84,8 @@ class TestSamplesheetFetch(unittest.TestCase):
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
 
         self.assertEqual(self.last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
+        self.assertEqual(self.last_stdout[1][:36], "No candidate replacement samplesheet")
+
 
     def test_none_found(self):
         """This shouldn't happen in practise. May want to reconsider the behaviour
