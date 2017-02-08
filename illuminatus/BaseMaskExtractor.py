@@ -30,97 +30,52 @@ class BaseMaskExtractor:
 
         """
         lane = str(lane)
-        read1 = ""
-        read2 = ""
-        read3 = ""
-        read4 = ""
 
         # how many reads do we have on this run?
         number_of_reads = len(self.rip.read_and_length)
 
-        prefix  = ""
-        postfix = ""
 
-        if self.rip.read_and_indexed["1"] == "N":
-            prefix  = "Y"
-            postfix = "n"
-            cycles1 = int(self.rip.read_and_length["1"])
-            read1 = prefix + str( cycles1 - 1 ) + postfix
+        # different approach
+        base_mask = ""
+        indexed_read_counter = 0
+        delimiter=""
+        read_nr = 0
+        while (read_nr < number_of_reads):
+            read_nr = read_nr + 1
+            read_cycles = int( self.rip.read_and_length[ str(read_nr) ] ) # read cycles from the RunInfo.xml
 
+            #print ( self.lane_length_dict )
+            #print (lane)
+            #print (indexed_read_counter)
 
-        if self.rip.read_and_indexed["2"] == "N":
-            prefix  = "Y"
-            postfix = "n"
-            cycles2 = int(self.rip.read_and_length["2"])
-            read2 = prefix + str( cycles2 - 1 ) + postfix
-        elif self.rip.read_and_indexed["2"] == "Y":
-            prefix  = "I"
-            postfix = ""
-            cycles2 = int(self.rip.read_and_length["2"])
-            index_1_length = self.lane_length_dict[lane][0]
-            #if index_1_length == 0:
-            #    index_1_length = 6
-            if index_1_length == 0:
-                if number_of_reads > 2:
-                    postfix = postfix.rjust(cycles2, 'n')
-                    if number_of_reads > 3:
-                        postfix = "I" + str(cycles2)
-                    read2 = postfix
-                else:
-                    padding = ( cycles2 - 6 )
-                    postfix = postfix.rjust(padding, 'n')
-                    read2 = prefix + str( cycles2 - padding ) + postfix
-            elif ( cycles2 - index_1_length ) > 0:
-                padding = ( cycles2 - index_1_length )
-                postfix = postfix.rjust(padding, 'n')
-                read2 = prefix + str( cycles2 - padding ) + postfix
-            else:
-                read2 = prefix + str( cycles2 - 0 ) + postfix
-
-        if number_of_reads > 2:
-            if self.rip.read_and_indexed["3"] == "N":
-                prefix  = "Y"
-                postfix = "n"
-                cycles3 = int(self.rip.read_and_length["3"])
-                read3 = prefix + str( cycles3 - 1 ) + postfix
-            elif self.rip.read_and_indexed["3"] == "Y":
-                prefix  = "I"
-                postfix = ""
-                cycles3 = int(self.rip.read_and_length["3"])
-                index_2_length = self.lane_length_dict[lane][1]
-                #print index_1_length, index_2_length,cycles3,number_of_reads
-                if index_2_length == 0:
-                    if number_of_reads > 3:
-                        postfix = postfix.rjust(cycles3, 'n')
-                        if index_1_length == 0:
-                            postfix = "I" + str(cycles3)
-                        read3 = postfix
+            if self.rip.read_and_indexed[ str(read_nr) ] == "N":
+                #this is a data-read (not index)
+                base_mask = base_mask + delimiter + "Y" + str( read_cycles - 1 )+"n"
+            elif self.rip.read_and_indexed[ str(read_nr) ] == "Y":
+                index_read_length = int( self.lane_length_dict[lane][ indexed_read_counter ] ) # index length from the samplesheet
+                #this is an indexed read
+                if read_cycles == index_read_length:
+                    # consider all cycles as index
+                    base_mask = base_mask + delimiter + "I" + str(index_read_length)
+                elif read_cycles > index_read_length:
+                    if index_read_length == 0:
+                        # no index/dummyindex was provided, ignore all cylces of this read by setting "n*"
+                        base_mask = base_mask + delimiter + "n*"
                     else:
-                        read3 = prefix + str( cycles3 - 0 ) + postfix
-                elif ( cycles3 - index_2_length ) > 0:
-                    padding = ( cycles3 - index_1_length )
-                    postfix = postfix.rjust(padding, 'n')
-                    read3 = prefix + str( cycles3 - padding ) + postfix
-                else:
-                    read3 = prefix + str( cycles3 - 0 ) + postfix
+                        # consider index by setting "Ix", ignore the remaining cycles after the index "n*" 
+                        base_mask = base_mask + delimiter + "I" + str(index_read_length) + "n*"
+                elif read_cycles < index_read_length:
+                    # the index is longer than cycles of this read so will only consider the cycles avaialble
+                    base_mask = base_mask + delimiter + "I" + str(read_cycles)
+                indexed_read_counter = indexed_read_counter + 1
 
-        if number_of_reads > 3:
-            if self.rip.read_and_indexed["4"] == "N":
-                prefix  = "Y"
-                postfix = "n"
-                cycles4 = int(self.rip.read_and_length["4"])
-                read4 = prefix + str( cycles4 - 1 ) + postfix
-            elif self.rip.read_and_indexed["4"] == "Y":
-                prefix  = "I"
-                postfix = ""
-                cycles4 = int(self.rip.read_and_length["4"])
-                read4 = prefix + str( cycles4 - 0 ) + postfix
+            if len(base_mask) > 0:
+        	    delimiter = ","
+            #print ( base_mask )
+        # end different approach
 
-        base_mask = str(read1) + "," + str(read2)
-        if len(read3) > 0:
-            base_mask = base_mask + "," + str(read3)
-        if len(read4) > 0:
-            base_mask = base_mask + "," + str(read4)
-
-        L.debug(lane + ":" + base_mask)
         return base_mask
+
+
+        ##############################################################################
+

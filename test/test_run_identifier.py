@@ -112,6 +112,7 @@ class TestRunINFO(unittest.TestCase):
             RunID: 160726_K00166_0120_BHCVH2BBXX
             LaneCount: 8
             Instrument: hiseq4000
+            Flowcell: HCVH2BBXX
             Status: reads_unfinished
         """)
 

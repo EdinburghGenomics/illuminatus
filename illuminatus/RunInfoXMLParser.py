@@ -37,3 +37,11 @@ class RunInfoXMLParser:
             elif self.run_info[ 'Instrument' ][0] == 'K':
                                 self.run_info[ 'Instrument' ] = 'hiseq4000'
 
+        for read in root.iter('Flowcell'):
+            self.run_info[ 'Flowcell' ] = read.text
+
+            if self.run_info[ 'Instrument' ] == 'miseq':
+                try: # need to convert 00000000-AVHGC into AVHGC for miseq flowcells
+                    self.run_info[ 'Flowcell' ].split("-")[1]
+                except:
+                    pass
