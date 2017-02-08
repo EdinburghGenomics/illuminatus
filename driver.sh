@@ -75,14 +75,9 @@ action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     eval touch pipeline/"lane{1..$LANES}.started"
 
-    # Sort out the SampleSheet if it's not a symlink
-    if [ ! -e SampleSheet.csv.0 ] ; then
-        mv SampleSheet.csv SampleSheet.csv.0
-        ln -s SampleSheet.csv.0 SampleSheet.csv
-        log "samplesheet replaced"
-    else
-        log "samplesheet not replaced"
-    fi
+    # Sort out the SampleSheet and replace with a new one from the LIMS if
+    # available.
+    samplesheet_fetch.sh |& log
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
     # TODO - add an interin MultiQC report now that the Interop files are here.
