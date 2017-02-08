@@ -123,8 +123,28 @@ class TestRunINFO(unittest.TestCase):
         expected['Status:'] = 'new'
         self.assertEqual(dictify(run_info.get_yaml()), expected)
 
+    def test_get_yaml_miseq(self):
+        """Ensure that the YAML output is what we expect (for a MiSeq run).
+           Don't actually parse the YAML as we don't want the extra dependency.
+        """
+        run_info = self.use_run('160805_M01145_0035_000000000-ATDYJ', copy=True)
+
+        def dictify(s):
+            return dict(zip(s.split()[0::2], s.split()[1::2]))
+
+        expected = dictify("""
+            RunID: 160805_M01145_0035_000000000-ATDYJ
+            LaneCount: 1
+            Instrument: miseq
+            Flowcell: ATDYJ
+            Status: new
+        """)
+
+        self.assertEqual(dictify(run_info.get_yaml()), expected)
+
     def test_status( self ):
-        #get status for all run folders
+        """This test is not yet very useful
+        """
         runs = [ os.path.basename(r) for r in glob.glob(DATA_DIR + '/1*') ]
         for run in runs:
 
@@ -133,10 +153,10 @@ class TestRunINFO(unittest.TestCase):
 
             # If copy=True you can safely change files in self.run_dir.
             run_info_new = self.use_run(run, copy=True)
-            # or...
-            #run_info_new = RunInfo(self.current_run, run_path = self.run_dir)
 
-            #TODO: I'm not suggesting this is a useful test. Just a placeholder.
+            #TODO: make some changes in run_info_new that should not impact
+            #the status.
+
             self.assertEqual(run_info.get_status(), run_info_new.get_status())
 
 if __name__ == '__main__':
