@@ -11,6 +11,7 @@ if [ ! -e SampleSheet.csv.0 ] ; then
     if mv SampleSheet.csv SampleSheet.csv.0 ; then
         echo "SampleSheet.csv renamed as SampleSheet.csv.0"
     else
+        touch SampleSheet.csv.0
         echo "SampleSheet.csv.0 created as empty file"
     fi
     ln -s SampleSheet.csv.0 SampleSheet.csv

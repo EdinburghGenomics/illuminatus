@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 """This command sets up everything needed to run BCL2FASTQ on a given run,
-   and outputs the appropriate command line to run BCL2FASTQ.
+   and outputs the appropriate command script (do_demultiplex.sh) to run
+   BCL2FASTQ.
+   This in turn is going to be invoked by BCL2FASTQRunner.sh.
    It may also edit and/or split the samplesheet, but we're hoping this
    will not be necessary.
    If it is, see commit 5d8aebcd0d for my outline code to do this.
 """
-import os, sys, re, csv
+import os, sys
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 from illuminatus.ConfigFileReader import ConfigFileReader
@@ -82,7 +84,6 @@ class BCL2FASTQPreprocessor:
             if not replaced: ## so must be appended
                 #print ("appending from settings.ini " + ini_option)
                 cmd.append("%s %s" % (ini_option, self.ini_settings.get_value( 'bcl2fastq', ini_option)) )
-                
 
         return ' '.join(cmd)
 

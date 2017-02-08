@@ -47,7 +47,7 @@ class TestSamplesheetFetch(unittest.TestCase):
         self.assertTrue(os.path.exists('SampleSheet.csv.0'))
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
 
-        self.assertEqual(self.last_stdout, "SampleSheet.csv renamed as SampleSheet.csv.0")
+        self.assertEqual(self.last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
 
     def test_none_found(self):
         """This shouldn't happen in practise. May want to reconsider the behaviour
@@ -60,7 +60,7 @@ class TestSamplesheetFetch(unittest.TestCase):
         self.assertEqual(os.stat('SampleSheet.csv.0').st_size, 0)
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
 
-        self.assertEqual(self.last_stdout, "SampleSheet.csv.0 created as empty file")
+        self.assertEqual(self.last_stdout[0], "SampleSheet.csv.0 created as empty file")
 
     def run_fetch(self):
         """Run the script. If this gets more complex I might use BinMocker from
@@ -72,8 +72,15 @@ class TestSamplesheetFetch(unittest.TestCase):
                              universal_newlines = True,
                              close_fds=True)
 
-        self.last_stdout, self.last_stderr = p.communicate()
+        last_stdout, last_stderr = p.communicate()
+        self.last_stdout = last_stdout.split("\n")
+        self.last_stderr = last_stderr.split("\n")
 
-    def touch(filename, contents="touch"):
-        with open(filename, 'x') as fh:
-            print(contents, file=fh)
+        self.assertEqual(p.returncode, 0)
+
+def touch(filename, contents="touch"):
+    with open(filename, 'x') as fh:
+        print(contents, file=fh)
+
+if __name__ == '__main__':
+    unittest.main()

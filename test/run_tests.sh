@@ -19,16 +19,15 @@ fi
 # Pyflakes is my favoured static analyser for regression testing because it
 # just looks at one file at a time, thought it wouldn't hurt to cast
 # pylint over the code too.
-PYFLAKES="/ifs/software/linux_x86_64/python/python_2.7.10_venv/bin/pyflakes"
 files_to_flake="*.py"
 
 if [ "$*" == "" ] ; then
-    if [ -x "$PYFLAKES" ] ; then
+    if which pyflakes ; then
         for f in $files_to_flake ; do
             echo "### Running pyflakes $f"
-            "$PYFLAKES" "$f"
+            pyflakes "$f"
         done
     else
-        echo "Unable to run $PYFLAKES!"
+        echo "Unable to run pyflakes!"
     fi
 fi

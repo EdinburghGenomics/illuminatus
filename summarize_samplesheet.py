@@ -23,6 +23,7 @@ In the initial incarnation, it just dumps out the file.
 
 def main(args):
 
+    #TODO - can I not just use RunInfo.py here?
     print("Machine: {machine}")
     print("Run type: {run_type}")
     print("Read length: {read_len}")
@@ -50,8 +51,14 @@ def project_real_name(proj_id_list, name_list=None):
             else:
                 res[p] = dict( name = p + "_UNKNOWN" )
     else:
-        #TODO
-        lookup_in_lims(proj_id_list, blah)
+        from illuminatus.LIMSQuery import get_project_names
+
+        for p, n in zip(proj_id_list, get_project_names(*proj_id_list)):
+            if n:
+                res[p] = dict( name = n,
+                               url = "http://foo.example.com/" + name_match[0] )
+            else:
+                res[p] = dict( name = p + "_UNKNOWN" )
 
     return res
 
