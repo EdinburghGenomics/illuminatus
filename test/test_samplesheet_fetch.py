@@ -72,6 +72,20 @@ class TestSamplesheetFetch(unittest.TestCase):
         with open("SampleSheet.csv") as fh:
             self.assertEqual(fh.read().rstrip(), 'this one')
 
+        # And go again. This should do nothing.
+        touch(self.ss_dir + '/bad_YXXXX.csv', 'ignore this one')
+        self.run_fetch()
+        with open("SampleSheet.csv") as fh:
+            self.assertEqual(fh.read().rstrip(), 'this one')
+
+        # And again. This should give us .2
+        touch(self.ss_dir + '/baz_XXXX.csv', 'final one')
+        self.run_fetch()
+        self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.2')
+        with open("SampleSheet.csv") as fh:
+            self.assertEqual(fh.read().rstrip(), 'final one')
+
+
     def test_keep_original(self):
         """When this script sees the run folder for the first time,
            and there is no replacement available.

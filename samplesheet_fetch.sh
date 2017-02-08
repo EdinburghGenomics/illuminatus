@@ -44,7 +44,7 @@ elif diff -q "$candidate_ss" SampleSheet.csv ; then
     echo "SampleSheet.csv is already up-to-date"
 else
     #Using noclobber to attempt writing to files until we find an unused name
-    set noclobber
+    set -o noclobber
     counter=1
     while ! cat "$candidate_ss" > "SampleSheet.csv.$counter" ; do
         counter=$(( $counter + 1 ))
