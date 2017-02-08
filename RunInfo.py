@@ -111,11 +111,13 @@ class RunInfo:
             out =   'RunID: ' + self.runinfo_xml.run_info[ 'RunId' ] + '\n' + \
                 'LaneCount: ' + self.runinfo_xml.run_info[ 'LaneCount' ] + '\n' + \
                 'Instrument: ' + self.runinfo_xml.run_info[ 'Instrument' ] + '\n' + \
+                'Flowcell: ' + self.runinfo_xml.run_info[ 'Flowcell' ] + '\n' + \
                 'Status: ' +  self.get_status()
         except AttributeError: # possible that the provided run folder was not a valid run folder e.g. did not contain a RunInfo.xml
             out =   'RunID: ' + 'unknown' + '\n' + \
                 'LaneCount: ' + '0' + '\n' + \
                 'Instrument: ' + 'unknown' + '\n' + \
+                'Flowcell: ' + 'unknown' + '\n' + \
                 'Status: ' + 'unknown'
         return out
 
