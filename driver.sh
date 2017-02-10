@@ -17,8 +17,8 @@ LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 # Remove these once we get out of development mode.
 export RT_SYSTEM='test-rt'
 
-BIN_LOCATION="${BIN_LOCATION:-`dirname $0`}"
-PATH="$BIN_LOCATION:$PATH"
+BIN_LOCATION="${BIN_LOCATION:-$(dirname $0)}"
+PATH="$(readlink -f $BIN_LOCATION):$PATH"
 MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 
 # 1) Refuse to run on a machine other than headnode1

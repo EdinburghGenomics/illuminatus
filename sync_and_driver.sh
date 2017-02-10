@@ -91,4 +91,4 @@ if flock -x -n $FLOCK_ON ; then
 fi
 
 # 4) Aaaaand finally, we can run driver.sh
-$(dirname $(readlink -f "$0"))/driver.sh
+$(dirname "$0")/driver.sh
