@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e ; set -u
 
 # Usage (normally called from driver.sh):
 #  cd output_dir
@@ -9,13 +8,15 @@ set -e ; set -u
 #$ -cwd -v PATH -v LD_LIBRARY_PATH -sync yes -pe qc 8 -t 1-1 -q casava
 #$ -N demultiplexing  -o sge_output -e sge_output
 
-# SLURM settings...
+# Do not place any code lines above the SLURM settings...
 #SBATCH --wait #This might be unreliable, see slurm_tools/sbatch_wait.sh
 #SBATCH -p casava
 #SBATCH -c 8
 #SBATCH -J demultiplexing
 #SBATCH -o slurm_output/demultiplexing.%A.%a.out
 #SBATCH -e slurm_output/demultiplexing.%A.%a.err
+
+set -e ; set -u
 
 if [ ! -e /lustre/software ] ; then
     if [ -z "${SGE_TASK_ID:-}" ] ; then

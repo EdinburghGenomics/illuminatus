@@ -67,8 +67,8 @@ action_new(){
     ) && log OK && BREAK=1 || log FAIL
 }
 
-action_reads_incomplete(){
-    log "\_READS_INCOMPLETE $RUNID. Waiting for data."
+action_reads_unfinished(){
+    log "\_READS_UNFINISHED $RUNID. Waiting for data."
 }
 
 action_reads_finished(){
