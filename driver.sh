@@ -158,9 +158,9 @@ for run in $SEQDATA_LOCATION/*_*_*_*/ ; do
 
   #Call the appropriate function in the appropriate directory.
   BREAK=0
-  pushd "$run" >/dev/null
-  eval action_"$STATUS"
-  popd >/dev/null
+  { pushd "$run" >/dev/null && eval action_"$STATUS"
+    popd >/dev/null
+  } || log "Error while trying to scan $run"
 
   #If the function started some actual work it should request to break, as the CRON will start a new scan
   #soon in any case and we don't want runs overlapping.
