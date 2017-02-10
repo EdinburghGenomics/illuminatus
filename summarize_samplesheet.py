@@ -37,6 +37,7 @@ def main(args):
         print(e)
 
 # FIXME - use the real version from illuminatus.LIMSQuery instead.
+# FIXME2 - tolerate failure to query the LIMS and make a report anyway.
 def project_real_name(proj_id_list, name_list=None):
     """Resolves a list of project IDs to a name and URL
     """

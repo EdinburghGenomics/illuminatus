@@ -85,3 +85,13 @@ think about the error reporting.
 3) We should limit the number of errors reported. Definitely, jobs launched on the cluster
    should not report their own errors. The caller should deal with problems by waiting on the job
    to complete. My sbatch_wait.sh might help here when dealign with SLURM?
+
+===
+
+Thinking about the RT communication, what if the pipeline is running but RT is down?
+In this case, sending messages via e-mail makes sense because e-mail is resilient to
+intermittent faults and the message will queue.
+So, in order to do this we'll need to save the run ticket number somewhere, and we'll need
+to either add extra logic that either falls back to e-mail if RT communication fails or
+else we'll need to code this into rt_runticket_manager.py. Hmmmm.
+Add this one to the TODO list.
