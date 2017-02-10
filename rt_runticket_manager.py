@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys
+import sys, os
 from argparse import ArgumentParser
 
 from illuminatus.RTUtils import RT_manager
