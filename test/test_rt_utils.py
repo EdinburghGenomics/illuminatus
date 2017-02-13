@@ -79,16 +79,17 @@ class TestRTUtils(unittest.TestCase):
 
         rtman = self.mock_connect()
 
-        rtman.find_or_create_run_ticket(1234, "my subject")
+        rtman.find_or_create_run_ticket(1234, "my subject", text = "1\n2\n3\n")
 
         #The ticket won't be found so should be created with the
         #subject specified.
+        #Also the Text should be munged to work around a bug in the rt.py module.
         rtman.tracker.create_ticket.assert_called_with(
                         Subject   = "my subject",
                         Queue     = "bfx-run",
                         Requestor = "pipeline",
                         Cc        = "",
-                        Text      = "" )
+                        Text      = "1\n      2\n      3" )
 
         #What I can't test here is whether the real Rt returns a string or an int.
 

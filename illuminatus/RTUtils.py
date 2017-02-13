@@ -117,6 +117,10 @@ class RT_manager():
         if ticket_id:
             return ticket_id, False
 
+        #Text munge
+        text = re.sub(r'\n', r'\n      ', text.rstrip()) if text \
+               else ""
+
         return int(self.tracker.create_ticket(
                 Subject   = subject,
                 Queue     = c['run_queue'],
@@ -170,6 +174,7 @@ class RT_manager():
     def change_ticket_subject(self, ticket_id, subject):
         """You can reply to a ticket with a one-off subject, but not via the
            REST interface, which fundamentally does not support this.
+           (see share/html/REST/1.0/Forms/ticket/comment in the RT source code)
            This call permanently changes the ticket subject.
         """
         #why the extra space?? I'm not sure but it looks to have been added deliberately.
