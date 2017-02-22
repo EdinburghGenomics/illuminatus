@@ -72,6 +72,7 @@ action_reads_unfinished(){
 action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     eval touch pipeline/"lane{1..$LANES}.started"
+    log "\_READS_FINISHED $RUNID. Running samplesheet_fetch.sh"
 
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
@@ -81,7 +82,7 @@ action_reads_finished(){
     # TODO - add an interin MultiQC report now that the Interop files are here.
     BREAK=1
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID/demultiplexing/"
-    log "\_READS_FINISHED $RUNID. Starting demultiplexing for into $DEMUX_OUTPUT_FOLDER"
+    log "Now starting demultiplexing for $RUNID into $DEMUX_OUTPUT_FOLDER"
     ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"
       BCL2FASTQPreprocessor.py "`pwd`" "$DEMUX_OUTPUT_FOLDER" |& log
