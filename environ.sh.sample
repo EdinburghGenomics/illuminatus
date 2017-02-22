@@ -1,0 +1,4 @@
+# These are the locations for GSEG production mode.
+export SEQDATA_LOCATION=/lustre/seqdata
+export FASTQ_LOCATION=/lustre/fastqdata
+export LOG_DIR=~pipeline/illuminatus/logs

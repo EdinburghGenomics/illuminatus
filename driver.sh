@@ -2,14 +2,17 @@
 set -e
 set -u
 
-
 # A driver script that is to be called directly from the CRON.
 # It will go through all runs in SEQDATA_LOCATION and take action on them.
 # As a well behaved CRON job it should only output error messages
 # to stdout.
 # The script wants to run every 5 minutes or so.
 
-# Settings you probably need to override.
+if -e [ "`dirname $0`"/environ.sh ] ; then
+    source "`dirname $0`"/environ.sh
+fi
+
+# Settings you probably need to override in ./environ.sh
 SEQDATA_LOCATION="${SEQDATA_LOCATION:-/ifs/runqc/test_seqdata/illuminatus}"
 FASTQ_LOCATION="${FASTQ_LOCATION:-/ifs/runqc/test_runqc/illuminatus}"
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
