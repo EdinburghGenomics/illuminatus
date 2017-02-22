@@ -8,17 +8,12 @@ set -u
 # to stdout.
 # The script wants to run every 5 minutes or so.
 
+# This file must provide SEQDATA_LOCATION, FASTQ_LOCATION if not set externally.
 if -e [ "`dirname $0`"/environ.sh ] ; then
     source "`dirname $0`"/environ.sh
 fi
 
-# Settings you probably need to override in ./environ.sh
-SEQDATA_LOCATION="${SEQDATA_LOCATION:-/ifs/runqc/test_seqdata/illuminatus}"
-FASTQ_LOCATION="${FASTQ_LOCATION:-/ifs/runqc/test_runqc/illuminatus}"
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
-
-# Remove these once we get out of development mode.
-export RT_SYSTEM='test-rt'
 
 BIN_LOCATION="${BIN_LOCATION:-$(dirname $0)}"
 PATH="$(readlink -f $BIN_LOCATION):$PATH"
