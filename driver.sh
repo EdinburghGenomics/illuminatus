@@ -1,6 +1,7 @@
 #!/bin/bash -l
 set -e
 set -u
+shopt -sq failglob
 
 # A driver script that is to be called directly from the CRON.
 # It will go through all runs in SEQDATA_LOCATION and take action on them.
@@ -9,22 +10,32 @@ set -u
 # The script wants to run every 5 minutes or so.
 
 # This file must provide SEQDATA_LOCATION, FASTQ_LOCATION if not set externally.
-if -e [ "`dirname $0`"/environ.sh ] ; then
+if [ -e "`dirname $0`"/environ.sh ] ; then
     source "`dirname $0`"/environ.sh
 fi
 
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 
 BIN_LOCATION="${BIN_LOCATION:-$(dirname $0)}"
-PATH="$(readlink -f $BIN_LOCATION):$PATH"
+PATH="$(readlink -m $BIN_LOCATION):$PATH"
 MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 
 # 1) Refuse to run on a machine other than headnode1
+# (do we really still need this??)
 if [[ "${NO_HOST_CHECK:-0}" = 0 && "${HOSTNAME%%.*}" != headnode1 && "${HOSTNAME%%.*}" != gseg-login0 ]] ; then
     echo "This script should only be run on headnode1 or gseg-login0"
     echo "To skip this check set NO_HOST_CHECK=1"
     exit 1
 fi
+
+# 1a) Sanity check these directories exist and complain to STDERR (triggering CRON
+#     warning mail) if not.
+for d in "${BIN_LOCATION%%:*}" "$SEQDATA_LOCATION" "$FASTQ_LOCATION" ; do
+    if ! [ -d "$d" ] ; then
+        echo "No such directory '$d'" >&2
+        exit 1
+    fi
+done
 
 # 2) Ensure that the directory is there for the main log file and set up logging
 mkdir -p `dirname "$MAINLOG"`
@@ -152,6 +163,7 @@ for run in $SEQDATA_LOCATION/*_*_*_*/ ; do
   STATUS=`grep ^Status: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   RUNID=`grep ^RunID: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   INSTRUMENT=`grep ^Instrument: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
+  FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
 
   log "Folder $run contains $RUNID from machine $INSTRUMENT with $LANES lane(s) and status $STATUS"
 

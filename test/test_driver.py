@@ -59,7 +59,7 @@ class TestDriver(unittest.TestCase):
 
         self.bm.cleanup()
 
-    def bm_rundriver(self, expected_retval=0):
+    def bm_rundriver(self, expected_retval=0, check_stderr=True):
         """A convenience wrapper around self.bm.runscript that sets the environment
            appropriately and runs DRIVER and returns STDOUT split into an array.
         """
@@ -73,8 +73,15 @@ class TestDriver(unittest.TestCase):
         if VERBOSE:
             print("STDOUT:")
             print(self.bm.last_stdout)
+            print("RETVAL: %s" % retval)
 
         self.assertEqual(retval, expected_retval)
+
+        #If the return val is 0 then stderr should normally be empty.
+        #An exception would be if scanning one run dir fails but the
+        #script continues on to other runs.
+        if retval == 0 and check_stderr:
+            self.assertEqual(self.bm.last_stderr, '')
 
         return self.bm.last_stdout.split("\n")
 
@@ -102,14 +109,31 @@ class TestDriver(unittest.TestCase):
 
     ### And the actual tests ###
 
-    def test_nop( self ):
+    def test_nop(self):
         """With no data, nothing should happen. At all.
            The script will exit with status 1 as the glob pattern match will fail.
-           Currently there is no plan to e-mail on this type of error.
+           Message going to STDERR should trigger an alert from CRON.
         """
         self.bm_rundriver(expected_retval=1)
 
         self.assertEqual(self.bm.last_calls, self.bm.empty_calls())
+
+        self.assertTrue('no match' in self.bm.last_stderr)
+
+    def test_no_seqdata(self):
+        """If no SEQDATA_LOCATION is set, expect a fast failure.
+        """
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+
+        self.environment['SEQDATA_LOCATION'] = 'meh'
+        self.bm_rundriver(expected_retval=1)
+        self.assertEqual(self.bm.last_calls, self.bm.empty_calls())
+        self.assertEqual(self.bm.last_stderr, "No such directory 'meh'\n")
+
+        del(self.environment['SEQDATA_LOCATION'])
+        self.bm_rundriver(expected_retval=1)
+        self.assertEqual(self.bm.last_calls, self.bm.empty_calls())
+        self.assertTrue('SEQDATA_LOCATION: unbound variable' in self.bm.last_stderr)
 
     def test_new(self, test_data=None):
         """A completely new run.  This should gain a ./pipeline folder
