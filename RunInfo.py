@@ -122,9 +122,7 @@ class RunInfo:
         return out
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print ("please provide the run folder as an argument")
-        sys.exit(1)
-    run = sys.argv[1]
+    #If no run specified, examine the CWD.
+    run = sys.argv[1] if len(sys.argv) > 1 else '.'
     run_info = RunInfo(run, run_path = '')
     print ( run_info.get_yaml() )

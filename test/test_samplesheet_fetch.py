@@ -7,14 +7,16 @@ from tempfile import mkdtemp
 from shutil import rmtree, copytree
 import subprocess
 
-#We're testing a shell script here.
-FETCH = os.path.abspath(os.path.dirname(__file__) + '/../samplesheet_fetch.sh')
-
 """This Python tool grabs updated sample sheets from the LIMS. It does this simply
    by looking for matching files in the SMB share.
    It's also responsible for renaming the original samplesheet saved out by the
    sequencer.
 """
+#We're testing a shell script here.
+sys.path.insert(0,'.')
+from test.binmocker import BinMocker
+VERBOSE = int(os.environ.get('VERBOSE', '0'))
+FETCH = os.path.abspath(os.path.dirname(__file__) + '/../samplesheet_fetch.sh')
 
 class TestSamplesheetFetch(unittest.TestCase):
 
@@ -35,17 +37,38 @@ class TestSamplesheetFetch(unittest.TestCase):
         else:
             self.addCleanup(cleanup)
 
-        self.last_stdout = self.last_stderr = None
+        self.bm = BinMocker('RunInfo.py')
 
         #The script will find sample sheets in here...
         self.ss_dir = "fs_root/samplesheets_bcl2fastq_format"
         with open('genologics.conf', 'x') as cfh:
             print("FS_ROOT=" + temp_dir + "/fs_root", file=cfh)
         os.makedirs(self.ss_dir)
-        os.environ['GENOLOGICSRC'] = temp_dir + '/genologics.conf'
 
         #The flowcell ID will always be XXXX
-        os.environ['FLOWCELLID'] = 'XXXX'
+        self.environment = dict(
+                FLOWCELLID = 'XXXX',
+                GENOLOGICSRC = temp_dir + '/genologics.conf' )
+
+    def bm_run_fetch(self, expected_retval=0):
+        """A convenience wrapper around self.bm.runscript that sets the environment
+           appropriately and runs FETCH and returns STDOUT split into an array.
+           (You can always examine self.bm.last_stderr directly)
+        """
+        retval = self.bm.runscript(FETCH, set_path=True, env=self.environment)
+
+        #Where a file is missing it's always useful to see the error.
+        #(status 127 is the standard shell return code for a command not found)
+        if retval == 127 or VERBOSE:
+            print("STDERR:")
+            print(self.bm.last_stderr)
+        if VERBOSE:
+            print("STDOUT:")
+            print(self.bm.last_stdout)
+
+        self.assertEqual(retval, expected_retval)
+
+        return self.bm.last_stdout.split("\n")
 
     def tearDown(self):
         #Cleanup of temp_dir is handled by the callback hook above
@@ -55,32 +78,32 @@ class TestSamplesheetFetch(unittest.TestCase):
         """When this script sees the run folder for the first time,
            and there is a replacement available.
         """
-
+        #Create a couple of candiate sample sheets.
         touch('SampleSheet.csv')
         touch(self.ss_dir + '/foo_XXXX.csv')
         touch(self.ss_dir + '/bar_XXXX.csv', 'this one')
 
-        self.run_fetch()
+        last_stdout = self.bm_run_fetch()
 
         self.assertTrue(os.path.isfile('SampleSheet.csv.0'))
         self.assertTrue(os.path.isfile('SampleSheet.csv.1'))
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.1')
 
-        self.assertEqual(self.last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
-        self.assertEqual(self.last_stdout[2], "SampleSheet.csv is now linked to new SampleSheet.csv.1")
+        self.assertEqual(last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
+        self.assertEqual(last_stdout[2], "SampleSheet.csv for XXXX is now linked to new SampleSheet.csv.1")
 
         with open("SampleSheet.csv") as fh:
             self.assertEqual(fh.read().rstrip(), 'this one')
 
         # And go again. This should do nothing.
         touch(self.ss_dir + '/bad_YXXXX.csv', 'ignore this one')
-        self.run_fetch()
+        last_stdout = self.bm_run_fetch()
         with open("SampleSheet.csv") as fh:
             self.assertEqual(fh.read().rstrip(), 'this one')
 
         # And again. This should give us .2
         touch(self.ss_dir + '/baz_XXXX.csv', 'final one')
-        self.run_fetch()
+        last_stdout = self.bm_run_fetch()
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.2')
         with open("SampleSheet.csv") as fh:
             self.assertEqual(fh.read().rstrip(), 'final one')
@@ -92,43 +115,42 @@ class TestSamplesheetFetch(unittest.TestCase):
         """
         touch('SampleSheet.csv')
 
-        self.run_fetch()
+        last_stdout = self.bm_run_fetch()
 
         self.assertTrue(os.path.exists('SampleSheet.csv.0'))
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
 
-        self.assertEqual(self.last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
-        self.assertEqual(self.last_stdout[1][:36], "No candidate replacement samplesheet")
+        self.assertEqual(last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
+        self.assertEqual(last_stdout[1][:36], "No candidate replacement samplesheet")
 
 
     def test_none_found(self):
         """This shouldn't happen in practise. May want to reconsider the behaviour
            of the script?
         """
-
-        self.run_fetch()
+        last_stdout = self.bm_run_fetch()
 
         self.assertTrue(os.path.exists('SampleSheet.csv.0'))
         self.assertEqual(os.stat('SampleSheet.csv.0').st_size, 0)
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
 
-        self.assertEqual(self.last_stdout[0], "SampleSheet.csv.0 created as empty file")
+        self.assertEqual(last_stdout[0], "SampleSheet.csv.0 created as empty file")
 
-    def run_fetch(self):
-        """Run the script. If this gets more complex I might use BinMocker from
-           the driver test.
+    def test_no_flowcellid(self):
+        """If no flowcell ID is provided, the script should attempt to get one by running
+           RunInfo.py and then fail if none is obtained.
         """
-        p = subprocess.Popen(FETCH, shell = True,
-                             stdout = subprocess.PIPE,
-                             stderr = subprocess.PIPE,
-                             universal_newlines = True,
-                             close_fds=True)
+        touch('SampleSheet.csv')
+        del(self.environment['FLOWCELLID'])
 
-        last_stdout, last_stderr = p.communicate()
-        self.last_stdout = last_stdout.split("\n")
-        self.last_stderr = last_stderr.split("\n")
+        last_stdout = self.bm_run_fetch(expected_retval=1)
 
-        self.assertEqual(p.returncode, 0)
+        self.assertEqual(last_stdout[0], "No FLOWCELLID was provided, and obtaining one from RunInfo.py failed.")
+
+        #The script should have attempted to call RunInfo.py just once.
+        expected_calls = self.bm.empty_calls()
+        expected_calls['RunInfo.py'] = ['']
+        self.assertEqual(self.bm.last_calls, expected_calls)
 
 def touch(filename, contents="touch"):
     with open(filename, 'x') as fh:
