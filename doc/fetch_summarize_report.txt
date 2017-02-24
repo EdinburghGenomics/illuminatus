@@ -1,0 +1,22 @@
+When the pipeline starts, when it demultiplexes, and when it re-runs, we want this logic:
+
+Fetch new samplesheet
+If it was replaced:
+    re-summarize
+    send the summary mail
+
+The initial run will always count as a replacement, triggering the initial mail.
+
+I think this logic should be broken out as a function in the driver.sh. How will
+samplesheet_fetch.sh communicate that it did the replacement?
+
+return code?
+callback?
+print to stdout?
+change in number of files matching SampleSheet*.csv?
+timestamp on SampleSheet.csv?
+change in status of SampleSheet.csv?
+
+All of these are a bit nasty. However, I kinda favour the change in status, as revealed
+by `readlink -q SampleSheet.csv || true`. This seems the most direct way to ask 'did
+it change'.

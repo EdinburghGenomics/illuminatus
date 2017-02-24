@@ -70,8 +70,7 @@ action_new(){
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
     ( set -e
       mkdir ./pipeline
-      summarize_samplesheet.py > pipeline/sample_summary.txt
-      rt_runticket_manager.py -r "$RUNID" --reply @pipeline/sample_summary.txt |& log
+      fetch_samplesheet_and_report
 
     ) && log OK && BREAK=1 || log FAIL
 }
@@ -87,7 +86,7 @@ action_reads_finished(){
 
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
-    samplesheet_fetch.sh |& log
+    fetch_samplesheet_and_report
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
     # TODO - add an interin MultiQC report now that the Interop files are here.
@@ -142,6 +141,7 @@ action_redo() {
 
     (exit 1
      BCL2FASTQCleanup.py //args for partial cleanup here//
+     fetch_samplesheet_and_report
      BCL2FASTQPreprocessor.py "`pwd`" $DEMUX_OUTPUT_FOLDER $redo_list
      ( cd $DEMUX_OUTPUT_FOLDER && BCL2FASTQRunner.sh )
      BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID
@@ -151,6 +151,23 @@ action_redo() {
 action_unknown() {
     # this run either has no RunInfo.xml or an invalid set of touch files ... nothing to be done...
     log "\_skipping `pwd` because status is $STATUS"
+}
+
+### Other utility functions used by the actions.
+fetch_samplesheet_and_report() {
+    # Tries to fetch an updated samplesheet. If this is the first run, or if
+    # a new one was found, send an e-mail report to RT.
+    # TODO - trigger a MultiQC report too.
+    old_ss_link="`readlink -q SampleSheet.csv || true`"
+
+    #Currently if samplesheet_fetch.sh returns an error the pipeline aborts.
+    samplesheet_fetch.sh | log
+    new_ss_link="`readlink -q SampleSheet.csv || true`"
+
+    if [ "$old_ss_link" != "$new_ss_link" ] ; then
+        summarize_samplesheet.py > pipeline/sample_summary.txt
+        rt_runticket_manager.py -r "$RUNID" --reply @pipeline/sample_summary.txt |& log
+    fi
 }
 
 # 6) Scan for each run until we find something that needs dealing with.

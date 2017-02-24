@@ -35,5 +35,23 @@ class TestBinMocker(unittest.TestCase):
             self.assertEqual(bm.last_stderr, '')
             self.assertEqual(bm.last_calls, dict(foo=[], bad=[]))
 
+    def test_side_effect(self):
+        """New feature - we can add a side_effect to our mock.
+        """
+        bm = BinMocker()
+        self.addCleanup(bm.cleanup)
+
+        #Side effect should happen but should not affect the return value.
+        bm.add_mock('this', side_effect="echo THIS ; false")
+        bm.add_mock('that', side_effect="echo THAT >&2 ; true", fail=True)
+
+        res1 = bm.runscript('this')
+        self.assertEqual(res1, 0)
+        self.assertEqual(bm.last_stdout, 'THIS\n')
+
+        res2 = bm.runscript('that')
+        self.assertEqual(res2, 1)
+        self.assertEqual(bm.last_stderr, 'THAT\n')
+
 if __name__ == '__main__':
     unittest.main()

@@ -22,29 +22,8 @@ class BinMocker:
     def __init__(self, *mocks):
         self.mock_bin_dir = mkdtemp()
 
-        mockscript = '''
-            #!/bin/sh
-            echo "`basename $0` $@" >> "`dirname $0`"/_MOCK_CALLS
-        '''
-
-        mockscript_fail = '''
-            #!/bin/sh
-            echo "`basename $0` $@" >> "`dirname $0`"/_MOCK_CALLS ; exit 1
-        '''
-
-        with open(os.path.join(self.mock_bin_dir, "_MOCK"), 'w') as fh:
-            print(mockscript.strip(), file=fh)
-
-            # copy R bits to X to achieve comod +x
-            mode = os.stat(fh.fileno()).st_mode
-            os.chmod(fh.fileno(), mode | (mode & 0o444) >> 2)
-
-        with open(os.path.join(self.mock_bin_dir, "_MOCK_F"), 'w') as fh:
-            print(mockscript_fail.strip(), file=fh)
-
-            # copy R bits to X to achieve comod +x
-            mode = os.stat(fh.fileno()).st_mode
-            os.chmod(fh.fileno(), mode | (mode & 0o444) >> 2)
+        self._make_mockscript("_MOCK", 0)
+        self._make_mockscript("_MOCKF", 1)
 
         self.mocks = set()
         for m in mocks:
@@ -54,12 +33,36 @@ class BinMocker:
         self.last_stderr = None
         self.last_stdout = None
 
-    def add_mock(self, mock, fail=False):
+    def _make_mockscript(self, mockname, retcode, side_effect="#NOP"):
+        """Internal function for making mock scripts.
+        """
+
+        mockscript = '''
+            #!/bin/sh
+            {side_effect}
+            echo "`basename $0` $@" >> "`dirname $0`"/_MOCKCALLS ; exit {retcode}
+        '''.format(**locals())
+
+        with open(os.path.join(self.mock_bin_dir, mockname), 'w') as fh:
+            print(mockscript.strip(), file=fh)
+
+            # copy R bits to X to achieve comod +x
+            mode = os.stat(fh.fileno()).st_mode
+            os.chmod(fh.fileno(), mode | (mode & 0o444) >> 2)
+
+
+    def add_mock(self, mock, fail=False, side_effect=None):
         """Symlink the named script so that it will get called in
            place of the real version.
         """
         symlink = os.path.join(self.mock_bin_dir, mock)
-        target = "_MOCK_F" if fail else "_MOCK"
+
+        if side_effect:
+            #We need a special script then
+            target = "_MOCK_" + mock
+            self._make_mockscript(target, 1 if fail else 0, side_effect)
+        else:
+            target = "_MOCKF" if fail else "_MOCK"
 
         #If the link already exists, remove it
         try:
@@ -84,8 +87,8 @@ class BinMocker:
            can alternatively specify set_path=False in which case you take
            responsibility for adding bm.mock_bin_dir to the PATH.
         """
-        #Cleanup _MOCK_CALLS if found
-        calls_file = os.path.join(self.mock_bin_dir, "_MOCK_CALLS")
+        #Cleanup _MOCKCALLS if found
+        calls_file = os.path.join(self.mock_bin_dir, "_MOCKCALLS")
         try:
             os.unlink(calls_file)
         except FileNotFoundError:
@@ -112,7 +115,7 @@ class BinMocker:
 
         self.last_stdout, self.last_stderr = p.communicate()
 
-        #Fish the MOCK calls out of _MOCK_CALLS
+        #Fish the MOCK calls out of _MOCKCALLS
         calls = self.empty_calls()
         try:
             with open(calls_file) as fh:

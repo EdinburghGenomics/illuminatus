@@ -38,6 +38,11 @@ class TestDriver(unittest.TestCase):
         self.bm = BinMocker()
         for p in PROGS_TO_MOCK: self.bm.add_mock(p)
 
+        # Special mock for samplesheet fetcher. Emulates initial fetch.
+        self.bm.add_mock("samplesheet_fetch.sh",
+                         side_effect="mv SampleSheet.csv SampleSheet.csv.0 ;" +
+                                     " ln -s SampleSheet.csv.0 SampleSheet.csv")
+
         # Set the driver to run in our test harness. Note I can set
         # $BIN_LOCATION to more than one path.
         self.environment = dict(
@@ -138,9 +143,9 @@ class TestDriver(unittest.TestCase):
     def test_new(self, test_data=None):
         """A completely new run.  This should gain a ./pipeline folder
            which puts it into status reads_incomplete.
-           Also the rt_runticket_manager.py and summarize_samplesheet.py programs should
-           be called but nothing else.
 
+           Also the samplesheet_fetch.sh, rt_runticket_manager.py and summarize_samplesheet.py
+           programs should be called.
         """
         if not test_data:
             test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
@@ -159,8 +164,9 @@ class TestDriver(unittest.TestCase):
 
         #Sample sheet should be summarized
         expected_calls = self.bm.empty_calls()
-        expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --reply @pipeline/sample_summary.txt']
+        expected_calls['samplesheet_fetch.sh'] = ['']
         expected_calls['summarize_samplesheet.py'] = ['']
+        expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --reply @pipeline/sample_summary.txt']
 
         #But nothing else should happen
         self.assertEqual(self.bm.last_calls, expected_calls)
