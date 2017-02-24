@@ -78,5 +78,15 @@ class TestBinMocker(unittest.TestCase):
         self.assertEqual(bm.last_calls['/bin/false'], ['789'])
         self.assertEqual(bm.last_stdout, 'THIS\n')
 
+        #Referring to a command stored in a var is OK
+        res3 = bm.runscript('cmd=/bin/false ; "$cmd" 123')
+        self.assertEqual(res3, 0)
+        self.assertEqual(bm.last_stdout, 'THIS\n')
+
+        #But calling a command via 'env' does call the actual command
+        res4 = bm.runscript('env /bin/false 123')
+        self.assertEqual(res4, 1)
+        self.assertEqual(bm.last_stdout, '')
+
 if __name__ == '__main__':
     unittest.main()
