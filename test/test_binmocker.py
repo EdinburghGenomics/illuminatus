@@ -53,5 +53,30 @@ class TestBinMocker(unittest.TestCase):
         self.assertEqual(res2, 1)
         self.assertEqual(bm.last_stderr, 'THAT\n')
 
+    def test_mock_abs_path(self):
+        """It should be possible to mock out even commands referred to by
+           full path. Note that this will only work for things called from
+           BASH, not for things called indirectly like "env /bin/foo".
+        """
+        bm = BinMocker()
+        self.addCleanup(bm.cleanup)
+
+        bm.add_mock('/bin/false', side_effect="echo THIS")
+
+        res1 = bm.runscript('/bin/false 123')
+        self.assertEqual(res1, 0)
+        self.assertEqual(bm.last_calls['/bin/false'], ['123'])
+        self.assertEqual(bm.last_stdout, 'THIS\n')
+
+        #Should also work if called from a sub-script.
+        bm.add_mock('woo',  side_effect="/bin/false 789")
+        bm.add_mock('/bin/wibble',  side_effect="woo 456")
+
+        res2 = bm.runscript('/bin/wibble 123')
+        self.assertEqual(bm.last_calls['/bin/wibble'], ['123'])
+        self.assertEqual(bm.last_calls['woo'], ['456'])
+        self.assertEqual(bm.last_calls['/bin/false'], ['789'])
+        self.assertEqual(bm.last_stdout, 'THIS\n')
+
 if __name__ == '__main__':
     unittest.main()

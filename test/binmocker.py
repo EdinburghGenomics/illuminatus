@@ -26,6 +26,7 @@ class BinMocker:
         self._make_mockscript("_MOCKF", 1)
 
         self.mocks = set()
+        self._bash_env = None
         for m in mocks:
             self.add_mock(m)
 
@@ -38,7 +39,7 @@ class BinMocker:
         """
 
         mockscript = '''
-            #!/bin/sh
+            #!/bin/bash
             {side_effect}
             echo "`basename $0` $@" >> "`dirname $0`"/_MOCKCALLS ; exit {retcode}
         '''.format(**locals())
@@ -46,31 +47,58 @@ class BinMocker:
         with open(os.path.join(self.mock_bin_dir, mockname), 'w') as fh:
             print(mockscript.strip(), file=fh)
 
-            # copy R bits to X to achieve comod +x
+            # copy R bits to X to achieve chmod +x
             mode = os.stat(fh.fileno()).st_mode
             os.chmod(fh.fileno(), mode | (mode & 0o444) >> 2)
+
+    def _add_mockfunc(self, funcname, retcode, side_effect="#NOP"):
+        """Internal function for writing mock functions.
+           Note these will only apply to scripts that explicitly use #!/bin/bash
+           as the interpreter, not #!/bin/sh or any other way that commands are
+           called indirectly, line 'env /bin/true ...'.
+        """
+        calls_file = os.path.join(self.mock_bin_dir, "_MOCKCALLS")
+
+        mockfunc = '''
+            {funcname}(){{ {side_effect}
+            echo '{funcname} '"$@" >> '{calls_file}'
+            return {retcode} ; }}
+        '''.format(**locals())
+
+        with open(os.path.join(self.mock_bin_dir, '_BASHENV'), 'a') as fh:
+            print(mockfunc.strip(), file=fh)
+
+        self._bash_env = os.path.join(self.mock_bin_dir, "_BASHENV")
 
 
     def add_mock(self, mock, fail=False, side_effect=None):
         """Symlink the named script so that it will get called in
            place of the real version.
+           Except if mock contains a / character - then we need to use
+           functions instead.
         """
-        symlink = os.path.join(self.mock_bin_dir, mock)
+        if '/' in mock:
+            #We can still mock these by defining BASH functions.
+            self._add_mockfunc(mock, 1 if fail else 0, side_effect)
 
-        if side_effect:
-            #We need a special script then
-            target = "_MOCK_" + mock
-            self._make_mockscript(target, 1 if fail else 0, side_effect)
         else:
-            target = "_MOCKF" if fail else "_MOCK"
 
-        #If the link already exists, remove it
-        try:
-            os.unlink(symlink)
-        except FileNotFoundError:
-            pass
+            symlink = os.path.join(self.mock_bin_dir, mock)
 
-        os.symlink(target, symlink)
+            if side_effect:
+                #We need a special script then
+                target = "_MOCK_" + mock
+                self._make_mockscript(target, 1 if fail else 0, side_effect)
+            else:
+                target = "_MOCKF" if fail else "_MOCK"
+
+            #If the link already exists, remove it
+            try:
+                os.unlink(symlink)
+            except FileNotFoundError:
+                pass
+
+            os.symlink(target, symlink)
 
         self.mocks.add(mock)
 
@@ -106,11 +134,20 @@ class BinMocker:
             else:
                 full_env['PATH'] = os.path.abspath(self.mock_bin_dir)
 
+            if self._bash_env:
+                #Note - interactive scripts shouldn't normally depend on BASH_ENV,
+                #so complain if I'm clobbering it. Ditto for ENV.
+                if full_env.get('BASH_ENV'):
+                    raise RuntimeError("BASH_ENV was already set")
+
+                full_env['BASH_ENV'] = self._bash_env
+
         p = subprocess.Popen(cmd, shell = True,
                              stdout = subprocess.PIPE,
                              stderr = subprocess.PIPE,
                              universal_newlines = True,
                              env = full_env,
+                             executable = "/bin/bash",
                              close_fds=True)
 
         self.last_stdout, self.last_stderr = p.communicate()
