@@ -49,6 +49,13 @@ trap 'echo "=== `date`. Finished run; PID=$$ ===" >> "$MAINLOG"' EXIT
 log ""
 log "=== `date`. Running $(readlink -f "$0"); PID=$$ ==="
 
+# If there is a Python VEnv, use it.
+py_venv="${BIN_LOCATION%%:*}/_py3_venv"
+if [ -e "${py_venv}/bin/activate" ] ; then
+    log "Activating Python VEnv from ${py_venv}"
+    source "${py_venv}/bin/activate"
+fi
+
 # 3) Define an action for each possible status that a run can have:
 # new)            - this run is seen for the first time (sequencing might be done or is still in progress)
 # reads_incomplete) the run has been picked up by the pipeline but we're waiting for data
