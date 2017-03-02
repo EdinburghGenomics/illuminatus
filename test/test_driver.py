@@ -146,6 +146,8 @@ class TestDriver(unittest.TestCase):
 
            Also the samplesheet_fetch.sh, rt_runticket_manager.py and summarize_samplesheet.py
            programs should be called.
+
+           And there should be a pipeline.log in the ./pipeline folder.
         """
         if not test_data:
             test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
@@ -170,6 +172,10 @@ class TestDriver(unittest.TestCase):
 
         #But nothing else should happen
         self.assertEqual(self.bm.last_calls, expected_calls)
+
+        #Log file should appear
+        self.assertTrue(os.path.isfile(
+                                os.path.join(test_data, 'pipeline', 'pipeline.log') ))
 
     def test_reads_finished(self):
         """A run ready to go through the pipeline.

@@ -43,7 +43,20 @@ if [ "${MAINLOG:0:1}" != / ] ; then
     #Ensure abs path, because we change directories within this script
     MAINLOG="$(readlink -f "$MAINLOG")"
 fi
+
+# Main log for general messages.
 log(){ [ $# = 0 ] && cat >> "$MAINLOG" || echo "$*" >> "$MAINLOG" ; }
+
+# Per-project log for project progress messages
+plog() {
+    projlog="$SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log"
+    if ! { [ $# = 0 ] && cat >> "$projlog" || echo "$*" >> "$projlog" ; } ; then
+       log '!!'" Failed to write to $projlog"
+       log "$@"
+    fi
+}
+
+# For a run
 
 trap 'echo "=== `date`. Finished run; PID=$$ ===" >> "$MAINLOG"' EXIT
 log ""
@@ -77,6 +90,7 @@ action_new(){
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
     ( set -e
       mkdir ./pipeline
+      plog "NEW $RUNID"
       fetch_samplesheet_and_report
 
     ) && log OK && BREAK=1 || log FAIL
@@ -89,7 +103,7 @@ action_reads_unfinished(){
 action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     eval touch pipeline/"lane{1..$LANES}.started"
-    log "\_READS_FINISHED $RUNID. Running samplesheet_fetch.sh"
+    log "\_READS_FINISHED $RUNID. Checking for new SampleSheet.csv and preparing to demultiplex."
 
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
@@ -99,17 +113,16 @@ action_reads_finished(){
     # TODO - add an interin MultiQC report now that the Interop files are here.
     BREAK=1
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID/demultiplexing/"
-    log "Now starting demultiplexing for $RUNID into $DEMUX_OUTPUT_FOLDER"
+    plog "Now starting demultiplexing for $RUNID into $DEMUX_OUTPUT_FOLDER"
     ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"
-      BCL2FASTQPreprocessor.py "`pwd`" "$DEMUX_OUTPUT_FOLDER" |& log
+      BCL2FASTQPreprocessor.py "`pwd`" "$DEMUX_OUTPUT_FOLDER" |& plog
       cd "$DEMUX_OUTPUT_FOLDER"
-      log "submitting to cluster..."
-      BCL2FASTQRunner.sh | log 2>&1
+      BCL2FASTQRunner.sh |& plog
       BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID |& log
 
       rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
-    ) || log FAIL
+    ) || demux_fail
 }
 
 # What about the transition from demultiplexing to QC. Do we need a new status,
@@ -152,7 +165,7 @@ action_redo() {
      BCL2FASTQPreprocessor.py "`pwd`" $DEMUX_OUTPUT_FOLDER $redo_list
      ( cd $DEMUX_OUTPUT_FOLDER && BCL2FASTQRunner.sh )
      BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID
-    ) && log OK && BREAK=1 || log FAIL
+    ) && log OK && BREAK=1 || demux_fail
 }
 
 action_unknown() {
@@ -168,13 +181,20 @@ fetch_samplesheet_and_report() {
     old_ss_link="`readlink -q SampleSheet.csv || true`"
 
     #Currently if samplesheet_fetch.sh returns an error the pipeline aborts.
-    samplesheet_fetch.sh | log
+    samplesheet_fetch.sh | plog
     new_ss_link="`readlink -q SampleSheet.csv || true`"
 
     if [ "$old_ss_link" != "$new_ss_link" ] ; then
         summarize_samplesheet.py > pipeline/sample_summary.txt
-        rt_runticket_manager.py -r "$RUNID" --reply @pipeline/sample_summary.txt |& log
+        rt_runticket_manager.py -r "$RUNID" --reply @pipeline/sample_summary.txt |& plog
     fi
+}
+
+demux_fail() {
+    # Send an alert when demultiplexing fails. This always requires attention!
+    rt_runticket_manager.py -r "$RUNID" --reply \
+        "Demultiplexing failed. See log in $SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log" |& plog
+    log "FAIL processing $RUNID"
 }
 
 # 6) Scan for each run until we find something that needs dealing with.
