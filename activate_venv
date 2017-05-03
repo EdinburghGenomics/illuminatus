@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Bootstrap a new VEnv in ./_py3_venv suitable for running Illuminatus.
-# This should probably be made into a setup.py with proper deployment etc.
+# This should probably be re-done as setup.py with proper deployment etc.
+# Just now we're running Illuminatus off the default python3 but a custom VEnv
+# seems much more sensible, not just for testing!
 
 # After running this once, I can do, eg.:
 # ( cd ../genologics && python3 ./setup.py develop )

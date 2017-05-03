@@ -1,0 +1,60 @@
+The design doc says that re-demultiplexing a lane is triggered by putting a
+laneN.redo file into the pipeline folder on a run.
+
+Questions this raises:
+
+How does the file get there? If we aren't making it manually, this will be a UDF in the
+LIMS. In which case we could have the driver start by looking for any redo flags in the
+LIMS. It would then make the appropriate files and un-set the UDFs. This is the first time
+the pipeline has needed write access to the LIMS.
+
+For testing we should be OK as we can use the test LIMS and also add a SKIP_CHECK_REDO
+or similar flag to make this a no-op, since we don't want every test run of the pipeline
+to write bakc to the test Wiki - it breaks the principle of test idempotence.
+
+Or, we could trigger a re-run if a new samplesheet is generated. This is easier to detect and maybe neater,
+but then we need to inspect the new sample sheet to see which lanes changed, and there's a risk because
+if the comparison doesn't do what we expect we might end up re-demuxing lanes unexpectedly. But then if the
+samplesheet is changed surely we do need to re-demultiplex for consistency. Hmmm, it's tricky.
+
+OK, anyway, the idea of having .redo files is sound, even if we're not 100% clear on how they get there.
+For now we're fine to just touch them into place from the command line.
+
+So, once we've triggered a re-do. The old data is cleared up and the projects are flagged as pending
+(as per the design). So far, so good.
+
+What if a project is in-pipeline and the redo flag is set? As the code stands, the project is seen as being
+in the pipeline until it finishes, at which point it will be in state redo. But presumably it would be nice to
+be able to kill the pipeline and restart it.
+
+We want a new state for PIPELINE_STOPPED that a run can end up in. Obviously we can't guarantee that a
+   run gets to this state - it might end up forever IN_PIPELINE when a task dies - but we should be able to
+   send runs to this state if:
+
+   A - the pipeline exits with an error
+   B - the pipeline is aborted
+
+I could have 2 distinct states for 'FAILED' and 'ABORTED'. Not sure if this would be useful?
+
+In any case, a run can only get into REDO from FINISHED, FAILED or ABORTED.
+
+So, we want a script that can mechanistically abort the pipeline. How would it work?
+1 - Checks that the status is IN_PIPELINE
+2 - Finds the PID of the process that is controlling the pipeline
+3 - Shuts it down
+
+This isn't as easy as doing a 'kill' because cluster jobs need to be aborted. I think for now this should remain on
+the TODO list. Going beck to the REDO plan, what we have is:
+
+1 - In the first instance, REDO will be triggered from the command line by touching files
+    If a job is in the pipeline, it will need to be manually aborted before the REDO kicks in,
+    or else left to finish.
+2 - Down the line, re-making a sample sheet will trigger re-run of all changed lanes.
+    If the job is running, you have the choice of aborting via command line it or letting it finish.
+    There will be no auto-abort because if you only want to re-do one lane and the others are nearly finished
+    then you don't necessarily want to start them all from scratch, and we don't have the concept of "re-do this
+    lane from scratch while the others finish" (and rightly so!).
+
+What if a job is aborted and only one lane is set for REDO?
+Well, the cleanup process removes the .done flag for everything to be re-done. So if a lane has no .done flag it
+will be re-done automatically. So I think we are OK here already.

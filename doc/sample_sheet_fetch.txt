@@ -1,3 +1,5 @@
+This is now doen very simply by CIFS mount - see notes below.
+
 We need to have a system that directly fetches the sample sheet from the LIMS.
 This is because if a sample sheet is re-generated after a run starts then we want to
 avoid manually copying it over.

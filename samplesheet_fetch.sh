@@ -9,6 +9,10 @@ if [ -z "${FLOWCELLID:-}" ] ; then
     FLOWCELLID=`RunInfo.py | grep '^Flowcell:' | cut -f2 -d' '`
 fi
 
+if [ -z "${FLOWCELLID:-}" ] ; then
+    echo "No FLOWCELLID was provided, and obtaining one from RunInfo.py failed."
+    exit 1
+fi
 
 # Firstly, SampleSheet.csv.0 needs to contain the original file from the
 # sequencer. It is technically possible to run the machine with no sample
@@ -24,7 +28,10 @@ if [ ! -e SampleSheet.csv.0 ] ; then
 fi
 
 # At this point we may expect that SampleSheet.csv is a symlink. Sanity check.
-test -L SampleSheet.csv
+if [ ! -L SampleSheet.csv ] ; then
+    echo "Sanity check failed - SampleSheet.csv is not a symlink"
+    exit 1
+fi
 
 # Find a candidate sample sheet, from the files on /ifs/clarity (or wherever)
 
@@ -38,10 +45,10 @@ test -d "$FS_ROOT"
 candidate_ss=`find "$FS_ROOT/samplesheets_bcl2fastq_format" -name "*_${FLOWCELLID}.csv" -print0 | xargs -r0 ls -tr | tail -n 1`
 
 if [ ! -e "$candidate_ss" ] ; then
-    echo "No candidate replacement samplesheet under $FS_ROOT/samplesheets_bcl2fastq_format"
+    echo "No candidate replacement samplesheet for ${FLOWCELLID} under $FS_ROOT/samplesheets_bcl2fastq_format"
 elif diff -q "$candidate_ss" SampleSheet.csv ; then
     #Nothing to do.
-    echo "SampleSheet.csv is already up-to-date"
+    echo "SampleSheet.csv for ${FLOWCELLID} is already up-to-date"
 else
     #Using noclobber to attempt writing to files until we find an unused name
     set -o noclobber
@@ -54,6 +61,6 @@ else
     done
 
     ln -sf "SampleSheet.csv.$counter" SampleSheet.csv #Should be safe - we checked it was only a link
-    echo "SampleSheet.csv is now linked to new SampleSheet.csv.$counter"
+    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to new SampleSheet.csv.$counter"
 fi
 

@@ -131,22 +131,6 @@ class SampleSheetReader:
         return [index1 , index2]
 
 
-class RunInfo:
-    import xml.etree.ElementTree as ET
-
-    def __init__(self, RunInfoXmlFile):
-        self.RunInfoXmlFile = RunInfoXmlFile
-
-        self.tree = ET.parse(RunInfoXmlFile)
-        self.root = tree.getroot()
-
-    def getReadLength(self):
-        read_length_dict = {}
-        for read in self.root.iter('Read'):
-            read_length_dict [ read.attrib[ 'NumCycles' ] ] = read.attrib[ 'Number' ]
-        return read_length_dict
-
-
 def main():
     """Only for testing. You can't just run this script directly, but you can do:
         python3 -m illuminatus.SampleSheetReader /path/to/SampleSheet.csv

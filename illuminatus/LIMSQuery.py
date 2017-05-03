@@ -16,7 +16,7 @@ import psycopg2
 from psycopg2.extras import NamedTupleCursor
 from psycopg2.extensions import adapt
 
-from genologics.lims import Lims
+#from genologics.lims import Lims
 
 def main():
     """Basic test.

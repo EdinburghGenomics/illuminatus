@@ -12,11 +12,8 @@ set -u
 # incomplete project is not a problem because the files appear in the expected order.
 # But with RSync we can't guarantee that, so we must lock.
 
-
-# Settings in driver.sh to override.
-export SEQDATA_LOCATION=/lustre/seqdata
-export FASTQ_LOCATION=/lustre/fastqdata
-export LOG_DIR=~pipeline/illuminatus/logs
+# This file must be present and must define SEQDATA_LOCATION, FASTQ_LOCATION, LOG_DIR
+source "`dirname $0`"/environ.sh
 
 # With RSYNC, we don't want two syncs operating at once and also we don't want to
 # let the driver run while RSYNC is running because it might copy the touch file

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-import sys
+import sys, os
+import datetime
 from argparse import ArgumentParser
 
-# TODO - we may need to digest the info into YAML first in order to avoid
-# parsing the data twice - once to make a text message for RT and again to
-# get info for MultiQC.
+from illuminatus.SampleSheetReader import SampleSheetReader
+from illuminatus.RunInfoXMLParser import RunInfoXMLParser
 
 def parse_args():
     description = """This script is part of the Illuminatus pipeline.
@@ -18,26 +18,83 @@ In the initial incarnation, it just dumps out the file.
     argparser.add_argument("--project_names",
                             help="Supply a comma-separated list of project names." +
                                  "If you do this, the LIMS will not be queried.")
+    argparser.add_argument("run_dir",
+                            help="Supply a directory to scan, if not the current directory.")
 
     return argparser.parse_args()
 
+def printable_date():
+    return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+
 def main(args):
 
-    #TODO - can I not just use RunInfo.py here?
-    print("Machine: {machine}")
-    print("Run type: {run_type}")
-    print("Read length: {read_len}")
-    print()
+    run_dir = args.run_dir or '.'
 
-    print("Samplesheet report at {date}:")
+    # Load both the RunInfo.xml and the SampleSheet.csv
     try:
-        with open("SampleSheet.csv") as ss_fh:
-            print(ss_fh.read(), end='')
+        ri_xml = RunInfoXMLParser(run_dir + "/RunInfo.xml")
+        ss_csv = SampleSheetReader(run_dir + "/SampleSheet.csv")
     except FileNotFoundError as e:
+        print("Error summarizing run.")
         print(e)
+        return
 
-# FIXME - use the real version from illuminatus.LIMSQuery instead.
-# FIXME2 - tolerate failure to query the LIMS and make a report anyway.
+    #Basic metadata, followed be a per-lane summary.
+    print( "Run ID: {}".format(ri_xml.run_info['RunId']) )
+    print( "Instrument: {}".format(ri_xml.run_info['Instrument']) )
+    print( "Read length: {}".format(','.join(
+                        [ ('[{}]' if ri_xml.read_and_indexed[i] is 'Y' else '{}'
+                          ).format(ri_xml.read_and_length[i])
+                          for i in
+                          sorted(ri_xml.read_and_length.keys(), key=int) ]
+         )) )
+    print( "Active SampleSheet: SampleSheet.csv -> {}".format(
+                os.path.basename(os.readlink(run_dir + "/SampleSheet.csv"))) )
+    print( )
+
+    #Translate all the projects in one go
+    prn = project_real_name( set([ line[ss_csv.column_mapping['sample_project']]
+                                   for line in ss_csv.samplesheet_data ]) )
+
+    print("Samplesheet report at {}:".format(printable_date()))
+
+    #Slice the sample sheet by lane
+    ss_lanes = [ line[ss_csv.column_mapping['lane']] for line in ss_csv.samplesheet_data ]
+    for lane in sorted(set(ss_lanes)):
+        print( "Lane {}:".format(lane) )
+        print( summarize_lane([ line for line in ss_csv.samplesheet_data
+                                if line[ss_csv.column_mapping['lane']] == lane ],
+                              ss_csv.column_mapping, prn) )
+
+def summarize_lane(lane_lines, column_mapping, prn):
+    """Given a list of lines, summarize what they contain.
+       The caller is presumed to have filtered them by lane.
+    """
+    res = []
+
+    projects = [ line[column_mapping['sample_project']] for line in lane_lines ]
+
+    for project in sorted(set(projects)):
+
+        proj_lines =  [ line for line in lane_lines
+                        if line[column_mapping['sample_project']] == project ]
+
+        #Libraries actually taken from the 'description' column.
+        lib_list = [line[column_mapping['description']] for line in proj_lines]
+
+        res.append( "    - Project {p} -- Library {l} -- Number of indexes {ni} ".format(
+                            p  = project,
+                            l  = ','.join(sorted(set(lib_list))),
+                            ni = len(proj_lines)
+                    ) )
+        res.append( "    - See {link}".format(link = prn[project].get('url', prn[project]['name'])) )
+
+    return "\n".join(res)
+
+
+# A rather contorted way to get project names. We may be able to bypass
+# this by injecting them straight into the sample sheet!
 def project_real_name(proj_id_list, name_list=None):
     """Resolves a list of project IDs to a name and URL
     """
@@ -52,14 +109,20 @@ def project_real_name(proj_id_list, name_list=None):
             else:
                 res[p] = dict( name = p + "_UNKNOWN" )
     else:
-        from illuminatus.LIMSQuery import get_project_names
+        try:
+            from illuminatus.LIMSQuery import get_project_names
 
-        for p, n in zip(proj_id_list, get_project_names(*proj_id_list)):
-            if n:
-                res[p] = dict( name = n,
-                               url = "http://foo.example.com/" + name_match[0] )
-            else:
-                res[p] = dict( name = p + "_UNKNOWN" )
+            for p, n in zip(proj_id_list, get_project_names(*proj_id_list)):
+                if n:
+                    res[p] = dict( name = n,
+                                   url = "http://foo.example.com/" + name_match[0] )
+                else:
+                    res[p] = dict( name = p + "_UNKNOWN" )
+        except Exception as e:
+            for p in proj_id_list:
+                if p not in res:
+                    res[p] = dict( name = p + "_LOOKUP_ERROR",
+                                   url = "error://" + repr(e) )
 
     return res
 

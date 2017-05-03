@@ -9,7 +9,7 @@ class RunInfo:
     """This Class provides information about a sequencing run, given a run folder.
        It will parse information from the following sources:
          RunInfo.xml file - to obtain LaneCount
-         Run directory content - to obtain status information
+         Run directory content (including pipeline subdir) - to obtain status information
     """
     def __init__( self , run_folder , run_path = '' ):
 
@@ -17,7 +17,11 @@ class RunInfo:
         self.run_path_folder = os.path.join( run_path , run_folder )
         runinfo_xml_location = os.path.join( self.run_path_folder , 'RunInfo.xml' )
         if os.path.exists( runinfo_xml_location ):
+            try:
                 self.runinfo_xml = RunInfoXMLParser( runinfo_xml_location )
+            except Exception:
+                #if we can't read it we can't get much info
+                pass
 
 
     def _is_sequencing_finished( self ):
@@ -40,33 +44,51 @@ class RunInfo:
         # if the pipeline has not yet seen this run before.
         # the pipeline/ folder should not exist
         PIPELINE_FOLDER_LOCATION = os.path.join( self.run_path_folder , 'pipeline' )
+
         return not os.path.exists( PIPELINE_FOLDER_LOCATION )
 
     def _was_restarted( self ):
-        # returns True if any of the lanes was marked for restart
+        # returns True if any of the lanes was marked for redo
         RESTARTED_FILE_LOCATION = os.path.join( self.run_path_folder , 'pipeline/lane?.redo' )
         redo_files = glob.glob( RESTARTED_FILE_LOCATION )
-        if len(redo_files) > 0:
-            return True
-        return False
+
+        return len(redo_files) > 0
 
     def _was_started( self ):
-        # returns True if ANY of the lanes was marked as started
+        """ returns True if ANY of the lanes was marked as started
+        """
         STARTED_FILE_LOCATION = os.path.join( self.run_path_folder , 'pipeline/lane?.started' )
         started_files = glob.glob( STARTED_FILE_LOCATION )
-        if len(started_files) > 0:
-            return True
-        return False
+
+        return len(started_files) > 0
 
     def _was_finished( self ):
-        # returns True if ALL lanes were marked as done
-        # by comparing number of lanes with the number of lane?.done files
+        """ returns True if ALL lanes were marked as done
+            by comparing number of lanes with the number of lane?.done files
+        """
         number_of_lanes = int( self.runinfo_xml.run_info[ 'LaneCount' ] )
         DONE_FILE_LOCATION = os.path.join( self.run_path_folder , 'pipeline/lane?.done' )
         finished_files = glob.glob( DONE_FILE_LOCATION )
-        if len(finished_files) == number_of_lanes:
-            return True
-        return False
+
+        return len(finished_files) == number_of_lanes
+
+    def _was_aborted( self ):
+        """ if the processing was aborted, we have a single flag for the whole run
+        """
+        return os.path.exists( os.path.join( self.run_path_folder , 'pipeline/aborted' ) )
+
+    def _was_failed( self ):
+        """ if the processing failed, we have a single flag for the whole run
+        """
+        # I think it also makes sense to have a single failed flag, but note that any
+        # lanes with status .done are still to be regarded as good. Ie. the interpretation
+        # of this flag is that any 'started' lane is reallY a 'failed' lane.
+        return os.path.exists( os.path.join( self.run_path_folder , 'pipeline/failed' ) )
+
+    def _was_ended( self ):
+        """ processing finished due to successful exit, or a failure, or was aborted
+        """
+        return self._was_finished() or self._was_aborted() or self._was_failed()
 
     def get_status( self ):
         # workout the status of a run by checking the existence of various touchfiles found in the run folder.
@@ -77,19 +99,29 @@ class RunInfo:
         if self._is_new_run():
             return "new"
 
+        # RUN IS 'redo' if the run is marked for restarting and is ready for restarting (not running):
+        if self._is_sequencing_finished() and self._was_restarted() and self._was_ended():
+            return "redo"
+
+        # RUN is 'failed' or 'aborted' if flagged as such. There should be no process running.
+        if self._was_failed():
+            return "failed"
+        if self._was_aborted():
+            return "aborted"
+
         # RUN IS 'reads_unfinished'
-        if not self._is_sequencing_finished() and not self._is_new_run():
+        if not self._is_sequencing_finished():
             #Double-check that there is no pipeline activity - the run is either still on the sequencer
             #or has been aborted.
-            if not ( self._was_started() or self._was_finished() ):
+            if not ( self._was_started() or self._was_ended() ):
                 return "reads_unfinished"
 
         # RUN IS 'reads_finished': if RTAComplete.txt is present and the demultiplexing has not started e.g. pipeline/lane?.started files do not exist
-        if self._is_sequencing_finished() and not self._was_started() and not self._was_finished() and not self._is_new_run():
+        if self._is_sequencing_finished() and not self._was_started() and not self._was_ended():
             return "reads_finished"
 
         # RUN IS 'in_pipeline':
-        if self._is_sequencing_finished() and self._was_started() and not self._was_finished():
+        if self._is_sequencing_finished() and self._was_started() and not self._was_ended():
             return "in_pipeline"
 
         # RUN IS 'complete':
@@ -99,10 +131,6 @@ class RunInfo:
         # RUN IS 'failed':
                 #if self._is_sequencing_finished() and not self._is_in_pipeline() and self._is_pipeline_finished():
                 #        return "failed"
-
-        # RUN IS 'redo':
-        if self._is_sequencing_finished() and self._was_restarted() and self._was_finished():
-            return "redo"
 
         return "unknown"
 
@@ -122,9 +150,7 @@ class RunInfo:
         return out
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print ("please provide the run folder as an argument")
-        sys.exit(1)
-    run = sys.argv[1]
-    run_info = RunInfo(run, run_path = '')
+    #If no run specified, examine the CWD.
+    run = sys.argv[1] if len(sys.argv) > 1 else '.'
+    run_info = RunInfo(run)
     print ( run_info.get_yaml() )

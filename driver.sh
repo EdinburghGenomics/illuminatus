@@ -1,7 +1,7 @@
 #!/bin/bash -l
 set -e
 set -u
-
+shopt -sq failglob
 
 # A driver script that is to be called directly from the CRON.
 # It will go through all runs in SEQDATA_LOCATION and take action on them.
@@ -9,24 +9,33 @@ set -u
 # to stdout.
 # The script wants to run every 5 minutes or so.
 
-# Settings you probably need to override.
-SEQDATA_LOCATION="${SEQDATA_LOCATION:-/ifs/runqc/test_seqdata/illuminatus}"
-FASTQ_LOCATION="${FASTQ_LOCATION:-/ifs/runqc/test_runqc/illuminatus}"
+# This file must provide SEQDATA_LOCATION, FASTQ_LOCATION if not set externally.
+if [ -e "`dirname $0`"/environ.sh ] ; then
+    source "`dirname $0`"/environ.sh
+fi
+
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 
-# Remove these once we get out of development mode.
-export RT_SYSTEM='test-rt'
-
 BIN_LOCATION="${BIN_LOCATION:-$(dirname $0)}"
-PATH="$(readlink -f $BIN_LOCATION):$PATH"
+PATH="$(readlink -m $BIN_LOCATION):$PATH"
 MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 
 # 1) Refuse to run on a machine other than headnode1
+# (do we really still need this??)
 if [[ "${NO_HOST_CHECK:-0}" = 0 && "${HOSTNAME%%.*}" != headnode1 && "${HOSTNAME%%.*}" != gseg-login0 ]] ; then
     echo "This script should only be run on headnode1 or gseg-login0"
     echo "To skip this check set NO_HOST_CHECK=1"
     exit 1
 fi
+
+# 1a) Sanity check these directories exist and complain to STDERR (triggering CRON
+#     warning mail) if not.
+for d in "${BIN_LOCATION%%:*}" "$SEQDATA_LOCATION" "$FASTQ_LOCATION" ; do
+    if ! [ -d "$d" ] ; then
+        echo "No such directory '$d'" >&2
+        exit 1
+    fi
+done
 
 # 2) Ensure that the directory is there for the main log file and set up logging
 mkdir -p `dirname "$MAINLOG"`
@@ -34,11 +43,31 @@ if [ "${MAINLOG:0:1}" != / ] ; then
     #Ensure abs path, because we change directories within this script
     MAINLOG="$(readlink -f "$MAINLOG")"
 fi
+
+# Main log for general messages.
 log(){ [ $# = 0 ] && cat >> "$MAINLOG" || echo "$*" >> "$MAINLOG" ; }
+
+# Per-project log for project progress messages
+plog() {
+    projlog="$SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log"
+    if ! { [ $# = 0 ] && cat >> "$projlog" || echo "$*" >> "$projlog" ; } ; then
+       log '!!'" Failed to write to $projlog"
+       log "$@"
+    fi
+}
+
+# For a run
 
 trap 'echo "=== `date`. Finished run; PID=$$ ===" >> "$MAINLOG"' EXIT
 log ""
 log "=== `date`. Running $(readlink -f "$0"); PID=$$ ==="
+
+# If there is a Python VEnv, use it.
+py_venv="${BIN_LOCATION%%:*}/_py3_venv"
+if [ -e "${py_venv}/bin/activate" ] ; then
+    log "Activating Python VEnv from ${py_venv}"
+    source "${py_venv}/bin/activate"
+fi
 
 # 3) Define an action for each possible status that a run can have:
 # new)            - this run is seen for the first time (sequencing might be done or is still in progress)
@@ -61,8 +90,8 @@ action_new(){
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
     ( set -e
       mkdir ./pipeline
-      summarize_samplesheet.py > pipeline/sample_summary.txt
-      rt_runticket_manager.py -r "$RUNID" --reply @pipeline/sample_summary.txt |& log
+      plog "NEW $RUNID"
+      fetch_samplesheet_and_report
 
     ) && log OK && BREAK=1 || log FAIL
 }
@@ -74,26 +103,26 @@ action_reads_unfinished(){
 action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     eval touch pipeline/"lane{1..$LANES}.started"
+    log "\_READS_FINISHED $RUNID. Checking for new SampleSheet.csv and preparing to demultiplex."
 
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
-    samplesheet_fetch.sh |& log
+    fetch_samplesheet_and_report
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
     # TODO - add an interin MultiQC report now that the Interop files are here.
     BREAK=1
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID/demultiplexing/"
-    log "\_READS_FINISHED $RUNID. Starting demultiplexing for into $DEMUX_OUTPUT_FOLDER"
+    plog "Now starting demultiplexing for $RUNID into $DEMUX_OUTPUT_FOLDER"
     ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"
-      BCL2FASTQPreprocessor.py "`pwd`" "$DEMUX_OUTPUT_FOLDER" |& log
+      BCL2FASTQPreprocessor.py "`pwd`" "$DEMUX_OUTPUT_FOLDER" |& plog
       cd "$DEMUX_OUTPUT_FOLDER"
-      log "submitting to cluster..."
-      BCL2FASTQRunner.sh | log 2>&1
+      BCL2FASTQRunner.sh |& plog
       BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID |& log
 
       rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
-    ) || log FAIL
+    ) || demux_fail
 }
 
 # What about the transition from demultiplexing to QC. Do we need a new status,
@@ -132,15 +161,40 @@ action_redo() {
 
     (exit 1
      BCL2FASTQCleanup.py //args for partial cleanup here//
+     fetch_samplesheet_and_report
      BCL2FASTQPreprocessor.py "`pwd`" $DEMUX_OUTPUT_FOLDER $redo_list
      ( cd $DEMUX_OUTPUT_FOLDER && BCL2FASTQRunner.sh )
      BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID
-    ) && log OK && BREAK=1 || log FAIL
+    ) && log OK && BREAK=1 || demux_fail
 }
 
 action_unknown() {
     # this run either has no RunInfo.xml or an invalid set of touch files ... nothing to be done...
     log "\_skipping `pwd` because status is $STATUS"
+}
+
+### Other utility functions used by the actions.
+fetch_samplesheet_and_report() {
+    # Tries to fetch an updated samplesheet. If this is the first run, or if
+    # a new one was found, send an e-mail report to RT.
+    # TODO - trigger a MultiQC report too.
+    old_ss_link="`readlink -q SampleSheet.csv || true`"
+
+    #Currently if samplesheet_fetch.sh returns an error the pipeline aborts.
+    samplesheet_fetch.sh | plog
+    new_ss_link="`readlink -q SampleSheet.csv || true`"
+
+    if [ "$old_ss_link" != "$new_ss_link" ] ; then
+        summarize_samplesheet.py > pipeline/sample_summary.txt
+        rt_runticket_manager.py -r "$RUNID" --reply @pipeline/sample_summary.txt |& plog
+    fi
+}
+
+demux_fail() {
+    # Send an alert when demultiplexing fails. This always requires attention!
+    rt_runticket_manager.py -r "$RUNID" --reply \
+        "Demultiplexing failed. See log in $SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log" |& plog
+    log "FAIL processing $RUNID"
 }
 
 # 6) Scan for each run until we find something that needs dealing with.
@@ -153,6 +207,7 @@ for run in $SEQDATA_LOCATION/*_*_*_*/ ; do
   STATUS=`grep ^Status: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   RUNID=`grep ^RunID: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   INSTRUMENT=`grep ^Instrument: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
+  FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
 
   log "Folder $run contains $RUNID from machine $INSTRUMENT with $LANES lane(s) and status $STATUS"
 
