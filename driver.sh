@@ -141,9 +141,18 @@ action_in_pipeline() {
     log "\_IN_PIPELINE $RUNID"
 }
 
+action_failed() {
+    # failed runs need attention, but for now just log the situatuion
+    log "\_FAILED $RUNID"
+}
+
+action_aborted() {
+    true
+}
+
 action_complete() {
     # the pipeline already completed for this run ... nothing to be done ...
-    return
+    true
 }
 
 action_redo() {
@@ -193,6 +202,9 @@ fetch_samplesheet_and_report() {
 }
 
 demux_fail() {
+    # Mark the failure status
+    touch pipeline/failed
+
     # Send an alert when demultiplexing fails. This always requires attention!
     rt_runticket_manager.py -r "$RUNID" --reply \
         "Demultiplexing failed. See log in $SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log" |& plog
