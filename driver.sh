@@ -90,12 +90,12 @@ action_new(){
 
     # TODO - run initial MultiQC here.
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
-    ( set -e
+    set +e ; ( set -e
       mkdir ./pipeline
       plog "NEW $RUNID"
       fetch_samplesheet_and_report
 
-    ) && log OK && BREAK=1 || log FAIL
+    ) ; [ $? = 0 ] && log OK && BREAK=1 || log FAIL
 }
 
 action_reads_unfinished(){
@@ -116,7 +116,7 @@ action_reads_finished(){
     BREAK=1
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID/demultiplexing/"
     plog "Now starting demultiplexing for $RUNID into $DEMUX_OUTPUT_FOLDER"
-    ( set -e
+    set +e ; ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"
       BCL2FASTQPreprocessor.py "`pwd`" "$DEMUX_OUTPUT_FOLDER" |& plog
       cd "$DEMUX_OUTPUT_FOLDER"
@@ -124,7 +124,7 @@ action_reads_finished(){
       BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID |& log
 
       rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
-    ) || demux_fail
+    ) ; [ $? = 0 ] || demux_fail
 }
 
 # What about the transition from demultiplexing to QC. Do we need a new status,
@@ -215,13 +215,18 @@ for run in $SEQDATA_LOCATION/*_*_*_*/ ; do
 
   #Call the appropriate function in the appropriate directory.
   BREAK=0
-  { pushd "$run" >/dev/null && eval action_"$STATUS"
+  { pushd "$run" >/dev/null && eval action_"$STATUS" &&
     popd >/dev/null
   } || log "Error while trying to scan $run"
+  #in case it got clobbered...
+  set -e
 
-  #If the function started some actual work it should request to break, as the CRON will start a new scan
-  #soon in any case and we don't want runs overlapping.
-  #Negated test is needed to play nicely with 'set -e'
+  # If the driver started some actual work it should request to break, as the CRON will start
+  # a new scan at regular intervals in any case. We don't want an instance of the driver to
+  # spend 2 hours demultiplexing then start working on a new run. On the other hand, we don't
+  # want a problem run to gum up the pipeline if every instance of the script tries to process
+  # it, fails, and then exits.
+  # Negated test is needed to play nicely with 'set -e'
   ! [ "$BREAK" = 1 ] || break
 done
 
