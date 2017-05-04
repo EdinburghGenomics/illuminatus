@@ -10,8 +10,10 @@ shopt -sq failglob
 # The script wants to run every 5 minutes or so.
 
 # This file must provide SEQDATA_LOCATION, FASTQ_LOCATION if not set externally.
-if [ -e "`dirname $0`"/environ.sh ] ; then
-    source "`dirname $0`"/environ.sh
+if [ -e "`dirname $BASH_SOURCE`"/environ.sh ] ; then
+    pushd "`dirname $BASH_SOURCE`" </dev/null
+    source ./environ.sh
+    popd >/dev/null
 fi
 
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"

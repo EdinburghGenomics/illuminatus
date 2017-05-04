@@ -2,3 +2,8 @@
 export SEQDATA_LOCATION=/lustre/seqdata
 export FASTQ_LOCATION=/lustre/fastqdata
 export LOG_DIR=~pipeline/illuminatus/logs
+
+# This will activate the local Python VEnv.
+# Note that driver.sh promises to source this file from the directory
+# where it lives.
+source ./activate_venv
