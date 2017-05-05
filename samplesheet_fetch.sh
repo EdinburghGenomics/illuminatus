@@ -33,6 +33,15 @@ if [ ! -L SampleSheet.csv ] ; then
     exit 1
 fi
 
+# Support OVERRIDE with local SampleSheet
+if [ -e SampleSheet.csv.OVERRIDE ] ; then
+    echo "Giving priority to ./SampleSheet.csv.OVERRIDE"
+
+    ln -sf SampleSheet.csv.OVERRIDE SampleSheet.csv
+    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to new SampleSheet.csv.OVERRIDE"
+    exit 0
+fi
+
 # Find a candidate sample sheet, from the files on /ifs/clarity (or wherever)
 
 # Read the Genologics configuration with the same priorities as the LIMSQuery.py code.

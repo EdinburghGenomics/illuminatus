@@ -136,6 +136,23 @@ class TestSamplesheetFetch(unittest.TestCase):
 
         self.assertEqual(last_stdout[0], "SampleSheet.csv.0 created as empty file")
 
+    def test_override(self):
+        """For testing, or if for some reason we need to amend the samplesheet outside
+           of the LIMS, we want to ensure that SampleSheet.csv.OVERRIDE gets priority.
+        """
+        touch('SampleSheet.csv', 'original')
+        touch('SampleSheet.csv.OVERRIDE', 'override')
+        touch(self.ss_dir + '/foo_XXXX.csv', 'ignore this')
+
+        last_stdout = self.bm_run_fetch()
+
+        # So the original SS still gets moved aside, but the link goes to
+        # override and the alternative in ss_dir is ignored.
+        self.assertTrue(os.path.isfile('SampleSheet.csv.0'))
+        self.assertFalse(os.path.isfile('SampleSheet.csv.1'))
+        self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.OVERRIDE')
+        self.assertEqual(last_stdout[1][:45], "Giving priority to ./SampleSheet.csv.OVERRIDE")
+
     def test_no_flowcellid(self):
         """If no flowcell ID is provided, the script should attempt to get one by running
            RunInfo.py and then fail if none is obtained.
