@@ -62,12 +62,17 @@ if flock -x -n $FLOCK_ON ; then
 
     echo "Starting rsync on ${newish_runs[@]}" >> "$LOG_DIR"/rsync.log
 
-    # 2c) Rsync just the bare bones of these
+    # 2c) Rsync just the bare bones of these. Note we exclude the SampleSheet.csv to avoid clobbering
+    #     the modified version saved by Illuminatus.
     rsync -av --exclude='Data/*' --exclude='Images/*' --exclude='Thumbnail_Images/*' --exclude='Logs/*' \
-        --exclude=RTAComplete.txt \
+        --exclude=RTAComplete.txt --exclude=SampleSheet.csv \
         "${newish_runs[@]}" /lustre/seqdata >> "$LOG_DIR"/rsync.log 2>&1
 
-    # 2d) Find any directory on /lustre where the RTAComplete.txt file is missing and do a full RSYNC
+    # 2d) But now we do want the SampleSheet if it's not there already
+    rsync -av --include=SampleSheet.csv --exclude='*/*' --ignore-existing \
+        "${newish_runs[@]}" /lustre/seqdata >> "$LOG_DIR"/rsync.log 2>&1
+
+    # 2e) Find any directory on /lustre where the RTAComplete.txt file is missing and do a full RSYNC
     #     if there is a corresponding RTAComplete.txt on /ifs.
     for dest_run in /lustre/seqdata/17*_*_*_* ; do
         if [ ! -e "$dest_run/RTAComplete.txt" ] ; then
@@ -75,7 +80,7 @@ if flock -x -n $FLOCK_ON ; then
             if [ -e "$src_run/RTAComplete.txt" ] ; then
                 #Now bring the whole run across. I considered explicitly copying RTAComplete.txt right at the end but
                 #it seems like overkill.
-                rsync -av "$src_run" /lustre/seqdata >> "$LOG_DIR"/rsync.log 2>&1
+                rsync -av "$src_run" --exclude=SampleSheet.csv /lustre/seqdata >> "$LOG_DIR"/rsync.log 2>&1
             fi
         fi
     done

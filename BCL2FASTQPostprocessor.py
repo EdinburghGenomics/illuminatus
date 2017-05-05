@@ -19,9 +19,10 @@ def main():
     #All renames need to be logged
     with open(os.path.join(demux_folder, 'renames.log'), 'a') as log_fh:
         log = lambda m: print(m, file=log_fh)
-        log("# %s renaming files in %s on %s" % (
-               sys.argv[0],             demux_folder,
-                                          time.strftime('%Y-%m-%d %H:%M', time.localtime()) ))
+        log("# %s" % sys.argv[0])
+        log("# renaming files in %s on %s" % (
+                                 demux_folder,
+                                       time.strftime('%Y-%m-%d %H:%M', time.localtime()) ))
 
         project_list = do_renames(demux_folder, prefix, log=log)
 
