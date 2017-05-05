@@ -11,7 +11,7 @@ shopt -sq failglob
 
 # This file must provide SEQDATA_LOCATION, FASTQ_LOCATION if not set externally.
 if [ -e "`dirname $BASH_SOURCE`"/environ.sh ] ; then
-    pushd "`dirname $BASH_SOURCE`" </dev/null
+    pushd "`dirname $BASH_SOURCE`" >/dev/null
     source ./environ.sh
     popd >/dev/null
 fi
@@ -68,7 +68,9 @@ log "=== `date`. Running $(readlink -f "$0"); PID=$$ ==="
 py_venv="${BIN_LOCATION%%:*}/_py3_venv"
 if [ -e "${py_venv}/bin/activate" ] ; then
     log "Activating Python VEnv from ${py_venv}"
+    reset=`set +o | grep -w nounset` ; set +o nounset
     source "${py_venv}/bin/activate"
+    $reset
 fi
 
 # 3) Define an action for each possible status that a run can have:
