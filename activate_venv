@@ -15,13 +15,20 @@ if [[ "$0" == "$BASH_SOURCE" ]] ; then
     exit 1
 fi
 
-if [ -e ./_py3_venv/bin/activate ] ; then
+activate_venv() {
+    #We need to ensure -u is not set but then put the old value back.
+    reset=`set +o | grep -w nounset` ; set +o nounset
     source ./_py3_venv/bin/activate
+    $reset
+}
+
+if [ -e ./_py3_venv/bin/activate ] ; then
+    activate_venv
 else
     echo "Bootstrapping new VEnv from `which python3`"
     ( set -e ; #)
     python3 -mvenv ./_py3_venv
-    source ./_py3_venv/bin/activate
+    activate_venv
 
     pip3 install --upgrade pip
     pip3 install Rt
