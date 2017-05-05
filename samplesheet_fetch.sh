@@ -30,7 +30,18 @@ fi
 # At this point we may expect that SampleSheet.csv is a symlink. Sanity check.
 if [ ! -L SampleSheet.csv ] ; then
     echo "Sanity check failed - SampleSheet.csv is not a symlink"
-    exit 1
+    #If the link was changed into a file, try to undo the change
+    if [ -e SampleSheet.csv ] ; then
+        for candidate_ss in SampleSheet.csv.* ; do
+            if diff -q "$candidate_ss" SampleSheet.csv ; then
+                #Keep going - if several match the latest will end up linked.
+                echo "But it is identical to $candidate_ss, so linking it to that."
+                ln -sf "$candidate_ss" SampleSheet.csv
+            fi
+        done
+    fi
+    # If it's still not a symlink, give up.
+    [ -L SampleSheet.csv ] || exit 1
 fi
 
 # Support OVERRIDE with local SampleSheet

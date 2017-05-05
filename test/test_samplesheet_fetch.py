@@ -136,6 +136,39 @@ class TestSamplesheetFetch(unittest.TestCase):
 
         self.assertEqual(last_stdout[0], "SampleSheet.csv.0 created as empty file")
 
+    def test_not_a_link(self):
+        """This shouldn't happen, but it did when RSYNC clobbered the symlink, so
+           I want to account for it. If SampleSheet.csv is a file but SampleSheet.csv.0
+           exists then the script should check they are identical and deal with it.
+        """
+        touch('SampleSheet.csv', 'original')
+        touch('SampleSheet.csv.0', 'original')
+
+        last_stdout = self.bm_run_fetch()
+
+        # The link should be restored.
+        self.assertTrue(os.path.exists('SampleSheet.csv.0'))
+        self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
+        self.assertFalse(os.path.exists('SampleSheet.csv.bak'))
+
+        os.unlink('SampleSheet.csv')
+        touch('SampleSheet.csv', 'mismatch')
+        touch('SampleSheet.csv.1', 'mismatch')
+
+        last_stdout = self.bm_run_fetch()
+
+        # The script should link it to .1 instead
+        self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.1')
+
+        os.unlink('SampleSheet.csv')
+        touch('SampleSheet.csv', 'mismatch2')
+
+        # But this should just fail and the file should stay in place
+        self.bm_run_fetch(1)
+
+        with open("SampleSheet.csv") as fh:
+            self.assertEqual(fh.read().rstrip(), 'mismatch2')
+
     def test_override(self):
         """For testing, or if for some reason we need to amend the samplesheet outside
            of the LIMS, we want to ensure that SampleSheet.csv.OVERRIDE gets priority.
