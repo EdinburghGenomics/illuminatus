@@ -37,12 +37,17 @@ set_bcl2fastq_path() {
     done
 }
 
-if [ ! -e /lustre/software ] ; then
+CLUSTER_QUEUE="${CLUSTER_QUEUE:-casava}"
+
+if [ "$CLUSTER_QUEUE" = none ] then;
+    set_bcl2fastq_path
+    #and keep running...
+elif [ ! -e /lustre/software ] ; then
     if [ -z "${SGE_TASK_ID:-}" ] ; then
         #I humbly submit myself to the (old) cluster.
         set_bcl2fastq_path
         mkdir -p ./sge_output
-        qsub -q "${CLUSTER_QUEUE:-casava}" "$0"
+        qsub -q "$CLUSTER_QUEUE" "$0"
         exit $?
     fi
 else
@@ -50,7 +55,7 @@ else
         #I humbly submit myself to the (new) cluster.
         set_bcl2fastq_path
         mkdir -p ./slurm_output
-        sbatch -p "${CLUSTER_QUEUE:-casava}" "$0"
+        sbatch -p "$CLUSTER_QUEUE" "$0"
         exit $?
     fi
 fi
@@ -58,11 +63,15 @@ fi
 # This part will run on the cluster node.
 
 exec 2>&1 #Everything to stdout
-pwd
-echo "SGE_TASK_ID=${SGE_TASK_ID:-}"
-echo "SLURM_JOB_ID=${SLURM_JOB_ID:-}"
+cat <<.
+Running in $PWD on $HOSTNAME.
+CLUSTER_QUEUE=${CLUSTER_QUEUE:-}
+SGE_TASK_ID=${SGE_TASK_ID:-}
+SLURM_JOB_ID=${SLURM_JOB_ID:-}
 
-echo "Starting bcl2fastq per do_demultiplex.sh..."
+Starting bcl2fastq per ./do_demultiplex.sh...
+
+.
 set -x
 
 source ./do_demultiplex.sh
