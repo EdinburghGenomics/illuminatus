@@ -95,10 +95,11 @@ def main(run_dir, dest, *lanes):
     script_name = os.path.join( dest , "do_demultiplex.sh" )
 
     lines = [
-        "#Running bcl2fastq on %d lanes." % len(pp.lanes),
+        "#Run bcl2fastq on %d lanes." % len(pp.lanes),
         pp.get_bcl2fastq_command()
     ]
 
+    print("### Script being written to %s..." % script_name)
     with open( script_name, 'w' ) as fh:
         for l in lines:
             print(l)

@@ -54,6 +54,11 @@ class TestDriver(unittest.TestCase):
                 NO_HST_CHECK = '1',
             )
 
+        # Also globally clear some environment variables that might have been set outside
+        # of this script.
+        for e in 'RUN_NAME_PATTERN SEQDATA_LOCATION FASTQ_LOCATION'.split():
+            if e in os.environ: del(os.environ[e])
+
         # See the errors in all their glory
         self.maxDiff = None
 
@@ -211,6 +216,32 @@ class TestDriver(unittest.TestCase):
 
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READS_FINISHED")
 
+    def test_demux_error(self):
+        """Simulate an error in BCL2FASTQPreprocessor.py. This should lead to the
+           run going into an error state and the message 'FAIL processing $RUNID'
+           appearing in the log.
+        """
+        # Start the same as test_reads_finished...
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+        os.system("mkdir -p " + test_data + "/pipeline")
+
+        self.bm.add_mock('BCL2FASTQPreprocessor.py', fail=True)
+
+        self.bm_rundriver()
+
+        #I still expect to see the demultiplexing folder and 8 lock files
+        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+        self.assertTrue( os.path.isdir(os.path.join(fastqdir, "demultiplexing")) )
+        self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline', 'lane?.started')) ) )
+
+        #Look for evidence of clean failure, report to RT, etc.
+        self.assertTrue( os.path.exists(os.path.join(test_data, 'pipeline', 'failed')) )
+        self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'][-1],
+                          "-r 160606_K00166_0102_BHF22YBBXX --reply " +
+                          "Demultiplexing failed. See log in " + test_data + "/pipeline/pipeline.log"
+                        )
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "FAIL processing 160606_K00166_0102_BHF22YBBXX")
+
     def test_new_and_finished(self):
         """A run which is complete which has no pipeline folder.
         """
@@ -247,7 +278,7 @@ class TestDriver(unittest.TestCase):
 
         #I'm not sure if the driver should log anything for completed runs, but for now it
         #logs a message containing 'status complete'
-        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "status complete")
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "status=complete")
 
     @unittest.expectedFailure
     def test_redo(self):

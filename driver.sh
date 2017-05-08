@@ -1,6 +1,5 @@
 #!/bin/bash -l
-set -e
-set -u
+set -euo pipefail
 shopt -sq failglob
 
 # A driver script that is to be called directly from the CRON.
@@ -59,11 +58,12 @@ plog() {
     fi
 }
 
-# For a run
-
+# Print a message at the top of the log, and trigger one to print at the end.
+intro="`date`. Running $(readlink -f "$0"); PID=$$"
+log "====`tr -c '' = <<<$intro`===="
+log "=== $intro ==="
+log "====`tr -c '' = <<<$intro`===="
 trap 'echo "=== `date`. Finished run; PID=$$ ===" >> "$MAINLOG"' EXIT
-log ""
-log "=== `date`. Running $(readlink -f "$0"); PID=$$ ==="
 
 # If there is a Python VEnv, use it.
 py_venv="${BIN_LOCATION%%:*}/_py3_venv"
@@ -109,6 +109,7 @@ action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     eval touch pipeline/"lane{1..$LANES}.started"
     log "\_READS_FINISHED $RUNID. Checking for new SampleSheet.csv and preparing to demultiplex."
+    plog ">>> $0 starting action_$STATUS at `date`"
 
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
@@ -118,16 +119,16 @@ action_reads_finished(){
     # TODO - add an interin MultiQC report now that the Interop files are here.
     BREAK=1
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID/demultiplexing/"
-    plog "Now starting demultiplexing for $RUNID into $DEMUX_OUTPUT_FOLDER"
+    plog "Preparing to demultiplex $RUNID into $DEMUX_OUTPUT_FOLDER"
     set +e ; ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"
-      BCL2FASTQPreprocessor.py "`pwd`" "$DEMUX_OUTPUT_FOLDER" |& plog
+      BCL2FASTQPreprocessor.py "`pwd`" "$DEMUX_OUTPUT_FOLDER"
       cd "$DEMUX_OUTPUT_FOLDER"
       BCL2FASTQRunner.sh |& plog
-      BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID |& log
+      BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID
 
       rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
-    ) ; [ $? = 0 ] || demux_fail
+    ) |& plog ; [ $? = 0 ] || demux_fail
 }
 
 # What about the transition from demultiplexing to QC. Do we need a new status,
@@ -161,6 +162,7 @@ action_complete() {
 action_redo() {
     # Some lanes need to be re-done ...
     log "\_REDO $RUNID"
+    plog ">>> $0 starting action_$STATUS at `date`"
 
     # Get a list of what needs redoing.
     redo_list=""
@@ -210,6 +212,7 @@ demux_fail() {
     touch pipeline/failed
 
     # Send an alert when demultiplexing fails. This always requires attention!
+    plog "Notifying error to RT"
     rt_runticket_manager.py -r "$RUNID" --reply \
         "Demultiplexing failed. See log in $SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log" |& plog
     log "FAIL processing $RUNID"
@@ -227,7 +230,7 @@ for run in "$SEQDATA_LOCATION"/$RUN_NAME_PATTERN/ ; do
   INSTRUMENT=`grep ^Instrument: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
 
-  log "Folder $run contains $RUNID from machine $INSTRUMENT with $LANES lane(s) and status $STATUS"
+  log "Directory $run contains $RUNID from machine $INSTRUMENT with $LANES lane(s) and status=$STATUS"
 
   #Call the appropriate function in the appropriate directory.
   BREAK=0
