@@ -21,10 +21,11 @@ from psycopg2.extensions import adapt
 def main():
     """Basic test.
     """
+    # Get the real name of project 10657 (_Nussey_Daniel)
     lims = MyLims()
     print("Project 10657 is {}".format(*lims.get_project_names(10657)))
 
-    # Get the real name of project 10657 (_Nussey_Daniel)
+    # Get the same again by a direct SQL query.
     print("Project 10657 is {}".format(*get_project_names(10657)))
 
 def get_project_names(*proj_nums):

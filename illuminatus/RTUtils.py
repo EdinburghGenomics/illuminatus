@@ -5,6 +5,7 @@ Updated Jan 2017
 @author: tcezard, tbooth2, mberinsk
 '''
 import os, re
+from warnings import warn
 import configparser
 
 import rt
@@ -50,11 +51,19 @@ class RT_manager():
            to connect implicitly.
         """
         self._config_name = config_name
-        self._config = self._get_config_from_ini(config_name)
+        if config_name.lower() == 'none':
+            #Special case for short-circuiting RT entirely
+            self._config = None
+        else:
+            self._config = self._get_config_from_ini(config_name)
 
         self.tracker = None
 
     def connect(self):
+
+        if not self._config:
+            warn("Making dummy connection - all operations will be no-ops.")
+            return self
 
         self.server_path = self._config['server']
         self.username, self.password = self._config['user'], self._config['pass']
@@ -133,6 +142,10 @@ class RT_manager():
            as an integer, or return None if there is no such ticket.
         """
         c = self._config
+        if not c:
+            #In dummy mode, all tickets are 999
+            return 999
+
         tickets = self.tracker.search( Queue = c['run_queue'],
                                        Subject__like = '%{}%'.format(run_id))
 
@@ -153,6 +166,9 @@ class RT_manager():
             #hack around this? No, not easily.
             raise NotImplementedError("RT REST API does not support setting subjects on replies.")
 
+        # Dummy connection mode...
+        if not self._config: return True
+
         return self.tracker.reply(ticket_id, text=message)
 
     def comment_on_ticket(self, ticket_id, message, subject=None):
@@ -162,9 +178,15 @@ class RT_manager():
             #hack around this? No, not easily.
             raise NotImplementedError("RT REST API does not support setting subjects on replies.")
 
+        # Dummy connection mode...
+        if not self._config: return True
+
         return self.tracker.comment(ticket_id, text=message)
 
     def change_ticket_status(self, ticket_id, status):
+        # Dummy connection mode...
+        if not self._config: return
+
         kwargs = dict( Status = status )
         try:
             return self.tracker.edit_ticket(ticket_id, **kwargs)
@@ -177,6 +199,9 @@ class RT_manager():
            (see share/html/REST/1.0/Forms/ticket/comment in the RT source code)
            This call permanently changes the ticket subject.
         """
+        # Dummy connection mode...
+        if not self._config: return
+
         #why the extra space?? I'm not sure but it looks to have been added deliberately.
         kwargs = dict( Subject = "{} ".format(subject) )
         try:

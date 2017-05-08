@@ -12,21 +12,31 @@ $ ./test/end_to_end/slim_a_run.sh 170221_K00166_0183_AHHT3HBBXX ~/seqdata_test
 Then, you need to set some parameters for driver.sh:
 
 $ export MAINLOG=/dev/stdout
-$ export SEQDATA_LOCATION=~/seqdata_test
-$ export FASTQ_LOCATION=~/fastqdata_test
-$ export RT_SYSTEM='none'
+$ export SEQDATA_LOCATION=~/test_seqdata
+$ export FASTQ_LOCATION=~/test_fastqdata
 
-Ensure that the FASTQ_LOCATION actually exists:
+Ensure that the FASTQ_LOCATION actually exists (or driver.sh will quickly complain):
 
-$ mkdir -p ~/fastqdata_test
+$ mkdir -p $FASTQ_LOCATION
 
 You can force the driver to look at only one run, or supply a glob pattern to match:
 
 $ export RUN_NAME_PATTERN='170221_K00166_0183_AHHT3HBBXX'
 $ export RUN_NAME_PATTERN='17????_K00166_*'
 
-When running in test mode with those settings:
+You can stop the pipeline from sending messages to RT and also from querying the LIMS
+for project names.
+
+$ export RT_SYSTEM=none
+$ export PROJECT_NAME_LIST=none
+
+In summary, when running in test mode with all those settings:
 
 * Logs go to the screen (or into ~/fastqdata_test/<runid>)
 * RT messages get skipped
-* New sampleSheet will not be fetched as the slim_a_run.sh makes a SampleSheet.OVERRIDE
+* New SampleSheet will not be fetched as the slim_a_run.sh makes a SampleSheet.OVERRIDE
+* The LIMS will not be queried for project names
+* The first invocation of the pipeline will produce a SampleSheet summary and put the
+  run into status 'reads_finished'. The second will commence demultiplexing.
+* Cluster jobs will run on the casava queue, but you can override this by setting
+  CLUSTER_QUEUE. Setting it to 'none' will cause local execution.

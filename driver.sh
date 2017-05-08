@@ -191,14 +191,15 @@ action_unknown() {
 fetch_samplesheet_and_report() {
     # Tries to fetch an updated samplesheet. If this is the first run, or if
     # a new one was found, send an e-mail report to RT.
-    # TODO - trigger a MultiQC report too.
+    # TODO - trigger an initial MultiQC report too.
     old_ss_link="`readlink -q SampleSheet.csv || true`"
 
     #Currently if samplesheet_fetch.sh returns an error the pipeline aborts.
     samplesheet_fetch.sh | plog
     new_ss_link="`readlink -q SampleSheet.csv || true`"
 
-    if [ "$old_ss_link" != "$new_ss_link" ] ; then
+    if [ ! -e pipeline/sample_summary.txt ] || \
+       [ "$old_ss_link" != "$new_ss_link" ] ; then
         summarize_samplesheet.py > pipeline/sample_summary.txt
         rt_runticket_manager.py -r "$RUNID" --reply @pipeline/sample_summary.txt |& plog
     fi

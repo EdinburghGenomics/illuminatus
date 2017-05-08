@@ -11,14 +11,13 @@ def parse_args():
 It makes the Samplesheet report that was previously handled by
 wiki-communication/bin/upload_run_info_on_wiki.py, by parsing the SampleSheet.csv
 and RunInfo.xml in the current directory and by asking the LIMS for proper project names.
-
-In the initial incarnation, it just dumps out the file.
 """
     argparser = ArgumentParser(description=description)
-    argparser.add_argument("--project_names",
+    argparser.add_argument("--project_name_list",
                             help="Supply a comma-separated list of project names." +
-                                 "If you do this, the LIMS will not be queried.")
-    argparser.add_argument("run_dir",
+                                 "If you do this, the LIMS will not be queried." +
+                                 "You can equivalently setenv PROJECT_NAME_LIST." )
+    argparser.add_argument("run_dir", nargs='?', default='.',
                             help="Supply a directory to scan, if not the current directory.")
 
     return argparser.parse_args()
@@ -29,12 +28,10 @@ def printable_date():
 
 def main(args):
 
-    run_dir = args.run_dir or '.'
-
     # Load both the RunInfo.xml and the SampleSheet.csv
     try:
-        ri_xml = RunInfoXMLParser(run_dir + "/RunInfo.xml")
-        ss_csv = SampleSheetReader(run_dir + "/SampleSheet.csv")
+        ri_xml = RunInfoXMLParser(args.run_dir + "/RunInfo.xml")
+        ss_csv = SampleSheetReader(args.run_dir + "/SampleSheet.csv")
     except FileNotFoundError as e:
         print("Error summarizing run.")
         print(e)
@@ -50,12 +47,15 @@ def main(args):
                           sorted(ri_xml.read_and_length.keys(), key=int) ]
          )) )
     print( "Active SampleSheet: SampleSheet.csv -> {}".format(
-                os.path.basename(os.readlink(run_dir + "/SampleSheet.csv"))) )
+                os.path.basename(os.readlink(args.run_dir + "/SampleSheet.csv"))) )
     print( )
 
     #Translate all the projects in one go
+    project_name_list = ( args.project_name_list or os.environ.get('PROJECT_NAME_LIST', '') )
+
     prn = project_real_name( set([ line[ss_csv.column_mapping['sample_project']]
-                                   for line in ss_csv.samplesheet_data ]) )
+                                   for line in ss_csv.samplesheet_data ]),
+                             project_name_list.split(',') )
 
     print("Samplesheet report at {}:".format(printable_date()))
 
@@ -100,7 +100,9 @@ def project_real_name(proj_id_list, name_list=None):
     """
     res = dict()
     if name_list:
-        #Resolve without going to the LIMS
+        # Resolve without going to the LIMS. Note that if you want to disable
+        # LIMS look-up without supplying an actuall list of names you can just
+        # say "--project_names dummy" or some such thing.
         for p in proj_id_list:
             name_match = [ n for n in name_list if n.startswith(p) ]
             if len(name_match) == 1:
