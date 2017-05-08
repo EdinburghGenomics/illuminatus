@@ -17,6 +17,7 @@ if [ -e "`dirname $BASH_SOURCE`"/environ.sh ] ; then
 fi
 
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
+RUN_NAME_PATTERN="${RUN_NAME_PATTERN:-*_*_*_*}"
 
 BIN_LOCATION="${BIN_LOCATION:-$(dirname $0)}"
 PATH="$(readlink -m $BIN_LOCATION):$PATH"
@@ -214,7 +215,7 @@ demux_fail() {
 }
 
 # 6) Scan for each run until we find something that needs dealing with.
-for run in $SEQDATA_LOCATION/*_*_*_*/ ; do
+for run in "$SEQDATA_LOCATION"/$RUN_NAME_PATTERN/ ; do
   # invoke runinfo and collect some meta-information about the run. We're passing info
   # to the state functions via global variables.
   RUNINFO_OUTPUT="`RunInfo.py $run`"

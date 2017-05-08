@@ -1,0 +1,32 @@
+Unit tests for all components of the pipeline are in the test/ dir, but
+what about doing a full test run on a cut-down dataset?
+
+Firstly, you need a checkout of the Illuminatus code, and ensure that
+you ran the 'activate_venv' script to make a suitable Python3 environment.
+
+Then, you need a cut-down dataset to run through the pipeline.
+The script for making these is test/end_to_end/slim_a_run.sh, eg:
+
+$ ./test/end_to_end/slim_a_run.sh 170221_K00166_0183_AHHT3HBBXX ~/seqdata_test
+
+Then, you need to set some parameters for driver.sh:
+
+$ export MAINLOG=/dev/stdout
+$ export SEQDATA_LOCATION=~/seqdata_test
+$ export FASTQ_LOCATION=~/fastqdata_test
+$ export RT_SYSTEM='none'
+
+Ensure that the FASTQ_LOCATION actually exists:
+
+$ mkdir -p ~/fastqdata_test
+
+You can force the driver to look at only one run, or supply a glob pattern to match:
+
+$ export RUN_NAME_PATTERN='170221_K00166_0183_AHHT3HBBXX'
+$ export RUN_NAME_PATTERN='17????_K00166_*'
+
+When running in test mode with those settings:
+
+* Logs go to the screen (or into ~/fastqdata_test/<runid>)
+* RT messages get skipped
+* New sampleSheet will not be fetched as the slim_a_run.sh makes a SampleSheet.OVERRIDE
