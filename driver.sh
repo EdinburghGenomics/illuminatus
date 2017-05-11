@@ -122,10 +122,10 @@ action_reads_finished(){
     plog "Preparing to demultiplex $RUNID into $DEMUX_OUTPUT_FOLDER"
     set +e ; ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"
-      BCL2FASTQPreprocessor.py "`pwd`" "$DEMUX_OUTPUT_FOLDER"
+      BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER"
       cd "$DEMUX_OUTPUT_FOLDER"
       BCL2FASTQRunner.sh |& plog
-      BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID
+      BCL2FASTQPostprocessor.py . $RUNID
 
       rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
     ) |& plog ; [ $? = 0 ] || demux_fail
@@ -165,23 +165,30 @@ action_redo() {
     plog ">>> $0 starting action_$STATUS at `date`"
 
     # Get a list of what needs redoing.
-    redo_list=""
+    redo_list=()
 
     # Remove all .redo files and corresponding .done files
     for redo in $run/pipeline/lane?.redo ; do
         rm -f ${df%.redo}.done ; rm $df
 
-        redo=${redo%.redo} ; redo=${redo##*[^0-9]}
-        redo_list="$redo_list $redo"
+        [[ "$redo" =~ .*(.)\.redo ]]
+        redo_list+=(${BASH_REMATCH[1]})
     done
 
-    (exit 1
-     BCL2FASTQCleanup.py //args for partial cleanup here//
-     fetch_samplesheet_and_report
-     BCL2FASTQPreprocessor.py "`pwd`" $DEMUX_OUTPUT_FOLDER $redo_list
-     ( cd $DEMUX_OUTPUT_FOLDER && BCL2FASTQRunner.sh )
-     BCL2FASTQPostprocessor.py $DEMUX_OUTPUT_FOLDER $RUNID
-    ) && log OK && BREAK=1 || demux_fail
+    set +e ; ( set -e
+      if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
+        BCL2FASTQCleanup.py "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
+      else
+        mkdir -p "$DEMUX_OUTPUT_FOLDER"
+      fi
+      fetch_samplesheet_and_report
+      BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
+      cd "$DEMUX_OUTPUT_FOLDER"
+      BCL2FASTQRunner.sh |& plog
+      BCL2FASTQPostprocessor.py . $RUNID
+
+      rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed"
+    ) |& plog ; [ $? = 0 ] || demux_fail
 }
 
 action_unknown() {
@@ -212,10 +219,10 @@ demux_fail() {
     touch pipeline/failed
 
     # Send an alert when demultiplexing fails. This always requires attention!
+    # Note that after calling 'plog' we can query '$projlog' since all shell vars are global.
     plog "Notifying error to RT"
-    rt_runticket_manager.py -r "$RUNID" --reply \
-        "Demultiplexing failed. See log in $SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log" |& plog
-    log "FAIL processing $RUNID"
+    rt_runticket_manager.py -r "$RUNID" --reply "Demultiplexing failed. See log in $projlog" |& plog
+    log "FAIL processing $RUNID. See $projlog"
 }
 
 # 6) Scan for each run until we find something that needs dealing with.
