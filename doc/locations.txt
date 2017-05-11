@@ -1,0 +1,15 @@
+Considerations regarding where things go:
+
+On GSEG, BCL raw data will go into /lustre/seqdata/<runid>
+Demultiplexing will happen in /lustre/fastqdata/<runid>/demultiplexing
+Final files will be copied to /lustre/fastqdata/<runid>
+QC will be performed in /lustre/runqc/<runid>
+md5 files will be created in /lustre/runqc/<runid>/md5sums but this will be shifted
+to /lustre/fastqdata/<runid> once they are generated.
+
+The postprocessor script will handle renaming of the files and hence will move them
+out of the demultiplexing subdirectory.
+
+If for some reason (backups?) we don't want the demultiplexing folder in the fastqdata folder,
+we'll just get driver.sh to make a symlink instead of a directory and leave the worker scripts
+unmodified.
