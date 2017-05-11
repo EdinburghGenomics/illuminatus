@@ -1,0 +1,18 @@
+# /lustre/home/pipeline/illuminatus/devel/BCL2FASTQPostprocessor.py renaming files in /lustre/fastqdata/170329_K00166_0198_BHJ53FBBXX/demultiplexing/ on 2017-03-31 10:46
+mv Undetermined_S0_L005_R1_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_5_unassigned_1.fastq.gz
+mv Undetermined_S0_L007_R2_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_7_unassigned_2.fastq.gz
+mv Undetermined_S0_L006_R2_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_6_unassigned_2.fastq.gz
+mv Undetermined_S0_L001_R2_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_1_unassigned_2.fastq.gz
+mv Undetermined_S0_L008_R2_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_8_unassigned_2.fastq.gz
+mv Undetermined_S0_L005_R2_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_5_unassigned_2.fastq.gz
+mv Undetermined_S0_L004_R1_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_4_unassigned_1.fastq.gz
+mv Undetermined_S0_L007_R1_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_7_unassigned_1.fastq.gz
+mv Undetermined_S0_L003_R2_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_3_unassigned_2.fastq.gz
+mv Undetermined_S0_L002_R1_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_2_unassigned_1.fastq.gz
+mv Undetermined_S0_L001_R1_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_1_unassigned_1.fastq.gz
+mv Undetermined_S0_L003_R1_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_3_unassigned_1.fastq.gz
+mv Undetermined_S0_L006_R1_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_6_unassigned_1.fastq.gz
+mv Undetermined_S0_L004_R2_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_4_unassigned_2.fastq.gz
+mv Undetermined_S0_L002_R2_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_2_unassigned_2.fastq.gz
+mv Undetermined_S0_L008_R1_001.fastq.gz 170329_K00166_0198_BHJ53FBBXX_8_unassigned_1.fastq.gz
+# DONE. And projects_ready.txt was saved out.
