@@ -81,7 +81,8 @@ fi
 # in_pipeline)    - the pipeline started processing at least one lane of this run but has not yet finished
 # complete)       - the pipeline has finished processing ALL lanes of this run
 # aborted)        - the run is not to be processed
-# redo)           - at least one lane is marked for redo and run is complete
+# failed)         - the pipeline tried to process the run but failed
+# redo)           - at least one lane is marked for redo and run is complete or failed
 # unknown)        - anything else, including run folders without RunInfo.xml
 
 # All actions can read LANES STATUS RUNID INSTRUMENT
@@ -116,16 +117,20 @@ action_reads_finished(){
     fetch_samplesheet_and_report
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
-    # TODO - add an interin MultiQC report now that the Interop files are here.
+    # Note that the preprocessor and runner are not aware of the 'demultiplexing'
+    # subdirectory and need to be passed the full location explicitly.
+    # The postprocessor does expect to fingd the files in a 'demultiplexing'
+    # subdirectory. This is for 'good reasons' (TM).
+    # TODO - add an interim MultiQC report now that the Interop files are here.
     BREAK=1
-    DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID/demultiplexing/"
-    plog "Preparing to demultiplex $RUNID into $DEMUX_OUTPUT_FOLDER"
+    DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
+    plog "Preparing to demultiplex $RUNID into $DEMUX_OUTPUT_FOLDER/demultiplexing/"
     set +e ; ( set -e
-      mkdir -p "$DEMUX_OUTPUT_FOLDER"
-      BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER"
-      cd "$DEMUX_OUTPUT_FOLDER"
+      mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
+      BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER"/demultiplexing
+      cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       BCL2FASTQRunner.sh |& plog
-      BCL2FASTQPostprocessor.py . $RUNID
+      BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
 
       rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
     ) |& plog ; [ $? = 0 ] || demux_fail
@@ -168,24 +173,29 @@ action_redo() {
     redo_list=()
 
     # Remove all .redo files and corresponding .done files
-    for redo in $run/pipeline/lane?.redo ; do
-        rm -f ${df%.redo}.done ; rm $df
+    for redo in pipeline/lane?.redo ; do
+        rm -f ${redo%.redo}.done ; rm $redo
 
         [[ "$redo" =~ .*(.)\.redo ]]
         redo_list+=(${BASH_REMATCH[1]})
     done
 
+    # Re-summarize the sample sheet, as it probably changed.
+    # TODO - say what lanes are being demuxed in the report, since we can't just now promise
+    # that all the altered lanes are the actual ones being re-done.
+    fetch_samplesheet_and_report
+
+    BREAK=1
+    DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
     set +e ; ( set -e
       if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
         BCL2FASTQCleanup.py "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
-      else
-        mkdir -p "$DEMUX_OUTPUT_FOLDER"
       fi
-      fetch_samplesheet_and_report
-      BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
-      cd "$DEMUX_OUTPUT_FOLDER"
+      mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
+      BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER"/demultiplexing "${redo_list[@]}"
+      cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       BCL2FASTQRunner.sh |& plog
-      BCL2FASTQPostprocessor.py . $RUNID
+      BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
 
       rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed"
     ) |& plog ; [ $? = 0 ] || demux_fail
