@@ -35,10 +35,11 @@ class BCL2FASTQPreprocessor:
 
         assert self.lanes
 
-        # FIXME - this should be picked up from a configuration file or embedded
-        # in the sample sheet.
-        # RE: using a configuration file (settings.ini)
-        ini_file = os.path.join( self._rundir , "settings.ini" )
+        # FIXME - this should be picked up from the LIMS or embedded
+        # in the sample sheet. Embedding in the SampleSheet but allowing
+        # override in pipeline_settings.ini seems the best option.
+        # RE: using a configuration file (pipeline_settings.ini)
+        ini_file = os.path.join( self._rundir , "pipeline_settings.ini" )
         self.ini_settings = ConfigFileReader( ini_file )
 
         # Can be overriden by caller. Are we ever actully doing this?
@@ -66,7 +67,7 @@ class BCL2FASTQPreprocessor:
         # Add list of lanes to process, which is controlled by --tiles
         cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]")
 
-        ## now that the cmd array is complete will evaluate the settings.ini file
+        ## now that the cmd array is complete will evaluate the pipeline_settings.ini file
         ## every setting must be either replaced or appended to the cmd array
         ## this won't work with options that appear multiple times like --use-base-mask (don't think we need this though)
         for ini_option in self.ini_settings.get_all_options('bcl2fastq'): # section in the ini file is bcl2fastq
@@ -78,10 +79,10 @@ class BCL2FASTQPreprocessor:
             replace_value = ( ini_option + delimiter +
                               self.ini_settings.get_value('bcl2fastq', ini_option).format(lanes=''.join(self.lanes)) )
             if replace_index:
-                #print ("replacing from settings.ini option "+ ini_option)
+                #print ("replacing from pipeline_settings.ini option "+ ini_option)
                 cmd[replace_index[0]] = replace_value
             else: ## so must be appended
-                #print ("appending from settings.ini " + ini_option)
+                #print ("appending from pipeline_settings.ini " + ini_option)
                 cmd.append(replace_value)
 
         return ' '.join(cmd)

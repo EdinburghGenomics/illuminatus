@@ -52,7 +52,8 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
 
         # FIXME - how do we override "barcode-mismatches"? Needs a design decision.
         # One would hope it could be added to the SampleSheet, under settings, but that's not supported.
-        # So we'll need to put it into another settings file.
+        # So we'll need to put it into another settings file. Will we be able to get this info direct
+        # from the LIMS?
 
         self.assertCountEqual(self.bcl2fastq_command_split, [
                 "bcl2fastq",
@@ -69,7 +70,7 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         """settings file test: Run in 160603_M01270_0196_000000000-AKGDE is a MISEQ run with 1 pool and 10-base barcodes.
         """
         run_id = '160607_D00248_0174_AC9E4KANXX'
-        ini_file = os.path.join(self.seqdata_dir, run_id, "settings.ini")
+        ini_file = os.path.join(self.seqdata_dir, run_id, "pipeline_settings.ini")
 
         # Check setting some overrides in the .ini file. {lanes} should be substituted for the
         # list of lanes.

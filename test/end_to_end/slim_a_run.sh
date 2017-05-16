@@ -48,14 +48,14 @@ for lane in $LANES ; do
   done
 done
 
-# Make a settings.ini file telling blc2fastq to ignore the missing tiles
-# Note this assumes if settings.ini exists already it only has a [bcl2fastq] section, most
+# Make a pipeline_settings.ini file telling blc2fastq to ignore the missing tiles
+# Note this assumes if pipeline_settings.ini exists already it only has a [bcl2fastq] section, most
 # likely overriding --barcode-mismatches.
 ini_frag=$'[bcl2fastq]\n--tiles: s_[{lanes}]_1101'
-if [ ! -e "$DEST"/settings.ini ] ; then
-    echo "[bcl2fastq]" > "$DEST"/settings.ini
+if [ ! -e "$DEST"/pipeline_settings.ini ] ; then
+    echo "[bcl2fastq]" > "$DEST"/pipeline_settings.ini
 fi
-echo "--tiles: s_[{lanes}]_1101" >> "$DEST"/settings.ini
+echo "--tiles: s_[{lanes}]_1101" >> "$DEST"/pipeline_settings.ini
 
 # Finally copy the SampleSheet.csv to SampleSheet.csv.OVERRIDE so Illuminatus won't try
 # to replace it.

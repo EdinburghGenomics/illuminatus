@@ -4,10 +4,12 @@
 ; can't be used with options that appear multiple times e.g. --use-base-mask
 --fastq-compression-level: 6
 --barcode-mismatches: 1
---ignore-missing-bcls: 
---ignore-missing-filter: 
+--ignore-missing-bcls:
+--ignore-missing-filter:
 --ignore-missing-positions:
---tiles=s_[12345678]
+--tiles: s_[12345678]
 
 [illuminatus]
-notifications: quite
+; This is not yet implemented. You can silence the whole pipeline but you can't
+; tell the regular pipeline that it should be silent about just one run.
+notifications: quiet
