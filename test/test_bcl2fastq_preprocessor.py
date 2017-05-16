@@ -69,12 +69,14 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         """settings file test: Run in 160603_M01270_0196_000000000-AKGDE is a MISEQ run with 1 pool and 10-base barcodes.
         """
         run_id = '160607_D00248_0174_AC9E4KANXX'
-        ini_file = os.path.join(self.seqdata_dir ,run_id, "settings.ini")
+        ini_file = os.path.join(self.seqdata_dir, run_id, "settings.ini")
 
-        f = open( ini_file , 'w')
-        f.write("[bcl2fastq]\n")
-        f.write("--barcode-mismatches: 100\n")
-        f.close()
+        # Check setting some overrides in the .ini file. {lanes} should be substituted for the
+        # list of lanes.
+        with open( ini_file , 'w') as f:
+            print("[bcl2fastq]", file=f)
+            print("--barcode-mismatches: 100", file=f)
+            print("--tiles: s_[{lanes}]_1101", file=f)
 
         self.run_preprocessor(run_id, [1])
         self.assertCountEqual(self.bcl2fastq_command_split, [
@@ -82,20 +84,17 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
             "-R '%s/%s'" % (self.seqdata_dir, run_id),
             "-o '%s'" % self.out_dir ,
             "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
-            "--fastq-compression-level 6", # Do we still need this? Yes.
-            "--barcode-mismatches 100",  # If anything?
+            "--fastq-compression-level 6",
+            "--barcode-mismatches 100",  # Should be set by .ini
             "--use-bases-mask '1:Y50n,I8,I8'",
-            "--tiles=s_[1]",
+            "--tiles=s_[1]_1101", # Lanes wildcard should be substituted.
         ])
         self.addCleanup(lambda: remove( ini_file ) )
-
-
 
 
     def test_miseq_badlane(self):
         """What if I try to demux a non-existent lane on a MiSEQ?
         """
-
         self.assertRaises(KeyError,
                 self.run_preprocessor, '150602_M01270_0108_000000000-ADWKV', [1,5]
             )
@@ -108,7 +107,7 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         #Run with a subset of lanes...
         self.run_preprocessor(run_id, [1,2,3,4,8])
 
-        self.assertEqual(self.pp.lanes, ['1', '2', '3', '4', '8'])
+        self.assertEqual(self.pp.lanes, list('12348'))
 
         self.assertCountEqual(self.bcl2fastq_command_split, [
                 "bcl2fastq",
@@ -165,16 +164,20 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         #Now we can run main(run_dir, dest)
         pp_main(data_dir, out_dir)
 
+        # Open the script that was just outputted.
         script = os.path.join(out_dir, 'do_demultiplex.sh')
         self.assertTrue(os.path.exists(script))
         #self.assertTrue(os.access(script, os.X_OK))
-
         with open(script) as fh:
             script_lines = [l.rstrip() for l in list(fh)]
 
-        self.assertEqual(script_lines[0], '#Running bcl2fastq on 8 lanes.')
+        self.assertEqual(script_lines[0], '#Run bcl2fastq on 8 lanes.')
 
-        stdout_lines = mocked_stdout.getvalue().rstrip('\n').split('\n')
+        #The preprocessor should only output the actual script plus a couple of
+        #markers.
+        stdout_lines = [ l for l in
+                         mocked_stdout.getvalue().rstrip('\n').split('\n')
+                         if ( l and not l[0:1] in '<>') ]
 
         self.assertEqual(stdout_lines, script_lines)
 
