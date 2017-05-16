@@ -58,6 +58,10 @@ plog() {
     fi
 }
 
+plog_start() {
+    plog $'>>>\n>>>\n>>>'" $0 starting action_$STATUS at `date`"
+}
+
 # Print a message at the top of the log, and trigger one to print at the end.
 intro="`date`. Running $(readlink -f "$0"); PID=$$"
 log "====`tr -c '' = <<<$intro`===="
@@ -96,7 +100,7 @@ action_new(){
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
     set +e ; ( set -e
       mkdir ./pipeline
-      plog "NEW $RUNID"
+      plog_start
       fetch_samplesheet_and_report
 
     ) ; [ $? = 0 ] && log OK && BREAK=1 || log FAIL
@@ -110,7 +114,7 @@ action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     eval touch pipeline/"lane{1..$LANES}.started"
     log "\_READS_FINISHED $RUNID. Checking for new SampleSheet.csv and preparing to demultiplex."
-    plog ">>> $0 starting action_$STATUS at `date`"
+    plog_start
 
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
@@ -128,10 +132,12 @@ action_reads_finished(){
     set +e ; ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER"/demultiplexing
+      log "  Starting bcl2fastq on $RUNID."
       cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       BCL2FASTQRunner.sh |& plog
       BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
 
+      log "  Completed bcl2fastq on $RUNID."
       rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
     ) |& plog ; [ $? = 0 ] || demux_fail
 }
@@ -167,7 +173,7 @@ action_complete() {
 action_redo() {
     # Some lanes need to be re-done ...
     log "\_REDO $RUNID"
-    plog ">>> $0 starting action_$STATUS at `date`"
+    plog_start
 
     # Get a list of what needs redoing.
     redo_list=()
@@ -193,10 +199,13 @@ action_redo() {
       fi
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER"/demultiplexing "${redo_list[@]}"
+
+      log "  Starting bcl2fastq on $RUNID lanes ${redo_list[*]}."
       cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       BCL2FASTQRunner.sh |& plog
       BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
 
+      log "  Completed bcl2fastq on $RUNID lanes ${redo_list[*]}."
       rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed"
     ) |& plog ; [ $? = 0 ] || demux_fail
 }
