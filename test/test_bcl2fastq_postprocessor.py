@@ -33,8 +33,8 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
 
         # Before... just check that the test folder really does have the names I expected.
         in_dir = os.path.join(self.demuxed_dir, '160811_D00261_0355_BC9DA7ANXX.std')
-        fqgz_before = glob(in_dir + '/*/*/*.fastq.gz' )
-        fqgz_before = sorted([ f[len(in_dir)+1:] for f in fqgz_before ])
+        fqgz_before = glob(in_dir + '/demultiplexing/*/*/*.fastq.gz' )
+        fqgz_before = sorted([ f[len(in_dir+'/demultiplexing/'):] for f in fqgz_before ])
 
         self.assertEqual(fqgz_before, [
             '10510/10510GC0017L01/10510GCpool05_S1_L001_R1_001.fastq.gz',
@@ -91,8 +91,8 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         """
         out_dir = self.run_postprocessor('160811_D00261_0355_BC9DA7ANXX', '.skip')
 
-        fqgz = glob(out_dir + "/*/*/*.fastq.gz")
-        fqgz = sorted([ f[len(out_dir)+1:] for f in fqgz ])
+        fqgz = glob(out_dir + "/demultiplexing/*/*/*.fastq.gz")
+        fqgz = sorted([ f[len(out_dir+"/demultiplexing/"):] for f in fqgz ])
 
         # File should still be there
         self.assertEqual(fqgz, [
