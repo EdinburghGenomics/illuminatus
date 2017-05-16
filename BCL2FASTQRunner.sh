@@ -21,10 +21,10 @@
 #SBATCH -o slurm_output/demultiplexing.%A.%a.out
 #SBATCH -e slurm_output/demultiplexing.%A.%a.err
 
-set -e ; set -u
+set -euo pipefail
 
 set_bcl2fastq_path() {
-    #Pick the appropriate bcl2fastq.
+    # Pick the appropriate bcl2fastq.
     for p in "${BCL2FASTQ_PATH:-}" \
              "/lustre/software/bcl2fastq/bcl2fastq2-v2.17.1.14/bin" \
              "/ifs/software/linux_x86_64/Illumina_pipeline/bcl2fastq2-v2.17.1.14-bin/bin" \
@@ -37,27 +37,52 @@ set_bcl2fastq_path() {
     done
 }
 
+echo_and_run(){
+    # Run a command, printing what is run and capturing the output
+    # (which is assumed to be small!)
+    echo "[`pwd`]\$ $*"
+    { CMD_OUT="$("$@")" ; CMD_RETVAL=$? ; CMD_FIRSTLINE="$(head -n1 <<<"$CMD_OUT")" ; } || true
+    [ -z "$CMD_OUT" ] || cat <<<"$CMD_OUT"
+}
+
+check_exit(){
+    if [ "$CMD_RETVAL" != 0 ] ; then
+        # Diagnosis, please!
+        [[ "$CMD_FIRSTLINE" =~ Submitted\ batch\ job\ ([0-9]+) ]] || \
+        [[ "$CMD_FIRSTLINE" =~ Your\ job\ ([0-9]+) ]] || true
+        JOBID="${BASH_REMATCH[1]:-}"
+
+        if [ -n "$JOBID" ] ; then
+            echo "Cluster job exited with an error. Last few lines of the logs are as follows..."
+            for log in "`pwd`"/slurm_output/demultiplexing.$JOBID.*.??? \
+                       "`pwd`"/sge_output/demultiplexing.?$JOBID.* ; do
+                [ ! -e "$log" ] || tail -v -- "$log"
+            done
+        fi
+    else
+        echo "$0 finished running cluster job."
+    fi
+    exit "$CMD_RETVAL"
+}
+
+
 CLUSTER_QUEUE="${CLUSTER_QUEUE:-casava}"
 
-if [ "$CLUSTER_QUEUE" = none ] then;
+if [ "$CLUSTER_QUEUE" = none ] ; then
     set_bcl2fastq_path
     #and keep running...
-elif [ ! -e /lustre/software ] ; then
-    if [ -z "${SGE_TASK_ID:-}" ] ; then
-        #I humbly submit myself to the (old) cluster.
-        set_bcl2fastq_path
-        mkdir -p ./sge_output
-        qsub -q "$CLUSTER_QUEUE" "$0"
-        exit $?
-    fi
-else
-    if [ -z "${SLURM_JOB_ID:-}" ] ; then
-        #I humbly submit myself to the (new) cluster.
-        set_bcl2fastq_path
-        mkdir -p ./slurm_output
-        sbatch -p "$CLUSTER_QUEUE" "$0"
-        exit $?
-    fi
+elif [ ! -e /lustre/software ] && [ -z "${SGE_TASK_ID:-}" ] ; then
+    #I humbly submit myself to the (old) cluster.
+    set_bcl2fastq_path
+    echo_and_run mkdir -p ./sge_output
+    echo_and_run qsub -q "$CLUSTER_QUEUE" "$0"
+    check_exit
+elif [ -z "${SLURM_JOB_ID:-}" ] ; then
+    #I humbly submit myself to the (new) cluster.
+    set_bcl2fastq_path
+    echo_and_run mkdir -p ./slurm_output
+    echo_and_run sbatch -p "$CLUSTER_QUEUE" "$0"
+    check_exit
 fi
 
 # This part will run on the cluster node.
