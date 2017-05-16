@@ -8,7 +8,7 @@
    will not be necessary.
    If it is, see commit 5d8aebcd0d for my outline code to do this.
 """
-import os, sys, re
+import os, sys
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 from illuminatus.ConfigFileReader import ConfigFileReader
@@ -71,10 +71,10 @@ class BCL2FASTQPreprocessor:
         ## this won't work with options that appear multiple times like --use-base-mask (don't think we need this though)
         for ini_option in self.ini_settings.get_all_options('bcl2fastq'): # section in the ini file is bcl2fastq
             ## special case for option --tiles
-            delimiter = "=" if ini_option == "--tiles" else " "
+            delimiter = "=" if ini_option in ["--tiles"] else " "
 
             replace_index = [ i for i, c in enumerate(cmd)
-                              if re.split(r'[\s=]', c)[0] == ini_option ]
+                              if c.split(delimiter)[0] == ini_option ]
             replace_value = ( ini_option + delimiter +
                               self.ini_settings.get_value('bcl2fastq', ini_option).format(lanes=''.join(self.lanes)) )
             if replace_index:
