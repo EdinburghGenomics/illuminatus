@@ -6,37 +6,45 @@
     projects_ready.txt is added listing the projects found
     projects_pending.txt is deleted if it exists
 """
+# FIXME - I think we should be moving the files from demultiplexing into the root dir.
+# In which case this script wants to be run in the top-level directory.
+# I guess we could go back to keeping the files in /ifs/runqc until they are renamed,
+# and this might be sensible for backup purposes. In any case I could do this with a
+# symlink so the code can stay the same.
+
 import os, sys, glob, re, time
 
-def main():
+def main(demux_dir, prefix=None):
     """ Usage BCL2FASTQPostprocessor.py <run_dir> [prefix]
     """
-    demux_folder = sys.argv[1]
+    demux_dir = os.path.abspath(demux_dir)
 
-    #The prefix is normally the run name ie. the foilder name.
-    prefix = sys.argv[2] if len(sys.argv) > 2 else os.path.basename(demux_folder)
+    #The prefix is normally the run name ie. the folder name, but driver.sh
+    #will set this explicitly based on RunInfo.
+    if not prefix:
+        prefix = os.path.basename(demux_dir)
 
     #All renames need to be logged
-    with open(os.path.join(demux_folder, 'renames.log'), 'a') as log_fh:
+    with open(os.path.join(demux_dir, 'renames.log'), 'a') as log_fh:
         log = lambda m: print(m, file=log_fh)
         log("# %s" % sys.argv[0])
         log("# renaming files in %s on %s" % (
-                                 demux_folder,
+                                 demux_dir,
                                        time.strftime('%Y-%m-%d %H:%M', time.localtime()) ))
 
-        project_list = do_renames(demux_folder, prefix, log=log)
+        project_list = do_renames(demux_dir, prefix, log=log)
 
-        save_projects_ready(demux_folder, project_list)
+        save_projects_ready(demux_dir, project_list)
 
         log("# DONE. And projects_ready.txt was saved out.")
 
 
-def save_projects_ready(demux_folder, project_list):
+def save_projects_ready(demux_dir, project_list):
     #Save out what we've processed. There might be stuff already in projects_ready.txt
     #and we want to maintain the contents as a sorted set (as per 'sort -u')
     proj_seen = set(project_list)
 
-    proj_ready_file = os.path.join(demux_folder, 'projects_ready.txt')
+    proj_ready_file = os.path.join(demux_dir, 'projects_ready.txt')
     try:
         with open(proj_ready_file) as pr_fh:
             for l in pr_fh:
@@ -50,12 +58,12 @@ def save_projects_ready(demux_folder, project_list):
 
     # And delete projects_pending.txt. It probably doesn't exist, which is fine.
     try:
-        os.unlink(os.path.join(demux_folder, 'projects_pending.txt'))
+        os.unlink(os.path.join(demux_dir, 'projects_pending.txt'))
     except FileNotFoundError:
         pass
 
 
-def do_renames(demux_folder, prefix, log = lambda m: print(m)):
+def do_renames(demux_dir, prefix, log = lambda m: print(m)):
     """ The main part of the code that does the renaming.
         Primary reason for splitting this out from main() is to separate
         the sys.argv processing and the log file handling in order to
@@ -64,9 +72,9 @@ def do_renames(demux_folder, prefix, log = lambda m: print(m)):
     """
     proj_seen = []
 
-    demux_folder_content = glob.glob( os.path.join( demux_folder , "?????/*/*" ) )
+    demux_dir_content = glob.glob( os.path.join( demux_dir , "?????/*/*" ) )
 
-    for fastq_file in demux_folder_content:
+    for fastq_file in demux_dir_content:
 
         #os.path.split is unhelpful here. Just do it the obvious way.
         split_path = fastq_file.split('/')
@@ -101,9 +109,9 @@ def do_renames(demux_folder, prefix, log = lambda m: print(m)):
 
     # Now deal with the undetermined files.  Have we decided what to do with these?
     # Maybe just leave them alone?
-    demux_folder_undetermined_fastq = glob.glob( os.path.join( demux_folder, "Undetermined_*" ) )
+    demux_dir_undetermined_fastq = glob.glob( os.path.join( demux_dir, "Undetermined_*" ) )
 
-    for undet_file_absolute in demux_folder_undetermined_fastq:
+    for undet_file_absolute in demux_dir_undetermined_fastq:
         split_path = undet_file_absolute.split('/')
         filename = split_path[-1]
 
@@ -131,4 +139,4 @@ def do_renames(demux_folder, prefix, log = lambda m: print(m)):
     return proj_seen
 
 if __name__ == '__main__':
-    main()
+    main(*sys.argv[1:])
