@@ -45,6 +45,10 @@ if [ "${MAINLOG:0:1}" != / ] ; then
     #Ensure abs path, because we change directories within this script
     MAINLOG="$(readlink -f "$MAINLOG")"
 fi
+#If logging is to the terminal, use the actual tty pipe otherwise
+#messages get redirected in some of the blocks below.
+{ tty="`tty || true`" ; } < "$MAINLOG"
+[ ! -c "$tty" ] || MAINLOG="$tty"
 
 # Main log for general messages.
 log(){ [ $# = 0 ] && cat >> "$MAINLOG" || echo "$*" >> "$MAINLOG" ; }
@@ -239,8 +243,8 @@ demux_fail() {
 
     # Send an alert when demultiplexing fails. This always requires attention!
     # Note that after calling 'plog' we can query '$projlog' since all shell vars are global.
-    plog "Notifying error to RT"
-    rt_runticket_manager.py -r "$RUNID" --reply "Demultiplexing failed. See log in $projlog" |& plog
+    plog "Attempting to notify error to RT"
+    rt_runticket_manager.py -r "$RUNID" --reply "Demultiplexing failed. See log in $projlog" |& plog || true
     log "FAIL processing $RUNID. See $projlog"
 }
 
