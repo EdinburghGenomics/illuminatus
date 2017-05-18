@@ -15,10 +15,10 @@ import subprocess
 #We're testing a shell script here.
 sys.path.insert(0,'.')
 from test.binmocker import BinMocker
-VERBOSE = int(os.environ.get('VERBOSE', '0'))
+VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 FETCH = os.path.abspath(os.path.dirname(__file__) + '/../samplesheet_fetch.sh')
 
-class TestSamplesheetFetch(unittest.TestCase):
+class T(unittest.TestCase):
 
     def setUp(self):
         self.maxDiff = None

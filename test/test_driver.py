@@ -16,7 +16,7 @@ from glob import glob
 sys.path.insert(0,'.')
 from test.binmocker import BinMocker
 
-VERBOSE = int(os.environ.get('VERBOSE', '0'))
+VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')
 
 PROGS_TO_MOCK = """
@@ -24,7 +24,7 @@ PROGS_TO_MOCK = """
     summarize_samplesheet.py rt_runticket_manager.py
 """.split()
 
-class TestDriver(unittest.TestCase):
+class T(unittest.TestCase):
 
     def setUp(self):
         """Make a shadow folder, and in it have subdirs seqdata and fastqdata and log.

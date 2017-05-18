@@ -1,7 +1,7 @@
 Unit tests for all components of the pipeline are in the test/ dir, but
 what about doing a full test run on a cut-down dataset?
 
-Firstly, you need a checkout of the Illuminatus code, and ensure that
+Firstly, you need a checkout of the Illuminatus code, and to ensure that
 you ran the 'activate_venv' script to make a suitable Python3 environment.
 
 Then, you need a cut-down dataset to run through the pipeline.
@@ -30,6 +30,10 @@ for project names.
 $ export RT_SYSTEM=none
 $ export PROJECT_NAME_LIST=none
 
+Or if you care about the SampleSheet report looking right:
+
+$ export PROJECT_NAME_LIST=10503_Burt_Dave,10749_Dunlop_Malcolm
+
 In summary, when running in test mode with all those settings:
 
 * Logs go to the screen (or into ~/fastqdata_test/<runid>)
@@ -40,3 +44,7 @@ In summary, when running in test mode with all those settings:
   run into status 'reads_finished'. The second will commence demultiplexing.
 * Cluster jobs will run on the casava queue, but you can override this by setting
   CLUSTER_QUEUE. Setting it to 'none' will cause local execution.
+
+# Copy-and-paste lines...
+export MAINLOG=/dev/stdout SEQDATA_LOCATION=~/test_seqdata FASTQ_LOCATION=~/test_fastqdata
+export RT_SYSTEM=none PROJECT_NAME_LIST=none CLUSTER_QUEUE=global

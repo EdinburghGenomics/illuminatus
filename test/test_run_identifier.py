@@ -12,7 +12,7 @@ from RunInfo import RunInfo
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')
 
-class TestRunINFO(unittest.TestCase):
+class T(unittest.TestCase):
 
     #Helper functions:
     def use_run(self, run_id, copy=False, make_run_info=True):

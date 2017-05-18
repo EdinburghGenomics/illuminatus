@@ -11,7 +11,7 @@ from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/base_mask_examples')
 
-class TestBaseMaskExtractor(unittest.TestCase):
+class T(unittest.TestCase):
 
     def bm_test(self, subdir):
         """Given the name of a folder in DATA_DIR, check that the generated
@@ -48,7 +48,7 @@ for i, n in enumerate([ True, True, False ]):
 for lm in glob(os.path.join(DATA_DIR, '*', 'lanemasks.txt')):
     #Note the slightly contorted double-lambda syntax to make the closure.
     dname = os.path.basename(os.path.dirname(lm))
-    setattr(TestBaseMaskExtractor, 'test_bme_%s' % dname, (lambda d: lambda self: self.bm_test(d))(dname))
+    setattr(T, 'test_bme_%s' % dname, (lambda d: lambda self: self.bm_test(d))(dname))
 
 if __name__ == '__main__':
     unittest.main()

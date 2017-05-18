@@ -6,7 +6,7 @@ import sys, os, glob, re
 sys.path.insert(0,'.')
 from illuminatus.SampleSheetReader import SampleSheetReader
 
-class TestSampleSheetReader(unittest.TestCase):
+class T(unittest.TestCase):
 
     """As far as I can see, SampleSheetReader has one public method:
         get_samplesheet_data_for_BaseMaskExtractor()

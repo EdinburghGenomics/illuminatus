@@ -12,7 +12,9 @@ sys.path.insert(0,'.')
 from BCL2FASTQPostprocessor import main as pp_main
 from BCL2FASTQPostprocessor import do_renames, save_projects_ready
 
-class TestBCL2FASTQPreprocessor(unittest.TestCase):
+VERBOSE = os.environ.get('VERBOSE', '0') != '0'
+
+class T(unittest.TestCase):
 
     def setUp(self):
         # Look for test data relative to this Python file
@@ -36,6 +38,7 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         fqgz_before = glob(in_dir + '/demultiplexing/*/*/*.fastq.gz' )
         fqgz_before = sorted([ f[len(in_dir+'/demultiplexing/'):] for f in fqgz_before ])
 
+        # FIXME - this doesn't match the project/pool/library naming plan. Why not??
         self.assertEqual(fqgz_before, [
             '10510/10510GC0017L01/10510GCpool05_S1_L001_R1_001.fastq.gz',
             '10510/10510GC0017L01/10510GCpool05_S1_L001_R2_001.fastq.gz',
@@ -61,6 +64,10 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         #single project number, and projects_pending.txt should be gone.
         self.assertEqual(slurp(os.path.join(out_dir, 'projects_ready.txt')), ['10510'])
         self.assertRaises(FileNotFoundError, slurp, os.path.join(out_dir, 'projects_pending.txt'))
+
+        #Also, the empty project dir should have been removed from demultiplexing
+        self.assertTrue(os.path.exists(out_dir + '/demultiplexing'))
+        self.assertFalse(os.path.exists(out_dir + '/demultiplexing/10510'))
 
     def test_undetermined(self):
         """Test that undetermined files are renamed correctly. We'll keep the current
@@ -111,7 +118,7 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
     def run_postprocessor(self, run_id, suffix=''):
         """This will copy a selected test directory into a temp dir, run the postprocessor
            on it and return the path to the temp dir.
-           All output will be written to self.pp_log which is jsut a list and can be
+           All output will be written to self.pp_log which is just a list and can be
            retrieved directly.
            By the magic of cleanup hooks, the temp folder will vanish after the enclosing
            test exits.
@@ -128,6 +135,9 @@ class TestBCL2FASTQPreprocessor(unittest.TestCase):
         proj_seen = do_renames(copy_of_test_dir, run_id, log=lambda l: self.pp_log.append(l))
         save_projects_ready(copy_of_test_dir, proj_seen)
         self.pp_proj_list.extend(proj_seen)
+
+        if VERBOSE:
+            print(*self.pp_log, sep="\n")
 
         return copy_of_test_dir
 

@@ -12,7 +12,7 @@ from summarize_samplesheet import project_real_name
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')
 
-class TestSummarizeSamplesheet(unittest.TestCase):
+class T(unittest.TestCase):
 
     def test_name_lookup(self):
 

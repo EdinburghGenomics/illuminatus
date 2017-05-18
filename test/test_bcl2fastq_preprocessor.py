@@ -12,7 +12,7 @@ sys.path.insert(0,'.')
 from BCL2FASTQPreprocessor import BCL2FASTQPreprocessor
 from BCL2FASTQPreprocessor import main as pp_main
 
-class TestBCL2FASTQPreprocessor(unittest.TestCase):
+class T(unittest.TestCase):
 
     def setUp(self):
         # Look for test data relative to this Python file

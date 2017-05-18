@@ -10,7 +10,7 @@ from rt import AuthorizationError
 
 RT_SETTINGS = os.path.abspath(os.path.dirname(__file__) + '/rt_settings.ini')
 
-class TestRTUtils(unittest.TestCase):
+class T(unittest.TestCase):
 
     def setUp(self):
         os.environ['RT_SETTINGS'] = RT_SETTINGS

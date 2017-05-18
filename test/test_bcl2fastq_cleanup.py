@@ -9,21 +9,11 @@ from os import remove
 
 # Adding this to sys.path makes the test work if you just run it directly.
 sys.path.insert(0,'.')
-from BCL2FASTQCleanup import main as c_main
+from BCL2FASTQCleanup import main as _c_main
 
-if os.environ.get('VERBOSE', '0') != '0':
-    _c_main = c_main
-    def c_main(*a, **k) :
-        try:
-            _c_main(*a, **k)
-        except:
-            raise
-        finally:
-            print("After running c_main(*{}, **{})".format(a, k))
-            os.system("tree")
-            os.system("cat {}/cleanup.log".format(a[0]))
+VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
-class TestBCL2FASTQCleanup(unittest.TestCase):
+class T(unittest.TestCase):
 
     def setUp(self):
         # Look for test data relative to this Python file
@@ -40,6 +30,18 @@ class TestBCL2FASTQCleanup(unittest.TestCase):
 
         # See the errors in all their glory
         self.maxDiff = None
+
+    def c_main(self, *a, **k):
+
+        try:
+            return _c_main(*a, **k)
+        except:
+            raise
+        finally:
+            if VERBOSE:
+                print("After running c_main(*{}, **{})".format(a, k))
+                os.system("tree")
+                os.system("cat {}/cleanup.log".format(a[0]))
 
     def copy_run(self, run_id):
         copytree( os.path.join(self.seqdata_dir, run_id),
@@ -58,7 +60,7 @@ class TestBCL2FASTQCleanup(unittest.TestCase):
         self.assertTrue(os.path.exists(run_id + '/' + run_id + '_2_unassigned_1.fastq.gz'))
         self.assertTrue(os.path.exists(run_id + '/demultiplexing/Undetermined_S0_L001_R2_001.fastq.gz'))
         self.assertTrue(os.path.exists(run_id + '/demultiplexing/Undetermined_S0_L002_R2_001.fastq.gz'))
-        c_main(run_id, '1', '8')
+        self.c_main(run_id, '1', '8')
 
         with open(run_id + '/projects_pending.txt') as fh:
             projs = sorted([ l.rstrip('\n') for l in fh ])
@@ -78,13 +80,13 @@ class TestBCL2FASTQCleanup(unittest.TestCase):
         run_id = '170329_K00166_0198_BHJ53FBBXX'
         self.copy_run(run_id)
 
-        self.assertRaises(SystemExit, c_main, run_id)
+        self.assertRaises(SystemExit, self.c_main, run_id)
         with open(run_id + '/cleanup.log') as lfh:
             self.assertTrue("No lanes specified" in list(lfh)[-1])
 
-        self.assertRaises(SystemExit, c_main, run_id, '8', '9')
+        self.assertRaises(SystemExit, self.c_main, run_id, '8', '9')
         with open(run_id + '/cleanup.log') as lfh:
             self.assertTrue("not a valid lane" in list(lfh)[-1])
 
         # With non-existent run
-        self.assertRaises(FileNotFoundError, c_main, "nosuchrun", '4', '5')
+        self.assertRaises(FileNotFoundError, self.c_main, "nosuchrun", '4', '5')
