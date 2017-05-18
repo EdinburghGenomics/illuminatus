@@ -56,6 +56,7 @@ class T(unittest.TestCase):
         # from the LIMS?
 
         self.assertCountEqual(self.bcl2fastq_command_split, [
+                "LANES=${LANES:-1}",
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'" % self.out_dir ,
@@ -63,7 +64,7 @@ class T(unittest.TestCase):
                 "--fastq-compression-level 6", # Do we still need this? Yes.
                 "--barcode-mismatches 1",  # If anything?
                 "--use-bases-mask '1:Y50n,I8,I8'",
-                "--tiles=s_[1]",
+                "--tiles=s_[$LANES]",
             ])
 
     def test_settings_file(self):
@@ -77,10 +78,11 @@ class T(unittest.TestCase):
         with open( ini_file , 'w') as f:
             print("[bcl2fastq]", file=f)
             print("--barcode-mismatches: 100", file=f)
-            print("--tiles: s_[{lanes}]_1101", file=f)
+            print("--tiles: s_[$LANES]_1101", file=f)
 
         self.run_preprocessor(run_id, [1])
         self.assertCountEqual(self.bcl2fastq_command_split, [
+            "LANES=${LANES:-1}",
             "bcl2fastq",
             "-R '%s/%s'" % (self.seqdata_dir, run_id),
             "-o '%s'" % self.out_dir ,
@@ -88,7 +90,7 @@ class T(unittest.TestCase):
             "--fastq-compression-level 6",
             "--barcode-mismatches 100",  # Should be set by .ini
             "--use-bases-mask '1:Y50n,I8,I8'",
-            "--tiles=s_[1]_1101", # Lanes wildcard should be substituted.
+            "--tiles=s_[$LANES]_1101", # Lanes will be substituted by the shell
         ])
         self.addCleanup(lambda: remove( ini_file ) )
 
@@ -111,6 +113,7 @@ class T(unittest.TestCase):
         self.assertEqual(self.pp.lanes, list('12348'))
 
         self.assertCountEqual(self.bcl2fastq_command_split, [
+                "LANES=${LANES:-12348}",
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'" % self.out_dir ,
@@ -120,7 +123,7 @@ class T(unittest.TestCase):
                 "--use-bases-mask '3:Y50n,I6nn,I8'",
                 "--use-bases-mask '4:Y50n,I8,I8'",
                 "--use-bases-mask '8:Y50n,I8,I8'",
-                "--tiles=s_[12348]",
+                "--tiles=s_[$LANES]",
                 "--barcode-mismatches 1",
                 "--fastq-compression-level 6",
             ])
@@ -132,6 +135,7 @@ class T(unittest.TestCase):
         self.run_preprocessor(run_id, None)
 
         self.assertCountEqual(self.bcl2fastq_command_split, [
+                "LANES=${LANES:-12345678}",
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'" % self.out_dir ,
@@ -144,7 +148,7 @@ class T(unittest.TestCase):
                 "--use-bases-mask '6:Y50n,I8,I8'",
                 "--use-bases-mask '7:Y50n,I8,I8'",
                 "--use-bases-mask '8:Y50n,I8,I8'",
-                "--tiles=s_[12345678]",
+                "--tiles=s_[$LANES]",
                 "--barcode-mismatches 1",
                 "--fastq-compression-level 6",
             ])
@@ -191,7 +195,8 @@ class T(unittest.TestCase):
                                          lanes = lanes,
                                          dest = self.out_dir )
 
-        self.bcl2fastq_command_split = re.split(r'\s+(?=-)', self.pp.get_bcl2fastq_command())
+        self.bcl2fastq_command_split = [ i for l in self.pp.get_bcl2fastq_command()
+                                         for i in re.split(r'\s+(?=-)', l) ]
 
 
 

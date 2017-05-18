@@ -9,6 +9,9 @@
    If it is, see commit 5d8aebcd0d for my outline code to do this.
 """
 import os, sys
+import configparser
+from collections import defaultdict
+from itertools import dropwhile, takewhile
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 from illuminatus.ConfigFileReader import ConfigFileReader
@@ -35,12 +38,13 @@ class BCL2FASTQPreprocessor:
 
         assert self.lanes
 
-        # FIXME - this should be picked up from the LIMS or embedded
-        # in the sample sheet. Embedding in the SampleSheet but allowing
-        # override in pipeline_settings.ini seems the best option.
-        # RE: using a configuration file (pipeline_settings.ini)
-        ini_file = os.path.join( self._rundir , "pipeline_settings.ini" )
-        self.ini_settings = ConfigFileReader( ini_file )
+        self.ini_settings = defaultdict(dict)
+
+        # Options embedded in the Sample Sheet override the default.
+        self.load_samplesheet_ini()
+
+        # pipeline_settings.ini override both.
+        self.load_ini_file( os.path.join(self._rundir, "pipeline_settings.ini") )
 
         # Can be overriden by caller. Are we ever actully doing this?
         self.barcode_mismatches = 1
@@ -55,7 +59,7 @@ class BCL2FASTQPreprocessor:
         cmd.append("-R '%s'" % self._rundir)
         if self._destdir:
             cmd.append("-o '%s'" % self._destdir)
-        cmd.append("--sample-sheet '%s'" % os.path.join( self._rundir , "SampleSheet.csv" ) )
+        cmd.append("--sample-sheet '%s'" % os.path.join( self._rundir, "SampleSheet.csv" ) )
         cmd.append("--fastq-compression-level 6")
         cmd.append("--barcode-mismatches %d" % self.barcode_mismatches )
 
@@ -65,19 +69,19 @@ class BCL2FASTQPreprocessor:
             cmd.append("--use-bases-mask '%s:%s'" % ( lane, bm ) )
 
         # Add list of lanes to process, which is controlled by --tiles
-        cmd.append("--tiles=s_[" + ''.join(self.lanes) + "]")
+        cmd.append("--tiles=s_[$LANES]")
 
         ## now that the cmd array is complete will evaluate the pipeline_settings.ini file
         ## every setting must be either replaced or appended to the cmd array
         ## this won't work with options that appear multiple times like --use-base-mask (don't think we need this though)
-        for ini_option in self.ini_settings.get_all_options('bcl2fastq'): # section in the ini file is bcl2fastq
+        for ini_option, val in self.ini_settings['bcl2fastq'].items(): # section in the ini file is bcl2fastq
             ## special case for option --tiles
             delimiter = "=" if ini_option in ["--tiles"] else " "
 
             replace_index = [ i for i, c in enumerate(cmd)
                               if c.split(delimiter)[0] == ini_option ]
             replace_value = ( ini_option + delimiter +
-                              self.ini_settings.get_value('bcl2fastq', ini_option).format(lanes=''.join(self.lanes)) )
+                              self.ini_settings['bcl2fastq'].get(ini_option) )
             if replace_index:
                 #print ("replacing from pipeline_settings.ini option "+ ini_option)
                 cmd[replace_index[0]] = replace_value
@@ -85,7 +89,39 @@ class BCL2FASTQPreprocessor:
                 #print ("appending from pipeline_settings.ini " + ini_option)
                 cmd.append(replace_value)
 
-        return ' '.join(cmd)
+        lanes_bit = "LANES=${LANES:-%s}" % ''.join(self.lanes)
+
+        return lanes_bit, ' '.join(cmd)
+
+    def load_samplesheet_ini(self):
+        """Loads the [bcl2fastq] section from self._samplesheet into self.ini_settings,
+           allowing things like --barcode-mismatches to be embedded in the SampleSheet.csv
+        """
+        cp = configparser.ConfigParser()
+        try:
+            with open(self._samplesheet) as sfh:
+                cp.read_file( takewhile(lambda x: x.strip(),
+                                        dropwhile(lambda x: not x.startswith('[bcl2fastq]'), sfh)),
+                              self._samplesheet )
+
+                for section in cp.sections():
+                    self.ini_settings[section].update(cp.items(section))
+
+        except Exception:
+            return
+
+    def load_ini_file(self, ini_file):
+        """ Read the options from config_file into self.ini_settings,
+            overwriting anything already there.
+        """
+        cp = configparser.ConfigParser()
+        try:
+            cp.read(ini_file)
+            for section in cp.sections():
+                self.ini_settings[section].update(cp.items(section))
+
+        except Exception:
+            raise
 
 def main(run_dir, dest, *lanes):
     """ Usage BCL2FASTQPreprocessor.py <run_dir> <dest_dir> [<lane> ...]
@@ -97,7 +133,7 @@ def main(run_dir, dest, *lanes):
 
     lines = [
         "#Run bcl2fastq on %d lanes." % len(pp.lanes),
-        pp.get_bcl2fastq_command()
+        *pp.get_bcl2fastq_command()
     ]
 
     print("\n>>> Script being written to %s..." % script_name)
