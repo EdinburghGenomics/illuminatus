@@ -10,19 +10,20 @@ class ConfigFileReader:
             self.Config = configparser.ConfigParser()
             self.Config.read(config_file)
         else:
-           self.Config = None 
-        
+           self.Config = None
+
     def get_value( self , section , option ):
         ## return None if value is not in the settings file
         try:
             return self.Config.get(section, option)
-        except:
+        except Exception:
             return None
+
     def get_all_options( self , section ):
-        ## return empty list if nothing was found 
+        ## return empty list if nothing was found
         try:
             return self.Config.options(section)
-        except:
+        except Exception:
             return []
 
 
