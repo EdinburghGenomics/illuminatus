@@ -67,6 +67,7 @@ check_exit(){
 
 
 CLUSTER_QUEUE="${CLUSTER_QUEUE:-casava}"
+DEMUX_JOBNAME="${DEMUX_JOBNAME:-demultiplexing}"
 
 if [ "$CLUSTER_QUEUE" = none ] ; then
     set_bcl2fastq_path
@@ -75,13 +76,13 @@ elif [ ! -e /lustre/software ] && [ -z "${SGE_TASK_ID:-}" ] ; then
     #I humbly submit myself to the (old) cluster.
     set_bcl2fastq_path
     echo_and_run mkdir -p ./sge_output
-    echo_and_run qsub -q "$CLUSTER_QUEUE" "$0"
+    echo_and_run qsub -q "$CLUSTER_QUEUE" -N "$DEMUX_JOBNAME" "$0"
     check_exit
 elif [ -z "${SLURM_JOB_ID:-}" ] ; then
     #I humbly submit myself to the (new) cluster.
     set_bcl2fastq_path
     echo_and_run mkdir -p ./slurm_output
-    echo_and_run sbatch -p "$CLUSTER_QUEUE" "$0"
+    echo_and_run sbatch -p "$CLUSTER_QUEUE" -J "$DEMUX_JOBNAME" "$0"
     check_exit
 fi
 

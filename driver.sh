@@ -40,18 +40,11 @@ for d in "${BIN_LOCATION%%:*}" "$SEQDATA_LOCATION" "$FASTQ_LOCATION" ; do
 done
 
 # 2) Ensure that the directory is there for the main log file and set up logging
-mkdir -p `dirname "$MAINLOG"`
-if [ "${MAINLOG:0:1}" != / ] ; then
-    #Ensure abs path, because we change directories within this script
-    MAINLOG="$(readlink -f "$MAINLOG")"
-fi
-#If logging is to the terminal, use the actual tty pipe otherwise
-#messages get redirected in some of the blocks below.
-{ tty="`tty || true`" ; } < "$MAINLOG"
-[ ! -c "$tty" ] || MAINLOG="$tty"
+#    on file descriptor 5.
+mkdir -p `dirname "$MAINLOG"` ; exec 5>>"$MAINLOG"
 
-# Main log for general messages.
-log(){ [ $# = 0 ] && cat >> "$MAINLOG" || echo "$*" >> "$MAINLOG" ; }
+# Main log for general messages (STDERR still goes to the CRON).
+log(){ [ $# = 0 ] && cat >&5 || echo "$*" >&5 ; }
 
 # Per-project log for project progress messages
 plog() {
@@ -71,7 +64,7 @@ intro="`date`. Running $(readlink -f "$0"); PID=$$"
 log "====`tr -c '' = <<<$intro`===="
 log "=== $intro ==="
 log "====`tr -c '' = <<<$intro`===="
-trap 'echo "=== `date`. Finished run; PID=$$ ===" >> "$MAINLOG"' EXIT
+trap 'log "=== `date`. Finished run; PID=$$ ==="' EXIT
 
 # If there is a Python VEnv, use it.
 py_venv="${BIN_LOCATION%%:*}/_py3_venv"
@@ -132,8 +125,9 @@ action_reads_finished(){
     # TODO - add an interim MultiQC report now that the Interop files are here.
     BREAK=1
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
+    export DEMUX_JOBNAME="demux_${RUNID}"
     plog "Preparing to demultiplex $RUNID into $DEMUX_OUTPUT_FOLDER/demultiplexing/"
-    set +e ; ( set -e
+    set +e ; ( set -ex
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       log "  Starting bcl2fastq on $RUNID."
@@ -189,6 +183,7 @@ action_redo() {
         [[ "$redo" =~ .*(.)\.redo ]]
         redo_list+=(${BASH_REMATCH[1]})
     done
+    redo_str="lanes`tr -d ' ' <<<${redo_list[*]}`"
 
     # Re-summarize the sample sheet, as it probably changed.
     # TODO - say what lanes are being demuxed in the report, since we can't just now promise
@@ -197,7 +192,8 @@ action_redo() {
 
     BREAK=1
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
-    set +e ; ( set -e
+    export DEMUX_JOBNAME="demux_${RUNID}_${redo_str}"
+    set +e ; ( set -ex
       if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
         BCL2FASTQCleanup.py "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
       fi
@@ -244,8 +240,14 @@ demux_fail() {
     # Send an alert when demultiplexing fails. This always requires attention!
     # Note that after calling 'plog' we can query '$projlog' since all shell vars are global.
     plog "Attempting to notify error to RT"
-    rt_runticket_manager.py -r "$RUNID" --reply "Demultiplexing failed. See log in $projlog" |& plog || true
-    log "FAIL processing $RUNID. See $projlog"
+    if rt_runticket_manager.py -r "$RUNID" --reply "Demultiplexing failed. See log in $projlog" |& plog ; then
+        log "FAIL processing $RUNID. See $projlog"
+    else
+        # RT failure. Complain to STDERR in the hope this will generate an alert mail via CRON
+        msg="FAIL processing $RUNID, and also failed to report the error via RT. See $projlog"
+        echo "$msg" >&2
+        log "$msg"
+    fi
 }
 
 # 6) Scan for each run until we find something that needs dealing with.
