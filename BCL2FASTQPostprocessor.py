@@ -12,7 +12,8 @@
 # and this might be sensible for backup purposes. In any case I could do this with a
 # symlink so the code can stay the same.
 
-import os, sys, glob, re, time
+import os, sys, re, time
+from glob import glob
 
 def main(output_dir, prefix=None):
     """ Usage BCL2FASTQPostprocessor.py <run_dir> [prefix]
@@ -24,7 +25,8 @@ def main(output_dir, prefix=None):
     if not prefix:
         prefix = os.path.basename(output_dir)
 
-    #All renames need to be logged
+    #All renames need to be logged. The log wants to live in the demultiplexing/
+    #subdirectory.
     demux_dir = output_dir + "/demultiplexing"
     with open(os.path.join(demux_dir, 'renames.log'), 'a') as log_fh:
         log = lambda m: print(m, file=log_fh)
@@ -41,8 +43,9 @@ def main(output_dir, prefix=None):
 
 
 def save_projects_ready(output_dir, project_list):
-    #Save out what we've processed. There might be stuff already in projects_ready.txt
-    #and we want to maintain the contents as a sorted set (as per 'sort -u')
+    """Save out what we've processed. There might be stuff already in projects_ready.txt
+       and we want to maintain the contents as a sorted set (as per 'sort -u')
+    """
     proj_seen = set(project_list)
 
     proj_ready_file = os.path.join(output_dir, 'projects_ready.txt')
@@ -51,6 +54,7 @@ def save_projects_ready(output_dir, project_list):
             for l in pr_fh:
                 proj_seen.add(l.strip())
     except FileNotFoundError:
+        # OK, there was no old file
         pass
 
     with open(proj_ready_file, 'w') as pr_fh:
@@ -63,7 +67,6 @@ def save_projects_ready(output_dir, project_list):
     except FileNotFoundError:
         pass
 
-
 def do_renames(output_dir, prefix, log = lambda m: print(m)):
     """ The main part of the code that does the renaming (moving).
         Primary reason for splitting this out from main() is to separate
@@ -72,9 +75,10 @@ def do_renames(output_dir, prefix, log = lambda m: print(m)):
         Returns the list of projects for which files have been renamed.
     """
     proj_seen = []
-    demux_dir_content = glob.glob( os.path.join( output_dir, "demultiplexing" , "?????/*/*" ) )
 
-    for fastq_file in demux_dir_content:
+    # No attempt to define what directories are 'project' directories, aside from looking
+    # for those that contain FASTQ files at the right level.
+    for fastq_file in glob(os.path.join( output_dir, "demultiplexing" , "*/*/*.fastq.gz" )):
 
         #os.path.split is unhelpful here. Just do it the obvious way.
         # something like: 10528, 10528EJ0019L01, 10528EJpool03_S19_L005_R1_001.fastq.gz
@@ -111,9 +115,7 @@ def do_renames(output_dir, prefix, log = lambda m: print(m)):
         proj_seen.append(project)
 
     # Now deal with the undetermined files.
-    demux_dir_undetermined_fastq = glob.glob( os.path.join( output_dir, "demultiplexing", "[Uu]ndetermined_*" ) )
-
-    for undet_file_absolute in demux_dir_undetermined_fastq:
+    for undet_file_absolute in glob(os.path.join( output_dir, "demultiplexing", "[Uu]ndetermined_*" )):
         filename = undet_file_absolute.split('/')[-1]
 
         # eg. Undetermined_S0_L004_R1_001.fastq.gz
@@ -135,6 +137,25 @@ def do_renames(output_dir, prefix, log = lambda m: print(m)):
         with open(new_filename_absolute, 'x') as tmp_fd:
             log( "mv %s %s" % ( os.path.join("demultiplexing", filename), new_filename) )
             os.rename(undet_file_absolute, new_filename_absolute)
+
+    # If the sample sheet is wrongly formatted, we'll get .fastq.gz files appearing one level up.
+    # Detect these and log.
+    for wrong_level_file in glob(os.path.join( output_dir, "demultiplexing" , "*/*.fastq.gz" )):
+        project, filename = wrong_level_file.split('/')[-2:]
+        log( "# project %s contains unexpected file %s" % (project, filename) )
+
+    # Cleanup empty project directories (as per Cleanup.py) then warn if any dirs
+    # remain (maybe the warning should be more like an error?).
+    for proj in set(proj_seen):
+        for root, dirs, files in os.walk(
+                                     os.path.join(output_dir, "demultiplexing", proj),
+                                     topdown=False ):
+            try:
+                os.rmdir(root)
+                log("rmdir '%s'" % root)
+            except Exception:
+                # Assume it was non-empty.
+                log("# could not remove dir '%s'" % root)
 
     # Finally return the projects processed
     return proj_seen

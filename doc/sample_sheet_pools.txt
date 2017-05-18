@@ -1,0 +1,46 @@
+The design calls for demultiplexing to be done on the basis of:
+
+Project->Pool->Library
+
+Where, obviously, a pool has many libraries.
+
+If there is not actually a pool then we'd use a consistent placeholder, like 'NoPool',
+which is fine.
+
+If the library is a RAD pool then the Library name will be something like 12345ZZPool01
+which is also fine.
+
+Likewise, the pool can be 12345ZZSuper01 - at this point we're not trying to interpret
+what this means. Logic further down the pipe could spot these values and extract further
+info from the LIMS accordingly.
+
+But just now (18 May 2017) the Sample Sheets are putting files directly under the project
+dir. Let's have a look at run 170221_K00166_0183_AHHT3HBBXX and see what is to be done.
+
+Lane,Sample_ID     ,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index   ,Sample_Project,index2  ,I5_Index_ID,Description
+1   ,10503BD0412L02,           ,HHT3HBBXX   ,           ,TP-D7-001  ,ATTACTCG,10503         ,AGGATAGG,TP-D5-003  ,
+
+produces:
+
+10503/10503BD0412L02_S1_L001_R1_001.fastq.gz
+10503/10503BD0412L02_S1_L001_R2_001.fastq.gz
+
+Michael says that the Sample_ID is used to name the subfolder but here it's clearly going into the filename.
+What if I add a fake sample name, Pool01?
+
+To do this:
+$ cd /lustre/home/tbooth2/test_fastqdata/170221_K00166_0183_AHHT3HBBXX/demultiplexing
+edit do_demultiplex.sh
+copy and edit SampleSheet.csv
+$ ~/workspace/illuminatus/BCL2FASTQRunner.sh
+
+OK, now it makes a folder with the Sample_ID and puts the Sample_Name in the filename, as Michael said. If
+I try to set all the Sample_IDs to Pool01 I get an error.
+
+So, what to do? Well, I really want to set the Sample_ID as "Pool01/10503BD0412L02" but as a second-best option
+I'll set it to "Pool01__10503BD0412L02" which is just as easy to split out in the postprocessor.
+
+Note that at the same time I've determined that I can add "--barcode-mismatches: 0" to the [Settings] section of the
+SampleSheet and bcl2fastq doesn't care. Or even better, I can insert my own [bcl2fastq] section.
+
+
