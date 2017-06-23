@@ -127,7 +127,7 @@ action_reads_finished(){
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
     export DEMUX_JOBNAME="demux_${RUNID}"
     plog "Preparing to demultiplex $RUNID into $DEMUX_OUTPUT_FOLDER/demultiplexing/"
-    set +e ; ( set -ex
+    set +e ; ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       log "  Starting bcl2fastq on $RUNID."
@@ -193,7 +193,7 @@ action_redo() {
     BREAK=1
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
     export DEMUX_JOBNAME="demux_${RUNID}_${redo_str}"
-    set +e ; ( set -ex
+    set +e ; ( set -e
       if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
         BCL2FASTQCleanup.py "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
       fi

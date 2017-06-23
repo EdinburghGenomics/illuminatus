@@ -51,7 +51,7 @@ done
 # Make a pipeline_settings.ini file telling blc2fastq to ignore the missing tiles
 # Note this assumes if pipeline_settings.ini exists already it only has a [bcl2fastq] section, most
 # likely overriding --barcode-mismatches.
-ini_frag=$'[bcl2fastq]\n--tiles: s_[{lanes}]_1101'
+ini_frag=$'[bcl2fastq]\n--tiles: s_[${LANES}]_1101'
 if [ ! -e "$DEST"/pipeline_settings.ini ] ; then
     echo "[bcl2fastq]" > "$DEST"/pipeline_settings.ini
 fi

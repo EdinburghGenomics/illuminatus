@@ -86,6 +86,8 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None):
     # Find all the matching files. Simplistically, assume that any top-level directory
     # that contains such files is a project number.
     projects = set()
+    deletions = 0
+    emptydirs = 0
     for root, dirs, files in os.walk(path):
         # At the top level, only descent into directories that are numbers (ie. projects)
         # We expect to see the unassigned reads at this level
@@ -101,6 +103,7 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None):
 
                 os.remove(os.path.join(root, f))
                 log("rm '%s'" % os.path.join(root, f))
+                deletions += 1
 
         # Useful for debugging
         #    else:
@@ -115,9 +118,14 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None):
             try:
                 os.rmdir(root)
                 log("rmdir '%s'" % root)
+                emptydirs += 1
             except Exception:
                 pass # Assume it was non-empty.
 
+    msg = "Deleted %i files and %i directories from %s relating to %i projects." % (
+                   deletions,   emptydirs,  os.path.basename(path), len(projects) )
+    log('# ' + msg)
+    print(msg)
     return projects
 
 if __name__ == '__main__':

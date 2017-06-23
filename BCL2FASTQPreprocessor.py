@@ -69,7 +69,7 @@ class BCL2FASTQPreprocessor:
             cmd.append("--use-bases-mask '%s:%s'" % ( lane, bm ) )
 
         # Add list of lanes to process, which is controlled by --tiles
-        cmd.append("--tiles=s_[$LANES]")
+        cmd.append("--tiles=s_[${LANES}]")
 
         ## now that the cmd array is complete will evaluate the pipeline_settings.ini file
         ## every setting must be either replaced or appended to the cmd array
@@ -136,12 +136,12 @@ def main(run_dir, dest, *lanes):
         *pp.get_bcl2fastq_command()
     ]
 
-    print("\n>>> Script being written to %s..." % script_name)
+    print("\n>>> Script being written...\ncat >%s <<END" % script_name)
     with open( script_name, 'w' ) as fh:
         for l in lines:
             print(l)
             print(l, file=fh)
-    print("<<< End of script\n")
+    print("END\n")
 
 if __name__ == '__main__':
     main(*sys.argv[1:])

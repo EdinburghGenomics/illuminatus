@@ -7,7 +7,7 @@ you ran the 'activate_venv' script to make a suitable Python3 environment.
 Then, you need a cut-down dataset to run through the pipeline.
 The script for making these is test/end_to_end/slim_a_run.sh, eg:
 
-$ ./test/end_to_end/slim_a_run.sh 170221_K00166_0183_AHHT3HBBXX ~/seqdata_test
+$ ./test/end_to_end/slim_a_run.sh 170221_K00166_0183_AHHT3HBBXX ~/test_seqdata
 
 Then, you need to set some parameters for driver.sh:
 
@@ -45,6 +45,8 @@ In summary, when running in test mode with all those settings:
 * Cluster jobs will run on the casava queue, but you can override this by setting
   CLUSTER_QUEUE. Setting it to 'none' will cause local execution.
 
-# Copy-and-paste lines...
+# Copy-and-paste environment lines...
 export MAINLOG=/dev/stdout SEQDATA_LOCATION=~/test_seqdata FASTQ_LOCATION=~/test_fastqdata
 export RT_SYSTEM=none PROJECT_NAME_LIST=none CLUSTER_QUEUE=global
+
+# After this, just run driver.sh to commence processing your slimmed-down runs.
