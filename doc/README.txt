@@ -1,4 +1,4 @@
-The main development documentaion is on the Wiki at:
+The main development documentation is on the Wiki at:
 
 https://genowiki.is.ed.ac.uk/display/GenePool/RunQC+demultiplexing+pipeline+software+requirement+specification
 

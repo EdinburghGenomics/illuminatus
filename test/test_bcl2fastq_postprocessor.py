@@ -5,12 +5,13 @@ import sys, os, glob, re
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
 from glob import glob
+from fnmatch import fnmatch
 
 # Adding this to sys.path makes the test work if you just run it directly.
 sys.path.insert(0,'.')
 #from BCL2FASTQPostprocessor import BCL2FASTQPostprocessor
 from BCL2FASTQPostprocessor import main as pp_main
-from BCL2FASTQPostprocessor import do_renames, save_projects_ready
+from BCL2FASTQPostprocessor import do_renames, save_projects_ready, ERRORS
 
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
@@ -27,37 +28,44 @@ class T(unittest.TestCase):
         self.maxDiff = None
 
     def test_std(self):
-        """Modified from the example from the Wiki.  Three files to rename.
-           I think we're using the Sample ID and ignoring the Sample Name.
-           I've made this explicit.
+        """Modified from the example from the Wiki. Also see doc/sample_sheet_pools.txt.
+           One standard case where sample name is blank.
+           Another where sample name was filled in so we got a subfolder
+           And a file that should not be there.
         """
         out_dir = self.run_postprocessor('160811_D00261_0355_BC9DA7ANXX', '.std')
 
         # Before... just check that the test folder really does have the names I expected.
         in_dir = os.path.join(self.demuxed_dir, '160811_D00261_0355_BC9DA7ANXX.std')
-        fqgz_before = glob(in_dir + '/demultiplexing/*/*/*.fastq.gz' )
-        fqgz_before = sorted([ f[len(in_dir+'/demultiplexing/'):] for f in fqgz_before ])
+        fqgz_before = find_by_pattern(in_dir + '/demultiplexing', '*.fastq.gz' )
 
-        # FIXME - this doesn't match the project/pool/library naming plan. Why not??
+        # So the files to be tested are now in the pool__lib format, or are in sub-folders
+        # with that format.
         self.assertEqual(fqgz_before, [
-            '10510/10510GC0017L01/10510GCpool05_S1_L001_R1_001.fastq.gz',
-            '10510/10510GC0017L01/10510GCpool05_S1_L001_R2_001.fastq.gz',
-            '10510/10510GC0018L01/10510GCpool05_S2_L001_R1_001.fastq.gz',
-            '10510/10510GC0019L01/blahblah_blah_L001_R1_001.fastq.gz',
+            '10510/10510GCpool05__10510GC0017L01_S1_L001_R1_001.fastq.gz',
+            '10510/10510GCpool05__10510GC0017L01_S1_L001_R2_001.fastq.gz',
+            '10510/10510GCpool05__10510GC0018L01/10510GCpool05_S2_L001_R1_001.fastq.gz',
+            '10510/10510GCpool05__10510GC0018L01/filename_should_be_ignored_S2_L001_R2_001.fastq.gz',
             ])
+
 
         #More self-testing. This sample project has a projects_pending.txt file, right?
         self.assertEqual(slurp(os.path.join(in_dir, 'projects_pending.txt')), ['10510'])
 
-        # And I should still have four .fastq.gz files after processing
-        fqgz = glob(out_dir + "/*/*/*.fastq.gz")
-        fqgz = sorted([ f[len(out_dir)+1:] for f in fqgz ])
+        # Now to look at the actual output
+        if VERBOSE:
+            os.system("tree " + in_dir)
+            os.system("tree " + out_dir)
+
+        # And I should still have five .fastq.gz files after processing
+        # One rename should have failed.
+        fqgz = find_by_pattern(out_dir, "*.fastq.gz")
 
         self.assertEqual(fqgz, [
-            '10510/10510GC0017L01/160811_D00261_0355_BC9DA7ANXX_1_10510GC0017L01_1.fastq.gz',
-            '10510/10510GC0017L01/160811_D00261_0355_BC9DA7ANXX_1_10510GC0017L01_2.fastq.gz',
-            '10510/10510GC0018L01/160811_D00261_0355_BC9DA7ANXX_1_10510GC0018L01_1.fastq.gz',
-            '10510/10510GC0019L01/160811_D00261_0355_BC9DA7ANXX_1_10510GC0019L01_1.fastq.gz',
+            '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0017L01_1.fastq.gz',
+            '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0017L01_2.fastq.gz',
+            '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0018L01_1.fastq.gz',
+            '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0018L01_2.fastq.gz',
             ])
 
         #After processing, the projects_ready.txt file should contain the
@@ -75,9 +83,9 @@ class T(unittest.TestCase):
         """
         out_dir = self.run_postprocessor('160811_D00261_0355_BC9DA7ANXX', '.undet')
 
-        fqgz = glob(out_dir + "/*.fastq.gz")
-        fqgz = sorted([ f[len(out_dir)+1:] for f in fqgz ])
+        fqgz = find_by_pattern(out_dir, "*.fastq.gz")
 
+        # Files should now be at the top level and named correctly.
         self.assertEqual(fqgz, [
             '160811_D00261_0355_BC9DA7ANXX_4_unassigned_1.fastq.gz',
             '160811_D00261_0355_BC9DA7ANXX_4_unassigned_2.fastq.gz'
@@ -87,29 +95,36 @@ class T(unittest.TestCase):
         self.assertEqual(slurp(os.path.join(out_dir, 'projects_ready.txt')), [])
 
     def test_collision(self):
-        """Test that name collisions are trapped as errors, even though this
-           should never happen.
+        """Test that name collisions are trapped as errors. They shouldn't be possible.
         """
         self.assertRaises(FileExistsError,
                           self.run_postprocessor, '160811_D00261_0355_BC9DA7ANXX', '.collision' )
 
+        self.assertRaises(FileExistsError,
+                          self.run_postprocessor, '160811_D00261_0355_BC9DA7ANXX', '.collision2' )
+
+
     def test_skip(self):
-        """Unrecognised filename pattern should be skipped, but the skip should be logged.
+        """Unrecognised filename pattern should be skipped, and this should cause an error.
         """
         out_dir = self.run_postprocessor('160811_D00261_0355_BC9DA7ANXX', '.skip')
 
-        fqgz = glob(out_dir + "/demultiplexing/*/*/*.fastq.gz")
-        fqgz = sorted([ f[len(out_dir+"/demultiplexing/"):] for f in fqgz ])
+        fqgz = find_by_pattern(out_dir + "/demultiplexing", "*.fastq.gz")
 
-        # File should still be there
+        # Files should still be there
         self.assertEqual(fqgz, [
-            '10510/10510GC0017L01/mystery.fastq.gz'
+            '10510/10510GC0017L01/blahblah_blah_L001_R1_001.fastq.gz',
+            '10510/10510GCpool05__10510GC0017L01/mystery.fastq.gz',
+            '10510/blah_S1_L001_R1_001.fastq.gz',
+            '10510/blahblah_blah_L001_R1_001.fastq.gz',
             ])
 
-        # Log should report that it was skipped
+        # Log should report that everything was skipped
         skip_log_lines = [ l for l in self.pp_log if 'skipping' in l ]
-        self.assertEqual(len(skip_log_lines), 1)
-        self.assertTrue('mystery.fastq.gz' in skip_log_lines[0])
+        self.assertEqual(len(skip_log_lines), 4)
+
+        # And the error logged
+        self.assertTrue(ERRORS)
 
         # projects_ready should be empty as no valid files were found
         self.assertEqual(slurp(os.path.join(out_dir, 'projects_ready.txt')), [])
@@ -138,8 +153,17 @@ class T(unittest.TestCase):
 
         if VERBOSE:
             print(*self.pp_log, sep="\n")
+            print(repr(ERRORS))
 
         return copy_of_test_dir
+
+def find_by_pattern(root_path, pattern):
+    """Python equivalent of find <root_path> -name <pattern> -type f | sed 's/^<root_path>//' | sort
+    """
+    return sorted( os.path.join(wt[0][len(root_path)+1:], f)
+                   for wt in os.walk(root_path)
+                   for f in wt[2]
+                   if fnmatch(f, pattern) )
 
 def slurp(filename):
     with open(filename) as fh:
