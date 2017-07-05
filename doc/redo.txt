@@ -50,7 +50,7 @@ the TODO list. Going beck to the REDO plan, what we have is:
     If a job is in the pipeline, it will need to be manually aborted before the REDO kicks in,
     or else left to finish.
 2 - Down the line, re-making a sample sheet will trigger re-run of all changed lanes.
-    If the job is running, you have the choice of aborting via command line it or letting it finish.
+    If the job is running, you have the choice of aborting it via command line or letting it finish.
     There will be no auto-abort because if you only want to re-do one lane and the others are nearly finished
     then you don't necessarily want to start them all from scratch, and we don't have the concept of "re-do this
     lane from scratch while the others finish" (and rightly so!).
@@ -58,3 +58,6 @@ the TODO list. Going beck to the REDO plan, what we have is:
 What if a job is aborted and only one lane is set for REDO?
 Well, the cleanup process removes the .done flag for everything to be re-done. So if a lane has no .done flag it
 will be re-done automatically. So I think we are OK here already.
+
+Note that as far as I can see in terms of the LIMS, creating a new Sample Sheet should be an extra operation post-sequencing
+rather than achieved by re-creating an 'ersatz' run from scratch. How this actually gets configured in the LIMS I do not know.

@@ -1,0 +1,32 @@
+After successful demultiplexing, the QC needs to trigger.
+
+Also, we need MultiQC reports to be generated at appropriate times.
+
+Questions, questions:
+
+When do we need MultiQC reports run?
+
+    - On initial run creation
+    - On run completion
+    - Right after demultiplexing (interop finished)
+    - After any QC process
+
+Should md5 generation be part of the QC pipeline or separate?
+
+    - Assume part-of just now, but bear in mind the files need to be pushed
+      back into the fastqdata dir, just as the bcl2fastq logs really belong in
+      the runqc directory.
+
+When do we need QC to run?
+
+    - After demux,
+    - or re-demux
+
+What should the QC driver look like?
+
+    - A single Snakefile that runs in a fastqdata dir and writes results to a QC
+      subdirectory and md5sums to an md5sums subdirectory. If these are set as symlinks
+      beforehand then they can be pointed elsewhere, but do I need to do this?
+      Maybe it's better to keep the QC in with the FASTQ and to clean it up as needed.
+
+MultiQC can then mine the QC subdirectory for goodies.

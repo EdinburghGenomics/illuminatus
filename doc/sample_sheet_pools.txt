@@ -44,7 +44,10 @@ Note that at the same time I've determined that I can add "--barcode-mismatches:
 SampleSheet and bcl2fastq doesn't care. Or even better, I can insert my own [bcl2fastq] section.
 
 So for testing, I'm going to go with the naming convention given above and leave Sample_Name blank. I could also
-allow Sample_Name to be set and deal with that??
+allow Sample_Name to be set and deal with that?? [ Yes - I've done this. It can be set but gets removed again by the
+post-processor ]
 
 Then I need to check that there is no issue with the names being too long: 10000AApool01__10000AA0000L01
 Nope, seems fine.
+
+On 5th July - this is all implemented and tested.
