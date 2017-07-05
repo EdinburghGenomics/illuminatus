@@ -39,7 +39,9 @@ def main(output_dir, prefix=None):
 
         if ERRORS:
             log("# There were errors...")
-            for e in ERRORS: log("# %s" % e)
+            for e in ERRORS:
+                print("Error: %s" % e)
+                log("# %s" % e)
         else:
             save_projects_ready(output_dir, project_seen)
             log("# DONE. And projects_ready.txt was saved out.")
@@ -89,7 +91,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         proj_seen.add(project)
 
         # get information from the filename
-        re_match = re.match( r'(.*)_(.*)_L00(\d)_R(\d)_\d+.fastq.gz', filename, re.I)
+        re_match = re.match( r'(.*)_(S[0-9]+)_L00(\d)_R(\d)_\d+.fastq.gz', filename, re.I)
 
         if not re_match:
             log("# skipping (regex mismatch) %s" % fastq_file)
@@ -116,7 +118,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         #That way, no possible race condition that can cause one file to be renamed over
         #another file.
         with open(new_filename_absolute, 'x') as tmp_fd:
-            log( "mv %s %s" % (fastq_file.split('/')[-4:], new_filename_relative) )
+            log( "mv %s %s" % ('/'.join(fastq_file.split('/')[-4:]), new_filename_relative) )
 
             os.replace(fastq_file, new_filename_absolute)
 
@@ -132,7 +134,8 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         proj_seen.add(project)
 
         # get information from the filename
-        re_match = re.match( r'(.*)_(..)_L00(\d)_R(\d)_\d+.fastq.gz', filename, re.I)
+        # Note this ignores index reads.
+        re_match = re.match( r'(.*)_(S[0-9]+)_L00(\d)_R(\d)_\d+.fastq.gz', filename, re.I)
 
         if not re_match:
             log("# skipping (regex mismatch) %s" % fastq_file)
@@ -159,7 +162,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         #That way, no possible race condition that can cause one file to be renamed over
         #another file.
         with open(new_filename_absolute, 'x') as tmp_fd:
-            log( "mv %s %s" % (fastq_file.split('/')[-3:], new_filename_relative) )
+            log( "mv %s %s" % ('/'.join(fastq_file.split('/')[-3:]), new_filename_relative) )
 
             os.replace(fastq_file, new_filename_absolute)
 
@@ -208,5 +211,6 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
     return proj_seen
 
 if __name__ == '__main__':
+    print("Running: " + ' '.join(sys.argv))
     main(*sys.argv[1:])
     if ERRORS: exit(1)

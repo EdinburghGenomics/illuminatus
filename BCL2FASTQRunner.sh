@@ -25,9 +25,9 @@ set -euo pipefail
 
 set_bcl2fastq_path() {
     # Pick the appropriate bcl2fastq.
-    for p in "${BCL2FASTQ_PATH:-}" \
-             "/lustre/software/bcl2fastq/bcl2fastq2-v2.17.1.14/bin" \
+    for p in "/lustre/software/bcl2fastq/bcl2fastq2-v2.17.1.14/bin" \
              "/ifs/software/linux_x86_64/Illumina_pipeline/bcl2fastq2-v2.17.1.14-bin/bin" \
+             "${BCL2FASTQ_PATH:-}" \
              ; do
         if [ -d "$p" ] ; then
             echo "Prepending $p to the PATH"
@@ -40,7 +40,7 @@ set_bcl2fastq_path() {
 echo_and_run(){
     # Run a command, printing what is run and capturing the output
     # (which is assumed to be small!)
-    echo "[`pwd`]\$ $*"
+    echo "[`pwd`] $*"
     { CMD_OUT="$("$@")" ; CMD_RETVAL=$? ; CMD_FIRSTLINE="$(head -n1 <<<"$CMD_OUT")" ; } || true
     [ -z "$CMD_OUT" ] || cat <<<"$CMD_OUT"
 }
@@ -60,7 +60,7 @@ check_exit(){
             done
         fi
     else
-        echo "$0 finished running cluster job."
+        echo "$0 successfully finished running cluster job."
     fi
     exit "$CMD_RETVAL"
 }
@@ -69,18 +69,18 @@ check_exit(){
 CLUSTER_QUEUE="${CLUSTER_QUEUE:-casava}"
 DEMUX_JOBNAME="${DEMUX_JOBNAME:-demultiplexing}"
 
+set_bcl2fastq_path
+
 if [ "$CLUSTER_QUEUE" = none ] ; then
-    set_bcl2fastq_path
-    #and keep running...
+    true
+    #just keep running...
 elif [ ! -e /lustre/software ] && [ -z "${SGE_TASK_ID:-}" ] ; then
     #I humbly submit myself to the (old) cluster.
-    set_bcl2fastq_path
     echo_and_run mkdir -p ./sge_output
     echo_and_run qsub -q "$CLUSTER_QUEUE" -N "$DEMUX_JOBNAME" "$0"
     check_exit
 elif [ -z "${SLURM_JOB_ID:-}" ] ; then
     #I humbly submit myself to the (new) cluster.
-    set_bcl2fastq_path
     echo_and_run mkdir -p ./slurm_output
     echo_and_run sbatch -p "$CLUSTER_QUEUE" -J "$DEMUX_JOBNAME" "$0"
     check_exit

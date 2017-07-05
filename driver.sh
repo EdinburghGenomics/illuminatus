@@ -205,7 +205,7 @@ action_redo() {
       BCL2FASTQRunner.sh |& plog
       BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
 
-      log "  Completed bcl2fastq on $RUNID lanes ${redo_list[*]}."
+      log "  Completed demultiplexing on $RUNID lanes ${redo_list[*]}."
       rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed"
     ) |& plog ; [ $? = 0 ] || demux_fail
 }

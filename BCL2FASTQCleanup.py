@@ -125,8 +125,9 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None):
     msg = "Deleted %i files and %i directories from %s relating to %i projects." % (
                    deletions,   emptydirs,  os.path.basename(path), len(projects) )
     log('# ' + msg)
-    print(msg)
+    #print(msg)
     return projects
 
 if __name__ == '__main__':
+    print("Running: " + ' '.join(sys.argv))
     main(*sys.argv[1:])

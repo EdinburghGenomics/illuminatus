@@ -43,7 +43,7 @@ class T(unittest.TestCase):
         # with that format.
         self.assertEqual(fqgz_before, [
             '10510/10510GCpool05__10510GC0017L01_S1_L001_R1_001.fastq.gz',
-            '10510/10510GCpool05__10510GC0017L01_S1_L001_R2_001.fastq.gz',
+            '10510/10510GCpool05__10510GC0017L01_S999_L001_R2_001.fastq.gz',
             '10510/10510GCpool05__10510GC0018L01/10510GCpool05_S2_L001_R1_001.fastq.gz',
             '10510/10510GCpool05__10510GC0018L01/filename_should_be_ignored_S2_L001_R2_001.fastq.gz',
             ])
