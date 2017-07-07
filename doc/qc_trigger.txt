@@ -7,6 +7,7 @@ Questions, questions:
 When do we need MultiQC reports run?
 
     - On initial run creation
+    - After read 1 (for well dupes and interop)
     - On run completion
     - Right after demultiplexing (interop finished)
     - After any QC process
@@ -15,9 +16,16 @@ Should md5 generation be part of the QC pipeline or separate?
 
     - Assume part-of just now, but bear in mind the files need to be pushed
       back into the fastqdata dir, just as the bcl2fastq logs really belong in
-      the runqc directory.
+      the runqc directory. (not a problem if QC is just a subdirectory of the
+      fastqdata directory)
 
-When do we need QC to run?
+Do I need to clean up the QC?
+
+    - Yes, I think the cleanup script is going to have to remove stuff when
+      a lane is re-done. To this end, ensure all the QC output files are named
+      like <runid>_<lane>... for easy removal.
+
+When do we need QC (of FASTQ files) to run?
 
     - After demux,
     - or re-demux
@@ -29,4 +37,33 @@ What should the QC driver look like?
       beforehand then they can be pointed elsewhere, but do I need to do this?
       Maybe it's better to keep the QC in with the FASTQ and to clean it up as needed.
 
+Should the Snakefile actually run MultiQC?
+
+    - Maybe. Probably? Erm.
+
 MultiQC can then mine the QC subdirectory for goodies.
+
+What about well dupes?
+
+    - This can trigger as soon as read 1 is complete. It can potentially be run again as part of
+      the final QC since it will be a no-op.
+      Since the dup counter triggers before the demultiplexing it will have to stash results somewhere
+      other than /lustre/fastqdata. I think /lustre/seqdata/WellDuplicates and keep the same layout
+      as before.
+      So we need a way for driver.sh to trigger on read1 complete, to put the run into in_pipeline mode while it
+      does the dupe counting and then to put it back into reads_unfinished.
+      Have a pipeline/read1.started and pipeline/read1.done files.
+      If RTARead1Complete.txt is present:
+        pipeline/read1.done present = proceed as before
+        pipeline/read1.started present = status read1_processing
+        else status = read1_finished
+      This overrides reads_finished, so that if a run "magically" appears in completed state it will cycle through
+      read1 beofore going on to demultiplexing.
+
+      [ Hmm - this is not ideal for single-end reads. We want to start bcl2fastq and welldupes at the same time,
+      but we then want to be sure that well dupes is finished before we get the final QC report. How to do this???
+      Given that, even for single-end, there is going to be an index read before RTAComplete, I think we can get away
+      with waiting 10 minutes for the well dupes. ]
+
+      For now, I'm going to treat the well dups info as something that should be available by the time I add the interop
+      stuff to the QC report.

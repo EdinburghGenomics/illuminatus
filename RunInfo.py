@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os.path
-import glob
+from glob import glob
 import sys
 
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
@@ -16,12 +16,11 @@ class RunInfo:
         # here the RunInfo.xml is parsed into an object
         self.run_path_folder = os.path.join( run_path , run_folder )
         runinfo_xml_location = os.path.join( self.run_path_folder , 'RunInfo.xml' )
-        if os.path.exists( runinfo_xml_location ):
-            try:
-                self.runinfo_xml = RunInfoXMLParser( runinfo_xml_location )
-            except Exception:
-                #if we can't read it we can't get much info
-                pass
+        try:
+            self.runinfo_xml = RunInfoXMLParser( runinfo_xml_location )
+        except Exception:
+            #if we can't read it we can't get much info
+            self.runinfo_xml = None
 
 
     def _is_sequencing_finished( self ):
@@ -49,28 +48,34 @@ class RunInfo:
 
     def _was_restarted( self ):
         # returns True if any of the lanes was marked for redo
-        RESTARTED_FILE_LOCATION = os.path.join( self.run_path_folder , 'pipeline/lane?.redo' )
-        redo_files = glob.glob( RESTARTED_FILE_LOCATION )
+        RESTARTED_FILE_LOCATION = os.path.join( self.run_path_folder , 'pipeline', 'lane?.redo' )
+        redo_files = glob( RESTARTED_FILE_LOCATION )
 
         return len(redo_files) > 0
 
     def _was_started( self ):
-        """ returns True if ANY of the lanes was marked as started
+        """ returns True if ANY of the lanes was marked as started [demultiplexing]
         """
-        STARTED_FILE_LOCATION = os.path.join( self.run_path_folder , 'pipeline/lane?.started' )
-        started_files = glob.glob( STARTED_FILE_LOCATION )
+        STARTED_FILE_LOCATION = os.path.join( self.run_path_folder , 'pipeline', 'lane?.started' )
+        started_files = glob( STARTED_FILE_LOCATION )
 
         return len(started_files) > 0
 
     def _was_finished( self ):
-        """ returns True if ALL lanes were marked as done
+        """ returns True if ALL lanes were marked as done [demultiplexing]
             by comparing number of lanes with the number of lane?.done files
         """
         number_of_lanes = int( self.runinfo_xml.run_info[ 'LaneCount' ] )
-        DONE_FILE_LOCATION = os.path.join( self.run_path_folder , 'pipeline/lane?.done' )
-        finished_files = glob.glob( DONE_FILE_LOCATION )
+        DONE_FILE_LOCATION = os.path.join( self.run_path_folder , 'pipeline', 'lane?.done' )
+        finished_files = glob( DONE_FILE_LOCATION )
 
         return len(finished_files) == number_of_lanes
+
+    def _qc_started( self ):
+        return bool(glob( os.path.join(self.run_path_folder, 'pipeline/qc.started') ))
+
+    def _qc_done( self ):
+        return bool(glob( os.path.join(self.run_path_folder, 'pipeline/qc.done') ))
 
     def _was_aborted( self ):
         """ if the processing was aborted, we have a single flag for the whole run
@@ -116,21 +121,26 @@ class RunInfo:
             if not ( self._was_started() or self._was_ended() ):
                 return "reads_unfinished"
 
+        # FIXME - detect and deal with read1 complete
+
         # RUN IS 'reads_finished': if RTAComplete.txt is present and the demultiplexing has not started e.g. pipeline/lane?.started files do not exist
         if self._is_sequencing_finished() and not self._was_started() and not self._was_ended():
             return "reads_finished"
 
-        # RUN IS 'in_pipeline':
+        # RUN IS 'in_demultiplexing':
         if self._is_sequencing_finished() and self._was_started() and not self._was_ended():
-            return "in_pipeline"
+            return "in_demultiplexing"
+
+        # RUN is 'in_qc':
+        if self._is_sequencing_finished() and self._was_finished():
+            if self._qc_started():
+                return "in_qc"
+            elif not self._qc_done():
+                return "demultiplexed"
 
         # RUN IS 'complete':
-        if self._is_sequencing_finished() and self._was_finished() and not self._was_restarted():
+        if self._is_sequencing_finished() and self._qc_done() and not self._was_restarted():
             return "complete"
-
-        # RUN IS 'failed':
-                #if self._is_sequencing_finished() and not self._is_in_pipeline() and self._is_pipeline_finished():
-                #        return "failed"
 
         return "unknown"
 

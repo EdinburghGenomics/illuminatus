@@ -77,10 +77,14 @@ fi
 
 # 3) Define an action for each possible status that a run can have:
 # new)            - this run is seen for the first time (sequencing might be done or is still in progress)
-# reads_incomplete) the run has been picked up by the pipeline but we're waiting for data
+# reads_unfinished) the run has been picked up by the pipeline but we're waiting for data
+# read1_finished) - the run is ready for post-read1 qc (ie. well dupe counting)
+# in_read1_qc)    - read 1 qc is underway
 # reads_finished) - sequencing has finished, the pipeline/ folder exists the pipeline was not started yet...
-# in_pipeline)    - the pipeline started processing at least one lane of this run but has not yet finished
-# complete)       - the pipeline has finished processing ALL lanes of this run
+# in_demultiplexing) the pipeline started [re-]demultiplexing at least one lane of this run but has not yet finished
+# demultiplexed)  - the demultiplexing (bcl2fastq) part finished. QC is still needed.
+# in_qc)          - the QC part of the pipeline is running. In the meantime, the sequences may be used.
+# complete)       - the pipeline has finished processing ALL lanes of this run, including QC
 # aborted)        - the run is not to be processed
 # failed)         - the pipeline tried to process the run but failed
 # redo)           - at least one lane is marked for redo and run is complete or failed
@@ -136,22 +140,44 @@ action_reads_finished(){
       BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
 
       log "  Completed bcl2fastq on $RUNID."
+
+      rm -f pipeline/failed pipeline/aborted
+      for l in pipeline/lane?.started ; do
+        mv $f ${redo%.started}.done
+      done
       rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
     ) |& plog ; [ $? = 0 ] || demux_fail
 }
 
 # What about the transition from demultiplexing to QC. Do we need a new status,
 # or is the QC part just hooked off the back of BCL2FASTQ?
-# action_demultiplexing_finished() { ... }
+# I say the former, or else it is harder to re-run QC without re-demultiplexing,
+# and also to see exactly where the run is.
+action_demultiplexed() {
+      log "\_DEMULTIPLEXED $RUNID"
+      log "  Now commencing QC on $RUNID."
+
+      run_qc
+      log "  Completed QC on $RUNID."
+      rt_runticket_manager.py -r "$RUNID" --comment "QC of lanes ${redo_list[*]} completed" 
+}
 
 # Also what about the copying to backup? I feel this should be an entirely separate
 # RSYNC job. Maybe this script could hint at what needs to be copied to save running
 # a full RSYNC again and again.
 
-action_in_pipeline() {
+action_in_demultiplexing() {
     # in pipeline, could update some progress status
     # TODO - maybe some attempt to detect stalled runs?
-    log "\_IN_PIPELINE $RUNID"
+    log "\_IN_DEMULTIPLEXING $RUNID"
+}
+
+action_in_read1_qc() {
+    log "\_IN_READ1_QC $RUNID"
+}
+
+action_in_qc() {
+    log "\_IN_QC $RUNID"
 }
 
 action_failed() {
@@ -164,12 +190,12 @@ action_aborted() {
 }
 
 action_complete() {
-    # the pipeline already completed for this run ... nothing to be done ...
+    # the pipeline already fully completed for this run ... nothing to be done ...
     true
 }
 
 action_redo() {
-    # Some lanes need to be re-done ...
+    # Some lanes need to be re-done. Complicated...
     log "\_REDO $RUNID"
     plog_start
 
@@ -178,11 +204,13 @@ action_redo() {
 
     # Remove all .redo files and corresponding .done files
     for redo in pipeline/lane?.redo ; do
+        touch ${redo%.redo}.started
         rm -f ${redo%.redo}.done ; rm $redo
 
         [[ "$redo" =~ .*(.)\.redo ]]
         redo_list+=(${BASH_REMATCH[1]})
     done
+    rm -f pipeline/qc.started pipeline/qc.done
     redo_str="lanes`tr -d ' ' <<<${redo_list[*]}`"
 
     # Re-summarize the sample sheet, as it probably changed.
@@ -206,6 +234,10 @@ action_redo() {
       BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
 
       log "  Completed demultiplexing on $RUNID lanes ${redo_list[*]}."
+      rm -f pipeline/failed pipeline/aborted
+      for l in pipeline/lane?.started ; do
+        echo mv $f ${redo%.started}.done
+      done
       rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed"
     ) |& plog ; [ $? = 0 ] || demux_fail
 }
@@ -226,11 +258,32 @@ fetch_samplesheet_and_report() {
     samplesheet_fetch.sh | plog
     new_ss_link="`readlink -q SampleSheet.csv || true`"
 
+    #Push any new metadata into the run report
+    Snakefile.qc -- multiqc_main
+
     if [ ! -e pipeline/sample_summary.txt ] || \
        [ "$old_ss_link" != "$new_ss_link" ] ; then
         summarize_samplesheet.py > pipeline/sample_summary.txt
         rt_runticket_manager.py -r "$RUNID" --reply @pipeline/sample_summary.txt |& plog
     fi
+}
+
+run_qc() {
+    # Hand over to Snakefile.qc for report generation
+    touch pipeline/qc.started
+
+    # First a quick report
+    Snakefile.qc -- demux_stats_main interop_main
+    Snakefile.qc -f -- multiqc_main
+
+    # Then a full QC
+    # TODO - at this point the status should switch to 'in_qc'
+    # I can add this when I also add the read1_finished status - see notes in the doc
+    Snakefile.qc -- md5_main qc_main
+    Snakefile.qc -f -- multiqc_main
+
+    # We're done
+    mv pipeline/qc.started pipeline/qc.done
 }
 
 demux_fail() {

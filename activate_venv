@@ -23,6 +23,13 @@ activate_venv() {
 }
 
 if [ -e ./_py3_venv/bin/activate ] ; then
+
+    # MultiQc is under active development, so enable easy update
+    if [ "${UPDATE_MULTIQC:-0}" != 0 ] ; then
+        pip3 install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git#egg=multiqc'
+        pip3 install --upgrade --no-deps 'git+ssh://git@gitlab.genepool.private/production-team/MultiQC_EdGen.git#egg=multiqc_edgen'
+    fi
+
     activate_venv
 else
     echo "Bootstrapping new VEnv from `which python3`"
