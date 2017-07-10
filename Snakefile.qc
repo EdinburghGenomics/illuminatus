@@ -70,7 +70,7 @@ all_1_fq = [ fq for fq in all_fq if split_fq_name(fq)['read'] == '1' ]
 
 # There should only be one run, but having runs_and_lanes as a set of pairs is how
 # I've done things elsewhere so I may as well stick with it.
-runs_and_lanes = sorted(set( (f['run'], f['lane']) for f in all_fq ))
+runs_and_lanes = sorted(set( (sf['run'], sf['lane']) for f in all_fq for sf in [split_fq_name(f)] ))
 runs = sorted(set( rl[0] for rl in runs_and_lanes ))
 
 # === Driver rules ===
@@ -98,7 +98,7 @@ rule demux_stats_main:
     # TODO - gather stats from the bcl2fastq logs etc. Calculate barcode balance, ...
     # This also tries to get the well dups value, if appropriate
     input:
-        stats = expand("QC/{rl[0]}_{rl[1]}.stats.yml", rl=runs_and_lanes)
+        stats = expand("QC/{rl[0]}_{rl[1]}.stats.yml", rl=runs_and_lanes),
         dups  = expand("QC/{rl[0]}_{rl[1]}.welldups",  rl=runs_and_lanes)
 
 rule metadata_main:
@@ -116,7 +116,7 @@ rule multiqc_main:
 # === Actual data-gathering rules ===
 
 # Presumably interop data is under {SEQDATA}/{runid}/InterOp
-SEQDATA = config.get('seqdata', '.')
+SEQDATA = config.get('seqdata', os.environ.get('SEQDATA_LOCATION', '.'))
 
 rule interop_qscore_heatmap:
     output: "QC/interop/{runid}.qscore_heatmap.interop_plot"

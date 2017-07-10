@@ -8,6 +8,11 @@ shopt -sq failglob
 # to stdout.
 # The script wants to run every 5 minutes or so.
 
+# Note within this script I've tried to use ( subshell blocks ) along with "set -e"
+# to emulate eval{} statements in Perl. It does work but you have to be really careful
+# on the syntax, and you have to check $? explicitly - trying to do it implicitly in
+# the manner of ( foo ) || handle_error won't do what you expect.
+
 # This file must provide SEQDATA_LOCATION, FASTQ_LOCATION if not set externally.
 if [ -e "`dirname $BASH_SOURCE`"/environ.sh ] ; then
     pushd "`dirname $BASH_SOURCE`" >/dev/null
@@ -97,7 +102,8 @@ action_new(){
     # For now the sample sheet summary will just be a copy of the sample sheet
     # If this works we can BREAK, but if not go on to process more runs
 
-    # TODO - run initial MultiQC here.
+    # In order to run the initial round of MultiQC we'll also and up making the
+    # $DEMUX_OUTPUT_FOLDER/QC/ directory.
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
     set +e ; ( set -e
       mkdir ./pipeline
@@ -128,7 +134,6 @@ action_reads_finished(){
     # subdirectory. This is for 'good reasons' (TM).
     # TODO - add an interim MultiQC report now that the Interop files are here.
     BREAK=1
-    DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
     export DEMUX_JOBNAME="demux_${RUNID}"
     plog "Preparing to demultiplex $RUNID into $DEMUX_OUTPUT_FOLDER/demultiplexing/"
     set +e ; ( set -e
@@ -139,14 +144,13 @@ action_reads_finished(){
       BCL2FASTQRunner.sh |& plog
       BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
 
-      log "  Completed bcl2fastq on $RUNID."
-
-      rm -f pipeline/failed pipeline/aborted
-      for l in pipeline/lane?.started ; do
-        mv $f ${redo%.started}.done
-      done
-      rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
     ) |& plog ; [ $? = 0 ] || demux_fail
+
+    for f in pipeline/lane?.started ; do
+        mv $f ${f%.started}.done
+    done
+    rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
+    log "  Completed bcl2fastq on $RUNID."
 }
 
 # What about the transition from demultiplexing to QC. Do we need a new status,
@@ -154,12 +158,14 @@ action_reads_finished(){
 # I say the former, or else it is harder to re-run QC without re-demultiplexing,
 # and also to see exactly where the run is.
 action_demultiplexed() {
-      log "\_DEMULTIPLEXED $RUNID"
-      log "  Now commencing QC on $RUNID."
+    log "\_DEMULTIPLEXED $RUNID"
+    log "  Now commencing QC on $RUNID."
 
-      run_qc
-      log "  Completed QC on $RUNID."
-      rt_runticket_manager.py -r "$RUNID" --comment "QC of lanes ${redo_list[*]} completed" 
+    set +e ; ( set -e
+        run_qc
+    ) |& plog ; [ $? = 0 ] || demux_fail
+    log "  Completed QC on $RUNID."
+    rt_runticket_manager.py -r "$RUNID" --comment "QC of $RUNID completed"
 }
 
 # Also what about the copying to backup? I feel this should be an entirely separate
@@ -210,7 +216,8 @@ action_redo() {
         [[ "$redo" =~ .*(.)\.redo ]]
         redo_list+=(${BASH_REMATCH[1]})
     done
-    rm -f pipeline/qc.started pipeline/qc.done
+    # Clean out all the other flags
+    rm -f pipeline/qc.started pipeline/qc.done pipeline/failed pipeline/aborted
     redo_str="lanes`tr -d ' ' <<<${redo_list[*]}`"
 
     # Re-summarize the sample sheet, as it probably changed.
@@ -219,7 +226,6 @@ action_redo() {
     fetch_samplesheet_and_report
 
     BREAK=1
-    DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
     export DEMUX_JOBNAME="demux_${RUNID}_${redo_str}"
     set +e ; ( set -e
       if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
@@ -233,13 +239,13 @@ action_redo() {
       BCL2FASTQRunner.sh |& plog
       BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
 
-      log "  Completed demultiplexing on $RUNID lanes ${redo_list[*]}."
-      rm -f pipeline/failed pipeline/aborted
-      for l in pipeline/lane?.started ; do
-        echo mv $f ${redo%.started}.done
-      done
-      rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed"
     ) |& plog ; [ $? = 0 ] || demux_fail
+
+    for f in pipeline/lane?.started ; do
+        mv $f ${f%.started}.done
+    done
+    rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed"
+    log "  Completed demultiplexing on $RUNID lanes ${redo_list[*]}."
 }
 
 action_unknown() {
@@ -251,15 +257,16 @@ action_unknown() {
 fetch_samplesheet_and_report() {
     # Tries to fetch an updated samplesheet. If this is the first run, or if
     # a new one was found, send an e-mail report to RT.
-    # TODO - trigger an initial MultiQC report too.
     old_ss_link="`readlink -q SampleSheet.csv || true`"
 
     #Currently if samplesheet_fetch.sh returns an error the pipeline aborts.
     samplesheet_fetch.sh | plog
     new_ss_link="`readlink -q SampleSheet.csv || true`"
 
-    #Push any new metadata into the run report
-    Snakefile.qc -- multiqc_main
+    #Push any new metadata into the run report.
+    # This requires the QC directory to exist, even before demultiplexing starts.
+    mkdir -p "$DEMUX_OUTPUT_FOLDER"/QC
+    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- multiqc_main ) | plog
 
     if [ ! -e pipeline/sample_summary.txt ] || \
        [ "$old_ss_link" != "$new_ss_link" ] ; then
@@ -272,15 +279,17 @@ run_qc() {
     # Hand over to Snakefile.qc for report generation
     touch pipeline/qc.started
 
-    # First a quick report
-    Snakefile.qc -- demux_stats_main interop_main
-    Snakefile.qc -f -- multiqc_main
+    (   cd "$DEMUX_OUTPUT_FOLDER"
+        # First a quick report
+        Snakefile.qc -- demux_stats_main interop_main
+        Snakefile.qc -f -- multiqc_main
 
-    # Then a full QC
-    # TODO - at this point the status should switch to 'in_qc'
-    # I can add this when I also add the read1_finished status - see notes in the doc
-    Snakefile.qc -- md5_main qc_main
-    Snakefile.qc -f -- multiqc_main
+        # Then a full QC
+        # TODO - at this point the status should switch to 'in_qc'
+        # I can add this when I also add the read1_finished status - see notes in the doc
+        Snakefile.qc -- md5_main qc_main
+        Snakefile.qc -f -- multiqc_main
+    )
 
     # We're done
     mv pipeline/qc.started pipeline/qc.done
@@ -319,6 +328,7 @@ for run in "$SEQDATA_LOCATION"/$RUN_NAME_PATTERN/ ; do
 
   #Call the appropriate function in the appropriate directory.
   BREAK=0
+  DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
   { pushd "$run" >/dev/null && eval action_"$STATUS" &&
     popd >/dev/null
   } || log "Error while trying to scan $run"

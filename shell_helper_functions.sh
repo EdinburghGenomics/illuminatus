@@ -30,13 +30,15 @@ find_snakefile() {
 
 snakerun_drmaa() {
     snakefile=`find_snakefile "$1"` ; shift
-    export SNAKE_PRERUN="$QC_TOOLS_ACTIVATE"
+    if [ -n "${QC_TOOLS_ACTIVATE:-}" ] ; then
+        export SNAKE_PRERUN="$QC_TOOLS_ACTIVATE"
+    fi
 
     # Spew out cluster.yaml
     [ -e cluster.yml ] || cat_cluster_yml > cluster.yml
 
     if is_new_cluster ; then
-        echo "Running $snakefile on the GSEG cluster"
+        echo "Running $snakefile in `pwd` on the GSEG cluster"
         __SNAKE_THREADS="${SNAKE_THREADS:-100}"
 
         mkdir -p ./slurm_output
@@ -51,7 +53,7 @@ snakerun_drmaa() {
              "$@"
 
     else
-        echo "Running $snakefile on the old cluster"
+        echo "Running $snakefile in `pwd` on the old cluster"
         __SNAKE_THREADS="${SNAKE_THREADS:-20}"
 
         mkdir -p ./sge_output
@@ -72,7 +74,7 @@ snakerun_single() {
 
     if is_new_cluster ; then __LOCALJOBS=4 ; else __LOCALJOBS=1 ; fi
 
-    echo "Running $snakefile in local mode"
+    echo "Running $snakefile in `pwd` in local mode"
     snakemake \
          -s "$snakefile" -j $__LOCALJOBS -p -T --rerun-incomplete \
          "$@"
@@ -81,7 +83,7 @@ snakerun_single() {
 snakerun_touch() {
     snakefile=`find_snakefile "$1"` ; shift
 
-    echo "Running $snakefile --touch to update file timestamps"
+    echo "Running $snakefile --touch in `pwd` to update file timestamps"
     snakemake -s "$snakefile" --quiet --touch "$@"
     echo "DONE"
 }
