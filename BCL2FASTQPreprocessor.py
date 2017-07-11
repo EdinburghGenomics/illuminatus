@@ -39,15 +39,14 @@ class BCL2FASTQPreprocessor:
         assert self.lanes
 
         self.ini_settings = defaultdict(dict)
+        # This default can be overridden on a per-lane basis by the samplesheet.
+        self.ini_settings['bcl2fastq']['--barcode-mismatches'] = '1'
 
         # Options embedded in the Sample Sheet override the default.
         self.load_samplesheet_ini()
 
         # pipeline_settings.ini override both.
         self.load_ini_file( os.path.join(self._rundir, "pipeline_settings.ini") )
-
-        # Can be overriden by caller. Are we ever actully doing this?
-        self.barcode_mismatches = 1
 
     def get_bcl2fastq_command(self):
         """Return the full command string for BCL2FASTQ.  The driver should
@@ -61,7 +60,6 @@ class BCL2FASTQPreprocessor:
             cmd.append("-o '%s'" % self._destdir)
         cmd.append("--sample-sheet '%s'" % os.path.join( self._rundir, "SampleSheet.csv" ) )
         cmd.append("--fastq-compression-level 6")
-        cmd.append("--barcode-mismatches %d" % self.barcode_mismatches )
 
         #Add base masks per lane
         for lane in self.lanes:
@@ -80,8 +78,9 @@ class BCL2FASTQPreprocessor:
 
             replace_index = [ i for i, c in enumerate(cmd)
                               if c.split(delimiter)[0] == ini_option ]
-            replace_value = ( ini_option + delimiter +
-                              self.ini_settings['bcl2fastq'].get(ini_option) )
+            replace_value = '{}{}{}'.format( ini_option,
+                                             delimiter,
+                                             self.ini_settings['bcl2fastq'].get(ini_option) )
             if replace_index:
                 #print ("replacing from pipeline_settings.ini option "+ ini_option)
                 cmd[replace_index[0]] = replace_value
@@ -105,6 +104,7 @@ class BCL2FASTQPreprocessor:
                               self._samplesheet )
 
                 for section in cp.sections():
+                    # Cast all to strings
                     self.ini_settings[section].update(cp.items(section))
 
         except Exception:
@@ -118,6 +118,14 @@ class BCL2FASTQPreprocessor:
         try:
             cp.read(ini_file)
             for section in cp.sections():
+                # special-case for barcode-mismatches where per-lane settings
+                # can be overridden by a master setting.
+                if '--barcode-mismatches' in [ i[0] for i in cp.items(section) ]:
+                    for bm in [ k for k in self.ini_settings[section].keys()
+                                if k.startswith('--barcode-mismatches-') ]:
+                        del self.ini_settings[section][bm]
+
+                #conf_items = { k: str(v) for k, v in cp.items(section) }
                 self.ini_settings[section].update(cp.items(section))
 
         except Exception:
