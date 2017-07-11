@@ -30,8 +30,9 @@ find_snakefile() {
 
 snakerun_drmaa() {
     snakefile=`find_snakefile "$1"` ; shift
-    if [ -n "${QC_TOOLS_ACTIVATE:-}" ] ; then
-        export SNAKE_PRERUN="$QC_TOOLS_ACTIVATE"
+    # Ensure the active VEnv gets enabled on cluster nodes:
+    if [ -n "${VIRTUAL_ENV:-}" ] ; then
+        export SNAKE_PRERUN="${VIRTUAL_ENV}/bin/activate"
     fi
 
     # Spew out cluster.yaml
@@ -45,7 +46,7 @@ snakerun_drmaa() {
         snakemake \
              -s "$snakefile" -j $__SNAKE_THREADS -p -T --rerun-incomplete \
              ${EXTRA_SNAKE_FLAGS:-} --keep-going --cluster-config cluster.yml \
-             --jobname "{project_id}{rulename}.snakejob.{jobid}.sh" \
+             --jobname "{rulename}.snakejob.{jobid}.sh" \
              --drmaa " -p qc {cluster.slurm_opts} \
                        -e slurm_output/{rule}.snakejob.{jobid}.%A.err \
                        -o slurm_output/{rule}.snakejob.{jobid}.%A.out \
@@ -60,7 +61,7 @@ snakerun_drmaa() {
         snakemake \
              -s "$snakefile" -j $__SNAKE_THREADS -p -T --rerun-incomplete \
              ${EXTRA_SNAKE_FLAGS:-} --keep-going --cluster-config cluster.yml \
-             --jobname "S{project_id}{rulename}.{jobid}.sh" \
+             --jobname "{rulename}.{jobid}.sh" \
              --drmaa " -q qc -cwd -v SNAKE_PRERUN='$SNAKE_PRERUN' -p -10 -V \
                        -pe {cluster.pe} -l h_vmem={cluster.mem} {cluster.extra} \
                        -o sge_output -e sge_output \

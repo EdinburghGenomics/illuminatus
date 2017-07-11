@@ -21,12 +21,19 @@ snakerun_drmaa "$0" "$@"
 "exit""" ### End of shell script part
 
 #!/usr/bin/env snakemake
+import yaml
 
 # TODO - add tools/versions here
 CUTADAPT = "/lustre/software/cutadapt/pipeline_current/bin/cutadapt"
 FASTQC   = "/lustre/software/FastQC/pipeline_current/fastqc"
 INTEROP  = "/lustre/software/interop/pipeline_current/bin"
-MULTIQC  = "multiqc"  # The driver is responsible for providing the correct multiqc.
+MULTIQC  = "multiqc"  # The active Python3 VEnv should provide the correct multiqc.
+
+# Other than that, ensure that scripts in the directory with this Snakefile are
+# in the PATH
+if ( not os.path.dirname(workflow.snakefile) in os.environ['PATH'] and
+     not os.path.dirname(os.path.abspath(workflow.snakefile)) in os.environ['PATH'] ):
+     os.environ['PATH'] += ':' + os.path.dirname(workflow.snakefile)
 
 def glob():
     """Regular glob() is useful but it can be improved like so.
@@ -106,12 +113,38 @@ rule metadata_main:
     input: expand("QC/run_info.{r}.yml", r=runs)
 
 rule multiqc_main:
-    output: "multiqc_report.html"
+    output: "QC/multiqc_report.html"
     input:
-        config = "mulitqc_config.yml", # FIXME...
+        config = "QC/multiqc_config.yml",
         meta = rules.metadata_main.input
     shell:
-        "{MULTIQC} -t edgen -f QC"
+        """which {MULTIQC} >&2
+           {MULTIQC} -t edgen -f QC
+           rm -rf `dirname {output}`/multiqc_data
+           mv -v -t `dirname {output}` multiqc_data multiqc_report.html
+        """
+
+localrules: configure_multiqc
+rule configure_multiqc:
+    # Emits configuration for MultiQC. This may want to be split out into a separate
+    # module but for now...
+    output: "QC/multiqc_config.yml"
+    run:
+        conf = dict( title = 'placeholder',
+                     intro_text = False,
+                     extra_fn_clean_exts = [
+                      dict( type = 'regex',
+                            pattern = '_[12]\.(?:san|)fastq' )
+                     ],
+                     #Why did I add this? Oh, to only see the merged data, not the per run-element data.
+                     fn_ignore_paths = [ '*__*/1*' ],
+                     #Interactive plots please
+                     plots_flat_numseries = 1000,
+                     #InterOP at the top
+                     top_modules = [ 'edgen_interop' ] )
+
+        with open(output[0], "w") as cfh:
+            print(yaml.safe_dump(conf, default_flow_style=False), file=cfh)
 
 # === Actual data-gathering rules ===
 
@@ -157,6 +190,7 @@ rule fastqc:
 
 # meta-data. this can change as the pipeline runs so make the rule depend on the pipeline
 # directory
+localrules: get_run_metadata
 rule get_run_metadata:
     output: "QC/run_info.{runid}.yml"
     input: SEQDATA + "/{runid}/pipeline"
