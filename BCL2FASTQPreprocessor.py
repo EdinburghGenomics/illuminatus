@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-"""This command sets up everything needed to run BCL2FASTQ on a given run,
-   and outputs the appropriate command script (do_demultiplex.sh) to run
+"""This command sets up everything needed to run BCL2FASTQ on a given lane,
+   and outputs the appropriate command script (do_demultiplexN.sh) to run
    BCL2FASTQ.
-   This in turn is going to be invoked by BCL2FASTQRunner.sh.
-   It may also edit and/or split the samplesheet, but we're hoping this
+   This in turn is going to be invoked by Snakefile.demux
+   It could also edit and/or split the samplesheet, but we're hoping this
    will not be necessary.
    If it is, see commit 5d8aebcd0d for my outline code to do this.
 """
@@ -19,11 +19,9 @@ from illuminatus.ConfigFileReader import ConfigFileReader
 
 class BCL2FASTQPreprocessor:
 
-    def __init__(self, run_dir, lanes=None, dest=None):
+    def __init__(self, run_dir, lane, dest=None):
 
-        #Read data_dir and check that all lanes are in the SampleSheet.
-        #Or, can we specify lanes=None to do all lanes?
-        #Hmmm.
+        #Read data_dir and check that requested lane is in the SampleSheet.
         self._rundir = run_dir
         self._destdir = dest
 
@@ -33,26 +31,34 @@ class BCL2FASTQPreprocessor:
         self._bme = BaseMaskExtractor(self._samplesheet, self._runinfo)
 
         #Allow lanes to be filled in automatically
-        self.lanes = sorted(set( lanes or self._bme.get_lanes() ))
-        self.lanes = [ str(l) for l in self.lanes ]
-
-        assert self.lanes
+        self.lane = str(lane)
+        assert self.lane in [ str(l) for l in self._bme.get_lanes() ], \
+            "{!r} not in {!r}".format(lane, self._bme.get_lanes())
 
         self.ini_settings = defaultdict(dict)
         # This default can be overridden on a per-lane basis by the samplesheet.
         self.ini_settings['bcl2fastq']['--barcode-mismatches'] = '1'
 
         # Options embedded in the Sample Sheet override the default.
-        self.load_samplesheet_ini()
-
         # pipeline_settings.ini override both.
-        self.load_ini_file( os.path.join(self._rundir, "pipeline_settings.ini") )
+        for i in [ lambda: self.load_samplesheet_ini(),
+                   lambda: self.load_ini_file( os.path.join(self._rundir, "pipeline_settings.ini") ) ]:
+            i()
+
+            for k in list(self.ini_settings['bcl2fastq'].keys()):
+                # Per-lane --barcode-mismatches overrides the default
+                if k == '--barcode-mismatches-lane%s' % self.lane:
+                    self.ini_settings['bcl2fastq']['--barcode-mismatches'] = \
+                        self.ini_settings['bcl2fastq'][k]
+                if k.startswith('--barcode-mismatches-'):
+                    del self.ini_settings['bcl2fastq'][k]
 
     def get_bcl2fastq_command(self):
         """Return the full command string for BCL2FASTQ.  The driver should
            set PATH so that the right version of the software gets run.
         """
-        cmd = ['bcl2fastq']
+        lane = self.lane
+        cmd = ['LANE=%s' % lane, 'bcl2fastq']
 
         #Add the abspath for the data folder
         cmd.append("-R '%s'" % self._rundir)
@@ -61,13 +67,12 @@ class BCL2FASTQPreprocessor:
         cmd.append("--sample-sheet '%s'" % os.path.join( self._rundir, "SampleSheet.csv" ) )
         cmd.append("--fastq-compression-level 6")
 
-        #Add base masks per lane
-        for lane in self.lanes:
-            bm = self._bme.get_base_mask_for_lane(lane)
-            cmd.append("--use-bases-mask '%s:%s'" % ( lane, bm ) )
+        #Add base mask for this lane
+        bm = self._bme.get_base_mask_for_lane(lane)
+        cmd.append("--use-bases-mask '%s:%s'" % ( lane, bm ) )
 
-        # Add list of lanes to process, which is controlled by --tiles
-        cmd.append("--tiles=s_[${LANES}]")
+        # Specify the lane to process, which is controlled by --tiles
+        cmd.append("--tiles=s_[$LANE]")
 
         ## now that the cmd array is complete will evaluate the pipeline_settings.ini file
         ## every setting must be either replaced or appended to the cmd array
@@ -88,9 +93,7 @@ class BCL2FASTQPreprocessor:
                 #print ("appending from pipeline_settings.ini " + ini_option)
                 cmd.append(replace_value)
 
-        lanes_bit = "LANES=${LANES:-%s}" % ''.join(self.lanes)
-
-        return lanes_bit, ' '.join(cmd)
+        return cmd
 
     def load_samplesheet_ini(self):
         """Loads the [bcl2fastq] section from self._samplesheet into self.ini_settings,
@@ -118,31 +121,23 @@ class BCL2FASTQPreprocessor:
         try:
             cp.read(ini_file)
             for section in cp.sections():
-                # special-case for barcode-mismatches where per-lane settings
-                # can be overridden by a master setting.
-                if '--barcode-mismatches' in [ i[0] for i in cp.items(section) ]:
-                    for bm in [ k for k in self.ini_settings[section].keys()
-                                if k.startswith('--barcode-mismatches-') ]:
-                        del self.ini_settings[section][bm]
-
                 #conf_items = { k: str(v) for k, v in cp.items(section) }
                 self.ini_settings[section].update(cp.items(section))
 
         except Exception:
             raise
 
-def main(run_dir, dest, *lanes):
+def main(run_dir, dest, lane):
     """ Usage BCL2FASTQPreprocessor.py <run_dir> <dest_dir> [<lane> ...]
     """
     run_dir = os.path.abspath(run_dir)
-    pp = BCL2FASTQPreprocessor(run_dir, dest=dest, lanes=lanes)
+    pp = BCL2FASTQPreprocessor(run_dir, dest=dest, lane=lane)
 
-    script_name = os.path.join( dest , "do_demultiplex.sh" )
+    script_name = os.path.join( dest , "do_demultiplex%s.sh" % lane )
 
     lines = [
-        "#Run bcl2fastq on %d lanes." % len(pp.lanes),
-        *pp.get_bcl2fastq_command()
-    ]
+        "#Run bcl2fastq on lane %s." % lane,
+        ' '.join(pp.get_bcl2fastq_command()) ]
 
     print("\n>>> Script being written...\ncat >%s <<END" % script_name)
     with open( script_name, 'w' ) as fh:

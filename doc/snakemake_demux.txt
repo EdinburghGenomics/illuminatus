@@ -1,0 +1,27 @@
+With moving to per-lane demultiplexing, I realise that the housekeeping code
+in BCL2FASTQRunner.sh is just getting silly. Most of this is handled by Snakemake
+already, so why not just use it?
+
+So, switch to a Snakefile which generates, as final output, a
+demultiplexing/Stats/DemuxSummaryF1L1.txt file. Then have the Snakefile
+run Preprocessor to get the script it needs to run.
+
+Preprocessor will need to be altered to generate scripts for one lane at a time.
+
+Hmmm - I see that some of the files in Reports and Stats are shared per run. I
+thin I'll need to demux into separate directories.
+
+So:
+
+for N in lanes:
+    demultiplexing/do_demultiplexN.sh
+    demultiplexing/laneN/
+
+So, TODO:
+
+1) Preprocessor to make 1 lane at a time.
+
+2) --mismatches being set per lane correctly
+
+3) New Snakefile to run the stuff: --config lanes="1 2 3"
+
