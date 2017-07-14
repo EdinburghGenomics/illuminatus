@@ -22,16 +22,29 @@ activate_venv() {
     $reset
 }
 
+install_multiqc() {
+    #Install/upgrade MultiQC from GIT
+    #pip3 install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git#egg=multiqc'
+    # For now, use the dev branch
+    for url in \
+        'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc' \
+        'git+ssh://git@gitlab.genepool.private/production-team/MultiQC_EdGen.git#egg=multiqc_edgen'
+        do
+        if [ "${1:-}" = 'upgrade' ] ; then
+            pip3 install --upgrade --no-deps "$url"
+        else
+            pip3 install "$url"
+        fi
+    done
+}
+
 if [ -e ./_py3_venv/bin/activate ] ; then
 
     activate_venv
 
     # MultiQc is under active development, so enable easy update
     if [ "${UPDATE_MULTIQC:-0}" != 0 ] ; then
-        #pip3 install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git#egg=multiqc'
-        # For now, use the dev branch
-        pip3 install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc'
-        pip3 install --upgrade --no-deps 'git+ssh://git@gitlab.genepool.private/production-team/MultiQC_EdGen.git#egg=multiqc_edgen'
+        install_multiqc upgrade
     fi
 
 else
@@ -49,7 +62,6 @@ else
     # why not? Assume the master branch is always good, since it's simpler than
     # searching for the last release tag (though that is possible).
     # see https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support
-    pip3 install 'git+https://github.com/EdinburghGenomics/MultiQC.git#egg=multiqc'
-    pip3 install 'git+ssh://git@gitlab.genepool.private/production-team/MultiQC_EdGen.git#egg=multiqc_edgen'
+    install_multiqc
     ) ; [ $? = 0 ] || echo "Provisioning VEnv Failed!"
 fi

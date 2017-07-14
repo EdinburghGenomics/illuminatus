@@ -99,6 +99,7 @@ class RunInfo:
         # workout the status of a run by checking the existence of various touchfiles found in the run folder.
         # possible values are:
         # sequencing, new, read1_finished, reads_finished, in_pipeline, complete, failed, redo
+        # FIXME - I think we need to differentiate between run status and pipeline status here.
 
         # RUN IS 'new': if no pipeline/ folder have yet been created.
         if self._is_new_run():

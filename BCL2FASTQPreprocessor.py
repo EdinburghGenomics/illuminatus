@@ -63,7 +63,7 @@ class BCL2FASTQPreprocessor:
         #Add the abspath for the data folder
         cmd.append("-R '%s'" % self._rundir)
         if self._destdir:
-            cmd.append("-o '%s'" % self._destdir)
+            cmd.append("-o '%s'/lane${LANE}" % self._destdir)
         cmd.append("--sample-sheet '%s'" % os.path.join( self._rundir, "SampleSheet.csv" ) )
         cmd.append("--fastq-compression-level 6")
 

@@ -62,7 +62,7 @@ class T(unittest.TestCase):
                 "LANE=1",
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
-                "-o '%s'" % self.out_dir ,
+                "-o '%s'/lane${LANE}" % self.out_dir ,
                 "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
                 "--fastq-compression-level 6", # Do we still need this? Yes.
                 "--barcode-mismatches 1",  # If anything?
@@ -89,7 +89,7 @@ class T(unittest.TestCase):
             "LANE=1",
             "bcl2fastq",
             "-R '%s'" % shadow_dir,
-            "-o '%s'" % self.out_dir ,
+            "-o '%s'/lane${LANE}" % self.out_dir ,
             "--sample-sheet '%s'" % os.path.join(shadow_dir, "SampleSheet.csv"),
             "--fastq-compression-level 6",
             "--barcode-mismatches 100",  # Should be set by .ini
@@ -166,7 +166,7 @@ class T(unittest.TestCase):
                 "LANE=5",
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
-                "-o '%s'" % self.out_dir ,
+                "-o '%s'/lane${LANE}" % self.out_dir ,
                 "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
                 "--use-bases-mask '5:Y50n,I8,I8'",
                 "--tiles=s_[$LANE]",

@@ -1,0 +1,110 @@
+#!/bin/bash
+# vim: ft=python
+
+## This workflow should be run in a fastqdata/demultiplexing directory to
+## drive bcl2fastq. The reason for running here is to get the
+## .snakemake and slurm_output dirs in a sensible place.
+
+# Contents >>>
+#   + Embedded BASH script to bootstrap the workflow
+#   + Initialisation and configuration
+#   + Helper functions
+#   + The rules specific to this workflow
+#   + More generic rules
+
+"""true" ### Begin shell script part
+set -euo pipefail
+
+source "`dirname $0`"/shell_helper_functions.sh
+
+# $PATH doesn't get passed to worker nodes on SLURM but other vars do,
+# so I can use EXTRA_PATH
+export EXTRA_PATH="${EXTRA_PATH:+${EXTRA_PATH}:}$(
+            dirname "$0"):$(
+            echo /lustre/software/bcl2fastq/bcl2fastq2-v2.19.1/bin/ )"
+
+# Caller needs to supply --config lanes='? ? ?' rundir=?
+# Apply -F to run all steps every time. Otherwise I could maybe depend on the
+# SampleSheet.csv as an input?
+snakerun_drmaa "$0" -F "$@"
+
+"exit""" ### End of shell script part
+
+#!/usr/bin/env snakemake
+import yaml
+
+# For this pipeline, tools and versions are controlled by PATH/EXTRA_PATH
+if 'EXTRA_PATH' in os.environ:
+    os.environ['PATH'] = "{}:{}".format(os.environ['EXTRA_PATH'], os.environ['PATH'])
+
+
+def glob():
+    """Regular glob() is useful but it can be improved like so.
+    """
+    from glob import glob
+    return lambda p: sorted( (f.rstrip('/') for f in glob(os.path.expanduser(p))) )
+glob = glob()
+
+# Config
+LANES = config['lanes'].split()
+RUNDIR = config['rundir']
+
+# preprocess rule is run for each lane to get the script to run
+
+# bcl2fastq is run for each LANE to produce laneN/Stats/DemuxSummaryF1LN.txt,
+# laneN/Stats/DemultiplexingStats.xml and laneN/foo.json
+
+# postprocess rule is run just once to gather and rename all the fastq.gz files
+# output is renamesXXX.log where XXX starts at 000.
+
+def get_sequential_file(pattern):
+    """Given a filename like foo???.log, find the next available filename that
+       matches the pattern. The file will be created and left empty.
+       I've coded this to avoid race conditions but it's not a problem as
+       Snakemake locks the working dir anyway.
+    """
+    pre, c, post = re.match(r'([^?]*)([?]+)([^?]*)', pattern).groups()
+
+    seqnum = 0
+
+    for existing in glob(pattern):
+        try:
+            seqnum = int(existing.lstrip(pre).rstrip(post))
+        except ValueError:
+            pass
+
+    try:
+        while True:
+            try:
+                fh = open('{}{:0{len}d}{}'.format(pre, seqnum, post, len=len(c)), mode='x')
+                return fh.name
+            except FileExistsError:
+                seqnum += 1
+    finally:
+        fh.close()
+
+rule postprocess:
+    output: get_sequential_file('renames???.log')
+    input: expand("lane{l}/Stats/DemuxSummaryF1L{l}.txt", l=LANES)
+    shell:
+        "BCL2FASTQPostprocessor.py ." #FIXME check where it runs
+
+rule bcl2fastq:
+    output:
+        summary = "Stats/DemuxSummaryF1L{l}.txt",
+        stats = "lane{l}/Stats/DemultiplexingStats.xml",
+        json = "lane{l}/foo.json"
+    input:
+        script = "do_demultiplex{l}.sh"
+    shell:
+        """{input.script} #The location for output should already be coded in the script.
+           mv lane{wildcards.l}/{output.summary} {output.summary}
+        """
+
+rule preprocess:
+    output:
+        script = "do_demultiplex{l}.sh"
+    params:
+        dest = os.path.abspath('.')
+    shell:
+        """BCL2FASTQPreprocessor.py {RUNDIR} {params.dest} {wildcards.l}"""
