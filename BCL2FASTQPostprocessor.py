@@ -81,7 +81,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
     # No attempt to define what directories are 'project' directories by naming pattern.
     # If it contains fastq.gz files it must be a project dir.
-    for fastq_file in glob(os.path.join( output_dir, "demultiplexing" , "*/*/*.fastq.gz" )):
+    for fastq_file in glob(os.path.join( output_dir, "lane*/demultiplexing" , "*/*/*.fastq.gz" )):
 
         #os.path.split is unhelpful here. Just do it the obvious way.
         # something like: 10528, 10528EJ0019L01, 10528EJpool03_S19_L005_R1_001.fastq.gz
@@ -116,7 +116,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
         #Paranoia. Rather than checking if the file exists, create it exclusively.
         #That way, no possible race condition that can cause one file to be renamed over
-        #another file.
+        #another file (ignoring remote NFS race conditions).
         with open(new_filename_absolute, 'x') as tmp_fd:
             log( "mv %s %s" % ('/'.join(fastq_file.split('/')[-4:]), new_filename_relative) )
 
@@ -124,7 +124,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
     # Now go again for files not in a subdirectory (if Sample_Name was blank)
     # (apologies for the copy-paste)
-    for fastq_file in glob(os.path.join( output_dir, "demultiplexing" , "*/*.fastq.gz" )):
+    for fastq_file in glob(os.path.join( output_dir, "lane*/demultiplexing" , "*/*.fastq.gz" )):
 
         #os.path.split is unhelpful here. Just do it the obvious way.
         # something like: 10528, 10528EJ0019L01, 10528EJpool03_S19_L005_R1_001.fastq.gz
@@ -167,7 +167,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
             os.replace(fastq_file, new_filename_absolute)
 
     # Now deal with the undetermined files.
-    for undet_file_absolute in glob(os.path.join( output_dir, "demultiplexing", "[Uu]ndetermined_*" )):
+    for undet_file_absolute in glob(os.path.join( output_dir, "lane*/demultiplexing", "[Uu]ndetermined_*" )):
         filename = undet_file_absolute.split('/')[-1]
 
         # eg. Undetermined_S0_L004_R1_001.fastq.gz

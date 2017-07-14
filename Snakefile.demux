@@ -48,6 +48,7 @@ glob = glob()
 # Config
 LANES = config['lanes'].split()
 RUNDIR = config['rundir']
+workdir: config['workdir']
 
 # preprocess rule is run for each lane to get the script to run
 

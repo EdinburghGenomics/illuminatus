@@ -138,11 +138,10 @@ action_reads_finished(){
     plog "Preparing to demultiplex $RUNID into $DEMUX_OUTPUT_FOLDER/demultiplexing/"
     set +e ; ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
-      BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       log "  Starting bcl2fastq on $RUNID."
-      cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
-      BCL2FASTQRunner.sh |& plog
-      BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
+      Snakefile.demux --config workdir="$DEMUX_OUTPUT_FOLDER"/demultiplexing \
+                      --config lanes="$(echo `seq $LANES`)" \
+                      --config rundir="`pwd`" |& plog
 
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
@@ -233,12 +232,11 @@ action_redo() {
         BCL2FASTQCleanup.py "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
       fi
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
-      BCL2FASTQPreprocessor.py . "$DEMUX_OUTPUT_FOLDER"/demultiplexing "${redo_list[@]}"
 
       log "  Starting bcl2fastq on $RUNID lanes ${redo_list[*]}."
-      cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
-      BCL2FASTQRunner.sh |& plog
-      BCL2FASTQPostprocessor.py "$DEMUX_OUTPUT_FOLDER" $RUNID
+      Snakefile.demux --config workdir="$DEMUX_OUTPUT_FOLDER"/demultiplexing \
+                      --config lanes="${redo_list[*]}" \
+                      --config rundir="`pwd`" |& plog
 
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
