@@ -42,10 +42,10 @@ class T(unittest.TestCase):
         # So the files to be tested are now in the pool__lib format, or are in sub-folders
         # with that format.
         self.assertEqual(fqgz_before, [
-            '10510/10510GCpool05__10510GC0017L01_S1_L001_R1_001.fastq.gz',
-            '10510/10510GCpool05__10510GC0017L01_S999_L001_R2_001.fastq.gz',
-            '10510/10510GCpool05__10510GC0018L01/10510GCpool05_S2_L001_R1_001.fastq.gz',
-            '10510/10510GCpool05__10510GC0018L01/filename_should_be_ignored_S2_L001_R2_001.fastq.gz',
+            'lane1/10510/10510GCpool05__10510GC0017L01_S1_L001_R1_001.fastq.gz',
+            'lane1/10510/10510GCpool05__10510GC0017L01_S999_L001_R2_001.fastq.gz',
+            'lane1/10510/10510GCpool05__10510GC0018L01/10510GCpool05_S2_L001_R1_001.fastq.gz',
+            'lane1/10510/10510GCpool05__10510GC0018L01/filename_should_be_ignored_S2_L001_R2_001.fastq.gz',
             ])
 
 
@@ -87,6 +87,8 @@ class T(unittest.TestCase):
 
         # Files should now be at the top level and named correctly.
         self.assertEqual(fqgz, [
+            '160811_D00261_0355_BC9DA7ANXX_3_unassigned_1.fastq.gz',
+            '160811_D00261_0355_BC9DA7ANXX_3_unassigned_2.fastq.gz',
             '160811_D00261_0355_BC9DA7ANXX_4_unassigned_1.fastq.gz',
             '160811_D00261_0355_BC9DA7ANXX_4_unassigned_2.fastq.gz'
             ])
@@ -113,10 +115,10 @@ class T(unittest.TestCase):
 
         # Files should still be there
         self.assertEqual(fqgz, [
-            '10510/10510GC0017L01/blahblah_blah_L001_R1_001.fastq.gz',
-            '10510/10510GCpool05__10510GC0017L01/mystery.fastq.gz',
-            '10510/blah_S1_L001_R1_001.fastq.gz',
-            '10510/blahblah_blah_L001_R1_001.fastq.gz',
+            'lane1/10510/10510GC0017L01/blahblah_blah_L001_R1_001.fastq.gz',
+            'lane1/10510/10510GCpool05__10510GC0017L01/mystery.fastq.gz',
+            'lane1/10510/blah_S1_L001_R1_001.fastq.gz',
+            'lane1/10510/blahblah_blah_L001_R1_001.fastq.gz',
             ])
 
         # Log should report that everything was skipped
@@ -154,6 +156,7 @@ class T(unittest.TestCase):
         if VERBOSE:
             print(*self.pp_log, sep="\n")
             print(repr(ERRORS))
+            os.system("tree {}".format(copy_of_test_dir))
 
         return copy_of_test_dir
 

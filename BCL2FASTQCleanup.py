@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os, sys, re
 from glob import glob
+from shutil import rmtree
 import time
 
 def main(output_dir, *lanes):
@@ -38,7 +39,7 @@ def main(output_dir, *lanes):
 
         try:
             # Deleting the FASTQ that hasn't been renamed
-            projects.update(delete_d_fastq(os.path.join(output_dir, 'demultiplexing'), lanes, log=log))
+            projects.update(delete_d_dirs(os.path.join(output_dir, 'demultiplexing'), lanes, log=log))
 
             # Deleting the FASTQ that is already post-processed
             projects.update(delete_p_fastq(output_dir, lanes, log=log))
@@ -79,6 +80,32 @@ def delete_d_fastq(path, lanes, **kwargs):
                          re.compile(r'_L00(.)_.._\d\d\d\.fastq\.gz$'),
                          **kwargs )
 
+def delete_d_dirs(path, lanes, log=lambda x: None):
+    """I was using delete_d_fastq to prune out individual FASTQ files, but now I just
+       want to delete entire directories: path/lane?
+    """
+    projects = set()
+    deletions = 0
+    for lane in lanes:
+        lane_dir = os.path.join(path, "lane%s" % lane)
+
+        # There may not be a directory to delete.
+        if not os.path.exists(lane_dir):
+            continue
+
+        proj_in_lane = [ os.path.basename(d) for d in
+                         glob(os.path.join(lane_dir, '[0-9]*')) ]
+
+        projects.update(proj_in_lane)
+
+        log("rm -r '%s'" % lane_dir)
+        rmtree(lane_dir)
+        deletions += 1
+
+    msg = "Deleted %i directories complete with files relating to %i projects." % (
+                   deletions,                                     len(projects) )
+    log('# ' + msg)
+    return projects
 
 def delete_fastq(path, lanes, match_pattern, log=lambda x: None):
     """Generic file deleter given a path and a pattern.

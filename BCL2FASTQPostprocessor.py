@@ -81,7 +81,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
     # No attempt to define what directories are 'project' directories by naming pattern.
     # If it contains fastq.gz files it must be a project dir.
-    for fastq_file in glob(os.path.join( output_dir, "lane*/demultiplexing" , "*/*/*.fastq.gz" )):
+    for fastq_file in glob(os.path.join( output_dir, "demultiplexing/lane*" , "*/*/*.fastq.gz" )):
 
         #os.path.split is unhelpful here. Just do it the obvious way.
         # something like: 10528, 10528EJ0019L01, 10528EJpool03_S19_L005_R1_001.fastq.gz
@@ -124,7 +124,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
     # Now go again for files not in a subdirectory (if Sample_Name was blank)
     # (apologies for the copy-paste)
-    for fastq_file in glob(os.path.join( output_dir, "lane*/demultiplexing" , "*/*.fastq.gz" )):
+    for fastq_file in glob(os.path.join( output_dir, "demultiplexing/lane*" , "*/*.fastq.gz" )):
 
         #os.path.split is unhelpful here. Just do it the obvious way.
         # something like: 10528, 10528EJ0019L01, 10528EJpool03_S19_L005_R1_001.fastq.gz
@@ -167,7 +167,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
             os.replace(fastq_file, new_filename_absolute)
 
     # Now deal with the undetermined files.
-    for undet_file_absolute in glob(os.path.join( output_dir, "lane*/demultiplexing", "[Uu]ndetermined_*" )):
+    for undet_file_absolute in glob(os.path.join( output_dir, "demultiplexing/lane*", "[Uu]ndetermined_*" )):
         filename = undet_file_absolute.split('/')[-1]
 
         # eg. Undetermined_S0_L004_R1_001.fastq.gz
@@ -192,20 +192,21 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
     # Cleanup empty project directories (as per Cleanup.py) then warn if any dirs
     # remain (or, if fact, that's an error).
-    for proj in list(proj_seen):
-        for root, dirs, files in os.walk(
-                                     os.path.join(output_dir, "demultiplexing", proj),
-                                     topdown=False ):
-            try:
-                os.rmdir(root)
-                log("rmdir '%s'" % root)
-            except Exception:
-                # Assume it was non-empty.
-                ERRORS.add("Failed to remove all project directories from demultiplexing area.")
-                log("# could not remove dir '%s'" % root)
-                # And we cannot say the project is ready.
-                # TODO - Should I add it to pending??
-                proj_seen.discard(proj)
+    for lane_dir in glob(os.path.join(output_dir, "demultiplexing", "lane*")):
+        for proj in list(proj_seen):
+            for root, dirs, files in os.walk(
+                                         os.path.join(lane_dir, proj),
+                                         topdown=False ):
+                try:
+                    os.rmdir(root)
+                    log("rmdir '%s'" % root)
+                except Exception:
+                    # Assume it was non-empty.
+                    ERRORS.add("Failed to remove all project directories from demultiplexing area.")
+                    log("# could not remove dir '%s'" % root)
+                    # And we cannot say the project is ready.
+                    # TODO - Should I add it to pending??
+                    proj_seen.discard(proj)
 
     # Finally return the projects processed
     return proj_seen

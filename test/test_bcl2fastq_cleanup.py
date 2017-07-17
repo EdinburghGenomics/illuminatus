@@ -58,8 +58,8 @@ class T(unittest.TestCase):
         #Sanity-check
         self.assertTrue(os.path.exists(run_id + '/' + run_id + '_1_unassigned_1.fastq.gz'))
         self.assertTrue(os.path.exists(run_id + '/' + run_id + '_2_unassigned_1.fastq.gz'))
-        self.assertTrue(os.path.exists(run_id + '/demultiplexing/Undetermined_S0_L001_R2_001.fastq.gz'))
-        self.assertTrue(os.path.exists(run_id + '/demultiplexing/Undetermined_S0_L002_R2_001.fastq.gz'))
+        self.assertTrue(os.path.exists(run_id + '/demultiplexing/lane1/Undetermined_S0_L001_R2_001.fastq.gz'))
+        self.assertTrue(os.path.exists(run_id + '/demultiplexing/lane2/Undetermined_S0_L002_R2_001.fastq.gz'))
         self.c_main(run_id, '1', '8')
 
         with open(run_id + '/projects_pending.txt') as fh:
@@ -70,8 +70,8 @@ class T(unittest.TestCase):
         # Did the right files get cleaned?
         self.assertFalse(os.path.exists(run_id + '/' + run_id + '_1_unassigned_1.fastq.gz'))
         self.assertTrue(os.path.exists(run_id + '/' + run_id + '_2_unassigned_1.fastq.gz'))
-        self.assertFalse(os.path.exists(run_id + '/demultiplexing/Undetermined_S0_L001_R2_001.fastq.gz'))
-        self.assertTrue(os.path.exists(run_id + '/demultiplexing/Undetermined_S0_L002_R2_001.fastq.gz'))
+        self.assertFalse(os.path.exists(run_id + '/demultiplexing/lane1/Undetermined_S0_L001_R2_001.fastq.gz'))
+        self.assertTrue(os.path.exists(run_id + '/demultiplexing/lane2/Undetermined_S0_L002_R2_001.fastq.gz'))
 
     def test_cleanup_badargs(self):
         """ Run 170329_K00166_0198_BHJ53FBBXX has three projects.
