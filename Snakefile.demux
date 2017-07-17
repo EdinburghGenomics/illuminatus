@@ -41,8 +41,6 @@ glob = glob()
 # Config
 LANES = config['lanes'].split()
 RUNDIR = config['rundir']
-workdir: config['workdir']
-
 
 def get_sequential_file(pattern):
     """Given a filename like foo???.log, find the next available filename that

@@ -139,9 +139,9 @@ action_reads_finished(){
     set +e ; ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       log "  Starting bcl2fastq on $RUNID."
-      Snakefile.demux --config workdir="$DEMUX_OUTPUT_FOLDER"/demultiplexing \
-                               lanes="$(echo `seq $LANES`)" \
-                               rundir="`pwd`" |& plog
+      ( cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing ;
+        Snakefile.demux --config lanes="$(echo `seq $LANES`)" rundir="`pwd`"
+      ) |& plog
 
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
@@ -234,9 +234,9 @@ action_redo() {
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
 
       log "  Starting bcl2fastq on $RUNID lanes ${redo_list[*]}."
-      Snakefile.demux --config workdir="$DEMUX_OUTPUT_FOLDER"/demultiplexing \
-                               lanes="${redo_list[*]}" \
-                               rundir="`pwd`" |& plog
+      ( cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing ;
+        Snakefile.demux --config lanes="${redo_list[*]}" rundir="`pwd`"
+      ) |& plog
 
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
