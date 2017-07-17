@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import unittest
 from unittest.mock import Mock, patch
+import subprocess
 import sys, os, glob, re
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
@@ -59,7 +60,7 @@ class T(unittest.TestCase):
         # and one for the pipeline.
 
         self.assertCountEqual(self.bcl2fastq_command_split, [
-                "LANE=1",
+                "LANE=1", ';',
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'/lane${LANE}" % self.out_dir ,
@@ -86,7 +87,7 @@ class T(unittest.TestCase):
 
         self.run_preprocessor(run_id, 1)
         self.assertCountEqual(self.bcl2fastq_command_split, [
-            "LANE=1",
+            "LANE=1", ';',
             "bcl2fastq",
             "-R '%s'" % shadow_dir,
             "-o '%s'/lane${LANE}" % self.out_dir ,
@@ -163,7 +164,7 @@ class T(unittest.TestCase):
         self.assertEqual(self.pp.lane, '5')
 
         self.assertCountEqual(self.bcl2fastq_command_split, [
-                "LANE=5",
+                "LANE=5", ';',
                 "bcl2fastq",
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'/lane${LANE}" % self.out_dir ,
@@ -176,7 +177,8 @@ class T(unittest.TestCase):
 
 
     @patch('sys.stdout', new_callable=StringIO)
-    def test_main(self, mocked_stdout):
+    @patch('BCL2FASTQPreprocessor.check_output', side_effect=['bcl2fastq'])
+    def test_main(self, mock_check_output, mock_stdout):
         """Test the main function. This is another one that writes a file
            so make a temp dir for the file to go into.
            Use run 160607_D00248_0174_AC9E4KANXX for this test.
@@ -202,7 +204,7 @@ class T(unittest.TestCase):
 
         #The preprocessor should also output the script plus a preable
         stdout_lines = [ l for l in
-                         mocked_stdout.getvalue().rstrip('\n').split('\n')
+                         mock_stdout.getvalue().rstrip('\n').split('\n')
                          if ( l and not 'END' in l and not '>>>' in l) ]
 
         self.assertEqual(stdout_lines, script_lines)
@@ -224,7 +226,8 @@ class T(unittest.TestCase):
                          symlinks = True )
 
 
-    def run_preprocessor(self, run_name, lane):
+    @patch('BCL2FASTQPreprocessor.check_output', side_effect=['bcl2fastq'])
+    def run_preprocessor(self, run_name, lane, mock_check_output):
         """Invoke the preprocessor, capture the command line in bcl2fastq_command_string
            and the split-out version in bcl2fastq_command_split
         """

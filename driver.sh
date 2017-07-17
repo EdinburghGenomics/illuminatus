@@ -140,8 +140,8 @@ action_reads_finished(){
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       log "  Starting bcl2fastq on $RUNID."
       Snakefile.demux --config workdir="$DEMUX_OUTPUT_FOLDER"/demultiplexing \
-                      --config lanes="$(echo `seq $LANES`)" \
-                      --config rundir="`pwd`" |& plog
+                               lanes="$(echo `seq $LANES`)" \
+                               rundir="`pwd`" |& plog
 
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
@@ -149,7 +149,7 @@ action_reads_finished(){
       rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
       log "  Completed bcl2fastq on $RUNID."
 
-    ) |& plog ; [ $? = 0 ] || demux_fail Demultiplexing
+    ) |& plog ; [ $? = 0 ] || pipeline_fail Demultiplexing
 }
 
 # What about the transition from demultiplexing to QC. Do we need a new status,
@@ -165,7 +165,7 @@ action_demultiplexed() {
 
         log "  Completed QC on $RUNID."
         rt_runticket_manager.py -r "$RUNID" --comment "QC of $RUNID completed"
-    ) |& plog ; [ $? = 0 ] || demux_fail QC
+    ) |& plog ; [ $? = 0 ] || pipeline_fail QC
 }
 
 # Also what about the copying to backup? I feel this should be an entirely separate
@@ -188,7 +188,7 @@ action_in_qc() {
 
 action_failed() {
     # failed runs need attention, but for now just log the situatuion
-    log "\_FAILED $RUNID"
+    log "\_FAILED $RUNID (`cat pipeline/failed`)"
 }
 
 action_aborted() {
@@ -235,8 +235,8 @@ action_redo() {
 
       log "  Starting bcl2fastq on $RUNID lanes ${redo_list[*]}."
       Snakefile.demux --config workdir="$DEMUX_OUTPUT_FOLDER"/demultiplexing \
-                      --config lanes="${redo_list[*]}" \
-                      --config rundir="`pwd`" |& plog
+                               lanes="${redo_list[*]}" \
+                               rundir="`pwd`" |& plog
 
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
@@ -244,7 +244,7 @@ action_redo() {
       rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed"
       log "  Completed demultiplexing on $RUNID lanes ${redo_list[*]}."
 
-    ) |& plog ; [ $? = 0 ] || demux_fail Re-demultiplexing
+    ) |& plog ; [ $? = 0 ] || pipeline_fail Re-demultiplexing
 
 }
 
@@ -295,19 +295,19 @@ run_qc() {
     mv pipeline/qc.started pipeline/qc.done
 }
 
-demux_fail() {
+pipeline_fail() {
     stage=${1:-Pipeline}
     # Mark the failure status
-    touch pipeline/failed
+    echo "$stage on `date`" > pipeline/failed
 
     # Send an alert when demultiplexing fails. This always requires attention!
     # Note that after calling 'plog' we can query '$projlog' since all shell vars are global.
     plog "Attempting to notify error to RT"
     if rt_runticket_manager.py -r "$RUNID" --reply "$stage failed. See log in $projlog" |& plog ; then
-        log "FAIL $stage processing $RUNID. See $projlog"
+        log "FAIL $stage $RUNID. See $projlog"
     else
         # RT failure. Complain to STDERR in the hope this will generate an alert mail via CRON
-        msg="FAIL $stage processing $RUNID, and also failed to report the error via RT. See $projlog"
+        msg="FAIL $stage $RUNID, and also failed to report the error via RT. See $projlog"
         echo "$msg" >&2
         log "$msg"
     fi

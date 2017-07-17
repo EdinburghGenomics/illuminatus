@@ -156,5 +156,5 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None):
     return projects
 
 if __name__ == '__main__':
-    print("Running: " + ' '.join(sys.argv))
+    print("Running " + ' '.join(sys.argv))
     main(*sys.argv[1:])

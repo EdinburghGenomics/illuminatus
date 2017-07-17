@@ -43,6 +43,7 @@ snakerun_drmaa() {
         __SNAKE_THREADS="${SNAKE_THREADS:-100}"
 
         mkdir -p ./slurm_output
+        set -x
         snakemake \
              -s "$snakefile" -j $__SNAKE_THREADS -p -T --rerun-incomplete \
              ${EXTRA_SNAKE_FLAGS:-} --keep-going --cluster-config cluster.yml \
@@ -58,6 +59,7 @@ snakerun_drmaa() {
         __SNAKE_THREADS="${SNAKE_THREADS:-20}"
 
         mkdir -p ./sge_output
+        set -x
         snakemake \
              -s "$snakefile" -j $__SNAKE_THREADS -p -T --rerun-incomplete \
              ${EXTRA_SNAKE_FLAGS:-} --keep-going --cluster-config cluster.yml \

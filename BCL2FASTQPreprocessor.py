@@ -12,6 +12,7 @@ import os, sys
 import configparser
 from collections import defaultdict
 from itertools import dropwhile, takewhile
+from subprocess import check_output, SubprocessError, DEVNULL
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 from illuminatus.ConfigFileReader import ConfigFileReader
@@ -58,7 +59,10 @@ class BCL2FASTQPreprocessor:
            set PATH so that the right version of the software gets run.
         """
         lane = self.lane
-        cmd = ['LANE=%s' % lane, 'bcl2fastq']
+        # If the command isn't found this is an immediate error.
+        bcl2fastq = check_output("which bcl2fastq".split(), stderr=DEVNULL, universal_newlines=True).rstrip()
+
+        cmd = ["LANE=%s" % lane, ';', bcl2fastq]
 
         #Add the abspath for the data folder
         cmd.append("-R '%s'" % self._rundir)
