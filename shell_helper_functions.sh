@@ -34,6 +34,7 @@ snakerun_drmaa() {
     if [ -n "${VIRTUAL_ENV:-}" ] ; then
         export SNAKE_PRERUN="${VIRTUAL_ENV}/bin/activate"
     fi
+    CLUSTER_QUEUE="${CLUSTER_QUEUE:-casava}"
 
     # Spew out cluster.yaml
     [ -e cluster.yml ] || cat_cluster_yml > cluster.yml
@@ -48,7 +49,7 @@ snakerun_drmaa() {
              -s "$snakefile" -j $__SNAKE_THREADS -p -T --rerun-incomplete \
              ${EXTRA_SNAKE_FLAGS:-} --keep-going --cluster-config cluster.yml \
              --jobname "{rulename}.snakejob.{jobid}.sh" \
-             --drmaa " -p qc {cluster.slurm_opts} \
+             --drmaa " -p ${CLUSTER_QUEUE} {cluster.slurm_opts} \
                        -e slurm_output/{rule}.snakejob.{jobid}.%A.err \
                        -o slurm_output/{rule}.snakejob.{jobid}.%A.out \
                      " \
