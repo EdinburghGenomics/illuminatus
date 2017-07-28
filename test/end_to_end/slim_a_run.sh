@@ -48,6 +48,17 @@ for lane in $LANES ; do
   done
 done
 
+# Copy most of the InterOp files
+echo "Copying InterOp files, excluding RegistrationMetricsOut, EventMetricsOut and FWHMGridMetricsOut"
+mkdir -p "$DEST"/InterOp
+for f in "$RUN_PATH"/InterOp/* ; do
+    do_copy=1
+    for x in RegistrationMetricsOut EventMetricsOut FWHMGridMetricsOut ; do
+        [ "`basename $f .bin`" == "$x" ] && do_copy=0
+    done
+    [ "$do_copy" = 1 ] && cp $f "$DEST"/InterOp
+done
+
 # Make a pipeline_settings.ini file telling blc2fastq to ignore the missing tiles
 # Note this assumes if pipeline_settings.ini exists already it only has a [bcl2fastq] section, most
 # likely overriding --barcode-mismatches.
