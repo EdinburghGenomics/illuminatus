@@ -16,6 +16,10 @@ set -euo pipefail
 
 source "`dirname $0`"/shell_helper_functions.sh
 
+# $PATH doesn't get passed to worker nodes on SLURM but I only need it
+# for local rules.
+export PATH="${PATH}:$(dirname "$0")"
+
 snakerun_drmaa "$0" "$@"
 
 "exit""" ### End of shell script part
@@ -28,6 +32,8 @@ CUTADAPT = "/lustre/software/cutadapt/pipeline_current/bin/cutadapt"
 FASTQC   = "/lustre/software/FastQC/pipeline_current/fastqc"
 INTEROP  = "/lustre/software/interop/pipeline_current/bin"
 MULTIQC  = "multiqc"  # The active Python3 VEnv should provide the correct multiqc.
+
+BCL2FASTQ_STATS = "grab_bcl2fastq_stats.py"
 
 # Other than that, ensure that scripts in the directory with this Snakefile are
 # in the PATH
@@ -81,7 +87,6 @@ runs_and_lanes = sorted(set( (sf['run'], sf['lane']) for f in all_fq for sf in [
 runs = sorted(set( rl[0] for rl in runs_and_lanes ))
 
 # === Driver rules ===
-
 rule md5_main:
     input:
         md5      = expand( 'md5sums/{fq}.fastq.gz.md5', fq=all_fq ),
@@ -199,8 +204,9 @@ rule get_run_metadata:
 
 # per-lane infos
 WELLDUPS_DATA = config.get('welldups', SEQDATA + '/WellDuplicates')
-BCL2FASTQ_OUT = "./demultiplexing"
+BCL2FASTQ_OUT = "demultiplexing"
 
+localrules: grab_well_dups
 rule grab_well_dups:
     output: stats = "QC/{runid}_{lane}.welldups"
     run:
@@ -224,9 +230,12 @@ rule grab_well_dups:
                 print(l, file=ofh)
 
 rule get_bcl2fastq_stats:
+    # This rule can hopefully be replaced by the direct examination of the .json
+    # file by the new module for MultiQC.
+    # Logic is a little contorted as I copied the script from the old pipeline
+    # where it scanned for the input file.
     output: "QC/{runid}_{lane}.stats.yml"
-    #input is in /ifs/runqc/ but I can't be sure what the file is called, so just assume it exists
-    #also, continue on error - we don't want to crash the whole pipeline just because this fails.
-    # FIXME - use value of BCL2FASTQ_LOGS to find the logs.
-    shell: "{BCL2FASTQ_STATS} -l {BCL2FASTQ_OUT} {wildcards.runid} {wildcards.lane} > {output} ||" +
-           " echo -e 'Run: '\\''{wildcards.runid}'\\''\nLane: '\\''{wildcards.lane}'\\' > {output}"
+    input: BCL2FASTQ_OUT + "/lane{lane}/Stats/FastqSummaryF1L{lane}.txt"
+    shell: "{BCL2FASTQ_STATS} {BCL2FASTQ_OUT}/lane{lane} {wildcards.runid} {wildcards.lane} > {output}"
+
+

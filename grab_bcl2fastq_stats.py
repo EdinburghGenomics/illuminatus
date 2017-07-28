@@ -53,7 +53,7 @@ def slurp(filename):
     return res
 
 # Here is some logic which is specific to our drive layout.
-def find_fastq_stats(runid, lane):
+def find_fastq_stats(basedir, lane):
 
     #There might be two stats files.  One for Read1 and one for for the complete read.
 #    demux_stats, = ( f for f in
@@ -61,7 +61,7 @@ def find_fastq_stats(runid, lane):
 #                    if ('_Read1/' not in f) )
 
     fastq_stats = [ f for f in
-                    glob('/ifs/runqc/{}/*/Stats/FastqSummaryF1L{}.txt'.format(runid, lane))
+                    glob('{}/Stats/FastqSummaryF1L{}.txt'.format(basedir, lane))
                     if ('_Read1/' not in f) ]
 
     if len(fastq_stats) == 0:
@@ -181,26 +181,17 @@ def print_fastq_stats(runid, lane, dc, file=sys.stdout):
 
     print(yaml.safe_dump(od, default_flow_style=False), file=file)
 
-def dump_lane(runid, lane):
+def dump_lane(basedir, runid, lane):
     #Find the stats file, extract the data and print it out.
-    print_fastq_stats(runid, lane, gather_fastq_stats(find_fastq_stats(runid, lane)))
+    print_fastq_stats(runid, lane, gather_fastq_stats(find_fastq_stats(basedir, lane)))
 
 def main():
-    """Run this in 'scan' mode on a projectqc folder after all the run_*.yml
-       files are in place, or else just give it a run id and lane to work on.
+    """We need to give it a run id and lane to work on.
     """
-    if not sys.argv[1:]:
-        exit("Please specify a run and lane to examine or 'scan'")
-
-    if sys.argv[1] == 'scan':
-        for runid, lane in get_lanes_for_project(PROJECTQC_DIR):
-            #FIXME - needs to dump to individual files.  Or does it?  Snakemake should
-            #deal with requesting the data wanted.
-            dump_lane(runid, lane)
-    elif len(sys.argv) == 3:
-        dump_lane(*sys.argv[1:])
+    if not len(sys.argv) == 4:
+        exit("Please specify a base dir, run and lane to examine")
     else:
-        print_fastq_stats('Unknown', 0, gather_fastq_stats(sys.argv[1]))
+        dump_lane(*sys.argv[1:])
 
 if __name__ == '__main__':
     main()
