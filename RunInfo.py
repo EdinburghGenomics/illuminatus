@@ -35,9 +35,15 @@ class RunInfo:
         # RUN/RTAComplete.txt
 
         # however there were no runs where the RTAComplete.txt was not the last file written to the run folder.
-        # So will only check for this file to determine if run is finished or not
+        # So will only check for this file to determine if sequencing has finished or not
         RTACOMPLETE_LOCATION = os.path.join( self.run_path_folder , 'RTAComplete.txt' )
         return os.path.exists( RTACOMPLETE_LOCATION )
+
+    def _is_read_finished( self, readnum):
+        # Will check for existence of Basecalling_Netcopy_complete_ReadX.txt or RTAReadXComplete.txt with X being the provided readnumber
+        ReadLOCATION_oldMachines = os.path.join( self.run_path_folder , 'Basecalling_Netcopy_complete_Read'+str(readnum)+'.txt' ) #for miseq and hiseq2500
+        ReadLOCATION_newMachines = os.path.join( self.run_path_folder , 'RTARead'+str(readnum)+'Complete.txt' ) #for hiseq4000 and X
+        return os.path.exists( ReadLOCATION_oldMachines or ReadLOCATION_oldMachines )
 
     def _is_new_run( self ):
         # if the pipeline has not yet seen this run before.
@@ -95,6 +101,23 @@ class RunInfo:
         """
         return self._was_finished() or self._was_aborted() or self._was_failed()
 
+    def get_machine_status( self ):
+        # workout the status of a sequencer by checking the existence of various touchfiles found in the run folder.
+        # possible values are:
+        # RUN IS 'complete':
+        if self._is_sequencing_finished():
+            return "complete"
+        if self._is_read_finished(4):
+            return "read4complete"
+        if self._is_read_finished(3):
+            return "read3complete"
+        if self._is_read_finished(2):
+            return "read2complete"
+        if self._is_read_finished(1):
+            return "read1complete"
+
+
+
     def get_status( self ):
         # workout the status of a run by checking the existence of various touchfiles found in the run folder.
         # possible values are:
@@ -150,14 +173,16 @@ class RunInfo:
             out = ( 'RunID: {i[RunId]}\n' +
                     'LaneCount: {i[LaneCount]}\n' +
                     'Instrument: {i[Instrument]}\n' +
-                    'Flowcell: {i[Flowcell]}\n'
-                    'Status: {s}' ).format( i=self.runinfo_xml.run_info, s=self.get_status() )
+                    'Flowcell: {i[Flowcell]}\n' +
+                    'Status: {s}\n' +
+                    'MachineStatus: {t}').format( i=self.runinfo_xml.run_info, s=self.get_status(), t=self.get_machine_status() )
         except AttributeError: # possible that the provided run folder was not a valid run folder e.g. did not contain a RunInfo.xml
             out = ( 'RunID: unknown\n' +
                     'LaneCount: 0\n' +
                     'Instrument: unknown\n' +
                     'Flowcell: unknown\n' +
-                    'Status: unknown' )
+                    'Status: unknown\n' +
+                    'MachineStatus: unknown')
         return out
 
 if __name__ == '__main__':

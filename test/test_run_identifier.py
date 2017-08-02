@@ -111,9 +111,10 @@ class T(unittest.TestCase):
         expected = dictify("""
             RunID: 160726_K00166_0120_BHCVH2BBXX
             LaneCount: 8
-            Instrument: hiseq4000
+            Instrument: hiseq4000_K00166
             Flowcell: HCVH2BBXX
             Status: reads_unfinished
+            MachineStatus: None
         """)
 
         self.assertEqual(dictify(run_info.get_yaml()), expected)
@@ -135,9 +136,10 @@ class T(unittest.TestCase):
         expected = dictify("""
             RunID: 160805_M01145_0035_000000000-ATDYJ
             LaneCount: 1
-            Instrument: miseq
+            Instrument: miseq_M01145
             Flowcell: ATDYJ
             Status: new
+            MachineStatus: None
         """)
 
         self.assertEqual(dictify(run_info.get_yaml()), expected)
