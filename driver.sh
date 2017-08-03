@@ -257,6 +257,7 @@ action_unknown() {
 
 ### Other utility functions used by the actions.
 fetch_samplesheet_and_report() {
+    _oreset="`set +o`"
     # Tries to fetch an updated samplesheet. If this is the first run, or if
     # a new one was found, send an e-mail report to RT.
     old_ss_link="`readlink -q SampleSheet.csv || true`"
@@ -267,6 +268,8 @@ fetch_samplesheet_and_report() {
 
     #Push any new metadata into the run report.
     # This requires the QC directory to exist, even before demultiplexing starts.
+    # In this case, an error in MultiQC etc. should not prevent demultiplexing from starting.
+    set +e
     mkdir -p "$DEMUX_OUTPUT_FOLDER"/QC
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- multiqc_main ) |& plog
 
@@ -275,6 +278,7 @@ fetch_samplesheet_and_report() {
         summarize_samplesheet.py > pipeline/sample_summary.txt
         rt_runticket_manager.py -r "$RUNID" --reply @pipeline/sample_summary.txt |& plog
     fi
+    eval "$_oreset"
 }
 
 run_qc() {

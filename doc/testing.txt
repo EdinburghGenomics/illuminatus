@@ -43,10 +43,18 @@ In summary, when running in test mode with all those settings:
 * The first invocation of the pipeline will produce a SampleSheet summary and put the
   run into status 'reads_finished'. The second will commence demultiplexing.
 * Cluster jobs will run on the casava queue, but you can override this by setting
-  CLUSTER_QUEUE. Setting it to 'none' will cause local execution.
+  CLUSTER_QUEUE. Setting it to 'none' will cause local execution. (check this)
 
 # Copy-and-paste environment lines...
 export MAINLOG=/dev/stdout SEQDATA_LOCATION=~/test_seqdata FASTQ_LOCATION=~/test_fastqdata
 export RT_SYSTEM=none PROJECT_NAME_LIST=none CLUSTER_QUEUE=global
 
 # After this, just run driver.sh to commence processing your slimmed-down runs.
+
+# To restart failed QC:
+
+rm ~/test_seqdata/170221_K00166_0183_AHHT3HBBXX/pipeline/{failed,qc.started}
+
+# To re-do demultiplexing on one or more lanes:
+
+touch ~/test_seqdata/170221_K00166_0183_AHHT3HBBXX/pipeline/lane{1,2,3,4,5,6,7,8}.redo

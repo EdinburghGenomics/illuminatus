@@ -24,7 +24,7 @@ export PATH="${PATH}:/lustre/software/bcl2fastq/bcl2fastq2-v2.19.1/bin/:$(dirnam
 # Caller needs to supply --config lanes='? ? ?' rundir=?
 # Apply -F to run all steps every time. Otherwise I could maybe depend on the
 # SampleSheet.csv as an input?
-snakerun_drmaa "$0" -F "$@"
+snakerun_drmaa "$0" --keep-going -F "$@"
 
 "exit""" ### End of shell script part
 

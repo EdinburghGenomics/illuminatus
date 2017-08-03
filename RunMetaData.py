@@ -58,27 +58,25 @@ class RunMetaData:
 
         info = self.runinfo_xml
         params = self.run_params
+        idict = dict()
 
-        pre_start_info = {
+        idict['pre_start_info'] = {
                 'Run Date': info['Run Date'],
                 'Experiment Name': params['Experiment Name'],
-                'Run ID': info['RunId'],
+                'Run ID': [ info['RunId'], 'https://genowiki.is.ed.ac.uk/display/GenePool/{}'.format(info['RunId']) ],
                 'Machine': info['Instrument'],
                 'Cycles':  info['Cycles'], # '251 [12] 251',
                 'Start Time': params['Start Time'],
                 'Pipeline Script': get_pipeline_script(),
-                'Sample Sheet': self.sample_sheet
+                'Sample Sheet': self.sample_sheet # [ name, path ]
             }
 
-        idict = dict(pre_start_info=pre_start_info)
-
         if self.pipeline_info:
-            post_start_info = {
+            idict['post_start_info'] = {
                 'Pipeline Version': get_pipeline_version(),
                 'Pipeline Start': self.pipeline_info['start'],
                 'Sequencer Finish': self.pipeline_info['Sequencer Finish'],
             }
-            idict['post_start_info'] = post_start_info
 
         return yaml.safe_dump(idict, default_flow_style=False)
 

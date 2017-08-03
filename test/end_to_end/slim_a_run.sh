@@ -70,6 +70,8 @@ echo '--tiles: s_[$LANE]_1101' >> "$DEST"/pipeline_settings.ini
 # Finally copy the SampleSheet.csv to SampleSheet.csv.OVERRIDE so Illuminatus won't try
 # to replace it.
 echo Creating "$DEST"/SampleSheet.csv.OVERRIDE
-cat "$DEST"/SampleSheet.csv > "$DEST"/SampleSheet.csv.OVERRIDE
+#cat "$DEST"/SampleSheet.csv > "$DEST"/SampleSheet.csv.OVERRIDE
 
+# Hack for existing Sample Sheet reformatting, until MB fixes the SSG
+perl -pe 's/,(\d{5}[A-Z]{2}\d{4}L\d{2}),(\d{5}[A-Z]{2}pool\d{2}),/,$2__$1,,/' < "$DEST"/SampleSheet.csv > "$DEST"/SampleSheet.csv.OVERRIDE
 echo DONE

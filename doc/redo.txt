@@ -61,3 +61,20 @@ will be re-done automatically. So I think we are OK here already.
 
 Note that as far as I can see in terms of the LIMS, creating a new Sample Sheet should be an extra operation post-sequencing
 rather than achieved by re-creating an 'ersatz' run from scratch. How this actually gets configured in the LIMS I do not know.
+
+---
+
+On 2nd Aug.
+
+We've now moved to lane-based demultiplexing. However, if one lane fails the pipeline will mark all as failed and not proceed to qc.
+So in fact the command to restart a failed run (skipping demultiplexing if it worked) has to be:
+
+myrun=170221_K00166_0183_AHHT3HBBXX
+
+( cd $SEQDATA_LOCATION/$myrun ;
+  if compgen -G "lane?.failed" >/dev/null ; then
+    for f in lane?.failed ; do touch ${f%.failed}.redo ; done
+  else
+    rm -f failed qc.started
+  fi
+)
