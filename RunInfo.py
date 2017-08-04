@@ -115,6 +115,7 @@ class RunInfo:
             return "read2complete"
         if self._is_read_finished(1):
             return "read1complete"
+        return False
 
 
 
@@ -127,6 +128,18 @@ class RunInfo:
         # RUN IS 'new': if no pipeline/ folder have yet been created.
         if self._is_new_run():
             return "new"
+
+        # this status needs to be dependent on the well_duplicates, otherwise it will only have a short window of execution between read1 and read2
+        # which file marks the completeion of welldups???
+        if self._is_read_finished(1) and not self._is_read_finished(2):
+            return "read1trigger"
+
+        if self._is_read_finished(1) and (self._is_read_finished(2) or self._is_sequencing_finished):
+            return "read1complete"
+
+        # RUN IS 'waiting_for_data': if machine_status isn't available yet (how will we distinguish aborted/failed sequencing?)
+        if not self.get_machine_status():
+            return "waiting_for_data"
 
         # RUN IS 'redo' if the run is marked for restarting and is ready for restarting (not running):
         if self._is_sequencing_finished() and self._was_restarted() and self._was_ended():
