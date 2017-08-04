@@ -131,11 +131,8 @@ class RunInfo:
 
         # this status needs to be dependent on the well_duplicates, otherwise it will only have a short window of execution between read1 and read2
         # which file marks the completeion of welldups???
-        if self._is_read_finished(1) and not self._is_read_finished(2):
-            return "read1trigger"
-
         if self._is_read_finished(1) and (self._is_read_finished(2) or self._is_sequencing_finished):
-            return "read1complete"
+            return "read1trigger"
 
         # RUN IS 'waiting_for_data': if machine_status isn't available yet (how will we distinguish aborted/failed sequencing?)
         if not self.get_machine_status():
@@ -187,14 +184,14 @@ class RunInfo:
                     'LaneCount: {i[LaneCount]}\n' +
                     'Instrument: {i[Instrument]}\n' +
                     'Flowcell: {i[Flowcell]}\n' +
-                    'Status: {s}\n' +
+                    'PipelineStatus: {s}\n' +
                     'MachineStatus: {t}').format( i=self.runinfo_xml.run_info, s=self.get_status(), t=self.get_machine_status() )
         except AttributeError: # possible that the provided run folder was not a valid run folder e.g. did not contain a RunInfo.xml
             out = ( 'RunID: unknown\n' +
                     'LaneCount: 0\n' +
                     'Instrument: unknown\n' +
                     'Flowcell: unknown\n' +
-                    'Status: unknown\n' +
+                    'PipelineStatus: unknown\n' +
                     'MachineStatus: unknown')
         return out
 
