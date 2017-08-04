@@ -97,7 +97,7 @@ lanes = sorted( set( sf['lane'] for sf in all_fq ) )
 # === Driver rules ===
 rule md5_main:
     input:
-        md5      = expand( 'md5sums/{fq[bname]}.fastq.gz.md5', fq=all_fq ),
+        md5      = expand( 'md5sums/{fq[fname]}.md5', fq=all_fq ),
 
 rule qc_main:
     input:
@@ -135,18 +135,17 @@ rule multiqc_main:
     input: expand("QC/multiqc_report_lane{l}.html", l=lanes)
 
 rule run_multiqc:
-    output: "QC/multiqc_report_lane{l}.html"
+    output:
+        report = "QC/multiqc_report_lane{l}.html",
+        data = "QC/multiqc_report_lane{l}_data"
     input:
         config = "QC/multiqc_config.yml",
         meta = rules.metadata_main.input
-    shadow: "shallow"
     shell:
         """echo "multiqc is `which multiqc`" >&2
-           rm -f multiqc_data multiqc_report.html
+           rm -rf {output.data}
            ln -srf {input.meta} QC/lane{wildcards.l}/
-           {MULTIQC} -t edgen -f QC/lane{wildcards.l} -c {input.config}
-           rm -rf `dirname {output}`/multiqc_data
-           mv -v -t `dirname {output}` multiqc_data multiqc_report.html
+           {MULTIQC} -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/lane{wildcards.l}
         """
 
 localrules: configure_multiqc
@@ -211,7 +210,7 @@ rule cutadapt_scan:
 rule fastqc:
     output: zip = "QC/lane{l}/{fq}_fastqc.zip",
             html = "QC/lane{l}/{fq}_fastqc.html"
-    input: "{foo}.fastq.gz"
+    input: "{fq}.fastq.gz"
     threads: 2
     shell: "{FASTQC} {input} --outdir `dirname {output.zip}` --noextract --nogroup --threads {threads}"
 
