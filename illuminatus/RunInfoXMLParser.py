@@ -24,7 +24,6 @@ class RunInfoXMLParser:
         self.run_info[ 'Cycles' ] = ' '.join( ("{}" if self.read_and_indexed.get(k) != 'Y' else
                                                "[{}]").format(self.read_and_length[k])
                                               for k in sorted(self.read_and_length.keys(), key=int) )
-
         for read in root.iter('Run'):
             self.run_info[ 'RunId' ] = read.attrib['Id']
 
@@ -36,16 +35,16 @@ class RunInfoXMLParser:
             self.run_info[ 'Instrument' ] = read.text
 
             if self.run_info[ 'Instrument' ][0] == 'M':
-                self.run_info[ 'Instrument' ] = 'miseq ' + self.run_info[ 'Instrument' ]
+                self.run_info[ 'Instrument' ] = 'miseq_' + self.run_info[ 'Instrument' ]
 
             elif self.run_info[ 'Instrument' ][0] == 'D':
-                self.run_info[ 'Instrument' ] = 'hiseq2500 ' + self.run_info[ 'Instrument' ]
+                self.run_info[ 'Instrument' ] = 'hiseq2500_' + self.run_info[ 'Instrument' ]
 
             elif self.run_info[ 'Instrument' ][0] == 'E':
-                self.run_info[ 'Instrument' ] = 'hiseqX ' + self.run_info[ 'Instrument' ]
+                self.run_info[ 'Instrument' ] = 'hiseqX_' + self.run_info[ 'Instrument' ]
 
             elif self.run_info[ 'Instrument' ][0] == 'K':
-                self.run_info[ 'Instrument' ] = 'hiseq4000 ' + self.run_info[ 'Instrument' ]
+                self.run_info[ 'Instrument' ] = 'hiseq4000_' + self.run_info[ 'Instrument' ]
 
         for read in root.iter('Flowcell'):
             if '-' in read.text:
