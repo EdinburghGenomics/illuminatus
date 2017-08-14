@@ -60,7 +60,7 @@ def split_fq_name(n):
         rdate, rmach, rnum, rfc, lane, lib, read = fn.split('.')[0].split('_')
         return dict( proj = proj,
                      pool = pool,
-                     fname = n,
+                     fname = n[:-len('.fastq.gz')],
                      bname = fn.split('.')[0],
                      run = "%s_%s_%s_%s" % (rdate, rmach, rnum, rfc),
                      lane = lane,
@@ -71,7 +71,7 @@ def split_fq_name(n):
         rdate, rmach, rnum, rfc, lane, lib, read = n.split('.')[0].split('_')
         return dict( proj = None,
                      pool = None,
-                     fname = n,
+                     fname = n[:-len('.fastq.gz')],
                      bname = n.split('.')[0],
                      run = "%s_%s_%s_%s" % (rdate, rmach, rnum, rfc),
                      lane = lane,
@@ -97,12 +97,12 @@ lanes = sorted( set( sf['lane'] for sf in all_fq ) )
 # === Driver rules ===
 rule md5_main:
     input:
-        md5      = expand( 'md5sums/{fq[fname]}.md5', fq=all_fq ),
+        md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5', fq=all_fq ),
 
 rule qc_main:
     input:
-        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[bname]}.cutadapt_out', fq=all_1_fq ),
-        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[bname]}_fastqc.zip',   fq=all_fq )
+        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out', fq=all_1_fq ),
+        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',   fq=all_fq )
 
 # Interop files in eg. /lustre/seqdata/170627_D00261_0417_ACAU93ANXX/InterOp/
 # The location will be inferred from SEQDATA/{runid}/InterOp
@@ -145,7 +145,7 @@ rule run_multiqc:
         """echo "multiqc is `which multiqc`" >&2
            rm -rf {output.data}
            ln -srf {input.meta} QC/lane{wildcards.l}/
-           {MULTIQC} -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/lane{wildcards.l}
+           {MULTIQC} -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/lane{wildcards.l} --lane {wildcards.l}
         """
 
 localrules: configure_multiqc
@@ -160,7 +160,7 @@ rule configure_multiqc:
                       dict( type = 'regex',
                             pattern = '_[12]\.(?:san|)fastq$' ),
                       dict( type = 'regex',
-                            pattern = '^{}(_._| - )'.format(run) ),
+                            pattern = '(^|.*/){}(_._| - )'.format(run) ),
                      ],
                      #Why did I add this? Oh, to only see the merged data, not the per run-element data.
                      fn_ignore_paths = [ '*__*/1*' ],
@@ -197,7 +197,7 @@ rule md5sum_file:
 
 # cutadapt used only for adapter dimer detection on read 1
 rule cutadapt_scan:
-    output: "QC/lane{l}/{fq}.cutadapt_out"
+    output: "QC/lane{l,[0-9]+}/{fq}.cutadapt_out"
     input: "{fq}.fastq.gz"
     params:
         adapters = ["AGATCGGAAGAGC", "CTGTCTCTTATA"]
@@ -208,8 +208,8 @@ rule cutadapt_scan:
 
 # fastqc runs on single FASTQ files, not read pairs. Apparently this is as it should be.
 rule fastqc:
-    output: zip = "QC/lane{l}/{fq}_fastqc.zip",
-            html = "QC/lane{l}/{fq}_fastqc.html"
+    output: zip = "QC/lane{l,[0-9]+}/{fq}_fastqc.zip",
+            html = "QC/lane{l,[0-9]+}/{fq}_fastqc.html"
     input: "{fq}.fastq.gz"
     threads: 2
     shell: "{FASTQC} {input} --outdir `dirname {output.zip}` --noextract --nogroup --threads {threads}"

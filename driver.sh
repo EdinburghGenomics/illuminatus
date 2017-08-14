@@ -271,7 +271,7 @@ fetch_samplesheet_and_report() {
     # In this case, an error in MultiQC etc. should not prevent demultiplexing from starting.
     set +e
     mkdir -p "$DEMUX_OUTPUT_FOLDER"/QC
-    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- multiqc_main ) |& plog
+    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F -- multiqc_main ) |& plog
 
     if [ ! -e pipeline/sample_summary.txt ] || \
        [ "$old_ss_link" != "$new_ss_link" ] ; then
@@ -288,13 +288,13 @@ run_qc() {
     (   cd "$DEMUX_OUTPUT_FOLDER"
         # First a quick report
         Snakefile.qc -- demux_stats_main interop_main
-        Snakefile.qc -f -- multiqc_main
+        Snakefile.qc -F -- multiqc_main
 
         # Then a full QC
         # TODO - at this point the status should switch to 'in_qc'
         # I can add this when I also add the read1_finished status - see notes in the doc
         Snakefile.qc -- md5_main qc_main
-        Snakefile.qc -f -- multiqc_main
+        Snakefile.qc -F -- multiqc_main
     )
 
     # We're done
