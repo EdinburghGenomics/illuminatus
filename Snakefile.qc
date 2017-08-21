@@ -158,16 +158,27 @@ rule configure_multiqc:
                      intro_text = False,
                      extra_fn_clean_exts = [
                       dict( type = 'regex',
-                            pattern = '_[12]\.(?:san|)fastq$' ),
+                            pattern = '\.(?:san|)fastq$' ),
                       dict( type = 'regex',
-                            pattern = '(^|.*/){}(_._| - )'.format(run) ),
+                            pattern = '(^|.*/){}_._'.format(run) ),
+                      dict( type = 'regex',
+                            pattern = '.*__' ),
+                     ],
+                     define_merge_groups = [
+                      dict( name = 'read_pairs',
+                            regex = '_([12])$' ),
                      ],
                      #Why did I add this? Oh, to only see the merged data, not the per run-element data.
+                     #But it doesn't apply to run reports anyway.
                      fn_ignore_paths = [ '*__*/1*' ],
                      #Interactive plots please
                      plots_flat_numseries = 1000,
                      #InterOP at the top
-                     top_modules = [ 'edgen_interop' ] )
+                     top_modules = [ 'edgen_interop' ],
+                     fastqc_plots_enabled = [ "sequence_quality_plot", "per_seq_quality_plot",
+                                              "sequence_content_plot", "gc_content_plot",
+                                              "n_content_plot", "seq_dup_levels_plot" ],
+                   )
 
         with open(output[0], "w") as cfh:
             print(yaml.safe_dump(conf, default_flow_style=False), file=cfh)
