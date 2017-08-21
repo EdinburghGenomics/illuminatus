@@ -62,6 +62,7 @@ class RunMetaData:
 
         idict['pre_start_info'] = {
                 'Run Date': info['Run Date'],
+                'LaneCount': int(info['LaneCount']),
                 'Experiment Name': params['Experiment Name'],
                 'Run ID': [ info['RunId'], 'https://genowiki.is.ed.ac.uk/display/GenePool/{}'.format(info['RunId']) ],
                 'Machine': info['Instrument'],

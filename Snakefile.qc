@@ -175,6 +175,8 @@ rule configure_multiqc:
 # === Actual data-gathering rules ===
 
 # Presumably interop data is under {SEQDATA}/{runid}/InterOp
+# FIXME - no, I don't think we can't rely on the directory name match. Switch to an
+# explicit symlink back.
 SEQDATA = config.get('seqdata', os.environ.get('SEQDATA_LOCATION', '.'))
 
 rule interop_qscore_heatmap:
