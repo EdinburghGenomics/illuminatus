@@ -10,17 +10,30 @@ def parse_args():
     description = """This script is part of the Illuminatus pipeline.
 It makes the Samplesheet report that was previously handled by
 wiki-communication/bin/upload_run_info_on_wiki.py, by parsing the SampleSheet.csv
-and RunInfo.xml in the current directory and by asking the LIMS for proper project names.
+and RunInfo.xml in the current directory and by asking the LIMS for proper project
+names.
+Output may be in YAML, TSV or Text format.
+Soon it will ask the LIMS for additional details (loading conc) too.
 """
-    argparser = ArgumentParser(description=description)
-    argparser.add_argument("--project_name_list",
-                            help="Supply a comma-separated list of project names." +
-                                 "If you do this, the LIMS will not be queried." +
-                                 "You can equivalently setenv PROJECT_NAME_LIST." )
-    argparser.add_argument("run_dir", nargs='?', default='.',
-                            help="Supply a directory to scan, if not the current directory.")
+    a = ArgumentParser(description=description)
+    a.add_argument("--project_name_list",
+                   help="Supply a comma-separated list of project names." +
+                        " If you do this, the LIMS will not be queried." +
+                        " You can equivalently setenv PROJECT_NAME_LIST." )
+    a.add_argument("--from-yml",
+                   help="Get the info from the supplied YAML file, not by" +
+                        "scanning the directory and the LIMS." )
+    a.add_argument("--yml",
+                   help="Output in YAML format to the specified file (- for stdout)." )
+    a.add_argument("--txt",
+                   help="Output in text format to the specified file (- for stdout)." )
+    a.add_argument("--tsv",
+                   help="Output in TSV format to the specified file (- for stdout)." )
 
-    return argparser.parse_args()
+    a.add_argument("run_dir", nargs='?', default='.',
+                   help="Supply a directory to scan, if not the current directory.")
+
+    return a.parse_args()
 
 def printable_date():
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')

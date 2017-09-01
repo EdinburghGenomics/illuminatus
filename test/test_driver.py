@@ -21,7 +21,7 @@ DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')
 
 PROGS_TO_MOCK = """
     BCL2FASTQPreprocessor.py BCL2FASTQPostprocessor.py BCL2FASTQCleanup.py BCL2FASTQRunner.sh
-    summarize_samplesheet.py rt_runticket_manager.py
+    summarize_lane_contents.py rt_runticket_manager.py
 """.split()
 
 class T(unittest.TestCase):
@@ -159,7 +159,7 @@ class T(unittest.TestCase):
         """A completely new run.  This should gain a ./pipeline folder
            which puts it into status reads_incomplete.
 
-           Also the samplesheet_fetch.sh, rt_runticket_manager.py and summarize_samplesheet.py
+           Also the samplesheet_fetch.sh, rt_runticket_manager.py and summarize_lane_contents.py
            programs should be called.
 
            And there should be a pipeline.log in the ./pipeline folder.
@@ -182,8 +182,9 @@ class T(unittest.TestCase):
         #Sample sheet should be summarized
         expected_calls = self.bm.empty_calls()
         expected_calls['samplesheet_fetch.sh'] = ['']
-        expected_calls['summarize_samplesheet.py'] = ['']
-        expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --reply @pipeline/sample_summary.txt']
+        expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml',
+                                                        '--from-yml pipeline/sample_summary.yml --txt -']
+        expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --reply @???']
 
         #But nothing else should happen
         self.assertEqual(self.bm.last_calls, expected_calls)

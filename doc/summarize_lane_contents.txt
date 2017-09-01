@@ -1,0 +1,19 @@
+The script was 'summarize_samplesheet.txt' but it's actually going to need to fetch
+extra info from the LIMS :-
+
+Full project names
+Loading concentration (not yet availaible)
+Loaded PhiX % (not yet availaible)
+
+So I'm renaming it summarize_lane_contents.py and adding the following arguments:
+
+--from-yml = take the specified yml as input
+--yml = output yml to the specified file
+--txt = output text (for e-mail) to the specified file
+--tsv = output tsv (for table rendering) to the specified file
+
+As this info will be recycled we want it in serialised (YML) form as well as text,
+so I'm following the same idea as collate_bam_stats.py - the script can both fetch
+and format the info but the two features are decoupled.
+
+

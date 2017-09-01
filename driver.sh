@@ -49,7 +49,7 @@ done
 mkdir -p `dirname "$MAINLOG"` ; exec 5>>"$MAINLOG"
 
 # Main log for general messages (STDERR still goes to the CRON).
-log(){ [ $# = 0 ] && cat >&5 || echo "$*" >&5 ; }
+log(){ [ $# = 0 ] && cat >&5 || echo "$@" >&5 ; }
 
 # Per-project log for project progress messages
 plog() {
@@ -74,9 +74,10 @@ trap 'log "=== `date`. Finished run; PID=$$ ==="' EXIT
 # If there is a Python VEnv, use it.
 py_venv="${BIN_LOCATION%%:*}/_py3_venv"
 if [ -e "${py_venv}/bin/activate" ] ; then
-    log "Activating Python VEnv from ${py_venv}"
+    log -n "Activating Python VEnv from ${py_venv}"
     reset=`set +o | grep -w nounset` ; set +o nounset
     source "${py_venv}/bin/activate"
+    log '...DONE'
     $reset
 fi
 
@@ -275,8 +276,9 @@ fetch_samplesheet_and_report() {
 
     if [ ! -e pipeline/sample_summary.txt ] || \
        [ "$old_ss_link" != "$new_ss_link" ] ; then
-        summarize_samplesheet.py > pipeline/sample_summary.txt
-        rt_runticket_manager.py -r "$RUNID" --reply @pipeline/sample_summary.txt |& plog
+        summarize_lane_contents.py --yml pipeline/sample_summary.yml
+        rt_runticket_manager.py -r "$RUNID" --reply \
+            @<(summarize_lane_contents.py --from-yml pipeline/sample_summary.yml --txt -) |& plog
     fi
     eval "$_oreset"
 }
@@ -319,14 +321,16 @@ pipeline_fail() {
     fi
 }
 
+log "Looking for run directories matching $SEQDATA_LOCATION/$RUN_NAME_PATTERN/"
+
 # 6) Scan for each run until we find something that needs dealing with.
 for run in "$SEQDATA_LOCATION"/$RUN_NAME_PATTERN/ ; do
   # invoke runinfo and collect some meta-information about the run. We're passing info
   # to the state functions via global variables.
-  RUNINFO_OUTPUT="`RunInfo.py $run`"
+  RUNINFO_OUTPUT="`RunInfo.py $run`" || RunInfo.py $run | log 2>&1
 
   LANES=`grep ^LaneCount: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
-  STATUS=`grep ^Status: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
+  STATUS=`grep ^PipelineStatus: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' ' || echo unknown`
   RUNID=`grep ^RunID: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   INSTRUMENT=`grep ^Instrument: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
