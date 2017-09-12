@@ -3,6 +3,7 @@ import sys, os
 import datetime
 import yaml
 from argparse import ArgumentParser
+from pprint import pprint, pformat
 
 from illuminatus.SampleSheetReader import SampleSheetReader
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
@@ -13,7 +14,8 @@ It makes the Samplesheet report that was previously handled by
 wiki-communication/bin/upload_run_info_on_wiki.py, by parsing the SampleSheet.csv
 and RunInfo.xml in the current directory and by asking the LIMS for proper project
 names.
-Output may be in YAML, TSV or Text format.
+Output may be in YAML, MQC,  TSV or Text format. MQC is suitable for MultiQC custom
+content - http://multiqc.info/docs/#custom-content.
 Soon it will ask the LIMS for additional details (loading conc) too.
 """
 
@@ -31,6 +33,8 @@ Soon it will ask the LIMS for additional details (loading conc) too.
                         "scanning the directory and the LIMS." )
     a.add_argument("--yml",
                    help="Output in YAML format to the specified file (- for stdout)." )
+    a.add_argument("--mqc",
+                   help="Output for MultiQC to the specified file (- for stdout)." )
     a.add_argument("--txt",
                    help="Output in text format to the specified file (- for stdout)." )
     a.add_argument("--tsv",
@@ -50,7 +54,7 @@ def main(args):
        requested.
     """
     #Sanity check that some output mode is active.
-    if not any([args.yml, args.txt, args.tsv]):
+    if not any([args.yml, args.mqc, args.txt, args.tsv]):
         exit("No output specified. Nothing to do.")
 
     #See where we want to get our info
@@ -62,36 +66,83 @@ def main(args):
                 with open(args.from_yml) as yfh:
                     data_struct = yaml.safe_load(yfh)
         else:
-            data_struct = scan_for_info(args.run_dir)
+            pnl = args.project_name_list or os.environ.get('PROJECT_NAME_LIST', '')
+            data_struct = scan_for_info( args.run_dir,
+                                         project_name_list = pnl )
     except FileNotFoundError as e:
         exit("Error summarizing run.\n{}".format(e) )
 
     #See where we want to put it...
     for dest, formatter in [ ( args.yml, output_yml ),
+                             ( args.mqc, output_mqc ),
                              ( args.txt, output_txt ),
                              ( args.tsv, output_tsv ) ]:
         if dest:
             if dest == '-':
-                formatter(data_struct, sts.stdout)
+                formatter(data_struct, sys.stdout)
             else:
                 with open(dest, 'w') as ofh:
                     formatter(data_struct, ofh)
 
     #DONE!
 
-def output_yaml(rid, fh):
-    print(yaml.safe_dump(conf, default_flow_style=False), file=fh)
+def output_yml(rids, fh):
+    """Simply dump the whole data structure as YAML
+    """
+    print(yaml.safe_dump(rids, default_flow_style=False), file=fh, end='')
 
-def scan_for_info(run_dir):
+def output_mqc(rids, fh):
+    """This also happens to be YAML but is specifically for display
+       in MultiQC. The filename should end in _mqc.yaml (not .yml) in
+       order to be picked up.
+    """
+    mqc_out = dict(
+        id           = 'lane_summary',
+        section_name = 'Lane Summary',
+        description  = 'Content of lanes in the run',
+        plot_type    = 'table',
+        pconfig      = { 'title': '', 'sortRows': True, 'no_beeswarm': True },
+        data         = {},
+        headers      = {},
+    )
+
+    #So my understanding is that pconfig needs to be a list of
+    #singleton dicts as {col_id: { conf_1: 'foo', conf_2: 'bar' }}
+    #for colnum, col in enumerate(["Lane", "Project", "Pool/Library", "Loaded (pmol)", "Loaded PhiX (%)"]):
+    #    mqc_out['pconfig'].append( { 'col_{:02}'.format(colnum) : dict() } )
+
+    # Nope - apparently not. Had to read the source...
+    # 'headers' needs to be a dict of { col_id: {title: ..., format: ... }
+    table_headers = ["Lane", "Project", "Pool/Library", "Loaded (pmol)", "Loaded PhiX (%)"]
+
+    # col1_header is actually col0_header!
+    mqc_out['pconfig']['col1_header'] = table_headers[0]
+    for colnum, col in list(enumerate(table_headers))[1:]:
+        mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title=col, format='{:s}')
+
+    for lane in rids['Lanes']:
+        #Logic here is just copied from output_tsv.
+        pools_union = {k: v for d in lane['Contents'].values() for k, v in d.items()}
+        contents_str = ','.join( squish_project_content( pools_union , 5) )
+
+        mqc_out['data']['Lane {}'.format(lane['LaneNumber'])] = dict(
+                                    col_01 = ','.join( sorted(lane['Contents']) ),
+                                    col_02 = contents_str,
+                                    col_03 = lane['Loading'].get('pmol', 'unknown'),
+                                    col_04 = lane['Loading'].get('phix', 'unknown') )
+
+    print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
+
+def scan_for_info(run_dir, project_name_list=''):
     """Hoovers up the info and builds a data structure which can
        be serialized to YAML.
     """
     # Load both the RunInfo.xml and the SampleSheet.csv
-    ri_xml = RunInfoXMLParser(args.run_dir + "/RunInfo.xml")
-    ss_csv = SampleSheetReader(args.run_dir + "/SampleSheet.csv")
+    ri_xml = RunInfoXMLParser(run_dir + "/RunInfo.xml")
+    ss_csv = SampleSheetReader(run_dir + "/SampleSheet.csv")
 
     # Build run info data structure (rids). First just inherit the info
-    # from ri_xml (RunId, Instrument, FlowCell)
+    # from ri_xml (RunId, Instrument, Flowcell)
     rids = ri_xml.run_info.copy()
 
     # Reads are pairs (length, index?)
@@ -100,34 +151,40 @@ def scan_for_info(run_dir):
                              sorted(ri_xml.read_and_length.keys(), key=int) ]
 
     #Which file is actually providing the SampleSheet?
-    rids['SampleSheet'] = os.path.basename(os.readlink(args.run_dir + "/SampleSheet.csv"))
+    try:
+        rids['SampleSheet'] = os.path.basename(os.readlink(run_dir + "/SampleSheet.csv"))
+    except OSError:
+        # Weird - maybe not a link?
+        rids['SampleSheet'] = "SampleSheet.csv"
 
     #When is this  report being made?
     rids['ReportDateTime'] = printable_date()
 
     #Translate all the project numbers to names in one go
-    project_name_list = ( args.project_name_list or os.environ.get('PROJECT_NAME_LIST', '') )
     rids['ProjectInfo'] = project_real_name(
                             set([ line[ss_csv.column_mapping['sample_project']]
                                   for line in ss_csv.samplesheet_data ]),
-                            project_name_list.split(',') )
-
-    #Add lane loading
-    rids['Loading'] = get_lane_loading(rids['FlowCell'])
+                            project_name_list )
 
     #Slice the sample sheet by lane
-    rid['Lanes'] = []
+    rids['Lanes'] = []
     ss_lanes = [ line[ss_csv.column_mapping['lane']] for line in ss_csv.samplesheet_data ]
     for lanenum in sorted(set(ss_lanes)):
         thislane = {'LaneNumber': lanenum}
+
+        #Add lane loading. In reality we probably need to get all lanes in one fetch,
+        #but here's a placeholder.
+        thislane['Loading'] = get_lane_loading(rids['Flowcell'])
+
 
         thislane['Contents'] = summarize_lane(
                                  [ line for line in ss_csv.samplesheet_data
                                    if line[ss_csv.column_mapping['lane']] == lanenum ],
                                  ss_csv.column_mapping )
 
-        rid['Lanes'].append(thislane)
+        rids['Lanes'].append(thislane)
 
+    return rids
 
 def summarize_lane(lane_lines, column_mapping):
     """Given a list of lines, summarize what they contain, returning
@@ -161,9 +218,7 @@ def output_txt(rids, fh):
     #Basic metadata, followed be a per-lane summary.
     p( "Run ID: {}".format(rids['RunId']) )
     p( "Instrument: {}".format(rids['Instrument']) )
-    p( "Read length: {}".format(','.join(
-                                 [ ('[{}]' if r[1] else '{}').format(r[0])
-                                   for r in rids['Reads'] ] ))
+    p( "Read length: {}".format(rids['Cycles']) )
     p( "Active SampleSheet: SampleSheet.csv -> {}".format(rids['SampleSheet']) )
     p( "" )
 
@@ -172,29 +227,34 @@ def output_txt(rids, fh):
 
     #Summarize each lane
     prn = rids['ProjectInfo']
-    for lane in rid['Lanes']:
+    for lane in rids['Lanes']:
         p( "Lane {}:".format(lane['LaneNumber']) )
 
         for project, pools in sorted(lane['Contents'].items()):
 
-            contents_str = ','.join(squish_project_content(pools))
+            contents_str = ' '.join(squish_project_content(pools))
 
-            p( "    - Project {p} -- Library {l} -- Number of indexes {ni} ".format(
+            contents_label = 'Libraries' if set(pools.keys()) == [''] else \
+                             'Contents' if pools.get('') else \
+                             'Pool' if len(pools) == 1 else 'Pools'
+
+            p( "    - Project {p} -- {cl} {l} -- Number of indexes {ni} ".format(
                                 p  = project,
                                 l  = contents_str,
+                                cl = contents_label,
                                 ni = sum( len(p) for p in pools ) ) )
             p( "    - See {link}".format(link = prn[project].get('url', prn[project]['name'])) )
 
 
-output_tsv(rids, fh):
+def output_tsv(rids, fh):
     """TSV table for the run report.
     """
-    p = lambda *a: print(*a, file=fh)
+    p = lambda *a: print('\t'.join(a), file=fh)
 
     #Headers
-    p(["Lane", "Project", "Pool/Library", "Loaded (pmol)", "Loaded PhiX (%)"].join("\t"))
+    p("Lane", "Project", "Pool/Library", "Loaded (pmol)", "Loaded PhiX (%)")
 
-    for lane in rid['Lanes']:
+    for lane in rids['Lanes']:
 
         #This time, squish content for all projects together when listing the pools.
         #If there are more than 5 things in the lane, abbreviate the list. Users can always look
@@ -202,14 +262,14 @@ output_tsv(rids, fh):
         pools_union = {k: v for d in lane['Contents'].values() for k, v in d.items()}
         contents_str = ','.join( squish_project_content( pools_union , 5) )
 
-        p( [ lane['LaneNumber'],
-             ','.join( sorted(lane['Contents']) ),
-             contents_str,
-             lane['Loading'].get('pmol', 'unknown'),
-             lane['Loading'].get('phix', 'unknown')  )
+        p( lane['LaneNumber'],
+           ','.join( sorted(lane['Contents']) ),
+           contents_str,
+           lane['Loading'].get('pmol', 'unknown'),
+           lane['Loading'].get('phix', 'unknown') )
 
-def squish_project_contents(dict_of_pools, maxlen=0):
-    """Given a dict taken from rid['Lanes'][n]['Contents'] -- ie. a dict of pool: content_list
+def squish_project_content(dict_of_pools, maxlen=0):
+    """Given a dict taken from rids['Lanes'][n]['Contents'] -- ie. a dict of pool: content_list
        returns a human-readable list of contents.
     """
     all_pools = sorted([ p for p in dict_of_pools if p ])
@@ -228,21 +288,23 @@ def squish_project_contents(dict_of_pools, maxlen=0):
 def get_lane_loading(flowcell):
     """A placeholder. At some point this will query the LIMS for lane loading info -
        ie. pmol Loaded and PhiX %
+       And we'll probably need to mock it out in the test cases.
     """
     return dict()
 
 # A rather contorted way to get project names. We may be able to bypass
 # this by injecting them straight into the sample sheet!
-def project_real_name(proj_id_list, name_list=None):
+def project_real_name(proj_id_list, name_list=''):
     """Resolves a list of project IDs to a name and URL
     """
     res = dict()
     if name_list:
+        name_list_split = name_list.split(',')
         # Resolve without going to the LIMS. Note that if you want to disable
         # LIMS look-up without supplying an actuall list of names you can just
         # say "--project_names dummy" or some such thing.
         for p in proj_id_list:
-            name_match = [ n for n in name_list if n.startswith(p) ]
+            name_match = [ n for n in name_list_split if n.startswith(p) ]
             if len(name_match) == 1:
                 res[p] = dict( name = name_match[0],
                                url  = "http://foo.example.com/" + name_match[0] )
@@ -255,7 +317,7 @@ def project_real_name(proj_id_list, name_list=None):
             for p, n in zip(proj_id_list, get_project_names(*proj_id_list)):
                 if n:
                     res[p] = dict( name = n,
-                                   url = "http://foo.example.com/" + name_match[0] )
+                                   url = "http://foo.example.com/" + n )
                 else:
                     res[p] = dict( name = p + "_UNKNOWN" )
         except Exception as e:

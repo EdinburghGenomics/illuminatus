@@ -16,4 +16,8 @@ As this info will be recycled we want it in serialised (YML) form as well as tex
 so I'm following the same idea as collate_bam_stats.py - the script can both fetch
 and format the info but the two features are decoupled.
 
-
+Before going any further - check what the custom content module for MultiQC wants
+to be fed in order to make me a table. Or if it won't do, make a custom module
+that eats the YAML directly.
+After checking http://multiqc.info/docs/#custom-content I've added a seconf YAML
+emitter which should result in a table appearing in MultiQC.

@@ -276,9 +276,10 @@ fetch_samplesheet_and_report() {
 
     if [ ! -e pipeline/sample_summary.txt ] || \
        [ "$old_ss_link" != "$new_ss_link" ] ; then
-        summarize_lane_contents.py --yml pipeline/sample_summary.yml
+        #summarize_lane_contents.py --yml pipeline/sample_summary.yml
+        #This saves the yml and mails the text in one shot...
         rt_runticket_manager.py -r "$RUNID" --reply \
-            @<(summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt -) |& plog
+            @<(summarize_lane_contents.py --yml pipeline/sample_summary.yml --txt -) |& plog
     fi
     eval "$_oreset"
 }

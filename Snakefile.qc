@@ -125,7 +125,9 @@ rule demux_stats_main:
 
 rule metadata_main:
     # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
-    input: "QC/run_info.{r}.yml".format(r=run)
+    input:
+        runinfo  = "QC/run_info.{r}.yml".format(r=run),
+        laneinfo = "QC/overview/lane_summary_{r}_mqc.yaml".format(r=run)
 
 # For now run this locally. Might want to shift it to the cluster if login-0 gets too
 # busy.
@@ -230,12 +232,20 @@ rule fastqc:
 # meta-data. this can change as the pipeline runs so make the rule depend on the pipeline
 # directory. Also there is only one metadata file per run, not per lane, but it will be
 # symlinked by multiqc_main to be picked up on all runs
-localrules: get_run_metadata
+localrules: get_run_metadata, get_lane_summary
 rule get_run_metadata:
     output: "QC/run_info.{runid}.yml"
     input: SEQDATA + "/{runid}/pipeline"
     shell:
         "RunMetaData.py {SEQDATA}/{wildcards.runid} > {output}"
+
+# lane summary is just a munge of the .yml already made by the driver
+# re-using this saves another call out to the LIMS
+rule get_lane_summary:
+    output: "QC/overview/lane_summary_{runid}_mqc.yaml"
+    input: SEQDATA + "/{runid}/pipeline/sample_summary.yml"
+    shell:
+        "summarize_lane_contents.py --from_yml {input} --mqc {output}"
 
 # per-lane infos
 WELLDUPS_DATA = config.get('welldups', SEQDATA + '/WellDuplicates')
