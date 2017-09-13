@@ -29,12 +29,18 @@ find_snakefile() {
 }
 
 snakerun_drmaa() {
+    CLUSTER_QUEUE="${CLUSTER_QUEUE:-casava}"
+
+    if [ "$CLUSTER_QUEUE" = none ] ; then
+        snakerun_single "$@"
+        return
+    fi
+
     snakefile=`find_snakefile "$1"` ; shift
     # Ensure the active VEnv gets enabled on cluster nodes:
     if [ -n "${VIRTUAL_ENV:-}" ] ; then
         export SNAKE_PRERUN="${VIRTUAL_ENV}/bin/activate"
     fi
-    CLUSTER_QUEUE="${CLUSTER_QUEUE:-casava}"
 
     # Spew out cluster.yaml
     [ -e cluster.yml ] || cat_cluster_yml > cluster.yml
