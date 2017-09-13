@@ -90,7 +90,8 @@ all_1_fq = [ fq for fq in all_fq if fq['read'] == '1' ]
 # On second thoughts - if this script were used on more than one run it would combine
 # lanes across runs, so let's forbid it and keep things simple.
 runs = set( sf['run'] for sf in all_fq )
-assert len(runs) == 1, "Expected to find exactly one run but saw: {}".format(runs)
+assert all_1_fq, "No _1.fastq.gz files found in {}.".format(os.getcwd())
+assert len(runs) == 1, "Expected to find only one run in but saw: {}".format(os.getcwd(), runs)
 run, = runs ; del(runs)
 lanes = sorted( set( sf['lane'] for sf in all_fq ) )
 
