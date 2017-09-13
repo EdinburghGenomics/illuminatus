@@ -36,17 +36,11 @@ class T(unittest.TestCase):
             else:
                 self.assertEqual(expected_bm, bme.get_base_mask_for_lane(lane))
 
-    #Tests get added dynamically
+    #Tests get added dynamically (if they're not running, check the @skip is not still applied above!)
 
-"""
-print(vars(TestBaseMaskExtractor))
-
-for i, n in enumerate([ True, True, False ]):
-    #Note the slightly contorted double-lambda syntax to make the closure.
-    setattr(TestBaseMaskExtractor, 'test_bme_%i' % i, (lambda n: lambda self: self.assertTrue(n))(n))
-"""
 # Now add the tests dynamically
 for lm in glob(os.path.join(DATA_DIR, '*', 'lanemasks.txt')):
+
     #Note the slightly contorted double-lambda syntax to make the closure.
     dname = os.path.basename(os.path.dirname(lm))
     setattr(T, 'test_bme_%s' % dname, (lambda d: lambda self: self.bm_test(d))(dname))

@@ -12,10 +12,9 @@ import os, sys
 import configparser
 from collections import defaultdict
 from itertools import dropwhile, takewhile
-from subprocess import check_output, SubprocessError, DEVNULL
+from subprocess import check_output, DEVNULL
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
-from illuminatus.ConfigFileReader import ConfigFileReader
 
 
 class BCL2FASTQPreprocessor:

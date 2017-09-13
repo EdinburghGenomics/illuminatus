@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-from __future__ import print_function, division, absolute_import
 
 import sys, os
 import unittest
 
 sys.path.insert(0, '.')
+
 from grab_bcl2fastq_stats import gather_fastq_stats
 
-class TestBCL2FastqStats(unittest.TestCase):
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
+
+class T(unittest.TestCase):
 
     def test_simple_parse(self):
 
-        testfile = 'test/fastqsummary_sample/FastqSummaryF1L8.txt'
+        testfile = TESTDIR + '/fastqsummary_sample/FastqSummaryF1L8.txt'
 
         metrics = gather_fastq_stats(testfile)
         m = { k: (round(v, 6) if type(v) is float else v) for k, v in metrics.items() }
@@ -32,7 +34,7 @@ class TestBCL2FastqStats(unittest.TestCase):
     def test_one_sample(self):
 
         # Previously the stats got messed up if you only had one sample.
-        testfile = 'test/fastqsummary_sample/FastqSummaryF1L7.txt'
+        testfile = TESTDIR + '/fastqsummary_sample/FastqSummaryF1L7.txt'
 
         metrics = gather_fastq_stats(testfile)
         m = { k: (round(v, 6) if type(v) is float else v) for k, v in metrics.items() }

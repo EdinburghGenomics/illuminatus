@@ -6,7 +6,6 @@ from glob import glob
 from pprint import pprint
 import io
 
-
 # Adding this to sys.path makes the test work if you just run it directly.
 sys.path.insert(0,'.')
 

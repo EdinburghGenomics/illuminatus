@@ -12,35 +12,13 @@ from __future__ import division, print_function, absolute_import
 import os, sys
 from glob import glob
 from collections import defaultdict, OrderedDict
-from fixed_ordered_dict import FixedOrderedDict
-from yaml_ordered import yaml
-from project_yaml_reader import YAMLReader
+from illuminatus.FixedOrderedDict import FixedOrderedDict
+from illuminatus.YAMLOrdered import yaml
 
-#I guess I want pstdev since I'm calculating variance over the whole run.
+#I guess I want pstdev since I'm calculating variance over the whole run?
+#Nope, to be compatible with Illumina we want regular sample stdev
 #Note this requires Py3.4 or else the statistics package to be installed via Pip
 from statistics import stdev, pstdev, mean
-
-#projectqc_dir = '/fluidfs/projectqc/10296_Hickey_John'
-PROJECTQC_DIR = os.environ.get('WORKDIR', os.getcwd())
-
-def get_lanes_for_project(proj_id):
-    #Load using the standard YAML reader.
-
-    #But Snakemake already has this info, so it seems easier to drive
-    #the data fetching from Snakemake.  Even though I'm trying to keep the
-    #Snakemake stuff contained within the work directory, it already reaches out
-    #to find genomes for alignment so why not allow this too?
-
-    project_yaml = YAMLReader(proj_id, integrity_check=False)
-
-    # We want a set of all the lanes for the project
-    all_lanes = set()
-
-    for run_element in project_yaml.get_run_elements():
-
-        all_lanes.add( (run_element['run']['id'], run_element['lane_number']) )
-
-    return all_lanes
 
 
 def slurp(filename):
