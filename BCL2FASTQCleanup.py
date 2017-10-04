@@ -45,7 +45,11 @@ def main(output_dir, *lanes):
             projects.update(delete_p_fastq(output_dir, lanes, log=log))
 
             # Deleting the [other stuff]
-            pass
+            # md5sums are removed by the 'otherdirs' option passed to delete_fastq.
+            # Do we need to scrub the QC? Stale info in the MultiQC reports will be bad!!
+            del_qc = "rm -rf {od}/QC/lane[{l}] {od}/QC/multiqc_report_lane[{l}]*".format(l=''.join(lanes), od=output_dir)
+            os.system(del_qc)
+            log(del_qc)
 
             # Put anything I deleted into projects_pending.txt
             with open(os.path.join(output_dir, 'projects_pending.txt'), 'a') as pp_fh:
@@ -68,6 +72,7 @@ def delete_p_fastq(path, lanes, **kwargs):
     """
     return delete_fastq( path, lanes,
                          re.compile(r'^[0-9]{6}_[^_]+_[0-9]+_[^_]+_(.)_[^_]+(_[12]|)\.fastq\.gz'),
+                         otherdirs=('md5sums', 'counts'),
                          **kwargs )
 
 
@@ -107,7 +112,7 @@ def delete_d_dirs(path, lanes, log=lambda x: None):
     log('# ' + msg)
     return projects
 
-def delete_fastq(path, lanes, match_pattern, log=lambda x: None):
+def delete_fastq(path, lanes, match_pattern, log=lambda x: None, otherdirs=()):
     """Generic file deleter given a path and a pattern.
     """
     # Find all the matching files. Simplistically, assume that any top-level directory
@@ -129,8 +134,14 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None):
                 if proj: projects.add( proj )
 
                 os.remove(os.path.join(root, f))
-                log("rm '%s'" % os.path.join(root, f))
+                log( "rm '{}'".format(os.path.join(root, f)) )
                 deletions += 1
+
+                # Deal with otherdirs - ie places where supplementary files lurk.
+                for od in otherdirs:
+                    for odf in glob( "{}/{}/{}.*".format(od, root, f) ):
+                        os.remove(odf)
+                        log( "rm '{}'".format(odf) )
 
         # Useful for debugging
         #    else:

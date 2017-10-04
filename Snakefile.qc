@@ -27,18 +27,20 @@ snakerun_drmaa "$0" "$@"
 #!/usr/bin/env snakemake
 import yaml
 
-# TODO - add tools/versions here
-CUTADAPT = "/lustre/software/cutadapt/pipeline_current/bin/cutadapt"
-FASTQC   = "/lustre/software/FastQC/pipeline_current/fastqc"
-INTEROP  = "/lustre/software/interop/pipeline_current/bin"
-# The active Python3 VEnv should provide the correct multiqc,
-# but multiqc needs to be able to find a working gnuplot.
-MULTIQC  = 'env PATH="$PATH:/lustre/software/bin" multiqc'
-
-BCL2FASTQ_STATS = "grab_bcl2fastq_stats.py"
+# Where are the pipeline_current tools?
+# Maybe they should be defined/linked under /lustre/home/pipeline?
+# Note that tools included within the Illuminatus code or within the Python3 VEnv
+# will already be in the PATH, but they may call out to tools in the TOOLBOX -
+# eg. multiqc needs to be able to find a working gnuplot.
+#
+# Tools we currently need in the toolbox:
+#   cutadapt, fastqc, gnuplot (indirectly),
+#   interop_plot_qscore_heatmap, interop_plot_by_cycle, interop_plot_by_lane
+TOOLBOX = 'env PATH="$PATH:{}"'.format(os.environ.get('TOOLBOX', '/lustre/software/illuminatus_toolbox'))
 
 # Other than that, ensure that scripts in the directory with this Snakefile are
-# in the PATH
+# in the PATH:
+#   fq_base_counter.py, RunMetaData.py, summarize_lane_contents.py, grab_bcl2fastq_stats.py
 if ( not os.path.dirname(workflow.snakefile) in os.environ['PATH'] and
      not os.path.dirname(os.path.abspath(workflow.snakefile)) in os.environ['PATH'] ):
      os.environ['PATH'] += ':' + os.path.dirname(workflow.snakefile)
@@ -99,6 +101,7 @@ lanes = sorted( set( sf['lane'] for sf in all_fq ) )
 rule md5_main:
     input:
         md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5', fq=all_fq ),
+        counts   = expand( 'counts/{fq[fname]}.fastq.gz.count', fq=all_fq )
 
 rule qc_main:
     input:
@@ -150,7 +153,7 @@ rule run_multiqc:
         """echo "multiqc is `which multiqc`" >&2
            rm -rf {output.data}
            ln -srf {input.runinfo} QC/{wildcards.l}/
-           {MULTIQC} -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/{wildcards.l} --lane {wildcards.l}
+           {TOOLBOX} multiqc -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/{wildcards.l} --lane {wildcards.l}
         """
 
 localrules: configure_multiqc
@@ -197,21 +200,32 @@ SEQDATA = config.get('seqdata', os.environ.get('SEQDATA_LOCATION', '.'))
 
 rule interop_qscore_heatmap:
     output: "{foo}/{runid,[^/]+}.qscore_heatmap.interop_plot"
-    shell: "{INTEROP}/plot_qscore_heatmap {SEQDATA}/{wildcards.runid} > {output}"
+    shell: "{TOOLBOX} interop_plot_qscore_heatmap {SEQDATA}/{wildcards.runid} > {output}"
 
 rule interop_by_cycle:
     output: "{foo}/{runid,[^/]+}.by_cycle.interop_plot"
-    shell: "{INTEROP}/plot_by_cycle {SEQDATA}/{wildcards.runid} > {output}"
+    shell: "{TOOLBOX} interop_plot_by_cycle {SEQDATA}/{wildcards.runid} > {output}"
 
 rule interop_by_lane:
     output: "{foo}/{runid,[^/]+}.by_lane.interop_plot"
-    shell: "{INTEROP}/plot_by_lane {SEQDATA}/{wildcards.runid} > {output}"
+    shell: "{TOOLBOX} interop_plot_by_lane {SEQDATA}/{wildcards.runid} > {output}"
 
 # md5summer that keeps the file path out of the .md5 file
 rule md5sum_file:
     output: "md5sums/{foo}.md5"
     input: "{foo}"
     shell: "( cd `dirname {input}` && md5sum `basename {input}` ) > {output}"
+
+# along with the md5sums, make a count summary per file
+# For speed, we're actually reading these from the Stats.json file (the
+# original copy).
+rule base_count_file:
+    output: "counts/{fq}.count"
+    input:
+        fq = "{fq}",
+        json = lambda wc: "{}/lane{}/Stats/Stats.json".format(BCL2FASTQ_OUT, split_fq_name(wc.fq)['lane'])
+    shell:
+        "fq_base_counter.py -j {input.json} {input.fq} > {output}"
 
 # cutadapt used only for adapter dimer detection on read 1
 rule cutadapt_scan:
@@ -220,7 +234,7 @@ rule cutadapt_scan:
     params:
         adapters = ["AGATCGGAAGAGC", "CTGTCTCTTATA"]
     shell:
-        """{CUTADAPT} -f fastq -O 9 -o /dev/null `for a in {params.adapters} ; do echo -a $a ; done` \
+        """{TOOLBOX} cutadapt -f fastq -O 9 -o /dev/null `for a in {params.adapters} ; do echo -a $a ; done` \
            {input} > {output}
         """
 
@@ -230,7 +244,7 @@ rule fastqc:
             html = "QC/lane{l,[0-9]+}/{fq}_fastqc.html"
     input: "{fq}.fastq.gz"
     threads: 2
-    shell: "{FASTQC} {input} --outdir `dirname {output.zip}` --noextract --nogroup --threads {threads}"
+    shell: "{TOOLBOX} fastqc {input} --outdir `dirname {output.zip}` --noextract --nogroup --threads {threads}"
 
 # meta-data. this can change as the pipeline runs so make the rule depend on the pipeline
 # directory. Also there is only one metadata file per run, not per lane, but it will be
@@ -284,7 +298,7 @@ rule get_bcl2fastq_stats:
     # where it scanned for the input file.
     output: "QC/lane{lane}/{runid}_{lane}.stats.yml"
     input: BCL2FASTQ_OUT + "/lane{lane}/Stats/FastqSummaryF1L{lane}.txt"
-    shell: "{BCL2FASTQ_STATS} {BCL2FASTQ_OUT}/lane{wildcards.lane} {wildcards.runid} {wildcards.lane} > {output}"
+    shell: "grab_bcl2fastq_stats.py {BCL2FASTQ_OUT}/lane{wildcards.lane} {wildcards.runid} {wildcards.lane} > {output}"
 
 localrules: get_bcl2fastq_json
 rule get_bcl2fastq_json:
