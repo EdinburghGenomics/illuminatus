@@ -274,7 +274,7 @@ fetch_samplesheet_and_report() {
     mkdir -p "$DEMUX_OUTPUT_FOLDER"/QC
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F -- multiqc_main ) |& plog
 
-    if [ ! -e pipeline/sample_summary.txt ] || \
+    if [ ! -e pipeline/sample_summary.yml ] || \
        [ "$old_ss_link" != "$new_ss_link" ] ; then
         #summarize_lane_contents.py --yml pipeline/sample_summary.yml
         #This saves the yml and mails the text in one shot...

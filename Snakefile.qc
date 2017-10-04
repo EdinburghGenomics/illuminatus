@@ -109,7 +109,7 @@ rule qc_main:
 # The location will be inferred from SEQDATA/{runid}/InterOp
 rule interop_main:
     input:
-        plots = expand( "QC/interop/{run}.{plot}.interop_plot",
+        plots = expand( "QC/overview/interop/{run}.{plot}.interop_plot",
                         run = [run],
                         plot = ['qscore_heatmap', 'by_cycle', 'by_lane' ] )
         # and also? Are there per-lane plots to make?
@@ -135,20 +135,22 @@ rule metadata_main:
 # Note this rule does not trigger qc_main etc. so you have to run those explicitly first.
 localrules: multiqc_main, run_multiqc
 rule multiqc_main:
-    input: expand("QC/multiqc_report_lane{l}.html", l=lanes)
+    input:
+        overview = "QC/multiqc_report_overview.html",
+        lanereps = expand("QC/multiqc_report_lane{l}.html", l=lanes)
 
 rule run_multiqc:
     output:
-        report = "QC/multiqc_report_lane{l}.html",
-        data = "QC/multiqc_report_lane{l}_data"
+        report = "QC/multiqc_report_{l}.html",
+        data = "QC/multiqc_report_{l}_data"
     input:
         config = "QC/multiqc_config.yml",
-        meta = rules.metadata_main.input
+        runinfo = rules.metadata_main.input.runinfo
     shell:
         """echo "multiqc is `which multiqc`" >&2
            rm -rf {output.data}
-           ln -srf {input.meta} QC/lane{wildcards.l}/
-           {MULTIQC} -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/lane{wildcards.l} --lane {wildcards.l}
+           ln -srf {input.runinfo} QC/{wildcards.l}/
+           {MULTIQC} -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/{wildcards.l} --lane {wildcards.l}
         """
 
 localrules: configure_multiqc
@@ -194,15 +196,15 @@ rule configure_multiqc:
 SEQDATA = config.get('seqdata', os.environ.get('SEQDATA_LOCATION', '.'))
 
 rule interop_qscore_heatmap:
-    output: "QC/interop/{runid}.qscore_heatmap.interop_plot"
+    output: "{foo}/{runid,[^/]+}.qscore_heatmap.interop_plot"
     shell: "{INTEROP}/plot_qscore_heatmap {SEQDATA}/{wildcards.runid} > {output}"
 
 rule interop_by_cycle:
-    output: "QC/interop/{runid}.by_cycle.interop_plot"
+    output: "{foo}/{runid,[^/]+}.by_cycle.interop_plot"
     shell: "{INTEROP}/plot_by_cycle {SEQDATA}/{wildcards.runid} > {output}"
 
 rule interop_by_lane:
-    output: "QC/interop/{runid}.by_lane.interop_plot"
+    output: "{foo}/{runid,[^/]+}.by_lane.interop_plot"
     shell: "{INTEROP}/plot_by_lane {SEQDATA}/{wildcards.runid} > {output}"
 
 # md5summer that keeps the file path out of the .md5 file
