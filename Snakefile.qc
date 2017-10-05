@@ -82,39 +82,42 @@ def split_fq_name(n):
                      unassigned = (lib == 'unassigned') )
 
 # See what input sequences we are dealing with
-all_unassigned_fq = [ split_fq_name(f) for f in glob('*_unassigned_?.fastq.gz') ]
-all_assigned_fq   = [ split_fq_name(f) for f in glob('[1-9]*/*/*.fastq.gz') ]
-all_fq = (all_assigned_fq + all_unassigned_fq)
-all_1_fq = [ fq for fq in all_fq if fq['read'] == '1' ]
+# I can use a hack to stop this being re-run on every cluster job.
+# The lambda: syntax on rule inputs forces late evaluetion of the variables.
+if not '--no-hooks' in sys.argv:
+    all_unassigned_fq = [ split_fq_name(f) for f in glob('*_unassigned_?.fastq.gz') ]
+    all_assigned_fq   = [ split_fq_name(f) for f in glob('[1-9]*/*/*.fastq.gz') ]
+    all_fq = (all_assigned_fq + all_unassigned_fq)
+    all_1_fq = [ fq for fq in all_fq if fq['read'] == '1' ]
 
-# There should only be one run, but having runs_and_lanes as a set of pairs is how
-# I've done things elsewhere so I may as well stick with it.
-# On second thoughts - if this script were used on more than one run it would combine
-# lanes across runs, so let's forbid it and keep things simple.
-runs = set( sf['run'] for sf in all_fq )
-assert all_1_fq, "No _1.fastq.gz files found in {}.".format(os.getcwd())
-assert len(runs) == 1, "Expected to find only one run in but saw: {}".format(os.getcwd(), runs)
-run, = runs ; del(runs)
-lanes = sorted( set( sf['lane'] for sf in all_fq ) )
+    # There should only be one run, but having runs_and_lanes as a set of pairs is how
+    # I've done things elsewhere so I may as well stick with it.
+    # On second thoughts - if this script were used on more than one run it would combine
+    # lanes across runs, so let's forbid it and keep things simple.
+    runs = set( sf['run'] for sf in all_fq )
+    assert all_1_fq, "No _1.fastq.gz files found in {}.".format(os.getcwd())
+    assert len(runs) == 1, "Expected to find only one run in but saw: {}".format(os.getcwd(), runs)
+    run, = runs ; del(runs)
+    lanes = sorted( set( sf['lane'] for sf in all_fq ) )
 
 # === Driver rules ===
 rule md5_main:
     input:
-        md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5', fq=all_fq ),
-        counts   = expand( 'counts/{fq[fname]}.fastq.gz.count', fq=all_fq )
+        md5      = lambda *_: expand( 'md5sums/{fq[fname]}.fastq.gz.md5',  fq=all_fq ),
+        counts   = lambda *_: expand( 'counts/{fq[fname]}.fastq.gz.count', fq=all_fq )
 
 rule qc_main:
     input:
-        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out', fq=all_1_fq ),
-        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',   fq=all_fq )
+        cutadapt = lambda *_: expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out', fq=all_1_fq ),
+        fastqc   = lambda *_: expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',   fq=all_fq )
 
 # Interop files in eg. /lustre/seqdata/170627_D00261_0417_ACAU93ANXX/InterOp/
 # The location will be inferred from SEQDATA/{runid}/InterOp
 rule interop_main:
     input:
-        plots = expand( "QC/overview/interop/{run}.{plot}.interop_plot",
-                        run = [run],
-                        plot = ['qscore_heatmap', 'by_cycle', 'by_lane' ] )
+        plots = lambda *_: expand( "QC/overview/interop/{run}.{plot}.interop_plot",
+                                   run = [run],
+                                   plot = ['qscore_heatmap', 'by_cycle', 'by_lane' ] )
         # and also? Are there per-lane plots to make?
 
 rule demux_stats_main:
@@ -123,15 +126,15 @@ rule demux_stats_main:
     # Also we have the new Stats.json to compete with our stats.yml. A little confusing -
     # do we need both?
     input:
-        stats = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
-        dups  = expand("QC/lane{l}/{r}_{l}.welldups",  l=lanes, r=[run]),
-        json  = expand("QC/lane{l}/Stats.json",                l=lanes),
+        stats = lambda *_: expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
+        dups  = lambda *_: expand("QC/lane{l}/{r}_{l}.welldups",  l=lanes, r=[run]),
+        json  = lambda *_: expand("QC/lane{l}/Stats.json",        l=lanes),
 
 rule metadata_main:
     # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
     input:
-        runinfo  = "QC/run_info.{r}.yml".format(r=run),
-        laneinfo = "QC/overview/lane_summary_{r}_mqc.yaml".format(r=run)
+        runinfo  = lambda *_: "QC/run_info.{r}.yml".format(r=run),
+        laneinfo = lambda *_: "QC/overview/lane_summary_{r}_mqc.yaml".format(r=run)
 
 # For now run this locally. Might want to shift it to the cluster if login-0 gets too
 # busy.
@@ -139,8 +142,8 @@ rule metadata_main:
 localrules: multiqc_main, run_multiqc
 rule multiqc_main:
     input:
-        overview = "QC/multiqc_report_overview.html",
-        lanereps = expand("QC/multiqc_report_lane{l}.html", l=lanes)
+        overview = lambda *_: "QC/multiqc_report_overview.html",
+        lanereps = lambda *_: expand("QC/multiqc_report_lane{l}.html", l=lanes)
 
 rule run_multiqc:
     output:
