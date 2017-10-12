@@ -104,7 +104,7 @@ if not '--no-hooks' in sys.argv:
 rule md5_main:
     input:
         md5      = lambda *_: expand( 'md5sums/{fq[fname]}.fastq.gz.md5',  fq=all_fq ),
-        counts   = lambda *_: expand( 'counts/{fq[fname]}.fastq.gz.count', fq=all_fq )
+        counts   = lambda *_: expand( 'counts/{fq[fname]}.fastq.count', fq=all_fq )
 
 rule qc_main:
     input:
@@ -225,7 +225,7 @@ rule md5sum_file:
 rule base_count_file:
     output: "counts/{fq}.count"
     input:
-        fq = "{fq}",
+        fq = "{fq}.gz",
         json = lambda wc: "{}/lane{}/Stats/Stats.json".format(BCL2FASTQ_OUT, split_fq_name(wc.fq)['lane'])
     shell:
         "fq_base_counter.py -j {input.json} {input.fq} > {output}"
