@@ -21,7 +21,7 @@ if [ -e "`dirname $BASH_SOURCE`"/environ.sh ] ; then
 fi
 
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
-RUN_NAME_PATTERN="${RUN_NAME_PATTERN:-*_*_*_*}"
+RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
 
 BIN_LOCATION="${BIN_LOCATION:-$(dirname $0)}"
 PATH="$(readlink -m $BIN_LOCATION):$PATH"
@@ -322,10 +322,17 @@ pipeline_fail() {
     fi
 }
 
-log "Looking for run directories matching $SEQDATA_LOCATION/$RUN_NAME_PATTERN/"
+log "Looking for run directories matching regex $SEQDATA_LOCATION/$RUN_NAME_REGEX/"
 
 # 6) Scan for each run until we find something that needs dealing with.
-for run in "$SEQDATA_LOCATION"/$RUN_NAME_PATTERN/ ; do
+for run in "$SEQDATA_LOCATION"/*/ ; do
+
+  # $RUN_NAME_PATTERN is now RUN_NAME_REGEX
+  if ! [[ "`basename $run`" =~ ^${RUN_NAME_REGEX}$ ]] ; then
+    log "Ignoring `basename $run`"
+    continue
+  fi
+
   # invoke runinfo and collect some meta-information about the run. We're passing info
   # to the state functions via global variables.
   RUNINFO_OUTPUT="`RunInfo.py $run`" || RunInfo.py $run | log 2>&1

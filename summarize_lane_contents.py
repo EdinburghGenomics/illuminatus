@@ -161,6 +161,9 @@ def scan_for_info(run_dir, project_name_list=''):
     rids['ReportDateTime'] = printable_date()
 
     #Translate all the project numbers to names in one go
+    #If you try to feed this script an old 2500 Sample Sheet this is where it will fail.
+    assert not 'sampleproject' in ss_csv.column_mapping, \
+        "A sampleproject (without the underscore) column was found. Is this an old 2500 SampleSheet?"
     rids['ProjectInfo'] = project_real_name(
                             set([ line[ss_csv.column_mapping['sample_project']]
                                   for line in ss_csv.samplesheet_data ]),

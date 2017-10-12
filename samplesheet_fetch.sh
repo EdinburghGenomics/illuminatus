@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # This script will fetch a new SampleSheet for the current run. It must
-# be run in the folder where the sequencer data has been written.
+# be run in the folder where the sequencer data has been written. For testing, try:
+# $ ( PATH="$PWD:$PATH" ; cd ~/test_seqdata/170703_D00261_0418_ACB6HTANXX/ ; samplesheet_fetch.sh )
 set -e ; set -u
 
 # Support a SampleSheet postprocessor hook. This must take one argument,
@@ -18,18 +19,25 @@ if [ -z "${FLOWCELLID:-}" ] ; then
     exit 1
 fi
 
+# Zerothly, remove any dangling symlink
+if [ ! -e SampleSheet.csv ] ; then
+    rm -f SampleSheet.csv
+fi
+
 # Firstly, SampleSheet.csv.0 needs to contain the original file from the
 # sequencer. It is technically possible to run the machine with no sample
 # sheet. In this case, the script will make an empty file.
-if [ ! -e SampleSheet.csv.0 ] ; then
+if [ ! -e SampleSheet.csv.0 ] && [ ! -L SampleSheet.csv ] ; then
     if mv SampleSheet.csv SampleSheet.csv.0 ; then
         echo "SampleSheet.csv renamed as SampleSheet.csv.0"
     else
         touch SampleSheet.csv.0
         echo "SampleSheet.csv.0 created as empty file"
     fi
-    ln -s SampleSheet.csv.0 SampleSheet.csv
 fi
+
+# Make link only if SampleSheet.csv was missing.
+ln -s SampleSheet.csv.0 SampleSheet.csv 2>/dev/null || true
 
 # At this point we may expect that SampleSheet.csv is a symlink. Sanity check.
 if [ ! -L SampleSheet.csv ] ; then
@@ -77,12 +85,13 @@ else
     #Using noclobber to attempt writing to files until we find an unused name
     set -o noclobber
     counter=1
-    while ! "${SSPP_HOOK:-cat}" "$candidate_ss" > "SampleSheet.csv.$counter" ; do
+    while ! true > "SampleSheet.csv.$counter" ; do
         counter=$(( $counter + 1 ))
 
         #Just in case there was some other write error
         test $counter -lt 1000
     done
+    "${SSPP_HOOK:-cat}" "$candidate_ss" >> "SampleSheet.csv.$counter"
 
     if [ -n "$SSPP_HOOK" ] ; then
         # In this case we need to check for differences post-filtering.

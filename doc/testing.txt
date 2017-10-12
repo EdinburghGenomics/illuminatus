@@ -19,10 +19,10 @@ Ensure that the FASTQ_LOCATION actually exists (or driver.sh will quickly compla
 
 $ mkdir -p $FASTQ_LOCATION
 
-You can force the driver to look at only one run, or supply a glob pattern to match:
+You can force the driver to look at only one run, or supply a regex pattern to match:
 
-$ export RUN_NAME_PATTERN='170221_K00166_0183_AHHT3HBBXX'
-$ export RUN_NAME_PATTERN='17????_K00166_*'
+$ export RUN_NAME_REGEX='170221_K00166_0183_AHHT3HBBXX'
+$ export RUN_NAME_REGEX='17...._K00166_.*'
 
 You can stop the pipeline from sending messages to RT and also from querying the LIMS
 for project names.
@@ -33,6 +33,8 @@ $ export PROJECT_NAME_LIST=none
 Or if you care about the SampleSheet report looking right:
 
 $ export PROJECT_NAME_LIST=10503_Burt_Dave,10749_Dunlop_Malcolm
+
+For older runs we can also auto-munge the Sample Sheet by adding the SSPP_HOOK script.
 
 In summary, when running in test mode with all those settings:
 
@@ -48,6 +50,7 @@ In summary, when running in test mode with all those settings:
 # Copy-and-paste environment lines...
 export MAINLOG=/dev/stdout SEQDATA_LOCATION=~/test_seqdata FASTQ_LOCATION=~/test_fastqdata
 export RT_SYSTEM=none PROJECT_NAME_LIST=none CLUSTER_QUEUE=global
+export SSPP_HOOK=~tbooth2/workspace/illuminatus/test/end_to_end/munge_samplesheet.py
 
 # After this, just run driver.sh to commence processing your slimmed-down runs.
 
