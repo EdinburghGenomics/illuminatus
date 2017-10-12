@@ -205,6 +205,7 @@ def summarize_lane(lane_lines, column_mapping):
             sample_pool, sample_lib = '', sample_id
 
         #I think this is what we are calling samples without a pool in the SSG
+        #This definitely needs to be standardised.
         if sample_pool == 'NoPool': sample_pool=''
 
         #Avoid use of defaultdict as it gums up YAML serialization. This is equivalent.

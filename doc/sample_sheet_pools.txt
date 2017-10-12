@@ -5,7 +5,7 @@ Project->Pool->Library
 Where, obviously, a pool has many libraries.
 
 If there is not actually a pool then we'd use a consistent placeholder, like 'NoPool',
-which is fine.
+which is fine. (I'm already putting this in the code, so it needs to be standard!)
 
 If the library is a RAD pool then the Library name will be something like 12345ZZPool01
 which is also fine.

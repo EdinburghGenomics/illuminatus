@@ -4,6 +4,10 @@
 # be run in the folder where the sequencer data has been written.
 set -e ; set -u
 
+# Support a SampleSheet postprocessor hook. This must take one argument,
+# the file to be read, and print to stdout.
+SSPP_HOOK="${SSPP_HOOK:-}"
+
 if [ -z "${FLOWCELLID:-}" ] ; then
     #Try to determine flowcell ID by asking RunInfo.py
     FLOWCELLID=`RunInfo.py | grep '^Flowcell:' | cut -f2 -d' '`
@@ -66,19 +70,28 @@ candidate_ss=`find "$FS_ROOT/samplesheets_bcl2fastq_format" -name "*_${FLOWCELLI
 
 if [ ! -e "$candidate_ss" ] ; then
     echo "No candidate replacement samplesheet for ${FLOWCELLID} under $FS_ROOT/samplesheets_bcl2fastq_format"
-elif diff -q "$candidate_ss" SampleSheet.csv ; then
+elif [ -z "$SSPP_HOOK" ] && diff -q "$candidate_ss" SampleSheet.csv ; then
     #Nothing to do.
     echo "SampleSheet.csv for ${FLOWCELLID} is already up-to-date"
 else
     #Using noclobber to attempt writing to files until we find an unused name
     set -o noclobber
     counter=1
-    while ! cat "$candidate_ss" > "SampleSheet.csv.$counter" ; do
+    while ! "${SSPP_HOOK:-cat}" "$candidate_ss" > "SampleSheet.csv.$counter" ; do
         counter=$(( $counter + 1 ))
 
         #Just in case there was some other write error
         test $counter -lt 1000
     done
+
+    if [ -n "$SSPP_HOOK" ] ; then
+        # In this case we need to check for differences post-filtering.
+        if diff -q "SampleSheet.csv.$counter" SampleSheet.csv ; then
+            echo "SampleSheet.csv for ${FLOWCELLID} is already up-to-date (after filtering)."
+            rm -f "SampleSheet.csv.$counter"
+            exit 0
+        fi
+    fi
 
     ln -sf "SampleSheet.csv.$counter" SampleSheet.csv #Should be safe - we checked it was only a link
     echo "SampleSheet.csv for ${FLOWCELLID} is now linked to new SampleSheet.csv.$counter"
