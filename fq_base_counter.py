@@ -113,10 +113,14 @@ def json_to_info(filename, json_info):
     except ValueError:
         raise Exception("The JSON file does not contain info about lane {}.".format(lane))
 
-    try:
-        dres, = [ d for d in laneinfo['DemuxResults'] if d['SampleId'].endswith(lib) ]
-    except ValueError:
-        raise Exception("The JSON file does not contain info about library {}.".format(lib))
+    # Special case for 'unassigned'
+    if lib == 'unassigned':
+        dres = laneinfo['Undetermined']
+    else:
+        try:
+            dres, = [ d for d in laneinfo['DemuxResults'] if d['SampleId'].endswith(lib) ]
+        except ValueError:
+            raise Exception("The JSON file does not contain info about library {}.".format(lib))
 
     try:
         rmet, = [ r for r in dres['ReadMetrics'] if str(r['ReadNumber']) == read ]
@@ -132,7 +136,8 @@ def json_to_info(filename, json_info):
     # Now we can start building the info...
     res = dict()
 
-    # Not quite the same as what we get from scanning the file but it will do.
+    # Not quite the same as what we get from scanning the file but it will still
+    # give an appropriate answer.
     res['bcs_found'] = collections.Counter(
                         { im['IndexSequence'].encode() : im['MismatchCounts']['0']
                           for im in dres.get('IndexMetrics', []) } )

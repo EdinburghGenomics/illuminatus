@@ -36,11 +36,14 @@ $ export PROJECT_NAME_LIST=10503_Burt_Dave,10749_Dunlop_Malcolm
 
 For older runs we can also auto-munge the Sample Sheet by adding the SSPP_HOOK script.
 
+$ export SSPP_HOOK=~tbooth2/workspace/illuminatus/test/end_to_end/munge_samplesheet.py
+
 In summary, when running in test mode with all those settings:
 
 * Logs go to the screen (or into ~/fastqdata_test/<runid>)
 * RT messages get skipped
-* New SampleSheet will not be fetched as the slim_a_run.sh makes a SampleSheet.OVERRIDE
+* New SampleSheet will be fetched (and optionally munged) unless you make a
+  SampleSheet.OVERRIDE
 * The LIMS will not be queried for project names
 * The first invocation of the pipeline will produce a SampleSheet summary and put the
   run into status 'reads_finished'. The second will commence demultiplexing.
@@ -50,7 +53,6 @@ In summary, when running in test mode with all those settings:
 # Copy-and-paste environment lines...
 export MAINLOG=/dev/stdout SEQDATA_LOCATION=~/test_seqdata FASTQ_LOCATION=~/test_fastqdata
 export RT_SYSTEM=none PROJECT_NAME_LIST=none CLUSTER_QUEUE=global
-export SSPP_HOOK=~tbooth2/workspace/illuminatus/test/end_to_end/munge_samplesheet.py
 
 # After this, just run driver.sh to commence processing your slimmed-down runs.
 

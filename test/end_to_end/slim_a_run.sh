@@ -39,6 +39,14 @@ done
 
 for lane in $LANES ; do
   cp -v "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/s_*_1101.filter "$DEST"/Data/Intensities/BaseCalls/$lane/
+  #Only for MiSeq machines I think
+  cp -v "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/s_*_1101.control "$DEST"/Data/Intensities/BaseCalls/$lane/ || true
+  #For non-patterned machines where there is a .locs file per-tile
+  if [ -e "$RUN_PATH"/Data/Intensities/$lane ] ; then
+    mkdir -p "$DEST"/Data/Intensities/$lane/
+    cp -v "$RUN_PATH"/Data/Intensities/$lane/s_*_1101.locs "$DEST"/Data/Intensities/$lane/
+  fi
+
   CYCLES="`ls "$RUN_PATH"/Data/Intensities/BaseCalls/$lane | grep -x 'C[0-9]\+.1'`"
   echo "Copying `wc -w <<<$CYCLES` cyles of bcl[.gz] files for tile 1101 of $lane..."
   for cycle in $CYCLES ; do
@@ -68,11 +76,11 @@ if [ ! -e "$DEST"/pipeline_settings.ini ] ; then
 fi
 echo '--tiles: s_[$LANE]_1101' >> "$DEST"/pipeline_settings.ini
 
-# Finally copy the SampleSheet.csv to SampleSheet.csv.OVERRIDE so Illuminatus won't try
-# to replace it.
-echo Creating "$DEST"/SampleSheet.csv.OVERRIDE
-#cat "$DEST"/SampleSheet.csv > "$DEST"/SampleSheet.csv.OVERRIDE
+# Finally, if it's already a link, copy the SampleSheet.csv to SampleSheet.csv.OVERRIDE
+# so it can be edited and Illuminatus won't try to replace it.
+if [ -L "$DEST"/SampleSheet.csv ] ; then
+    echo Creating "$DEST"/SampleSheet.csv.OVERRIDE
+    cat "$DEST"/SampleSheet.csv > "$DEST"/SampleSheet.csv.OVERRIDE
+fi
 
-# Hack for existing Sample Sheet reformatting, until MB fixes the SSG
-perl -pe 's/,(\d{5}[A-Z]{2}\d{4}L\d{2}),(\d{5}[A-Z]{2}pool\d{2}),/,$2__$1,,/' < "$DEST"/SampleSheet.csv > "$DEST"/SampleSheet.csv.OVERRIDE
 echo DONE
