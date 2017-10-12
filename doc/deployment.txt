@@ -1,0 +1,10 @@
+I have the feeling there are already some deployment notes but I can't find them.
+(Yes I can - /lustre/home/pipeline/illuminatus/notes.txt)
+
+The main pipeline, on CRON, will deploy to the pipeline account.
+
+Once things stabilise, we'll tag releases in GIT, but for now it's going to be a matter
+of stopping any running pipeline jobs, pulling from GIT, updating the VEnv, and
+then restarting.
+
+See /lustre/home/pipeline/illuminatus/notes.txt for details and commands.
