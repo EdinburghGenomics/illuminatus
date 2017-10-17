@@ -75,7 +75,11 @@ class BCL2FASTQPreprocessor:
         cmd.append("--use-bases-mask '%s:%s'" % ( lane, bm ) )
 
         # Specify the lane to process, which is controlled by --tiles
+        # Slimmed-down runs override this setting but will still include $LANE to pick up the lane number
         cmd.append("--tiles=s_[$LANE]")
+
+        # Number of threads to use should be set by the caller
+        cmd.append("-p ${PROCESSING_THREADS:-2}")
 
         ## now that the cmd array is complete will evaluate the pipeline_settings.ini file
         ## every setting must be either replaced or appended to the cmd array

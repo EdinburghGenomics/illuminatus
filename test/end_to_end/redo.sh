@@ -8,14 +8,14 @@ echorun() { echo "$*" ; "$@" ; }
 myrun="`ls -dt $SEQDATA_LOCATION/*/pipeline | head -n 1`"
 
 echorun cd $myrun
-if compgen -G "lane?.failed" >/dev/null ; then
-    echo "# Looks like demultiplexing failed..."
-    for f in lane?.failed ; do
-        echorun touch ${f%.failed}.redo
-    done
-elif [ -e failed ] && [ -e qc.started ] ; then
+if [ -e failed ] && [ -e qc.started ] ; then
     echo "# Looks like QC failed..."
     echorun rm -f failed qc.started
+elif [ -e failed ] && compgen -G "lane?.started" >/dev/null ; then
+    echo "# Looks like demultiplexing failed..."
+    for f in lane?.started ; do
+        echorun touch ${f%.started}.redo
+    done
 else
     echo "# Not sure how to reset this one?!"
 fi
