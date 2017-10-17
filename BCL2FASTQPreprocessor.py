@@ -78,8 +78,8 @@ class BCL2FASTQPreprocessor:
         # Slimmed-down runs override this setting but will still include $LANE to pick up the lane number
         cmd.append("--tiles=s_[$LANE]")
 
-        # Number of threads to use should be set by the caller
-        cmd.append("-p ${PROCESSING_THREADS:-2}")
+        # Number of threads to use should be set by the caller (ie. Snakemake)
+        cmd.append("-p ${PROCESSING_THREADS:-10}")
 
         ## now that the cmd array is complete will evaluate the pipeline_settings.ini file
         ## every setting must be either replaced or appended to the cmd array
@@ -99,6 +99,10 @@ class BCL2FASTQPreprocessor:
             else: ## so must be appended
                 #print ("appending from pipeline_settings.ini " + ini_option)
                 cmd.append(replace_value)
+
+        #Finally redirect logging output if _destdir is set.
+        if self._destdir:
+            cmd.append("2>'%s'/lane${LANE}/bcl2fastq.log" % self._destdir)
 
         return cmd
 

@@ -103,6 +103,7 @@ def delete_d_dirs(path, lanes, log=lambda x: None):
 
         projects.update(proj_in_lane)
 
+        # Delete whole directory. If bcl2fastq completed this is just the logs.
         log("rm -r '%s'" % lane_dir)
         rmtree(lane_dir)
         deletions += 1
