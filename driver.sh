@@ -51,6 +51,9 @@ mkdir -p `dirname "$MAINLOG"` ; exec 5>>"$MAINLOG"
 # Main log for general messages (STDERR still goes to the CRON).
 log(){ [ $# = 0 ] && cat >&5 || echo "$@" >&5 ; }
 
+# Debug means log only if VERBOSE is set
+debug(){ if [ "${VERBOSE:-0}" != 0 ] ; then log "$@" ; fi }
+
 # Per-project log for project progress messages
 plog() {
     projlog="$SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log"
@@ -177,15 +180,15 @@ action_demultiplexed() {
 action_in_demultiplexing() {
     # in pipeline, could update some progress status
     # TODO - maybe some attempt to detect stalled runs?
-    log "\_IN_DEMULTIPLEXING $RUNID"
+    debug "\_IN_DEMULTIPLEXING $RUNID"
 }
 
 action_in_read1_qc() {
-    log "\_IN_READ1_QC $RUNID"
+    debug "\_IN_READ1_QC $RUNID"
 }
 
 action_in_qc() {
-    log "\_IN_QC $RUNID"
+    debug "\_IN_QC $RUNID"
 }
 
 action_failed() {
@@ -329,7 +332,7 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
 
   # $RUN_NAME_PATTERN is now RUN_NAME_REGEX
   if ! [[ "`basename $run`" =~ ^${RUN_NAME_REGEX}$ ]] ; then
-    log "Ignoring `basename $run`"
+    debug "Ignoring `basename $run`"
     continue
   fi
 
@@ -343,7 +346,8 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   INSTRUMENT=`grep ^Instrument: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
 
-  log "Directory $run contains $RUNID from machine $INSTRUMENT with $LANES lane(s) and status=$STATUS"
+  if [ "$STATUS" = complete ] || [ "$STATUS" = aborted ] ; then _log=debug ; else _log=log ; fi
+  $_log "Directory $run contains $RUNID from machine $INSTRUMENT with $LANES lane(s) and status=$STATUS"
 
   #Call the appropriate function in the appropriate directory.
   BREAK=0

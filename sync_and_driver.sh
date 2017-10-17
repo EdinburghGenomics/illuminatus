@@ -57,7 +57,7 @@ if flock -x -n $FLOCK_ON ; then
 
     # Run rsync. But just running rsync on everything will take way too long, so we need a smarter strategy.
 
-    # 2b) Only look at the last 20 days fo runs
+    # 2b) Only look at the last 20 days of runs
     newish_runs=($(find /ifs/seqdata/17*_*_*_* -maxdepth 0 -mindepth 0 -type d -mtime '-20'))
 
     echo "Starting rsync on ${newish_runs[@]}" >> "$LOG_DIR"/rsync.log
