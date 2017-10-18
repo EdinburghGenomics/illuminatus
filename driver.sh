@@ -121,6 +121,10 @@ action_reads_unfinished(){
     log "\_READS_UNFINISHED $RUNID. Waiting for data."
 }
 
+action_waiting_for_data(){
+    log "\_READS_UNFINISHED $RUNID. Waiting for data."
+}
+
 action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     eval touch pipeline/"lane{1..$LANES}.started"
@@ -354,7 +358,7 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
   { pushd "$run" >/dev/null && eval action_"$STATUS" &&
     popd >/dev/null
-  } || log "Error while trying to scan $run"
+  } || log "Error while trying to run action_$STATUS on $run"
   #in case it got clobbered...
   set -e
 
