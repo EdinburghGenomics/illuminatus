@@ -45,6 +45,7 @@ snakerun_drmaa() {
     # Spew out cluster.yaml
     [ -e cluster.yml ] || cat_cluster_yml > cluster.yml
 
+    echo
     if is_new_cluster ; then
         echo "Running $snakefile in `pwd` on the GSEG cluster"
         __SNAKE_THREADS="${SNAKE_THREADS:-100}"
@@ -84,6 +85,7 @@ snakerun_single() {
 
     if is_new_cluster ; then __LOCALJOBS=4 ; else __LOCALJOBS=1 ; fi
 
+    echo
     echo "Running $snakefile in `pwd` in local mode"
     snakemake \
          -s "$snakefile" -j $__LOCALJOBS -p -T --rerun-incomplete \
@@ -93,6 +95,7 @@ snakerun_single() {
 snakerun_touch() {
     snakefile=`find_snakefile "$1"` ; shift
 
+    echo
     echo "Running $snakefile --touch in `pwd` to update file timestamps"
     snakemake -s "$snakefile" --quiet --touch "$@"
     echo "DONE"

@@ -59,9 +59,16 @@ class T(unittest.TestCase):
         # extra header we'll just keep generating alternate sheets, one for the sequencer
         # and one for the pipeline.
 
-        self.assertCountEqual(self.bcl2fastq_command_split, [
-                "LANE=1", ';',
-                "bcl2fastq",
+        self.assertCountEqual(self.bcl2fastq_command_split[0], ["LANE=1"])
+
+        self.assertCountEqual(self.bcl2fastq_command_split[1],
+            [   self.bcl2fastq_path,
+                '>',
+                "'/mock/out'/lane${LANE}/bcl2fastq.version"
+            ])
+
+        self.assertCountEqual(self.bcl2fastq_command_split[2],
+            [   self.bcl2fastq_path,
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'/lane${LANE}" % self.out_dir ,
                 "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
@@ -69,6 +76,8 @@ class T(unittest.TestCase):
                 "--barcode-mismatches 1",  # If anything?
                 "--use-bases-mask '1:Y50n,I8,I8'",
                 "--tiles=s_[$LANE]",
+                "-p ${PROCESSING_THREADS:-10}",
+                "2>'/mock/out'/lane${LANE}/bcl2fastq.log"
             ])
 
     def test_settings_file(self):
@@ -86,9 +95,8 @@ class T(unittest.TestCase):
             print("--tiles: s_[$LANE]_1101", file=f)
 
         self.run_preprocessor(run_id, 1)
-        self.assertCountEqual(self.bcl2fastq_command_split, [
-            "LANE=1", ';',
-            "bcl2fastq",
+        self.assertCountEqual(self.bcl2fastq_command_split[2], [
+            self.bcl2fastq_path,
             "-R '%s'" % shadow_dir,
             "-o '%s'/lane${LANE}" % self.out_dir ,
             "--sample-sheet '%s'" % os.path.join(shadow_dir, "SampleSheet.csv"),
@@ -96,6 +104,8 @@ class T(unittest.TestCase):
             "--barcode-mismatches 100",  # Should be set by .ini
             "--use-bases-mask '1:Y50n,I8,I8'",
             "--tiles=s_[$LANE]_1101", # Lanes will be substituted by the shell
+            "-p ${PROCESSING_THREADS:-10}",
+            "2>'/mock/out'/lane${LANE}/bcl2fastq.log"
         ])
 
     def test_settings_override(self):
@@ -163,9 +173,10 @@ class T(unittest.TestCase):
 
         self.assertEqual(self.pp.lane, '5')
 
-        self.assertCountEqual(self.bcl2fastq_command_split, [
-                "LANE=5", ';',
-                "bcl2fastq",
+        self.assertCountEqual(self.bcl2fastq_command_split[0], ["LANE=5"])
+
+        self.assertCountEqual(self.bcl2fastq_command_split[2],
+            [   self.bcl2fastq_path,
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'/lane${LANE}" % self.out_dir ,
                 "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
@@ -173,6 +184,8 @@ class T(unittest.TestCase):
                 "--tiles=s_[$LANE]",
                 "--barcode-mismatches 1",
                 "--fastq-compression-level 6",
+                "-p ${PROCESSING_THREADS:-10}",
+                "2>'/mock/out'/lane${LANE}/bcl2fastq.log"
             ])
 
 
@@ -228,8 +241,8 @@ class T(unittest.TestCase):
 
     @patch('BCL2FASTQPreprocessor.check_output', side_effect=['bcl2fastq'])
     def run_preprocessor(self, run_name, lane, mock_check_output):
-        """Invoke the preprocessor, capture the command line in bcl2fastq_command_string
-           and the split-out version in bcl2fastq_command_split
+        """Invoke the preprocessor, capturing the output in bcl2fastq_command_split
+           This will be a list of lists.
         """
         if run_name in self.shadow_runs:
             run_dir = self.shadow_runs[run_name]
@@ -240,7 +253,11 @@ class T(unittest.TestCase):
                                          lane = lane,
                                          dest = self.out_dir )
 
-        self.bcl2fastq_command_split = self.pp.get_bcl2fastq_command()
+        self.bcl2fastq_command_split = self.pp.get_bcl2fastq_commands()
+
+        #Given the override of check_output, I expect bcl2fastq to be 'found'
+        #in the current cwd
+        self.bcl2fastq_path = os.path.realpath('bcl2fastq')
 
 
 

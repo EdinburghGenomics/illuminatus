@@ -69,9 +69,9 @@ plog_start() {
 
 # Print a message at the top of the log, and trigger one to print at the end.
 intro="`date`. Running $(readlink -f "$0"); PID=$$"
-log "====`tr -c '' = <<<$intro`===="
+log "====`tr -c '' = <<<$intro`==="
 log "=== $intro ==="
-log "====`tr -c '' = <<<$intro`===="
+log "====`tr -c '' = <<<$intro`==="
 trap 'log "=== `date`. Finished run; PID=$$ ==="' EXIT
 
 # If there is a Python VEnv, use it.
@@ -128,8 +128,12 @@ action_waiting_for_data(){
 action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     eval touch pipeline/"lane{1..$LANES}.started"
+
     log "\_READS_FINISHED $RUNID. Checking for new SampleSheet.csv and preparing to demultiplex."
     plog_start
+
+    # Log the start in a way we can easily read back (humans can check the main log!)
+    date >>pipeline/start_times
 
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
@@ -213,6 +217,9 @@ action_redo() {
     # Some lanes need to be re-done. Complicated...
     log "\_REDO $RUNID"
     plog_start
+
+    # Log the start in a way we can easily read back (humans can check the main log!)
+    date >>pipeline/start_times
 
     # Get a list of what needs redoing.
     redo_list=()

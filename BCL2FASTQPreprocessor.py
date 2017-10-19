@@ -53,15 +53,26 @@ class BCL2FASTQPreprocessor:
                 if k.startswith('--barcode-mismatches-'):
                     del self.ini_settings['bcl2fastq'][k]
 
-    def get_bcl2fastq_command(self):
-        """Return the full command string for BCL2FASTQ.  The driver should
-           set PATH so that the right version of the software gets run.
+    def get_bcl2fastq_commands(self):
+        """Return the full command strings for BCL2FASTQ, as a list of lists.  The caller should
+           have set PATH so that the right version of the software gets picked up.
         """
         lane = self.lane
         # If the command isn't found this is an immediate error.
         bcl2fastq = check_output("which bcl2fastq".split(), stderr=DEVNULL, universal_newlines=True).rstrip()
 
-        cmd = ["LANE=%s" % lane, ';', bcl2fastq]
+        # If the result is a symlink, resolve it
+        bcl2fastq = os.path.realpath(bcl2fastq)
+
+        cmds = [ ["LANE=%s" % lane] ]
+
+        # Print out the version each time the script is run
+        if self._destdir:
+            cmds.append([bcl2fastq, '>', "'%s'/lane${LANE}/bcl2fastq.version" % self._destdir])
+
+        # Build the main bcl2fastq command
+        cmd = [bcl2fastq]
+        cmds.append(cmd)
 
         #Add the abspath for the data folder
         cmd.append("-R '%s'" % self._rundir)
@@ -104,7 +115,7 @@ class BCL2FASTQPreprocessor:
         if self._destdir:
             cmd.append("2>'%s'/lane${LANE}/bcl2fastq.log" % self._destdir)
 
-        return cmd
+        return cmds
 
     def load_samplesheet_ini(self):
         """Loads the [bcl2fastq] section from self._samplesheet into self.ini_settings,
@@ -146,9 +157,8 @@ def main(run_dir, dest, lane):
 
     script_name = os.path.join( dest , "do_demultiplex%s.sh" % lane )
 
-    lines = [
-        "#Run bcl2fastq on lane %s." % lane,
-        ' '.join(pp.get_bcl2fastq_command()) ]
+    lines = [ "#Run bcl2fastq on lane %s." % lane ] + \
+            [ ' '.join(c) for c in pp.get_bcl2fastq_commands() ]
 
     print("\n>>> Script being written...\ncat >%s <<END" % script_name)
     with open( script_name, 'w' ) as fh:

@@ -11,7 +11,7 @@ from illuminatus.RunParametersXMLParser import RunParametersXMLParser
 
 class RunMetaData:
     """This Class provides information about a sequencing run, given a run folder.
-       It is very similar to RunInfo.py but does not attempt to determine
+       It is rather similar to RunInfo.py but does not attempt to determine
        the processing status of the run.
        It will parse information from the following sources:
          RunInfo.xml file
@@ -42,17 +42,20 @@ class RunMetaData:
                               os.path.realpath(
                                 os.path.join( self.run_path_folder , 'SampleSheet.csv' )) ]
 
-        #If the pipeline is started we can get some other bits of info
-        #The .started files don't get removed. Report the mtime of the latest one.
+        #If the pipeline started actually demultiplexing we can get some other bits of info
+        #The pipeline/start_times file contains the start time and lines are added on each redo
         self.pipeline_info = dict()
-        started_times = sorted( os.stat(f).st_mtime for f in
-                                glob(os.path.join( self.run_path_folder , 'pipeline/lane?.started' )) )
-        if started_times:
-            self.pipeline_info['start'] = datetime.fromtimestamp(started_times[-1]).ctime()
+        try:
+            with open(os.path.join( self.run_path_folder , 'pipeline/start_times')) as stfh:
+                self.pipeline_info['start'] = list(stfh)[-1].rstrip('\n')
 
+            # If the pipeline started, the sequencer must have finished.
             touch_file = os.path.join( self.run_path_folder , 'RTAComplete.txt' )
             self.pipeline_info['Sequencer Finish'] = datetime.fromtimestamp(os.stat(touch_file).st_mtime).ctime()
 
+        except FileNotFoundError:
+            #OK, the pipeline didn't start
+            pass
 
     def get_yaml(self):
 
@@ -67,7 +70,7 @@ class RunMetaData:
                 'Run ID': [ info['RunId'], 'https://genowiki.is.ed.ac.uk/display/GenePool/{}'.format(info['RunId']) ],
                 'Machine': info['Instrument'],
                 'Cycles':  info['Cycles'], # '251 [12] 251',
-                'Start Time': params['Start Time'],
+                'Run Start': params['Start Time'],
                 'Pipeline Script': get_pipeline_script(),
                 'Sample Sheet': self.sample_sheet # [ name, path ]
             }
@@ -76,12 +79,16 @@ class RunMetaData:
             idict['post_start_info'] = {
                 'Pipeline Version': get_pipeline_version(),
                 'Pipeline Start': self.pipeline_info['start'],
-                'Sequencer Finish': self.pipeline_info['Sequencer Finish'],
+                'Sequencer Finish': self.pipeline_info['Sequencer Finish']
             }
 
         return yaml.safe_dump(idict, default_flow_style=False)
 
 def get_pipeline_version():
+    """ Here it's reasonable to report the verison of the pipeline that owns this script.
+        Re-running just this script on an old run will not tell you what version was used
+        at the time.
+    """
     try:
         with open( os.path.dirname(__file__) + '/version.txt') as vfh:
             return vfh.read().strip()

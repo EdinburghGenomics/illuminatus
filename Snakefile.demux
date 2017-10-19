@@ -18,8 +18,8 @@ set -euo pipefail
 source "`dirname $0`"/shell_helper_functions.sh
 
 # $PATH doesn't get passed to worker nodes on SLURM but I only need it
-# for local rules.
-export PATH="${PATH}:/lustre/software/bcl2fastq/bcl2fastq2-v2.19.1/bin/:$(dirname "$0")"
+# for local rules. Toolbox path is set in the Python code.
+export PATH="${PATH}:$(dirname "$0")"
 
 # Caller needs to supply --config lanes='? ? ?' rundir=?
 # Apply -F to run all steps every time. Otherwise I could maybe depend on the
@@ -30,6 +30,9 @@ snakerun_drmaa "$0" --keep-going -F "$@"
 
 #!/usr/bin/env snakemake
 import yaml
+
+# The pre-processor needs to find bcl2fastq in the toolbox.
+TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ.get('TOOLBOX', '/lustre/software/illuminatus_toolbox'))
 
 def glob():
     """Regular glob() is useful but it can be improved like so.
@@ -108,4 +111,4 @@ rule preprocess:
     params:
         dest = os.path.abspath('.')
     shell:
-        """BCL2FASTQPreprocessor.py {RUNDIR} {params.dest} {wildcards.l}"""
+        """{TOOLBOX} BCL2FASTQPreprocessor.py {RUNDIR} {params.dest} {wildcards.l}"""

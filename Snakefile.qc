@@ -16,7 +16,7 @@ set -euo pipefail
 
 source "`dirname $0`"/shell_helper_functions.sh
 
-# $PATH doesn't get passed to worker nodes on SLURM but I only need it
+# This $PATH doesn't get passed to worker nodes on SLURM but I only need it
 # for local rules.
 export PATH="${PATH}:$(dirname "$0")"
 
@@ -36,6 +36,7 @@ import yaml
 # Tools we currently need in the toolbox:
 #   cutadapt, fastqc, gnuplot (indirectly),
 #   interop_plot_qscore_heatmap, interop_plot_by_cycle, interop_plot_by_lane
+# If you want to use a test toolbox, just set the env var.
 TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ.get('TOOLBOX', '/lustre/software/illuminatus_toolbox'))
 
 # Other than that, ensure that scripts in the directory with this Snakefile are
@@ -105,10 +106,7 @@ rule md5_main:
         md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5',  fq=all_fq ),
         counts   = expand( 'counts/{fq[fname]}.fastq.count', fq=all_fq )
 
-rule qc_main:
-    input:
-        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out', fq=all_1_fq ),
-        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',   fq=all_fq )
+# qc_main depends on other rules so it's now down below.
 
 # Interop files in eg. /lustre/seqdata/170627_D00261_0417_ACAU93ANXX/InterOp/
 # The location will be inferred from SEQDATA/{runid}/InterOp
@@ -135,9 +133,21 @@ rule metadata_main:
         runinfo  = "QC/run_info.{r}.yml".format(r=run),
         laneinfo = "QC/overview/lane_summary_{r}_mqc.yaml".format(r=run)
 
+rule qc_main:
+    # QC inspects the actual fastq.gz files but also depends on interop and
+    # demux stats which we can get earlier
+    input:
+        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out', fq=all_1_fq ),
+        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',   fq=all_fq ),
+        interop  = rules.interop_main.input,
+        demux    = rules.demux_stats_main.input,
+        meta     = rules.metadata_main.input
+
 # For now run this locally. Might want to shift it to the cluster if login-0 gets too
 # busy.
-# Note this rule does not trigger qc_main etc. so you have to run those explicitly first.
+# Note this rule does not trigger qc_main etc., because we need to be able to make a
+# skeleton report beofre we have the actual data, so you need to trigger any qc steps
+# explicitly. We do demand metadata, though.
 localrules: multiqc_main, run_multiqc
 rule multiqc_main:
     input:
@@ -149,8 +159,9 @@ rule run_multiqc:
         report = "QC/multiqc_report_{l}.html",
         data = "QC/multiqc_report_{l}_data"
     input:
-        config = "QC/multiqc_config.yml",
-        runinfo = rules.metadata_main.input.runinfo
+        config   = "QC/multiqc_config.yml",
+        laneinfo = rules.metadata_main.input.laneinfo,
+        runinfo  = rules.metadata_main.input.runinfo
     shell:
         """echo "multiqc is `which multiqc`" >&2
            rm -rf {output.data}
@@ -161,7 +172,7 @@ rule run_multiqc:
 localrules: configure_multiqc
 rule configure_multiqc:
     # Emits configuration for MultiQC. This may want to be split out into a separate
-    # module but for now...
+    # module but for now I'll just embed it here.
     output: "QC/multiqc_config.yml"
     run:
         conf = dict( title = 'placeholder',
@@ -183,8 +194,8 @@ rule configure_multiqc:
                      fn_ignore_paths = [ '*__*/1*' ],
                      #Interactive plots please
                      plots_flat_numseries = 1000,
-                     #InterOP at the top
-                     top_modules = [ 'edgen_interop' ],
+                     #Custom content
+                     top_modules = [ 'custom_content' ],
                      fastqc_plots_enabled = [ "sequence_quality_plot", "per_seq_quality_plot",
                                               "sequence_content_plot", "gc_content_plot",
                                               "n_content_plot", "seq_dup_levels_plot" ],
@@ -259,7 +270,8 @@ rule get_run_metadata:
     shell:
         "RunMetaData.py {SEQDATA}/{wildcards.runid} > {output}"
 
-# lane summary is just a munge of the .yml already made by the driver
+# lane summary is just a munge of the .yml already made by the driver,
+# but this time we need a special mqc table format.
 # re-using this saves another call out to the LIMS
 rule get_lane_summary:
     output: "QC/overview/lane_summary_{runid}_mqc.yaml"
