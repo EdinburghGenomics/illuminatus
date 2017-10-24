@@ -142,11 +142,9 @@ action_reads_finished(){
     # Now kick off the demultiplexing into $FASTQ_LOCATION
     # Note that the preprocessor and runner are not aware of the 'demultiplexing'
     # subdirectory and need to be passed the full location explicitly.
-    # The postprocessor does expect to fingd the files in a 'demultiplexing'
+    # The postprocessor does expect to find the files in a 'demultiplexing'
     # subdirectory. This is for 'good reasons' (TM).
-    # TODO - add an interim MultiQC report now that the Interop files are here.
     BREAK=1
-    export DEMUX_JOBNAME="demux_${RUNID}"
     plog "Preparing to demultiplex $RUNID into $DEMUX_OUTPUT_FOLDER/demultiplexing/"
     set +e ; ( set -e
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
@@ -232,21 +230,22 @@ action_redo() {
         [[ "$redo" =~ .*(.)\.redo ]]
         redo_list+=(${BASH_REMATCH[1]})
     done
-    # Clean out all the other flags
+    # Clean out all the other flags, then the actual data.
     rm -f pipeline/qc.started pipeline/qc.done pipeline/failed pipeline/aborted
-    redo_str="lanes`tr -d ' ' <<<${redo_list[*]}`"
+
+    BREAK=1  # If we fail after this, don't try to process more runs on this cycle.
+    set +e ; ( set -e
+      if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
+        BCL2FASTQCleanup.py "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
+      fi
+    ) |& plog ; [ $? = 0 ] || pipeline_fail Cleanup_for_Re-demultiplexing
 
     # Re-summarize the sample sheet, as it probably changed.
     # TODO - say what lanes are being demuxed in the report, since we can't just now promise
     # that all the altered lanes are the actual ones being re-done.
     fetch_samplesheet_and_report
 
-    BREAK=1
-    export DEMUX_JOBNAME="demux_${RUNID}_${redo_str}"
     set +e ; ( set -e
-      if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
-        BCL2FASTQCleanup.py "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
-      fi
       mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
 
       log "  Starting bcl2fastq on $RUNID lanes ${redo_list[*]}."
@@ -277,7 +276,8 @@ fetch_samplesheet_and_report() {
     # a new one was found, send an e-mail report to RT.
     old_ss_link="`readlink -q SampleSheet.csv || true`"
 
-    #Currently if samplesheet_fetch.sh returns an error the pipeline aborts.
+    #Currently if samplesheet_fetch.sh returns an error the pipeline aborts, as
+    #this indicates a fundamental problem.
     samplesheet_fetch.sh | plog
     new_ss_link="`readlink -q SampleSheet.csv || true`"
 

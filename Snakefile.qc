@@ -41,7 +41,7 @@ TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ.get('TOOLBOX', '/lustre/softwa
 
 # Other than that, ensure that scripts in the directory with this Snakefile are
 # in the PATH:
-#   fq_base_counter.py, RunMetaData.py, summarize_lane_contents.py, grab_bcl2fastq_stats.py
+#   fq_base_counter.py, RunMetaData.py, PostRunMetaData.py, summarize_lane_contents.py, grab_bcl2fastq_stats.py
 if ( not os.path.dirname(workflow.snakefile) in os.environ['PATH'] and
      not os.path.dirname(os.path.abspath(workflow.snakefile)) in os.environ['PATH'] ):
      os.environ['PATH'] += ':' + os.path.dirname(workflow.snakefile)
@@ -123,14 +123,16 @@ rule demux_stats_main:
     # Also we have the new Stats.json to compete with our stats.yml. A little confusing -
     # do we need both?
     input:
-        stats = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
-        dups  = expand("QC/lane{l}/{r}_{l}.welldups",  l=lanes, r=[run]),
-        json  = expand("QC/lane{l}/Stats.json",        l=lanes),
+        stats   = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
+        dups    = expand("QC/lane{l}/{r}_{l}.welldups",  l=lanes, r=[run]),
+        json    = expand("QC/lane{l}/Stats.json",        l=lanes),
+        runinfo = expand("QC/{foo}/run_info.{r}.2.yml",
+                            foo=(['lane{}'.format(l) for l in lanes] + ['overview']) )
 
 rule metadata_main:
     # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
     input:
-        runinfo  = "QC/run_info.{r}.yml".format(r=run),
+        runinfo  = "QC/run_info.{r}.1.yml".format(r=run),
         laneinfo = "QC/overview/lane_summary_{r}_mqc.yaml".format(r=run)
 
 rule qc_main:
@@ -184,6 +186,9 @@ rule configure_multiqc:
                             pattern = '(^|.*/){}_._'.format(run) ),
                       dict( type = 'regex',
                             pattern = '.*__' ),
+                      dict( type = 'regex',
+                            pattern = '[Uu]ndetermined$',
+                            replace = 'unassigned' ),
                      ],
                      define_merge_groups = [
                       dict( name = 'read_pairs',
@@ -195,10 +200,11 @@ rule configure_multiqc:
                      #Interactive plots please
                      plots_flat_numseries = 1000,
                      #Custom content
-                     top_modules = [ 'custom_content' ],
-                     fastqc_plots_enabled = [ "sequence_quality_plot", "per_seq_quality_plot",
-                                              "sequence_content_plot", "gc_content_plot",
-                                              "n_content_plot", "seq_dup_levels_plot" ],
+                     top_modules = [ 'custom_content', 'edgen_interop' ],
+                     fastqc_config = dict(
+                        plots_enabled = [ "sequence_quality_plot", "per_seq_quality_plot",
+                                          "sequence_content_plot", "gc_content_plot",
+                                          "n_content_plot", "seq_dup_levels_plot" ] )
                    )
 
         with open(output[0], "w") as cfh:
@@ -207,8 +213,7 @@ rule configure_multiqc:
 # === Actual data-gathering rules ===
 
 # Presumably interop data is under {SEQDATA}/{runid}/InterOp
-# FIXME - no, I don't think we can't rely on the directory name match. Switch to an
-# explicit symlink back.
+# Yes, I think we can make that stipulation - no renaming data folders!
 SEQDATA = config.get('seqdata', os.environ.get('SEQDATA_LOCATION', '.'))
 
 rule interop_qscore_heatmap:
@@ -263,12 +268,22 @@ rule fastqc:
 # meta-data. this can change as the pipeline runs so make the rule depend on the pipeline
 # directory. Also there is only one metadata file per run, not per lane, but it will be
 # symlinked by multiqc_main to be picked up on all runs
-localrules: get_run_metadata, get_lane_summary
+localrules: get_run_metadata, get_postrun_metadata, get_lane_summary
 rule get_run_metadata:
-    output: "QC/run_info.{runid}.yml"
+    output: "QC/run_info.{runid}.1.yml"
     input: SEQDATA + "/{runid}/pipeline"
     shell:
         "RunMetaData.py {SEQDATA}/{wildcards.runid} > {output}"
+
+# post-run metadata is per lane and also overall. Should be updated if ever
+# the demultiplexing directory contents change
+rule get_postrun_metadata:
+    output: "QC/{lane,lane.|overview}/run_info.{runid}.2.yml"
+    input: lanedir = lambda wc: "demultiplexing/{lane}" if wc.lane.startswith('lane') else \
+                                glob("demultiplexing/lane?")
+    params: lane_munged = lambda wc: wc.lane[4:] if wc.lane.startswith('lane') else ''
+    shell:
+        "PostRunMetaData.py . {params.lane_munged}"
 
 # lane summary is just a munge of the .yml already made by the driver,
 # but this time we need a special mqc table format.

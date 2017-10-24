@@ -9,6 +9,15 @@ class RunInfoXMLParser:
     """Uses the python xml parser to extract some run information and store it in a dictionary
     """
     def __init__( self , runinfo_file ):
+
+        # If given a directory, look for the file inside
+        # Currently there is only one possible name
+        for f in "RunInfo.xml".split():
+            ri = os.path.join( runinfo_file, f )
+            if os.path.exists(ri):
+                runinfo_file = ri
+                break
+
         tree = ET.parse(runinfo_file)
         root = tree.getroot()
         self.read_and_length = {}

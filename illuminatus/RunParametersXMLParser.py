@@ -9,6 +9,15 @@ class RunParametersXMLParser:
     """Uses the python xml parser to extract some run information and store it in a dictionary
     """
     def __init__( self , runparameters_file ):
+
+        # If given a directory, look for the file, which may have different names
+        # depending on the sequencer.
+        for f in "runParameters.xml RunParameters.xml".split():
+            rf = os.path.join( runparameters_file, f )
+            if os.path.exists(rf):
+                runparameters_file = rf
+                break
+
         tree = ET.parse(runparameters_file)
         root = tree.getroot()
 

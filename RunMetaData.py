@@ -15,14 +15,17 @@ class RunMetaData:
        the processing status of the run.
        It will parse information from the following sources:
          RunInfo.xml file
+         runParameters.xml
+         RTAComplete.txt (timestamp only)
+         SampleSheet.csv (only for linking)
+         start_times file in pipeline folder
     """
     def __init__( self , run_folder , run_path = '' ):
 
         # here the RunInfo.xml is parsed into an object
         self.run_path_folder = os.path.join( run_path , run_folder )
-        runinfo_xml_location = os.path.join( self.run_path_folder , 'RunInfo.xml' )
         try:
-            rip = RunInfoXMLParser( runinfo_xml_location )
+            rip = RunInfoXMLParser( self.run_path_folder )
             self.runinfo_xml = rip.run_info
         except Exception:
             #if we can't read it we can't get much info
@@ -30,7 +33,7 @@ class RunMetaData:
             raise
 
         try:
-            runparams_xml = RunParametersXMLParser( os.path.join( self.run_path_folder , 'runParameters.xml' ) )
+            runparams_xml = RunParametersXMLParser( self.run_path_folder )
             self.run_params = runparams_xml.run_parameters
         except Exception:
             #we can usefully run without this
@@ -43,7 +46,9 @@ class RunMetaData:
                                 os.path.join( self.run_path_folder , 'SampleSheet.csv' )) ]
 
         #If the pipeline started actually demultiplexing we can get some other bits of info
-        #The pipeline/start_times file contains the start time and lines are added on each redo
+        #The pipeline/start_times file contains the start time, and extra lines are added on each redo
+        #It's written out directly by driver.sh just before it triggers this script (to update the report
+        #prior to running Snakefile.demux)
         self.pipeline_info = dict()
         try:
             with open(os.path.join( self.run_path_folder , 'pipeline/start_times')) as stfh:
@@ -87,7 +92,7 @@ class RunMetaData:
 def get_pipeline_version():
     """ Here it's reasonable to report the verison of the pipeline that owns this script.
         Re-running just this script on an old run will not tell you what version was used
-        at the time.
+        at the time (for that, look to the old report).
     """
     try:
         with open( os.path.dirname(__file__) + '/version.txt') as vfh:

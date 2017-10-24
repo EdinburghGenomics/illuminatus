@@ -68,7 +68,7 @@ class BCL2FASTQPreprocessor:
 
         # Print out the version each time the script is run
         if self._destdir:
-            cmds.append([bcl2fastq, '>', "'%s'/lane${LANE}/bcl2fastq.version" % self._destdir])
+            cmds.append([bcl2fastq, '--version', '2>', "'%s'/lane${LANE}/bcl2fastq.version" % self._destdir])
 
         # Build the main bcl2fastq command
         cmd = [bcl2fastq]

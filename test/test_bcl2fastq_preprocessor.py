@@ -63,7 +63,8 @@ class T(unittest.TestCase):
 
         self.assertCountEqual(self.bcl2fastq_command_split[1],
             [   self.bcl2fastq_path,
-                '>',
+                '--version',
+                '2>',
                 "'/mock/out'/lane${LANE}/bcl2fastq.version"
             ])
 
