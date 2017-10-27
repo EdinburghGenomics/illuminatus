@@ -41,9 +41,23 @@ class PostRunMetaData:
 
         return yaml.safe_dump(idict, default_flow_style=False)
 
+def munge_lanes(l):
+    """Take the lanes arguments and return a dict {'lanes': [int, int, int]} or else
+       an empty dict.
+    """
+    res = dict(lanes=[])
+    for al in l:
+        if al.startswith('lane'):
+            res['lanes'].append(al[4:])
+        elif al == 'overview':
+            return {}
+        else:
+            res['lanes'].append(al)
+    return res if res['lanes'] else {}
+
 
 if __name__ == '__main__':
     #If no run specified, examine the CWD.
     run = sys.argv[1] if len(sys.argv) > 1 else '.'
-    run_info = PostRunMetaData(run, **({'lanes': sys.argv[2:]} if sys.argv[2:] else {}) )
+    run_info = PostRunMetaData(run, **munge_lanes(sys.argv[2:]) )
     print ( run_info.get_yaml() )

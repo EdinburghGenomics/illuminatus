@@ -126,8 +126,8 @@ rule demux_stats_main:
         stats   = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
         dups    = expand("QC/lane{l}/{r}_{l}.welldups",  l=lanes, r=[run]),
         json    = expand("QC/lane{l}/Stats.json",        l=lanes),
-        runinfo = expand("QC/{foo}/run_info.{r}.2.yml",
-                            foo=(['lane{}'.format(l) for l in lanes] + ['overview']) )
+        runinfo = expand("QC/lane{l}/run_info.{r}.2.yml",l=lanes, r=[run]) + \
+                        ["QC/overview/run_info.{r}.2.yml".format(r=run)]
 
 rule metadata_main:
     # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
@@ -279,11 +279,10 @@ rule get_run_metadata:
 # the demultiplexing directory contents change
 rule get_postrun_metadata:
     output: "QC/{lane,lane.|overview}/run_info.{runid}.2.yml"
-    input: lanedir = lambda wc: "demultiplexing/{lane}" if wc.lane.startswith('lane') else \
+    input: lanedir = lambda wc: "demultiplexing/" + wc.lane if wc.lane.startswith('lane') else \
                                 glob("demultiplexing/lane?")
-    params: lane_munged = lambda wc: wc.lane[4:] if wc.lane.startswith('lane') else ''
     shell:
-        "PostRunMetaData.py . {params.lane_munged}"
+        "PostRunMetaData.py . {wildcards.lane} > {output}"
 
 # lane summary is just a munge of the .yml already made by the driver,
 # but this time we need a special mqc table format.
