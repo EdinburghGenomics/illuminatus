@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 from __future__ import division, print_function, absolute_import
 
 # Not sure where this logic should actually go, but I'm hoping we can get something useful

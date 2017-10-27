@@ -20,3 +20,6 @@ change in status of SampleSheet.csv?
 All of these are a bit nasty. However, I kinda favour the change in status, as revealed
 by `readlink -q SampleSheet.csv || true`. This seems the most direct way to ask 'did
 it change'.
+
+DONE - this was implemented by running readlink before and after the fetch and comparing
+the result.

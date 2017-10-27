@@ -4,6 +4,14 @@ set -eu
 # Code from doc/redo.txt. Only suitable for testing just now.
 echorun() { echo "$*" ; "$@" ; }
 
+if [ -e "`dirname $BASH_SOURCE`"/../../environ.sh ] ; then
+    pushd "`dirname $BASH_SOURCE`/../.." >/dev/null
+    set -x
+    source ./environ.sh
+    set +x
+    popd >/dev/null
+fi
+
 if [ -n "${1:-}" ] ; then
     myrun="${SEQDATA_LOCATION}/$1/pipeline"
 elif [ -e "$SEQDATA_LOCATION/${RUN_NAME_REGEX:-}" ] ; then
