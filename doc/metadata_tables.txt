@@ -1,0 +1,41 @@
+The design outline calls for several metadata tables.
+
+I'm generally outputting these as _mqc.yaml files then they will just appear as tables
+in the final report.
+
+I can't (yet) embed links or thumbnails in the tables but I'm not sure that this is how
+things should be in any case.
+
+The first table (overview/lane_summary_{runid}_mqc.yaml) has one row per lane and is
+made by summarize_lane_contents.py which has a specific output_mqc function. Since this
+isn't very onerous I will probably just adapt the code for each table.
+
+The second table wants to be per flowcell per read, with one row per read (ie. 4 rows
+for a dual-end-dual-index run). I could also split it out per lane.
+We want the info independent of demultiplexing so it has to come from interop.
+
+read, cycles - easy. it's in the XML
+yield - parse out of interop
+projected yield - no idea how to get this. Leave as ?? for now
+error rate - presumably form interop
+q30 - likewise
+
+QMetricsOut.bin seems the best source for this info. I guess Q30 is the count in bin 30
+or above. We want to use pandas for fast CSV reading, I think.
+ErrorMetricsOut.bin gives us the error rate. Guess we can aggregate by just finding the
+mean for all tiles and cycles.
+
+so...
+
+1) Install Pandas into python. - done
+2) Find a MiSeq run and these metrics from it - see below
+3) Convert info to YAML
+4) Convery YAML to 8+1 mqc_yaml tables
+
+Sample MiSeq run 171006_M01270_0385_000000000-BDPTB. We have the interop files.
+Run page says 3.46G yield but I don't have a Q30 yield. Need to look at basespace.
+
+Let's add the numbers for now - see summarize_yield.py
+
+OK, this went a rather different way, and reads the files using the Python bindings
+so no Panda's needed. Nad no NumPy (I think it maybe gets used under the hood??)

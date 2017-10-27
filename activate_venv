@@ -57,6 +57,7 @@ else
     pip3 install Rt
     pip3 install genologics
     pip3 install psycopg2
+    ( cd /lustre/software/interop/interop-1.1.1/build/src/ext/python && python3 setup.py install )
 
     # My own MultiQC and MultiQC_EdGen. Pip installs directly from GIT so
     # why not? Assume the master branch is always good, since it's simpler than
