@@ -31,10 +31,60 @@ def main(run_dir, out_dir=None):
         summary = get_run_metrics_handle(run_dir)
 
         res = extract_info(summary)
-        res['run_dir'] = run_dir.rstrip('/')
+        res['_run_dir'] = run_dir.rstrip('/')
 
-    # Dump to YAML
-    print(yaml.safe_dump(res, default_flow_style=False), end='')
+    if not out_dir:
+        # Dump to YAML
+        print(yaml.safe_dump(res, default_flow_style=False), end='')
+    else:
+        # Dump to _mqc.yaml for all lanes and overview.
+        for k, v in res.items():
+            if not k.startswith('_'):
+                kod = os.path.join(out_dir, k)
+                kof = os.path.join(kod, 'summarize_yield_{}_mqc.yaml'.format(k))
+                try: os.mkdir(kod)
+                except FileExistsError: pass
+
+                with open(kof, 'w') as kofh:
+                    print(yaml.safe_dump(format_mqc(k, v)), file=kofh, end='')
+
+def format_mqc(lane, info):
+    """Format the data structure as wanted by MQC. This will be turned
+       directly into the mqc.yaml. Using summarize_lane_contents as a basis.
+        lane : 'laneN' or 'overview'
+        info : keys should be read numbers or 'Total ...'
+    """
+    lane_name = 'all lanes' if lane == 'overview' else \
+                'lane {}'.format(lane[4:]) if lane.startswith('lane') else \
+                lane
+    mqc_out = dict(
+        id           = 'yield_summary',
+        section_name = 'Yield Summary',
+        description  = 'Yield for {}'.format(lane_name),
+        plot_type    = 'table',
+        pconfig      = { 'title': '', 'sortRows': True, 'no_beeswarm': True },
+        data         = {},
+        headers      = {},
+    )
+
+    # 'headers' needs to be a dict of { col_id: {title: ..., format: ... } }
+    table_headers = ["Read", "Cycles", "Yield GB", "Projected Yield",   "Error Rate", "Q 30"]
+    table_keys    = [None,   "cycles", "yield_g",  "projected_yield_g", "error_rate", "percent_gt_q30"]
+    table_formats = [None,   "{:d}",   "{:f}",     "{:f}",              "{:f}",       "{:f}"]
+
+    # Set headers and formats. col1_header is actually used to set col0_header!
+    mqc_out['pconfig']['col1_header'] = table_headers[0]
+    for colnum, col in list(enumerate(table_headers))[1:]:
+        # So colnum will start at 1...
+        mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title=col, format=table_formats[colnum])
+
+    # TODO - do we want to explicitly flag index reads?
+    for read, rinfo in info.items():
+        mqc_out['data'][read] = { 'col_{:02}'.format(colnum): rinfo[key]
+                                  for colnum, key in list(enumerate(table_keys))[1:] }
+
+    return mqc_out
+
 
 def get_run_metrics_handle(run_dir):
     """ Load the goodies from the .bin files in the InterOp directory.
@@ -61,12 +111,13 @@ def extract_info(summary):
     def f(val):
         """See format_value in the example code.
            We don't want nans in our output so zero them (I think??)
+           Actually, scrub that, yes we do.
         """
         try: val = val()
         except TypeError: pass
         try: val = val.mean()
         except AttributeError: pass
-        return None if isnan(val) else val
+        return val
 
     def get_dict(summ_part, **extra):
         if summ_part:
@@ -90,10 +141,10 @@ def extract_info(summary):
     overview['Totals'] = get_dict(summary.total_summary())
     overview['Non-Index Totals'] = get_dict(summary.nonindex_summary())
 
-    # Actually the total error rate should really be None since we don't hav error rates
-    # for index reads. The Illumina code just copies the vlaue from the non-indexed total
-    # anyway.
-    overview['Totals']['error_rate'] = None
+    # Actually the total error rate should really be None since we don't have error rates
+    # for index reads. The Illumina code just copies the value from the non-indexed total
+    # anyway so it's at best redundant.
+    overview['Totals']['error_rate'] = float('nan')
 
     try:
         # Get the overview

@@ -26,12 +26,18 @@ snakerun_drmaa "$0" "$@"
 
 #!/usr/bin/env snakemake
 import yaml
+from snakemake.utils import format
 
-# Where are the pipeline_current tools?
-# Maybe they should be defined/linked under /lustre/home/pipeline?
-# Note that tools included within the Illuminatus code or within the Python3 VEnv
+# /lustre/software/illuminatus_toolbox is the default place for all external deps.
+# It should mostly be links (maybe a little wrapper script or two) so if you want to
+# test with a new version of anything you can copy the whole directory and set $TOOLBOX in
+# your test environment (maybe in environ.sh). Or for tinkering you can just edit the code
+# in this file to temporarily ignore $TOOLBOX.
+#
+# Tools included within the Illuminatus code or within the active Python3 VEnv
 # will already be in the PATH, but they may call out to tools in the TOOLBOX -
 # eg. multiqc needs to be able to find a working gnuplot.
+# (note that snakerun_drmaa is what currently takes care of activating the VEnv for cluster jobs)
 #
 # Tools we currently need in the toolbox:
 #   cutadapt, fastqc, gnuplot (indirectly),
@@ -96,9 +102,11 @@ all_1_fq = [ fq for fq in all_fq if fq['read'] == '1' ]
 # lanes across runs, so let's forbid it and keep things simple.
 runs = set( sf['run'] for sf in all_fq )
 assert all_1_fq, "No _1.fastq.gz files found in {}.".format(os.getcwd())
-assert len(runs) == 1, "Expected to find only one run in but saw: {}".format(os.getcwd(), runs)
+assert len(runs) == 1, "Expected to find only one run in {} but saw: {}".format(os.getcwd(), runs)
 run, = runs ; del(runs)
 lanes = sorted( set( sf['lane'] for sf in all_fq ) )
+# All report names - lane1, lane2, ..., overview
+allreps = expand("lane{l}", l=lanes) + ['overview']
 
 # === Driver rules ===
 rule md5_main:
@@ -112,10 +120,10 @@ rule md5_main:
 # The location will be inferred from SEQDATA/{runid}/InterOp
 rule interop_main:
     input:
-        plots = expand( "QC/overview/interop/{run}.{plot}.interop_plot",
-                        run = [run],
-                        plot = ['qscore_heatmap', 'by_cycle', 'by_lane' ] )
-        # and also? Are there per-lane plots to make?
+        plots  = expand( "QC/overview/interop/{run}.{plot}.interop_plot",
+                         run = [run],
+                         plot = ['qscore_heatmap', 'by_cycle', 'by_lane' ] ),
+        ytable = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps )
 
 rule demux_stats_main:
     # TODO - gather stats from the bcl2fastq logs etc. Calculate barcode balance, ...
@@ -126,8 +134,7 @@ rule demux_stats_main:
         stats   = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
         dups    = expand("QC/lane{l}/{r}_{l}.welldups",  l=lanes, r=[run]),
         json    = expand("QC/lane{l}/Stats.json",        l=lanes),
-        runinfo = expand("QC/lane{l}/run_info.{r}.2.yml",l=lanes, r=[run]) + \
-                        ["QC/overview/run_info.{r}.2.yml".format(r=run)]
+        runinfo = expand("QC/{rep}/run_info.{r}.2.yml",  rep=allreps, r=[run])
 
 rule metadata_main:
     # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
@@ -146,9 +153,9 @@ rule qc_main:
         meta     = rules.metadata_main.input
 
 # For now run this locally. Might want to shift it to the cluster if login-0 gets too
-# busy.
+# busy, but then the risk is arbitrary delay if the cluster is full up.
 # Note this rule does not trigger qc_main etc., because we need to be able to make a
-# skeleton report beofre we have the actual data, so you need to trigger any qc steps
+# skeleton report before we have the actual data, so you need to trigger any qc steps
 # explicitly. We do demand metadata, though.
 localrules: multiqc_main, run_multiqc
 rule multiqc_main:
@@ -227,6 +234,16 @@ rule interop_by_cycle:
 rule interop_by_lane:
     output: "{foo}/{runid,[^/]+}.by_lane.interop_plot"
     shell: "{TOOLBOX} interop_plot_by_lane {SEQDATA}/{wildcards.runid} > {output}"
+
+# This makes use of the interop library that needs to be installed into the Python
+# VEnv - see the activate_venv script.
+# Due to the way the files are read I'm making this a one-shot thing that always
+# outputs all the reports. Rely on summarize_yield.py to make the files as expected.
+# Make the rule depend on the InterOp dir to spot changes.
+rule interop_yield_table:
+    output: expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps )
+    input: format("{SEQDATA}/{run}")
+    shell: "summarize_yield.py {input} QC"
 
 # md5summer that keeps the file path out of the .md5 file
 rule md5sum_file:
