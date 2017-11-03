@@ -120,9 +120,9 @@ rule md5_main:
 # The location will be inferred from SEQDATA/{runid}/InterOp
 rule interop_main:
     input:
-        plots  = expand( "QC/overview/interop/{run}.{plot}.interop_plot",
+        plots  = expand( "QC/overview/interop/{plot}.interop_plot",
                          run = [run],
-                         plot = ['qscore_heatmap', 'by_cycle', 'by_lane' ] ),
+                         plot = ['qscore_heatmap', 'by_cycle', 'by_lane', 'flowcell' ] ),
         ytable = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps )
 
 rule demux_stats_main:
@@ -224,26 +224,35 @@ rule configure_multiqc:
 SEQDATA = config.get('seqdata', os.environ.get('SEQDATA_LOCATION', '.'))
 
 rule interop_qscore_heatmap:
-    output: "{foo}/{runid,[^/]+}.qscore_heatmap.interop_plot"
-    shell: "{TOOLBOX} interop_plot_qscore_heatmap {SEQDATA}/{wildcards.runid} > {output}"
+    output: "{foo}/qscore_heatmap.interop_plot"
+    input: format("{SEQDATA}/{run}/InterOp")
+    shell: "{TOOLBOX} interop_plot_qscore_heatmap {input}/.. > {output}"
 
 rule interop_by_cycle:
-    output: "{foo}/{runid,[^/]+}.by_cycle.interop_plot"
-    shell: "{TOOLBOX} interop_plot_by_cycle {SEQDATA}/{wildcards.runid} > {output}"
+    output: "{foo}/by_cycle.interop_plot"
+    input: format("{SEQDATA}/{run}/InterOp")
+    shell: "{TOOLBOX} interop_plot_by_cycle {input}/.. > {output}"
 
 rule interop_by_lane:
-    output: "{foo}/{runid,[^/]+}.by_lane.interop_plot"
-    shell: "{TOOLBOX} interop_plot_by_lane {SEQDATA}/{wildcards.runid} > {output}"
+    output: "{foo}/by_lane.interop_plot"
+    input: format("{SEQDATA}/{run}/InterOp")
+    shell: "{TOOLBOX} interop_plot_by_lane {input}/.. > {output}"
+
+rule interop_flowcell:
+    output: "{foo}/flowcell.interop_plot"
+    input: format("{SEQDATA}/{run}/InterOp")
+    shell: "{TOOLBOX} interop_plot_flowcell {input}/.. > {output}"
 
 # This makes use of the interop library that needs to be installed into the Python
 # VEnv - see the activate_venv script.
 # Due to the way the files are read I'm making this a one-shot thing that always
 # outputs all the reports. Rely on summarize_yield.py to make the files as expected.
-# Make the rule depend on the InterOp dir to spot changes.
+# Make the rule depend on the InterOp dir to spot changes, even though the script
+# takes the parent dir as the input.
 rule interop_yield_table:
     output: expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps )
-    input: format("{SEQDATA}/{run}")
-    shell: "summarize_yield.py {input} QC"
+    input: format("{SEQDATA}/{run}/InterOp")
+    shell: "summarize_yield.py {input}/.. QC"
 
 # md5summer that keeps the file path out of the .md5 file
 rule md5sum_file:
