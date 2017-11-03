@@ -110,7 +110,7 @@ action_new(){
     # $DEMUX_OUTPUT_FOLDER/QC/ directory.
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
     set +e ; ( set -e
-      mkdir ./pipeline
+      mkdir -v ./pipeline
       plog_start
       fetch_samplesheet_and_report
 
@@ -147,7 +147,7 @@ action_reads_finished(){
     BREAK=1
     plog "Preparing to demultiplex $RUNID into $DEMUX_OUTPUT_FOLDER/demultiplexing/"
     set +e ; ( set -e
-      mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
+      mkdir -vp "$DEMUX_OUTPUT_FOLDER"/demultiplexing
       log "  Starting bcl2fastq on $RUNID."
       ( rundir="`pwd`"
         cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
@@ -171,10 +171,14 @@ action_demultiplexed() {
     log "\_DEMULTIPLEXED $RUNID"
     log "  Now commencing QC on $RUNID."
 
+    touch pipeline/qc.started
+    BREAK=1
     set +e ; ( set -e
         run_qc
 
         log "  Completed QC on $RUNID."
+        mv pipeline/qc.started pipeline/qc.done
+
         rt_runticket_manager.py -r "$RUNID" --comment "QC of $RUNID completed"
     ) |& plog ; [ $? = 0 ] || pipeline_fail QC
 }
@@ -187,6 +191,29 @@ action_in_demultiplexing() {
     # in pipeline, could update some progress status
     # TODO - maybe some attempt to detect stalled runs?
     debug "\_IN_DEMULTIPLEXING $RUNID"
+}
+
+action_read1_finished() {
+    debug "\_READ1_FINISHED $RUNID"
+
+    touch pipeline/read1.started
+
+    # Now is the time for WellDupes scanning. Note that we press on despite failure,
+    # since we don't want a problem here to hold up demultiplexing.
+    # There will be a retry at the point of QC with stricter error handling.
+    mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC
+    BREAK=1
+    set +e ; ( set +e
+        cd "$DEMUX_OUTPUT_FOLDER"
+        Snakefile.welldups -- wd_main
+        Snakefile.qc -- interop_main
+        Snakefile.qc -F -- multiqc_main
+
+        log "  Completed read1 QC (welldups) on $RUNID."
+    ) |& plog
+
+    #We're done
+    mv pipeline/read1.started pipeline/read1.done
 }
 
 action_in_read1_qc() {
@@ -246,7 +273,7 @@ action_redo() {
     fetch_samplesheet_and_report
 
     set +e ; ( set -e
-      mkdir -p "$DEMUX_OUTPUT_FOLDER"/demultiplexing
+      mkdir -vp "$DEMUX_OUTPUT_FOLDER"/demultiplexing
 
       log "  Starting bcl2fastq on $RUNID lanes ${redo_list[*]}."
       ( rundir="`pwd`"
@@ -285,7 +312,7 @@ fetch_samplesheet_and_report() {
     # This requires the QC directory to exist, even before demultiplexing starts.
     # In this case, an error in MultiQC etc. should not prevent demultiplexing from starting.
     set +e
-    mkdir -p "$DEMUX_OUTPUT_FOLDER"/QC
+    mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F -- multiqc_main ) |& plog
 
     if [ ! -e pipeline/sample_summary.yml ] || \
@@ -300,22 +327,20 @@ fetch_samplesheet_and_report() {
 
 run_qc() {
     # Hand over to Snakefile.qc for report generation
-    touch pipeline/qc.started
-
+    # This touch file puts the run into status in_qc.
     (   cd "$DEMUX_OUTPUT_FOLDER"
         # First a quick report
         Snakefile.qc -- demux_stats_main interop_main
         Snakefile.qc -F -- multiqc_main
 
-        # Then a full QC
-        # TODO - at this point the status should switch to 'in_qc'
-        # I can add this when I also add the read1_finished status - see notes in the doc
+        # Then a full QC. Welldups should have run already but it will not
+        # hurt to re-run Snakemake with nothing to do.
         Snakefile.qc -- md5_main qc_main
+        Snakefile.welldups -- wd_main
         Snakefile.qc -F -- multiqc_main
     )
 
     # We're done
-    mv pipeline/qc.started pipeline/qc.done
 }
 
 pipeline_fail() {

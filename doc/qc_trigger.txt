@@ -39,7 +39,7 @@ What should the QC driver look like?
 
 Should the Snakefile actually run MultiQC?
 
-    - Maybe. Probably? Erm.
+    - Maybe. Probably? Erm. Yes!
 
 MultiQC can then mine the QC subdirectory for goodies.
 
@@ -58,7 +58,7 @@ What about well dupes?
         pipeline/read1.started present = status read1_processing
         else status = read1_finished
       This overrides reads_finished, so that if a run "magically" appears in completed state it will cycle through
-      read1 beofore going on to demultiplexing.
+      read1 before going on to demultiplexing.
 
       [ Hmm - this is not ideal for single-end reads. We want to start bcl2fastq and welldupes at the same time,
       but we then want to be sure that well dupes is finished before we get the final QC report. How to do this???
@@ -67,3 +67,5 @@ What about well dupes?
 
       For now, I'm going to treat the well dups info as something that should be available by the time I add the interop
       stuff to the QC report.
+
+      See welldupes.txt for further thoughts, and how the NovaSeq changes the plan.

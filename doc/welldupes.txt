@@ -1,0 +1,41 @@
+So, we can now calculate well dupes for the NovaSeq. But it takes an hour.
+
+So for single-ended runs, running the well-dupes before the demultiplex is no good. We need to
+trigger everything as soon as we can.
+
+Read1Complete --> InterOP                    -->
+                  WellDupes                  -->
+                                                 Final report
+AllComplete   --> Demux     --> QC on FASTQ  -->
+
+
+Right, when the pipeline sees Read1Complete, it needs to trigger:
+
+( InterOP -> MultiQC ) then ( WellDupes -> MultiQC )
+
+But this should NOT block the pipeline from running again. So we have...
+      If RTARead1Complete.txt is present:
+        pipeline/read1.done present = proceed as before
+        pipeline/read1.started present = status read1_processing OR demultiplexing OR read1_processing_reads_finished
+        else status = read1_finished
+      This overrides reads_finished, so that if a run "magically" appears in completed state it will cycle through
+      read1 before going on to demultiplexing.
+
+So the new state of read1_processing_reads_finished occurs when the data is ready for demux but
+well-dups is still running. The pipeline should proceed exactly as for reads_finished. When
+done, the .done files will be written. If for some weird reason the read1 stuff is still running this
+will get us back to the read1_processing (via some complex logic) or else we'll go to demultiplexed
+as before.
+
+This is the only time we'll have 2 pipelines running on the same run at once. There shouldn't be any
+conflict as the demultiplexing pipeline doesn't do any QC. If we tried to start QC we could be in trouble.
+The .redo files cannot apply until read1.done is present, so we can't re-demux until the read1 processing is
+fully done.
+
+OK, that's a bit icky but seems to meet our needs. More to the point it's compatible with my plan for
+adding the well dupes as a third Snakefile rather than as part of the Snakefile.qc.
+Now that I'm creating the QC directory right from the start I can write the results in there (logs and
+maybe a .yml file for MultiQC to snag) and then I just need a spot for the targets -
+/lustre/software/wellduplicates/var/shared_cluster_lists seems fine to me, even though I'm slightly
+uneasy about the pipeline writing back into the directory. Maybe have a wrapper script - actually yes,
+definitely take this logic out of the Snakefile and into a little Python/shell script.
