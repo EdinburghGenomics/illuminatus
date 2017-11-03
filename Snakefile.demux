@@ -97,7 +97,7 @@ rule bcl2fastq:
         json = "lane{l}/Stats/Stats.json"
     input:
         script = "do_demultiplex{l}.sh"
-    threads: 12 # if you edit this also edit the cluster.yml
+    threads: 12 # if you edit this number, also edit the cluster.yml
     shell:
         #The location for bcl2fastq and input/output should already be coded in the script
         #Log will go to "lane{l}/bcl2fastq.log"

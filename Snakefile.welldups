@@ -1,0 +1,128 @@
+#!/bin/bash
+# vim: ft=python
+
+## This workflow specifically runs the well dups scanner.
+## This triggers before demultiplexing but contributes to the
+## QC report so it makes sens for it to be separate.
+
+# Contents >>>
+#   + Embedded BASH script to bootstrap the workflow
+#   + Initialisation and configuration
+#   + Helper functions
+#   + The rules specific to this workflow
+#   + More generic rules
+
+"""true" ### Begin shell script part
+set -euo pipefail
+
+source "`dirname $0`"/shell_helper_functions.sh
+snakerun_drmaa "$0" "$@"
+
+"exit""" ### End of shell script part
+
+#!/usr/bin/env snakemake
+import yaml
+import xml.etree.ElementTree as ET
+from snakemake.utils import format
+
+# See notes in Snakefile.qc regarding the toolbox.
+# Here we need wd_get_cached_targets and wd_count_well_duplicates to be available.
+TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ.get('TOOLBOX', '/lustre/software/illuminatus_toolbox'))
+
+def glob():
+    """Regular glob() is useful but it can be improved like so.
+    """
+    from glob import glob
+    return lambda p: sorted( (f.rstrip('/') for f in glob(os.path.expanduser(p))) )
+glob = glob()
+
+# Caller must set this
+RUNDIR = config['rundir']
+
+# Other settings
+TARGETS_TO_SAMPLE = 2500
+READ_LENGTH = 50
+START_POS = 20
+LEVELS_TO_SCAN = 5
+REPORT_VERBOSE = True
+
+# We need to examine the run info. OK to do this on each cluster job.
+run_info_root = ET.parse("datadir/RunInfo.xml").getroot()
+
+LAST_LANE, LAST_TILE = max(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
+
+# Lanes to sample is now variable sindce the arrival of Novaseq, so get it from
+# RunInfo.xml...
+LANES_TO_SAMPLE = range(1, int(LAST_LANE) + 1)
+
+# For most runs we want to start at read 20, after any internal barcodes,
+# but some runs only have 51 cycles in read1.
+num_cycles = int(run_info_root.find("Run/Reads/Read[@Number='1']").get('NumCycles'))
+if num_cycles <= (READ_LENGTH + START_POS):
+    assert num_cycles > READ_LENGTH
+    START_POS = 0
+END_POS = READ_LENGTH + START_POS
+
+# If there are 4 swaths per side (NovaSeq) then only do the even tiles
+if LAST_TILE >= '2400':
+    TILE_MATCH = dict( T='1..[02468]', B='2..[02468]' )
+else
+    TILE_MATCH = dict( T='1...', B='2...' )
+
+# === Driver rules ===
+localrules: wd_main
+rule wd_main:
+    input:
+        summary = format('QC/WellDups/{TARGETS_TO_SAMPLE}summary.yml')
+
+# === Rules to invoke the duplicate counter ===
+localrules: make_summary
+
+rule make_summary:
+    output: 'QC/WellDups/{targets}summary.yml'
+    input: expand( "{{targets}}targets_lane{lane}{side}.txt", lane=LANES_TO_SAMPLE, side=['T','B'] )
+    run:
+        from collections import deque
+        from time import sleep
+        sleep(2) # Avoids re-running due to clock skew
+        res = dict()
+
+        for f in input:
+            lane = res[f[-6]] = dict()
+            side = lane[f[-5]] = dict()
+
+            #Look at the last 3 lines of the file
+            with open(f) as fh:
+                for k, v in map lambda l: l.rstrip('\n%').split(':'), deque(f, 3):
+                    if "Overall" in k:
+                        side["raw"] = float(v)
+                    elif "v1" in k:
+                        side["v1"] = float(v)
+                    elif "v2" in k:
+                        side["v2"] = float(v)
+        # Now average things up.
+        for lane in res.values():
+            lane['mean'] = { metric: sum(side[metric] for side in lane.values()) / len(lane)
+                             for metric in list(lane.values())[0].keys() }
+
+        # And save it out
+        with open(output[0], 'w') as yfh:
+            yaml.safe_dump(res, yfh)
+
+rule prep_indices:
+    output: "{targets}clusters.list"
+    input:
+        slocs = format("{RUNDIR}/Data/Intensities/s.locs")
+    shell:
+        "{TOOLBOX} wd_get_cached_targets {input.slocs} {TARGETS_TO_SAMPLE} {output}"
+
+rule count_well_dupl:
+    output: "{targets}targets_lane{lane}{side,.}.txt"
+    input:
+        targfile = "{targets}clusters.list"
+    params:
+        summary = '-S' if not REPORT_VERBOSE else ''
+    shell:
+        """{TOOLBOX} wd_count_well_duplicates -f {input.targfile} -n {wildcards.targets} -s {LAST_TILE} \
+           -r {RUNDIR} -i {wildcards.lane} -l {LEVELS_TO_SCAN} --cycles {START_POS}-{END_POS} \
+           -t {TILE_MATCH[wildcards.side]} {params.summary} > {output}"""

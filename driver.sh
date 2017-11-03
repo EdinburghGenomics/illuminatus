@@ -171,6 +171,7 @@ action_demultiplexed() {
     log "\_DEMULTIPLEXED $RUNID"
     log "  Now commencing QC on $RUNID."
 
+    # This touch file puts the run into status in_qc.
     touch pipeline/qc.started
     BREAK=1
     set +e ; ( set -e
@@ -204,8 +205,9 @@ action_read1_finished() {
     mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC
     BREAK=1
     set +e ; ( set +e
+        rundir="`pwd`"
         cd "$DEMUX_OUTPUT_FOLDER"
-        Snakefile.welldups -- wd_main
+        Snakefile.welldups --config rundir="$rundir" -- wd_main
         Snakefile.qc -- interop_main
         Snakefile.qc -F -- multiqc_main
 
@@ -327,8 +329,9 @@ fetch_samplesheet_and_report() {
 
 run_qc() {
     # Hand over to Snakefile.qc for report generation
-    # This touch file puts the run into status in_qc.
-    (   cd "$DEMUX_OUTPUT_FOLDER"
+    # Use a sub-shell to avoid changing dir in main shell.
+    (   rundir="`pwd`"
+        cd "$DEMUX_OUTPUT_FOLDER"
         # First a quick report
         Snakefile.qc -- demux_stats_main interop_main
         Snakefile.qc -F -- multiqc_main
@@ -336,11 +339,9 @@ run_qc() {
         # Then a full QC. Welldups should have run already but it will not
         # hurt to re-run Snakemake with nothing to do.
         Snakefile.qc -- md5_main qc_main
-        Snakefile.welldups -- wd_main
+        Snakefile.welldups --config rundir="$rundir" -- wd_main
         Snakefile.qc -F -- multiqc_main
     )
-
-    # We're done
 }
 
 pipeline_fail() {
