@@ -16,12 +16,12 @@ Right, when the pipeline sees Read1Complete, it needs to trigger:
 But this should NOT block the pipeline from running again. So we have...
       If RTARead1Complete.txt is present:
         pipeline/read1.done present = proceed as before
-        pipeline/read1.started present = status read1_processing OR demultiplexing OR read1_processing_reads_finished
+        pipeline/read1.started present = status in_read1_qc OR demultiplexing OR in_read1_qc_reads_finished
         else status = read1_finished
       This overrides reads_finished, so that if a run "magically" appears in completed state it will cycle through
       read1 before going on to demultiplexing.
 
-So the new state of read1_processing_reads_finished occurs when the data is ready for demux but
+So the new state of in_read1_qc_reads_finished occurs when the data is ready for demux but
 well-dups is still running. The pipeline should proceed exactly as for reads_finished. When
 done, the .done files will be written. If for some weird reason the read1 stuff is still running this
 will get us back to the read1_processing (via some complex logic) or else we'll go to demultiplexed

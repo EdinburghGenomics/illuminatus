@@ -1,0 +1,35 @@
+digraph G {
+  //rankdir=LR;
+  labelfloat=True;
+  "Sequencer Start" [ shape = rectangle ]
+  "Sequencer Start"   -> "New" [ label = "Sequencer creates seqdata dir,\n writes RunInfo.xml" ]
+  "New"               -> "Reads_Unfinished" [ label = "Pipeline makes RT ticket,\n fetches sample sheet,\n initial run report" ]
+  "New"               -> "Read1_Finished" [ label = "Pipeline makes RT ticket,\n fetches sample sheet,\n initial run report.\n RTARead1Complete.txt already there." ]
+  "Reads_Unfinished"  -> "Read1_Finished" [ label = "Sequencer writes\n RTARead1Complete.txt." ]
+  "Read1_Finished"    -> "In_Read1_QC" [ label = "Pipeline writes read1.started,\n starts well dups scan" ]
+  "In_Read1_QC"       -> "In_Read1_QC_Reads_Finished" [ label = "Sequencer writes RTAComplete.txt,\n no read1.done yet" ]
+  "In_Read1_QC"       -> "Reads_Unfinished" [ label = "Pipeline writes read1.done.\n RTAComplete.txt not yet present" ]
+  "In_Read1_QC"       -> "Demultiplexed" [ label = "Pipeline writes read1.done.\n laneN.done files were already there" ]
+  "Read1_Finished"    -> "In_Read1_QC_Reads_Finished" [ label = "Pipeline writes read1.started.\n RTAComplete.txt is already present" ]
+  "In_Read1_QC_Reads_Finished" -> "In_Demultiplexing" [ label = "Pipeline starts bcl2fastq,\n writes laneN.started for all lanes.\n Read1 QC is still active" ]
+  "In_Read1_QC_Reads_Finished" -> "Reads_Finished" [ label = "Pipeline writes read1.done.\n No laneN.started yet." ]
+  "Reads_Unfinished"  -> "Reads_Finished" [ label = "Sequencer writes RTAComplete.txt,\n read1.done is already present" ]
+  "Reads_Finished"    -> "In_Demultiplexing" [ label = "Pipeline starts bcl2fastq,\n writes laneN.started for all lanes" ]
+  "In_Demultiplexing" -> "In_Read1_QC" [ label = "Pipeline writes laneN.done\n files for all lanes.\n read1.done not yet present" ]
+  "In_Demultiplexing" -> "Demultiplexed" [ label = "Pipeline completes bcl2fastq\n and post-processor,\n writes laneN.done files\n for all lanes.\n read1.done present" ]
+  "Demultiplexed"     -> "In_QC" [ label = "Pipeline writes qc.started,\n commences QC of FASTQ files" ]
+  "In_QC"             -> "Complete" [ label = "Pipeline makes final report,\n writes qc.done" ]
+  "In_QC"             -> "Failed" [ label = "Unexpected failure in QC\n or deliberate cancellation.\n Operator needs to diagnose fault\n and either redo or restart QC" ]
+  "In_Demultiplexing" -> "Failed" [ label = "Unexpected failure in demultiplexing\n or deliberate cancellation.\n Operator needs to diagnose fault\n and redo" ]
+  "Failed"            -> "Redo" [ label = "Operator makes laneN.redo\n files after failed demux or QC" ]
+  "Demultiplexed"     -> "Redo" [ label = "Operator makes laneN.redo\n files during or after\n demux but before QC kicks in." ]
+  "Complete"          -> "Redo" [ label = "Operator sets one or\n more laneN.redo\n files (could in future\n be triggered from LIMS)" ]
+  "Failed"            -> "Demultiplexed" [ label = "Where QC failed, operator\n removes failed file,\n causing QC to be reattempted\n without re-demultiplexing" ]
+  "Redo"              -> "In_Demultiplexing" [ label = "Pipeline cleans old data\n and starts new bcl2fastq" ] 
+  "New"               -> "Aborted" [ label = "Operator creates\n aborted file\n (could in future be\n triggered from LIMS)" ]
+  "Reads_Unfinished"  -> "Aborted"
+  "Failed"            -> "Aborted" [ label = "Operator creates\n aborted file" ]
+  "Valid End State" [ shape = rectangle ]
+  "Complete"          -> "Valid End State"
+  "Aborted"           -> "Valid End State"
+}

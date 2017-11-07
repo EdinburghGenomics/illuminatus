@@ -10,6 +10,8 @@ tmp/
 .snakemake
 sge_output
 _py*_venv*/
+doc/*.ps
+doc/*.pdf
 
 # This is volatile and used for tinkering/testing
 environ.sh
