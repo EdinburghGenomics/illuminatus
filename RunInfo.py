@@ -107,15 +107,10 @@ class RunInfo:
         # RUN IS 'complete':
         if self._is_sequencing_finished():
             return "complete"
-        if self._is_read_finished(4):
-            return "read4complete"
-        if self._is_read_finished(3):
-            return "read3complete"
-        if self._is_read_finished(2):
-            return "read2complete"
-        if self._is_read_finished(1):
-            return "read1complete"
-        return False
+        for n in [4,3,2,1]:
+            if self._is_read_finished(n):
+                return "read{}_complete".format(n)
+        return "waiting_for_data"
 
 
 
@@ -135,8 +130,8 @@ class RunInfo:
             return "read1trigger"
 
         # RUN IS 'waiting_for_data': if machine_status isn't available yet (how will we distinguish aborted/failed sequencing?)
-        if not self.get_machine_status():
-            return "waiting_for_data"
+        if self.get_machine_status() == "waiting_for_data":
+            return "reads_unfinished"
 
         # RUN IS 'redo' if the run is marked for restarting and is ready for restarting (not running):
         if self._is_sequencing_finished() and self._was_restarted() and self._was_ended():

@@ -121,10 +121,6 @@ action_reads_unfinished(){
     log "\_READS_UNFINISHED $RUNID. Waiting for data."
 }
 
-action_waiting_for_data(){
-    log "\_READS_UNFINISHED $RUNID. Waiting for data."
-}
-
 action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     eval touch pipeline/"lane{1..$LANES}.started"
