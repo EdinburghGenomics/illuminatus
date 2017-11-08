@@ -37,7 +37,7 @@ class T(unittest.TestCase):
         else:
             self.addCleanup(cleanup)
 
-        self.bm = BinMocker('RunInfo.py')
+        self.bm = BinMocker('RunStatus.py')
 
         #The script will find sample sheets in here...
         self.ss_dir = "fs_root/samplesheets_bcl2fastq_format"
@@ -188,18 +188,18 @@ class T(unittest.TestCase):
 
     def test_no_flowcellid(self):
         """If no flowcell ID is provided, the script should attempt to get one by running
-           RunInfo.py and then fail if none is obtained.
+           RunStatus.py and then fail if none is obtained.
         """
         touch('SampleSheet.csv')
         del(self.environment['FLOWCELLID'])
 
         last_stdout = self.bm_run_fetch(expected_retval=1)
 
-        self.assertEqual(last_stdout[0], "No FLOWCELLID was provided, and obtaining one from RunInfo.py failed.")
+        self.assertEqual(last_stdout[0], "No FLOWCELLID was provided, and obtaining one from RunStatus.py failed.")
 
-        #The script should have attempted to call RunInfo.py just once.
+        #The script should have attempted to call RunStatus.py just once.
         expected_calls = self.bm.empty_calls()
-        expected_calls['RunInfo.py'] = ['']
+        expected_calls['RunStatus.py'] = ['']
         self.assertEqual(self.bm.last_calls, expected_calls)
 
 def touch(filename, contents="touch"):

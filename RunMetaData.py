@@ -11,7 +11,7 @@ from illuminatus.RunParametersXMLParser import RunParametersXMLParser
 
 class RunMetaData:
     """This Class provides information about a sequencing run, given a run folder.
-       It is rather similar to RunInfo.py but does not attempt to determine
+       It is rather similar to RunStatus.py but does not attempt to determine
        the processing status of the run.
        It will parse information from the following sources:
          RunInfo.xml file

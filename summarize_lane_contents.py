@@ -19,9 +19,9 @@ content - http://multiqc.info/docs/#custom-content.
 Soon it will ask the LIMS for additional details (loading conc) too.
 """
 
-#Note there is also RunMetaData.py and RunInfo.py which do similar jobs but this should
-#be the only script that is querying the LIMS and looking at the details of the SampleSheet
-#lines.
+# Note there is also RunMetaData.py and RunStatus.py which do similar jobs but this should
+# be the only script that is querying the LIMS and looking at the details of the SampleSheet
+# lines.
 
     a = ArgumentParser(description=description)
     a.add_argument("--project_name_list",

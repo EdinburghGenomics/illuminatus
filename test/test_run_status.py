@@ -8,7 +8,7 @@ from shutil import rmtree, copytree
 
 # Adding this to sys.path makes the test work if you just run it directly.
 sys.path.insert(0,'.')
-from RunInfo import RunInfo
+from RunStatus import RunStatus
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')
 
@@ -20,7 +20,7 @@ class T(unittest.TestCase):
            If copy=True, copies a selected run into a temporary folder first.
            Sets self.current_run to the run id and
            self.run_dir to the temporary run dir, temporary or otherwise.
-           Also returns a RunInfo object for you.
+           Also returns a RunStatus object for you.
         """
         self.cleanup_run()
 
@@ -39,10 +39,10 @@ class T(unittest.TestCase):
         self.current_run = run_id
 
         #Presumably we want to inspect the new run, so do that too.
-        #If you want to change files around, do that then make a new RunInfo
+        #If you want to change files around, do that then make a new RunStatus
         #by copying the line below.
         if make_run_info:
-            return RunInfo(self.current_run, run_path = self.run_dir)
+            return RunStatus(self.current_run, run_path = self.run_dir)
 
     def cleanup_run(self):
         """If self.tmp_dir has been set, delete the temporary

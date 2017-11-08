@@ -5,7 +5,7 @@ import sys
 
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
 
-class RunInfo:
+class RunStatus:
     """This Class provides information about a sequencing run, given a run folder.
        It will parse information from the following sources:
          RunInfo.xml file - to obtain LaneCount
@@ -193,5 +193,5 @@ class RunInfo:
 if __name__ == '__main__':
     #If no run specified, examine the CWD.
     run = sys.argv[1] if len(sys.argv) > 1 else '.'
-    run_info = RunInfo(run)
+    run_info = RunStatus(run)
     print ( run_info.get_yaml() )

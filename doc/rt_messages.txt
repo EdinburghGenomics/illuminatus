@@ -74,13 +74,16 @@ think about the error reporting.
 
     driver spots run needing action
     driver writes and locks, say, the main log file
-    RunInfo.py knows to examine lock on the file, and if it finds a run IN_PIPELINE with the file
+    RunStatus.py knows to examine lock on the file, and if it finds a run IN_PIPELINE with the file
     unlocked it reports it as PIPELINE_ERROR.
     Checking a file lock in Python is easy, if badly documented:
       fcntl.flock(open('/tmp/locktest', 'r'), fcntl.LOCK_EX | fcntl.LOCK_NB)
     And then catch the IOError. Python should drop the lock immediately as the file handle goes
     out of scope, but you might want to make completely sure:
     with open('/tmp/locktest', 'r') as lfh: fcntl.flock(lfh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+[[ Update - I decided to do this with exit traps in driver.sh. These are reliable enough.
+   Any run left in limbo can easily be restarted. ]]
 
 3) We should limit the number of errors reported. Definitely, jobs launched on the cluster
    should not report their own errors. The caller should deal with problems by waiting on the job

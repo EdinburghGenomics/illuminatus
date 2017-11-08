@@ -371,7 +371,7 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
 
   # invoke runinfo and collect some meta-information about the run. We're passing info
   # to the state functions via global variables.
-  RUNINFO_OUTPUT="`RunInfo.py $run`" || RunInfo.py $run | log 2>&1
+  RUNINFO_OUTPUT="`RunStatus.py $run`" || RunStatus.py $run | log 2>&1
 
   LANES=`grep ^LaneCount: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   STATUS=`grep ^PipelineStatus: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' ' || echo unknown`

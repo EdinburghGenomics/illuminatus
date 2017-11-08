@@ -10,12 +10,12 @@ set -e ; set -u
 SSPP_HOOK="${SSPP_HOOK:-}"
 
 if [ -z "${FLOWCELLID:-}" ] ; then
-    #Try to determine flowcell ID by asking RunInfo.py
-    FLOWCELLID=`RunInfo.py | grep '^Flowcell:' | cut -f2 -d' '`
+    #Try to determine flowcell ID by asking RunStatus.py
+    FLOWCELLID=`RunStatus.py | grep '^Flowcell:' | cut -f2 -d' '`
 fi
 
 if [ -z "${FLOWCELLID:-}" ] ; then
-    echo "No FLOWCELLID was provided, and obtaining one from RunInfo.py failed."
+    echo "No FLOWCELLID was provided, and obtaining one from RunStatus.py failed."
     exit 1
 fi
 
