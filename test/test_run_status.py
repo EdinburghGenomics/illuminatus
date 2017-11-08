@@ -105,7 +105,6 @@ class T(unittest.TestCase):
         """
         run_info = self.use_run('160726_K00166_0120_BHCVH2BBXX', copy=True)
 
-
         expected = dictify("""
             RunID: 160726_K00166_0120_BHCVH2BBXX
             LaneCount: 8
@@ -115,12 +114,18 @@ class T(unittest.TestCase):
             MachineStatus: waiting_for_data
         """)
 
-        self.assertEqual(dictify(run_info.get_yaml()), expected)
+        def gy():
+            """ Clear the cache and get the status
+            """
+            run_info._exists_cache = dict()
+            return dictify(run_info.get_yaml())
+
+        self.assertEqual(gy(), expected)
 
         self.rm('pipeline')
 
         expected['PipelineStatus:'] = 'new'
-        self.assertEqual(dictify(run_info.get_yaml()), expected)
+        self.assertEqual(gy(), expected)
 
         # We're basing the read1 trigger on the appearance of data files for the second cycle,
         # (until we change our minds and use the first cycle after the last index read)
@@ -129,30 +134,35 @@ class T(unittest.TestCase):
         self.touch('Data/Intensities/BaseCalls/L001/C152.1/foo.bcl')
 
         # Should still be new until we put the pipeline dir back!
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'new')
-        self.assertEqual(dictify(run_info.get_yaml())['MachineStatus:'], 'read1_complete')
+        self.assertEqual(gy()['PipelineStatus:'], 'new')
+        self.assertEqual(gy()['MachineStatus:'], 'read1_complete')
         self.md('pipeline')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'read1_finished')
+        self.assertEqual(gy()['PipelineStatus:'], 'read1_finished')
 
         # For this one, let's say that read processing completes before the run finishes.
         self.touch('pipeline/read1.started')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'in_read1_qc')
+        self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc')
 
         # And the read1 processing finishes
         self.touch('pipeline/read1.done')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'reads_unfinished')
+        self.assertEqual(gy()['PipelineStatus:'], 'reads_unfinished')
+
+        # Removing read1.started should not matter
+        self.rm('pipeline/read1.started')
+        self.assertEqual(gy()['PipelineStatus:'], 'reads_unfinished')
 
         # Now we finish the reads
         self.touch('RTAComplete.txt')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'reads_finished')
-        self.assertEqual(dictify(run_info.get_yaml())['MachineStatus:'], 'complete')
+        self.assertEqual(gy()['PipelineStatus:'], 'reads_finished')
+        self.assertEqual(gy()['MachineStatus:'], 'complete')
 
         # And we start the demultiplexing
         self.touch('pipeline/lane1.started')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'in_demultiplexing')
+        self.assertEqual(gy()['PipelineStatus:'], 'in_demultiplexing')
 
-        self.touch('pipeline/lane1.done')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'demultiplexed')
+        for l in range(8):
+            self.touch('pipeline/lane{}.done'.format(l+1))
+        self.assertEqual(gy()['PipelineStatus:'], 'demultiplexed')
 
     def test_read_states_miseq(self):
         """Ensure that the YAML output is what we expect (for a MiSeq run),
@@ -170,11 +180,17 @@ class T(unittest.TestCase):
             MachineStatus: waiting_for_data
         """)
 
-        self.assertEqual(dictify(run_info.get_yaml()), expected)
+        def gy():
+            """ Clear the cache and get the status
+            """
+            run_info._exists_cache = dict()
+            return dictify(run_info.get_yaml())
+
+        self.assertEqual(gy(), expected)
 
         # Add the pipeline dir
         self.md('pipeline')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'reads_unfinished')
+        self.assertEqual(gy()['PipelineStatus:'], 'reads_unfinished')
 
         # We're basing the read1 trigger on the appearance of data files for the second cycle,
         # (until we change our minds and use the first cycle after the last index read)
@@ -182,35 +198,35 @@ class T(unittest.TestCase):
         self.md('Data/Intensities/BaseCalls/L001/C27.1')
         self.touch('Data/Intensities/BaseCalls/L001/C27.1/foo.bcl')
 
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'read1_finished')
+        self.assertEqual(gy()['PipelineStatus:'], 'read1_finished')
 
         # Adding an RTAComplete.txt file should not change this status
         self.touch('RTAComplete.txt')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'read1_finished')
+        self.assertEqual(gy()['PipelineStatus:'], 'read1_finished')
 
         # Adding read1.started should push us to the state where ops will trigger in parallel
         self.touch('pipeline/read1.started')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'in_read1_qc_reads_finished')
+        self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc_reads_finished')
 
         # Adding read1.done should get us to reads_finished
         self.touch('pipeline/read1.done')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'reads_finished')
+        self.assertEqual(gy()['PipelineStatus:'], 'reads_finished')
 
         self.touch('pipeline/lane1.started')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'in_demultiplexing')
+        self.assertEqual(gy()['PipelineStatus:'], 'in_demultiplexing')
 
         self.touch('pipeline/lane1.done')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'demultiplexed')
+        self.assertEqual(gy()['PipelineStatus:'], 'demultiplexed')
 
         # OK, but if the read1.done file never appeared we should still be in in_read1_qc
         self.rm('pipeline/read1.done')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'in_read1_qc')
+        self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc')
 
         # And if the read1.started file vanishes we go right back to read1_finished,
         # as QC should not start until both read1 and demultiplexing are done.
         # Though in practise this state should not happen.
         self.rm('pipeline/read1.started')
-        self.assertEqual(dictify(run_info.get_yaml())['PipelineStatus:'], 'read1_finished')
+        self.assertEqual(gy()['PipelineStatus:'], 'read1_finished')
 
 
 
@@ -240,8 +256,11 @@ class T(unittest.TestCase):
             print(content, file=fh)
 
     def rm(self, dp):
-        # Careful with this one...
-        rmtree(os.path.join(self.run_dir, self.current_run, dp))
+        # Careful with this one, it's basically rm -rf
+        try:
+            rmtree(os.path.join(self.run_dir, self.current_run, dp))
+        except NotADirectoryError:
+            os.remove(os.path.join(self.run_dir, self.current_run, dp))
 
 def dictify(s):
     """ Very very dirty minimal YAML parser is OK for testing.

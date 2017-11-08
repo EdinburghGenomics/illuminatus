@@ -6,7 +6,10 @@ shopt -sq failglob
 # It will go through all runs in SEQDATA_LOCATION and take action on them.
 # As a well behaved CRON job it should only output error messages
 # to stdout.
-# The script wants to run every 5 minutes or so.
+# The script wants to run every 5 minutes or so, and having multiple instances
+# in flight at once if fine, though in fact there are race conditions possible if two
+# instances start at once and claim the same run for processing (Snakemake locking
+# should catch any fallout).
 
 # Note within this script I've tried to use ( subshell blocks ) along with "set -e"
 # to emulate eval{} statements in Perl. It does work but you have to be really careful
