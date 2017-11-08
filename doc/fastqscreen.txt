@@ -1,0 +1,30 @@
+So we definitely want FASTQscreen in the new pipeline.
+
+The old pipeline uses a very old version and it seems to be having some memory issues.  Here
+is the command that is run:
+
+PATH=/path/to/bowtie-1.1.2:/fluidfs/f1/software/linux_x86_64/Illumina_pipeline_scripts/software_dependencies/perl/pipeline_current/bin:$PATH
+/path/to/fastq_screen_v0.4.2/fastq_screen
+--aligner bowtie
+--conf /path/to/fastq_screen.conf_bowtie1
+--threads 1 --quiet --subset 1000000
+--bowtie '--trim3 100'
+--outdir /fluidfs/f1/runqc/171019_A00291_0006_BH57JWDMXX/QC
+--outfile 171019_A00291_0006_BH57JWDMXX_1_reads1and2
+--seqcount 239901922
+--paired 'foo_1.sanfastq.gz' 'foo_2.sanfastq.gz'
+
+And the config file mostly defines the libraries to search. In fact, with --threads
+set on the command line this is literally all it defines.
+
+I think this should exist outside
+of Illuminatus, since the databases are outside of Illuminatus, so let's have a script called:
+
+/lustre/software/illuminatus_toolbox/fastq_screen_with_bowtie
+
+This will set the --aligner and --bowtie and --conf (libraries) options as we like them,
+and invoke /lustre/software/fastq_screen/fastq_screen_v0.11.3/fastq_screen.
+
+I think the config file should then live in /lustre/references/fastqscreen/fastq_screen.conf_bowtie1_20171108
+
+
