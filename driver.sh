@@ -16,10 +16,14 @@ shopt -sq failglob
 # on the syntax, and you have to check $? explicitly - trying to do it implicitly in
 # the manner of ( foo ) || handle_error won't do what you expect.
 
+# For the sake of the unit tests, we must be able to skip loading this config file,
+# so allow the location to be set to, eg. /dev/null
+ENVIRON_SH="${ENVIRON_SH:-`dirname $BASH_SOURCE`/environ.sh}"
+
 # This file must provide SEQDATA_LOCATION, FASTQ_LOCATION if not set externally.
-if [ -e "`dirname $BASH_SOURCE`"/environ.sh ] ; then
-    pushd "`dirname $BASH_SOURCE`" >/dev/null
-    source ./environ.sh
+if [ -e "$ENVIRON_SH" ] ; then
+    pushd "`dirname $ENVIRON_SH`" >/dev/null
+    source "`basename $ENVIRON_SH`"
     popd >/dev/null
 fi
 
@@ -58,8 +62,19 @@ log(){ [ $# = 0 ] && cat >&5 || echo "$@" >&5 ; }
 debug(){ if [ "${VERBOSE:-0}" != 0 ] ; then log "$@" ; fi }
 
 # Per-project log for project progress messages
+# Unfortunately this can get scrabled if we try to run read1 processing and demux
+# at the same time, so have a plog1 for that.
 plog() {
     projlog="$SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log"
+    if ! { [ $# = 0 ] && cat >> "$projlog" || echo "$*" >> "$projlog" ; } ; then
+       log '!!'" Failed to write to $projlog"
+       log "$@"
+    fi
+}
+
+# at the same time.
+plog1() {
+    projlog="$SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline_read1.log"
     if ! { [ $# = 0 ] && cat >> "$projlog" || echo "$*" >> "$projlog" ; } ; then
        log '!!'" Failed to write to $projlog"
        log "$@"
@@ -162,6 +177,13 @@ action_reads_finished(){
     ) |& plog ; [ $? = 0 ] || pipeline_fail Demultiplexing
 }
 
+action_in_read1_qc_reads_finished(){
+    #Same as above
+    debug "\_IN_READ1_QC_READS_FINISHED $RUNID"
+
+    action_reads_finished
+}
+
 # What about the transition from demultiplexing to QC. Do we need a new status,
 # or is the QC part just hooked off the back of BCL2FASTQ?
 # I say the former, or else it is harder to re-run QC without re-demultiplexing,
@@ -197,6 +219,8 @@ action_read1_finished() {
     debug "\_READ1_FINISHED $RUNID"
 
     touch pipeline/read1.started
+    plog_start
+    plog "See pipeline_read1.log for details on that."
 
     # Now is the time for WellDupes scanning. Note that we press on despite failure,
     # since we don't want a problem here to hold up demultiplexing.
@@ -206,12 +230,17 @@ action_read1_finished() {
     set +e ; ( set +e
         rundir="`pwd`"
         cd "$DEMUX_OUTPUT_FOLDER"
-        Snakefile.welldups --config rundir="$rundir" -- wd_main
-        Snakefile.qc -- interop_main
-        Snakefile.qc -F -- multiqc_main
+        e=''
+        Snakefile.welldups --config rundir="$rundir" -- wd_main || e="$e welldups"
+        Snakefile.qc -- interop_main                            || e="$e interop"
+        Snakefile.qc -F -- multiqc_main                         || e="$e multiqc"
 
-        log "  Completed read1 QC (welldups) on $RUNID."
-    ) |& plog
+        if [ -n "$e" ] ; then
+            log "  There were errors in read1 QC (${e# }) on $RUNID."
+        else
+            log "  Completed read1 QC (welldups) on $RUNID."
+        fi
+    ) |& plog1
 
     #We're done
     mv pipeline/read1.started pipeline/read1.done
@@ -251,6 +280,9 @@ action_redo() {
     redo_list=()
 
     # Remove all .redo files and corresponding .done files
+    # Also remove ALL old .started files since once the failed file is gone the
+    # system will think these are really running. (Nothing should be running just now!)
+    rm -f pipeline/lane?.started
     for redo in pipeline/lane?.redo ; do
         touch ${redo%.redo}.started
         rm -f ${redo%.redo}.done ; rm $redo

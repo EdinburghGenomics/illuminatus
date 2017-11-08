@@ -177,9 +177,14 @@ class RunStatus:
         if self._was_aborted():
             return "aborted"
 
-        # Otherwise if the run is complete we're done
+        # If the run is ended without error we're done, but because of the way the
+        # redo mechanism works it's possible for a run to fail then be partially
+        # re-done. But that doesn't make it complete.
         if self._was_ended():
-            return "complete"
+            if self._was_finished():
+                return "complete"
+            else:
+                return "partially_complete"
 
         # If the RUN is 'in_qc' we want to leave it cooking
         if self._qc_started() and (not self._qc_done()):

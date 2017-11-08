@@ -3,7 +3,7 @@
 import os, sys, re
 import gzip
 import json
-import itertools, collections
+import collections
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 """ This tool counts up the reads and bases in a FASTQ file.
@@ -19,8 +19,8 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
     The script takes a .fastq.gz file to examine. If a -j JSON is supplied
     then the same info will will be extracted from this file instead.
 
-    The index_seq can only be inferred. I'll use the same logic as found
-    in qc_tools_python/lib/qc_utils/profile_fq.py
+    The index_seq can only be inferred from the FASTQ. I'll use the same
+    logic as found in qc_tools_python/lib/qc_utils/profile_fq.py
 """
 
 def parse_args():

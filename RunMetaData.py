@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os, sys
-from glob import glob
 from collections import defaultdict
 from datetime import datetime
 

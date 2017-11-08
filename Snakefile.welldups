@@ -22,6 +22,7 @@ snakerun_drmaa "$0" "$@"
 
 #!/usr/bin/env snakemake
 import yaml
+import re
 import xml.etree.ElementTree as ET
 from snakemake.utils import format
 
@@ -36,7 +37,7 @@ def glob():
     return lambda p: sorted( (f.rstrip('/') for f in glob(os.path.expanduser(p))) )
 glob = glob()
 
-# Caller must set this
+# Caller must set this, as with Snakefile.demux
 RUNDIR = config['rundir']
 
 # Other settings
@@ -47,7 +48,7 @@ LEVELS_TO_SCAN = 5
 REPORT_VERBOSE = True
 
 # We need to examine the run info. OK to do this on each cluster job.
-run_info_root = ET.parse("datadir/RunInfo.xml").getroot()
+run_info_root = ET.parse(RUNDIR + "/RunInfo.xml").getroot()
 
 LAST_LANE, LAST_TILE = max(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
 
@@ -69,6 +70,25 @@ if LAST_TILE >= '2400':
 else
     TILE_MATCH = dict( T='1...', B='2...' )
 
+# Unfortunately there's more - for slimmed-down runs we get a line in
+# pipeline_settings.ini like this, indicating that most tiles are missing:
+#  --tiles: s_[$LANE]_1101
+# I don't want to just ignore missing tiles as this is right to trigger a validation
+# failure.
+# Rather than re-code the logic for what goes in pipeline_settings.ini I'm just going
+# to scan the file and interpret the line.
+# This is not (yet) going to work in the general case!
+try:
+    with open(RUNDIR + "/pipeline_settings.ini") as fh:
+        for l in fh:
+            mo = re.match(r'\s*--tiles:.*]_(\d{4})$', l)
+            if mo:
+                tile = mo.group(1)
+                TILE_MATCH = dict( T=tile ) if tile[0] == 1 else dict( B=tile )
+except Exception:
+    #no matter
+    pass
+
 # === Driver rules ===
 localrules: wd_main
 rule wd_main:
@@ -80,7 +100,7 @@ localrules: make_summary
 
 rule make_summary:
     output: 'QC/WellDups/{targets}summary.yml'
-    input: expand( "{{targets}}targets_lane{lane}{side}.txt", lane=LANES_TO_SAMPLE, side=['T','B'] )
+    input: expand( "{{targets}}targets_lane{lane}{side}.txt", lane=LANES_TO_SAMPLE, side=TILE_MATCH.keys() )
     run:
         from collections import deque
         from time import sleep

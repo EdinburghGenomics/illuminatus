@@ -164,6 +164,19 @@ class T(unittest.TestCase):
             self.touch('pipeline/lane{}.done'.format(l+1))
         self.assertEqual(gy()['PipelineStatus:'], 'demultiplexed')
 
+    def test_read_states_oops(self):
+        """Confusion will happen if all lanes fail the first time but
+           you only redo one lane and that works. You might do this for testing,
+           I guess, before re-doing the whole thing.
+        """
+        run_info = self.use_run('160726_K00166_0120_BHCVH2BBXX', copy=True)
+
+        self.touch('pipeline/read1.done')
+        self.touch('pipeline/qc.done')
+
+        self.assertEqual( dictify(run_info.get_yaml())['PipelineStatus:'], 'partially_complete')
+
+
     def test_read_states_miseq(self):
         """Ensure that the YAML output is what we expect (for a MiSeq run),
            and run through the states until sequencing finished.

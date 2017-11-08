@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest
-import sys, os
+import sys, os, re
 
 import subprocess
 from tempfile import mkdtemp
@@ -20,7 +20,8 @@ VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')
 
 PROGS_TO_MOCK = """
-    BCL2FASTQPreprocessor.py BCL2FASTQPostprocessor.py BCL2FASTQCleanup.py BCL2FASTQRunner.sh
+    BCL2FASTQPreprocessor.py BCL2FASTQPostprocessor.py BCL2FASTQCleanup.py
+    Snakefile.qc Snakefile.demux Snakefile.welldups
     summarize_lane_contents.py rt_runticket_manager.py
 """.split()
 
@@ -46,6 +47,7 @@ class T(unittest.TestCase):
 
         # Set the driver to run in our test harness. Note I can set
         # $BIN_LOCATION to more than one path.
+        # Also we need to set VERBOSE to the driver even if it's not set for the test script.
         self.environment = dict(
                 SEQDATA_LOCATION = os.path.join(self.temp_dir, 'seqdata'),
                 FASTQ_LOCATION = os.path.join(self.temp_dir, 'fastqdata'),
@@ -53,6 +55,8 @@ class T(unittest.TestCase):
                 LOG_DIR = os.path.join(self.temp_dir, 'log'), #this is redundant if...
                 MAINLOG = "/dev/stdout",
                 NO_HST_CHECK = '1',
+                ENVIRON_SH = '/dev/null',
+                VERBOSE = '1'
             )
 
         # Also globally clear some environment variables that might have been set outside
@@ -182,9 +186,13 @@ class T(unittest.TestCase):
         #Sample sheet should be summarized
         expected_calls = self.bm.empty_calls()
         expected_calls['samplesheet_fetch.sh'] = ['']
-        expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml',
-                                                        '--from-yml pipeline/sample_summary.yml --txt -']
+        expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml --txt -']
         expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --reply @???']
+        expected_calls['Snakefile.qc'] = ['-F -- multiqc_main']
+
+        #The call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
+        self.bm.last_calls['rt_runticket_manager.py'][0] = re.sub(
+                                    r'@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][0] )
 
         #But nothing else should happen
         self.assertEqual(self.bm.last_calls, expected_calls)
@@ -194,7 +202,7 @@ class T(unittest.TestCase):
                                 os.path.join(test_data, 'pipeline', 'pipeline.log') ))
 
     def test_reads_finished(self):
-        """A run ready to go through the pipeline.
+        """A run ready to go through the main pipeline (read1 + demux).
              SampleSheet.csv should be converted to a symlink
              A demultiplexing folder should appear in fastqdata
              BCL2FASTQPreprocessor.py should be invoked
@@ -202,9 +210,17 @@ class T(unittest.TestCase):
         """
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
-        #Now we need to make the ./pipeline folder to push it out of status NEW
-        os.system("mkdir -p " + test_data + "/pipeline")
+        #Now we need to make the ./pipeline folder to push it out of status NEW.
+        self.shell("mkdir -p " + test_data + "/pipeline")
 
+        #Run the driver once to do the read1 processing (a no-op due to the mocks)
+        self.bm_rundriver()
+
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READ1_FINISHED")
+        self.assertEqual( len(self.bm.last_calls['Snakefile.qc']), 2 )
+        self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
+
+        #The second one will actually demultiplex.
         self.bm_rundriver()
 
         #Check samplesheet link.
@@ -216,14 +232,13 @@ class T(unittest.TestCase):
         fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
         self.assertTrue( os.path.isdir(os.path.join(fastqdir, "demultiplexing")) )
 
-        #Check presence of 8 lock files
-        self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline', 'lane?.started')) ) )
+        #Check presence of 8 .done files
+        self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline', 'lane?.done')) ) )
 
-        #Check invoking of preprocessor (in the sedata dir)
-        self.assertEqual( self.bm.last_calls['BCL2FASTQPreprocessor.py'][0],
-                          ". " + os.path.join(fastqdir, "demultiplexing")
+        #Check invoking of Snakefile.demux (in the sedata dir)
+        self.assertEqual( self.bm.last_calls['Snakefile.demux'][0],
+                          '--config lanes=1 2 3 4 5 6 7 8 rundir={}'.format(test_data)
                         )
-        self.assertEqual( len(self.bm.last_calls['BCL2FASTQPreprocessor.py']), 1)
 
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READS_FINISHED")
 
@@ -234,24 +249,29 @@ class T(unittest.TestCase):
         """
         # Start the same as test_reads_finished...
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        os.system("mkdir -p " + test_data + "/pipeline")
+        self.shell("mkdir -p " + test_data + "/pipeline")
+        self.shell("touch " + test_data + "/pipeline/read1.started")
 
-        self.bm.add_mock('BCL2FASTQPreprocessor.py', fail=True)
+        self.bm.add_mock('Snakefile.demux', fail=True)
 
         self.bm_rundriver()
 
-        #I still expect to see the demultiplexing folder and 8 lock files
+        # We said read1 was started so we should be in this state:
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "IN_READ1_QC_READS_FINISHED")
+
+        # I still expect to see the demultiplexing folder and 8 lock files,
+        # as these are not removed on failure.
         fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
         self.assertTrue( os.path.isdir(os.path.join(fastqdir, "demultiplexing")) )
-        self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline', 'lane?.started')) ) )
+        self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline/lane?.started')) ) )
 
-        #Look for evidence of clean failure, report to RT, etc.
+        # Look for evidence of clean failure, report to RT, etc.
         self.assertTrue( os.path.exists(os.path.join(test_data, 'pipeline', 'failed')) )
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'][-1],
                           "-r 160606_K00166_0102_BHF22YBBXX --reply " +
                           "Demultiplexing failed. See log in " + test_data + "/pipeline/pipeline.log"
                         )
-        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "FAIL processing 160606_K00166_0102_BHF22YBBXX")
+        self.assertInStdout("FAIL Demultiplexing 160606_K00166_0102_BHF22YBBXX")
 
     def test_new_and_finished(self):
         """A run which is complete which has no pipeline folder.
@@ -269,80 +289,91 @@ class T(unittest.TestCase):
 
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
-        #Mark the run as started.
-        os.system("mkdir -p " + test_data + "/pipeline")
-        os.system("touch " + test_data + "/pipeline/lane{1..8}.started")
+        # Mark the run as started, and let's say we're processing read1
+        self.shell("mkdir -p " + test_data + "/pipeline")
+        self.shell("touch " + test_data + "/pipeline/read1.started")
+        self.shell("touch " + test_data + "/pipeline/lane{1..8}.started")
 
         self.bm_rundriver()
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "IN_DEMULTIPLEXING")
 
-        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "IN_PIPELINE")
+        # Finishing read1 shouldn't change matters
+        self.shell("touch " + test_data + "/pipeline/read1.done")
+
+        self.bm_rundriver()
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "IN_DEMULTIPLEXING")
 
     def test_completed(self):
 
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
-        os.system("mkdir -p " + test_data + "/pipeline")
-        os.system("touch " + test_data + "/pipeline/lane{1..8}.started")
-        os.system("touch " + test_data + "/pipeline/lane{1..8}.done")
+        self.shell("mkdir -p " + test_data + "/pipeline")
+        self.shell("touch " + test_data + "/pipeline/lane{1..8}.started")
+        self.shell("touch " + test_data + "/pipeline/lane{1..8}.done")
+        self.shell("touch " + test_data + "/pipeline/read1.done")
+        self.shell("touch " + test_data + "/pipeline/qc.done")
 
         self.bm_rundriver()
 
-        #I'm not sure if the driver should log anything for completed runs, but for now it
-        #logs a message containing 'status complete'
+        #Normally the driver should not log anything for completed runs, but in debug
+        #mode it logs a message containing 'status=complete'
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "status=complete")
 
     def test_redo(self):
-        """A run which was completed but we want to redo lanes 1 and 2
+        """A run which was partly completed but we want to redo lanes 1 and 2
+           Lane 2 will be marked as done but lane 1 will not.
         """
-        # TODO - check this also works for (partially) redoing a failed run.
 
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
         fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
 
         self.shell("mkdir -p " + test_data + "/pipeline")
+        self.shell("touch " + test_data + "/pipeline/read1.done")
         self.shell("touch " + test_data + "/pipeline/lane{1..8}.started")
-        self.shell("touch " + test_data + "/pipeline/lane{1..8}.done")
+        self.shell("touch " + test_data + "/pipeline/lane{2..8}.done")
+
+        # Without this failed flag, the RunStatus will be in_demultiplexing.
+        self.shell("touch " + test_data + "/pipeline/failed")
         self.shell("touch " + test_data + "/pipeline/lane{1,2}.redo")
         self.shell("mkdir -p " + fastqdir + "/demultiplexing")
-        # This should suppresss sending a new report to RT
-        self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
-        self.shell("touch " + test_data + "/pipeline/sample_summary.txt")
 
-        #This should do many things...
+        # This should suppresss sending a new report to RT, since there will
+        # already appear to be an up-to-date samplesheet plus a summary.
+        self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
+        self.shell("touch " + test_data + "/pipeline/sample_summary.yml")
+
+        # This should do many things...
         self.bm_rundriver()
 
-        #The driver should spot that the run needed a REDO
+        # The driver should spot that the run needed a REDO
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "status=redo")
 
-        #It should have called for a cleanup on lanes 1 and 2
+        # It should have called for a cleanup on lanes 1 and 2
         self.assertEqual( self.bm.last_calls['BCL2FASTQCleanup.py'],
                           [fastqdir + " 1 2"]
                         )
 
-        #It should have called the pre-processor, also specifying the same lanes
-        self.assertEqual( self.bm.last_calls['BCL2FASTQPreprocessor.py'],
-                          [". " + os.path.join(fastqdir, "demultiplexing") + " 1 2"]
+        # It should have called Snakefile.demux
+        self.assertEqual( self.bm.last_calls['Snakefile.demux'],
+                          ["--config lanes=1 2 rundir=" + test_data ]
                         )
 
-        #It should have removed the .done and .redo files, but not the .started files
-        #or the .done files for other lanes.
+        # It should have removed the .done, .started and .redo files, then
+        # recreated the .done files for these two lanes.
+        # The .started files for the other lanes should also be removed (in general
+        # we wouldn't expect to find both a .started and a .done)
         self.assertEqual([os.path.exists(test_data + "/pipeline/" + f) for f in [
                             'lane1.started', 'lane1.done', 'lane1.redo',
                             'lane2.started', 'lane2.done', 'lane2.redo',
                             'lane3.started', 'lane3.done', 'lane3.redo' ]
-                         ], [True,            False,        False,
-                             True,            False,        False,
-                             True,            True,         False ])
+                         ], [False,           True,         False,
+                             False,           True,         False,
+                             False,           True,         False ])
 
-        #And the runner and postprocessor should have been called too.
-        self.assertEqual( self.bm.last_calls['BCL2FASTQRunner.sh'],
-                          [""]
-                        )
-        self.assertEqual( self.bm.last_calls['BCL2FASTQPostprocessor.py'],
-                          [fastqdir + " 160606_K00166_0102_BHF22YBBXX"]
-                        )
+        # Check that summarize_lane_contents.py really wasn't called
+        self.assertEqual( self.bm.last_calls['summarize_lane_contents.py'], [] )
 
-        #And a report to RT
+        # And a note should go to RT
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
                           ["-r 160606_K00166_0102_BHF22YBBXX --comment Re-Demultiplexing of lanes 1 2 completed"] )
 
