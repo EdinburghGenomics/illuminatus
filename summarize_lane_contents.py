@@ -30,7 +30,7 @@ Soon it will ask the LIMS for additional details (loading conc) too.
                         " You can equivalently setenv PROJECT_NAME_LIST." )
     a.add_argument("--from_yml",
                    help="Get the info from the supplied YAML file, not by" +
-                        "scanning the directory and the LIMS." )
+                        " scanning the directory and the LIMS." )
     a.add_argument("--yml",
                    help="Output in YAML format to the specified file (- for stdout)." )
     a.add_argument("--mqc",
@@ -39,6 +39,9 @@ Soon it will ask the LIMS for additional details (loading conc) too.
                    help="Output in text format to the specified file (- for stdout)." )
     a.add_argument("--tsv",
                    help="Output in TSV format to the specified file (- for stdout)." )
+    a.add_argument("--add_in_yaml", nargs="*",
+                   help="Add columns by sucking in etra bits of YAML. Items must be" +
+                        " of the form key=file where key is [wd, yield]")
 
     a.add_argument("run_dir", nargs='?', default='.',
                    help="Supply a directory to scan, if not the current directory.")
@@ -71,6 +74,24 @@ def main(args):
                                          project_name_list = pnl )
     except FileNotFoundError as e:
         exit("Error summarizing run.\n{}".format(e) )
+
+    #See about extra stuff
+    for ai in args.add_in_yaml:
+        try:
+            key, filename = ai.split('=', 1)
+
+            if not key in ["wd", "yield"]:
+                exit("Key for add_in_yaml must be wd or yield.")
+
+                if not filename:
+                    #Empty vak can be an artifact of the way Snakemake is calling this script
+                    continue
+
+                with open(filename) as gfh:
+                    data_struct['add_in_' + key] = yaml.safe_load(gfh)
+
+        except ValueError:
+            exit("Error parsing {} as add_in_yaml.".format(ai))
 
     #See where we want to put it...
     for dest, formatter in [ ( args.yml, output_yml ),
@@ -113,7 +134,12 @@ def output_mqc(rids, fh):
 
     # Nope - apparently not. Had to read the source...
     # 'headers' needs to be a dict of { col_id: {title: ..., format: ... }
-    table_headers = ["Lane", "Project", "Pool/Library", "Loaded (pmol)", "Loaded PhiX (%)"]
+    table_headers = ["Lane", "Project", "Pool/Library", "Num Indexes", "Loaded (pmol)", "Loaded PhiX (%)"]
+
+    if 'add_in_yield' in rids:
+        table_headers.extend(["Clusters PF", "Q30 (%)", "Yield"])
+    if 'add_in_wd' in rids:
+        table_headers.extend(["Well Dups (%)"])
 
     # col1_header is actually col0_header!
     mqc_out['pconfig']['col1_header'] = table_headers[0]
@@ -121,15 +147,32 @@ def output_mqc(rids, fh):
         mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title=col, format='{:s}')
 
     for lane in rids['Lanes']:
-        #Logic here is just copied from output_tsv.
+        #Logic here is just copied from output_tsv, but we also want the total num_indexes
+        #First put all the pools in one dict (not by project)
         pools_union = {k: v for d in lane['Contents'].values() for k, v in d.items()}
+        num_indexes = sum(len(v) for v in pools_union.values())
         contents_str = ','.join( squish_project_content( pools_union , 5) )
 
-        mqc_out['data']['Lane {}'.format(lane['LaneNumber'])] = dict(
+        dd = mqc_out['data']['Lane {}'.format(lane['LaneNumber'])] = dict(
                                     col_01 = ','.join( sorted(lane['Contents']) ),
                                     col_02 = contents_str,
-                                    col_03 = lane['Loading'].get('pmol', 'unknown'),
-                                    col_04 = lane['Loading'].get('phix', 'unknown') )
+                                    col_03 = num_indexes,
+                                    col_04 = lane['Loading'].get('pmol', 'unknown'),
+                                    col_05 = lane['Loading'].get('phix', 'unknown') )
+
+        if 'add_in_yield' in rids:
+            #table_headers.extend(["Clusters PF", "Q30 (%)", "Yield"])
+            lane_yield_info = rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals']
+            dd['col_06'] = lane_yield_info['reads_pf']
+            dd['col_07'] = lane_yield_info['percent_gt_q30']
+            dd['col_08'] = lane_yield_info['yield_g']
+
+        if 'add_in_wd' in rids:
+            #table_headers.extend(["Well Dups (%)"])
+            # This will be the last header. We'll have to do this properly if I add more
+            # extras categories.
+            lane_wd_info = rids['add_in_wd']['{}'.format(lane['LaneNumber'])]['mean']
+            dd[max(mqc_out['headers'])] = lane_wd_info['raw']
 
     print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
 

@@ -17,7 +17,7 @@ import yaml
 from interop import py_interop_run_metrics, py_interop_run, py_interop_summary
 from interop.py_interop_metrics import index_out_of_bounds_exception
 
-def main(run_dir, out_dir=None):
+def main(run_dir, out_dir=None, always_dump=False):
     """Get the info from run_dir. If out_dir is set, dump individual
        files into all the laneN subdirectories. Else dump the info as
        raw YAML to stdout.
@@ -33,10 +33,11 @@ def main(run_dir, out_dir=None):
         res = extract_info(summary)
         res['_run_dir'] = run_dir.rstrip('/')
 
-    if not out_dir:
+    if not out_dir or always_dump:
         # Dump to YAML
         print(yaml.safe_dump(res, default_flow_style=False), end='')
-    else:
+
+    if out_dir:
         # Dump to _mqc.yaml for all lanes and overview.
         for k, v in res.items():
             if not k.startswith('_'):
@@ -171,13 +172,19 @@ def extract_info(summary):
     # totals manually for some reason.
     try:
         for lane in range(20):
-            mylaneinfo = dict()
-            res['lane{}'.format(summary.at(0).at(lane).lane())] = mylaneinfo
+            mylaneinfo = res['lane{}'.format(summary.at(0).at(lane).lane())] = dict()
 
             mylaneinfo['Totals']           = get_dict(None, _q30=[0,0], _e=[0,0])
             mylaneinfo['Non-Index Totals'] = get_dict(None, _q30=[0,0], _e=[0,0])
 
+            # reads and reads_pf and available for the whole lane under read 0.
+            # And by reads we mean fragments, as opposed to everywhere else in this script
+            # where we mean groups-of-cycles!!
+            mylaneinfo['Totals']['reads'] = int(summary.at(0).at(lane).reads())
+            mylaneinfo['Totals']['reads_pf'] = int(summary.at(0).at(lane).reads_pf())
+
             try:
+                # Loop over reads
                 for i in range(20):
                     #foo = summary.at(i).read()
                     #import pdb; pdb.set_trace()
@@ -212,6 +219,7 @@ def extract_info(summary):
 
                 assert False, "We shouldn't get here - 20 reads"
             except index_out_of_bounds_exception:
+                # We've already busted out of the loop
                 pass
 
             # Having processed all reads for this lane, scrub _q30 and _e
@@ -223,6 +231,10 @@ def extract_info(summary):
     except index_out_of_bounds_exception:
         #Out of lanes.
         pass
+
+    # Finally tot up the reads and reads_pf
+    for foo in ['reads', 'reads_pf']:
+        overview['Totals'][foo] =  sum( mli['Totals'][foo] for k, mli in res.items() if k.startswith('lane') )
 
     return res
 

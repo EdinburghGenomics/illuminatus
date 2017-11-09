@@ -59,6 +59,15 @@ def glob():
     return lambda p: sorted( (f.rstrip('/') for f in glob(os.path.expanduser(p))) )
 glob = glob()
 
+def ifexists(filepattern, single=False):
+    """Allows me to have optional inputs. If the file does not exist
+       we just run the rule without it.
+    """
+    gfp = glob(filepattern)
+    if len(gfp) > 1 and single:
+        raise RuntimeError("{} files match the patern '{}'".format(len(gfp), filepattern))
+    return gfp
+
 def split_fq_name(n):
     """Break out components from the name of a a FASTQ file.
         eg. 10749/10749DMpool03/170221_K00166_0183_AHHT3HBBXX_8_10749DM0001L01_1.fastq.gz
@@ -123,16 +132,15 @@ rule interop_main:
         plots  = expand( "QC/overview/interop/{plot}.interop_plot",
                          run = [run],
                          plot = ['qscore_heatmap', 'by_cycle', 'by_lane', 'flowcell' ] ),
-        ytable = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps )
+        ytable = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps ),
+        yyaml  = "QC/yield.yml"
 
 rule demux_stats_main:
     # TODO - gather stats from the bcl2fastq logs etc. Calculate barcode balance, ...
-    # This also tries to get the well dups value, if appropriate
     # Also we have the new Stats.json to compete with our stats.yml. A little confusing -
     # do we need both?
     input:
         stats   = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
-        dups    = expand("QC/lane{l}/{r}_{l}.welldups",  l=lanes, r=[run]),
         json    = expand("QC/lane{l}/Stats.json",        l=lanes),
         runinfo = expand("QC/{rep}/run_info.{r}.2.yml",  rep=allreps, r=[run])
 
@@ -246,13 +254,15 @@ rule interop_flowcell:
 # This makes use of the interop library that needs to be installed into the Python
 # VEnv - see the activate_venv script.
 # Due to the way the files are read I'm making this a one-shot thing that always
-# outputs all the reports. Rely on summarize_yield.py to make the files as expected.
+# outputs all the reports. Rely on summarize_yield.py to name the files as expected.
 # Make the rule depend on the InterOp dir to spot changes, even though the script
 # takes the parent dir as the input.
 rule interop_yield_table:
-    output: expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps )
+    output:
+        tables = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps ),
+        yaml   = "QC/yield.yml"
     input: format("{SEQDATA}/{run}/InterOp")
-    shell: "summarize_yield.py {input}/.. QC"
+    shell: "summarize_yield.py {input}/.. QC 1 > {output.yaml}"
 
 # md5summer that keeps the file path out of the .md5 file
 rule md5sum_file:
@@ -263,6 +273,7 @@ rule md5sum_file:
 # along with the md5sums, make a count summary per file
 # For speed, we're actually reading these from the Stats.json file (the
 # original copy).
+localrules: base_count_file
 rule base_count_file:
     output: "counts/{fq}.count"
     input:
@@ -313,38 +324,21 @@ rule get_postrun_metadata:
 # lane summary is just a munge of the .yml already made by the driver,
 # but this time we need a special mqc table format.
 # re-using this saves another call out to the LIMS
+# Extra columns will get added as they become available - yield (from interop)
+# and well dups (from read1 processing).
 rule get_lane_summary:
     output: "QC/overview/lane_summary_{runid}_mqc.yaml"
-    input: SEQDATA + "/{runid}/pipeline/sample_summary.yml"
+    input:
+        samples_yaml = SEQDATA + "/{runid}/pipeline/sample_summary.yml",
+        well_dups_yaml = ifexists("QC/welldups/*summary.yml", single=True),
+        yield_yaml = ifexists("QC/yield.yml")
     shell:
-        "summarize_lane_contents.py --from_yml {input} --mqc {output}"
+        """summarize_lane_contents.py --from_yml {input.samples_yaml} --mqc {output} \
+           --add_in_yaml wd={input.well_dups_yaml} yield={input.yield_yaml}
+        """
 
 # per-lane infos
-WELLDUPS_DATA = config.get('welldups', SEQDATA + '/WellDuplicates')
 BCL2FASTQ_OUT = "demultiplexing"
-
-localrules: grab_well_dups
-rule grab_well_dups:
-    output: stats = "QC/lane{lane}/{runid}_{lane}.welldups"
-    run:
-        #This only applies to 4000/X runs
-        machine_id = wildcards.runid.split('_')[1]
-        if machine_id[0] not in ['E', 'K']:
-            dup_lines = ['NA']
-        else:
-            file_to_read = format("{WELLDUPS_DATA}/{wildcards.runid}/*targets_all_lanes.txt")
-            try:
-                #Snag the well-dups value. With the improved output I can make this less messy.
-                wd = slurp_file(file_to_read, glob=True)
-                # TODO - grep out the lines and chuck them in the output file
-                dup_lines = [ l for l in wd ]
-            except Exception:
-                dup_lines = ['error reading ' + file_to_read ]
-
-        #And bung the value into {runid}_{lane}.welldups
-        with open(output.stats, 'w') as ofh:
-            for l in dup_lines:
-                print(l, file=ofh)
 
 rule get_bcl2fastq_stats:
     # This rule can hopefully be replaced by the direct examination of the .json
