@@ -62,7 +62,7 @@ log(){ [ $# = 0 ] && cat >&5 || echo "$@" >&5 ; }
 debug(){ if [ "${VERBOSE:-0}" != 0 ] ; then log "$@" ; fi }
 
 # Per-project log for project progress messages
-# Unfortunately this can get scrabled if we try to run read1 processing and demux
+# Unfortunately this can get scrambled if we try to run read1 processing and demux
 # at the same time, so have a plog1 for that.
 plog() {
     projlog="$SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log"
@@ -72,11 +72,12 @@ plog() {
     fi
 }
 
-# at the same time.
+# Have a special log for the read1 processing, as this can happen in parellel
+# with other actions.
 plog1() {
-    projlog="$SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline_read1.log"
-    if ! { [ $# = 0 ] && cat >> "$projlog" || echo "$*" >> "$projlog" ; } ; then
-       log '!!'" Failed to write to $projlog"
+    projlog1="$SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline_read1.log"
+    if ! { [ $# = 0 ] && cat >> "$projlog1" || echo "$*" >> "$projlog1" ; } ; then
+       log '!!'" Failed to write to $projlog1"
        log "$@"
     fi
 }
@@ -217,6 +218,7 @@ action_in_demultiplexing() {
 
 action_read1_finished() {
     debug "\_READ1_FINISHED $RUNID"
+    log "  Now commencing read1 processing on $RUNID."
 
     touch pipeline/read1.started
     plog_start
@@ -236,9 +238,9 @@ action_read1_finished() {
         Snakefile.qc -F -- multiqc_main                         || e="$e multiqc"
 
         if [ -n "$e" ] ; then
-            log "  There were errors in read1 QC (${e# }) on $RUNID."
+            log "  There were errors in read1 processing (${e# }) on $RUNID. See $projlog1"
         else
-            log "  Completed read1 QC (welldups) on $RUNID."
+            log "  Completed read1 processing on $RUNID."
         fi
     ) |& plog1
 
