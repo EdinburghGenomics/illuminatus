@@ -61,11 +61,12 @@ log(){ [ $# = 0 ] && cat >&5 || echo "$@" >&5 ; }
 # Debug means log only if VERBOSE is set
 debug(){ if [ "${VERBOSE:-0}" != 0 ] ; then log "$@" ; fi }
 
-# Per-project log for project progress messages
+# Per-project log for project progress messages, goes into the output
+# directory.
 # Unfortunately this can get scrambled if we try to run read1 processing and demux
 # at the same time, so have a plog1 for that.
 plog() {
-    projlog="$SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline.log"
+    projlog="$DEMUX_OUTPUT_FOLDER/pipeline/pipeline.log"
     if ! { [ $# = 0 ] && cat >> "$projlog" || echo "$*" >> "$projlog" ; } ; then
        log '!!'" Failed to write to $projlog"
        log "$@"
@@ -75,7 +76,7 @@ plog() {
 # Have a special log for the read1 processing, as this can happen in parellel
 # with other actions.
 plog1() {
-    projlog1="$SEQDATA_LOCATION/${RUNID:-NO_RUN_SET}/pipeline/pipeline_read1.log"
+    projlog1="$DEMUX_OUTPUT_FOLDER/pipeline_read1.log"
     if ! { [ $# = 0 ] && cat >> "$projlog1" || echo "$*" >> "$projlog1" ; } ; then
        log '!!'" Failed to write to $projlog1"
        log "$@"
@@ -83,6 +84,7 @@ plog1() {
 }
 
 plog_start() {
+    mkdir -vp "$DEMUX_OUTPUT_FOLDER"
     plog $'>>>\n>>>\n>>>'" $0 starting action_$STATUS at `date`"
 }
 
@@ -127,9 +129,12 @@ action_new(){
 
     # In order to run the initial round of MultiQC we'll also and up making the
     # $DEMUX_OUTPUT_FOLDER/QC/ directory.
+    # We're now sending the logs to the outpur folder too.
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
     set +e ; ( set -e
       mkdir -v ./pipeline
+      ln -sv "$DEMUX_OUTPUT_FOLDER" ./pipeline/output
+
       plog_start
       fetch_samplesheet_and_report
 
