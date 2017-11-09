@@ -57,7 +57,13 @@ else
     pip3 install Rt
     pip3 install genologics
     pip3 install psycopg2
-    ( cd /lustre/software/interop/interop-1.1.1/build/src/ext/python && python3 setup.py install )
+
+    # FIXME - push the pre-built stuff into GIT so I can pip install it rather than
+    # relying on a specific local file path.
+    cd /lustre/software/interop/interop-1.1.1/build/src/ext/python && python3 setup.py install
+
+    # Needed if well_dups runs in the local VEnv, which it currently does.
+    pip3 install python-Levenshtein
 
     # My own MultiQC and MultiQC_EdGen. Pip installs directly from GIT so
     # why not? Assume the master branch is always good, since it's simpler than

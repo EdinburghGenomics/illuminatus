@@ -16,7 +16,7 @@ shopt -sq failglob
 # on the syntax, and you have to check $? explicitly - trying to do it implicitly in
 # the manner of ( foo ) || handle_error won't do what you expect.
 
-# For the sake of the unit tests, we must be able to skip loading this config file,
+# For the sake of the unit tests, we must be able to skip loading the config file,
 # so allow the location to be set to, eg. /dev/null
 ENVIRON_SH="${ENVIRON_SH:-`dirname $BASH_SOURCE`/environ.sh}"
 
@@ -223,8 +223,9 @@ action_read1_finished() {
     touch pipeline/read1.started
     plog_start
     plog "See pipeline_read1.log for details on that."
+    plog1 </dev/null  #Log1 must be primed before entering subshell!
 
-    # Now is the time for WellDupes scanning. Note that we press on despite failure,
+    # Now is the time for WellDups scanning. Note that we press on despite failure,
     # since we don't want a problem here to hold up demultiplexing.
     # There will be a retry at the point of QC with stricter error handling.
     mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC
@@ -244,7 +245,14 @@ action_read1_finished() {
         fi
     ) |& plog1
 
-    #We're done
+    # We're done. If the above block was interrupted by SIGINT we'll arrive here
+    # with $? set to 130. Log the interruption but still set the done flag as the state
+    # diagram demands it.
+    if [ "$?" != 0 ] ; then
+        plog1 "Interrupted during read1 processing on $RUNID."
+        log "  Interrupted during read1 processing on $RUNID."
+    fi
+
     mv pipeline/read1.started pipeline/read1.done
 }
 

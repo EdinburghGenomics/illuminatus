@@ -67,14 +67,14 @@ END_POS = READ_LENGTH + START_POS
 # If there are 4 swaths per side (NovaSeq) then only do the even tiles
 if LAST_TILE >= '2400':
     TILE_MATCH = dict( T='1..[02468]', B='2..[02468]' )
-else
+else:
     TILE_MATCH = dict( T='1...', B='2...' )
 
 # Unfortunately there's more - for slimmed-down runs we get a line in
 # pipeline_settings.ini like this, indicating that most tiles are missing:
 #  --tiles: s_[$LANE]_1101
-# I don't want to just ignore missing tiles as this is right to trigger a validation
-# failure.
+# I don't want to just ignore tiles with missing BCL files as this is right to
+# trigger a genuine validation failure.
 # Rather than re-code the logic for what goes in pipeline_settings.ini I'm just going
 # to scan the file and interpret the line.
 # This is not (yet) going to work in the general case!
@@ -84,7 +84,7 @@ try:
             mo = re.match(r'\s*--tiles:.*]_(\d{4})$', l)
             if mo:
                 tile = mo.group(1)
-                TILE_MATCH = dict( T=tile ) if tile[0] == 1 else dict( B=tile )
+                TILE_MATCH = dict( T=tile ) if tile[0] == '1' else dict( B=tile )
 except Exception:
     #no matter
     pass
@@ -93,14 +93,14 @@ except Exception:
 localrules: wd_main
 rule wd_main:
     input:
-        summary = format('QC/WellDups/{TARGETS_TO_SAMPLE}summary.yml')
+        summary = format('QC/welldups/{TARGETS_TO_SAMPLE}summary.yml')
 
 # === Rules to invoke the duplicate counter ===
 localrules: make_summary
 
 rule make_summary:
-    output: 'QC/WellDups/{targets}summary.yml'
-    input: expand( "{{targets}}targets_lane{lane}{side}.txt", lane=LANES_TO_SAMPLE, side=TILE_MATCH.keys() )
+    output: 'QC/welldups/{targets}summary.yml'
+    input: expand( "QC/welldups/{{targets}}targets_lane{lane}{side}.txt", lane=LANES_TO_SAMPLE, side=TILE_MATCH.keys() )
     run:
         from collections import deque
         from time import sleep
@@ -113,7 +113,7 @@ rule make_summary:
 
             #Look at the last 3 lines of the file
             with open(f) as fh:
-                for k, v in map lambda l: l.rstrip('\n%').split(':'), deque(f, 3):
+                for k, v in [ l.rstrip('\n%').split(':') for l in deque(fh, 3) ]:
                     if "Overall" in k:
                         side["raw"] = float(v)
                     elif "v1" in k:
@@ -130,19 +130,20 @@ rule make_summary:
             yaml.safe_dump(res, yfh)
 
 rule prep_indices:
-    output: "{targets}clusters.list"
+    output: "QC/welldups/{targets}clusters.list"
     input:
         slocs = format("{RUNDIR}/Data/Intensities/s.locs")
     shell:
         "{TOOLBOX} wd_get_cached_targets {input.slocs} {TARGETS_TO_SAMPLE} {output}"
 
 rule count_well_dupl:
-    output: "{targets}targets_lane{lane}{side,.}.txt"
+    output: "QC/welldups/{targets}targets_lane{lane}{side,.}.txt"
     input:
-        targfile = "{targets}clusters.list"
+        targfile = "QC/welldups/{targets}clusters.list"
     params:
-        summary = '-S' if not REPORT_VERBOSE else ''
+        verbose = '' if REPORT_VERBOSE else '-S',
+        tiles   = lambda wc: TILE_MATCH[wc.side]
     shell:
         """{TOOLBOX} wd_count_well_duplicates -f {input.targfile} -n {wildcards.targets} -s {LAST_TILE} \
            -r {RUNDIR} -i {wildcards.lane} -l {LEVELS_TO_SCAN} --cycles {START_POS}-{END_POS} \
-           -t {TILE_MATCH[wildcards.side]} {params.summary} > {output}"""
+           -t {params.tiles} {params.verbose} > {output}"""
