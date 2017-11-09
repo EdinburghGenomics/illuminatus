@@ -83,12 +83,12 @@ def main(args):
             if not key in ["wd", "yield"]:
                 exit("Key for add_in_yaml must be wd or yield.")
 
-                if not filename:
-                    #Empty vak can be an artifact of the way Snakemake is calling this script
-                    continue
+            if not filename:
+                #Empty val can be an artifact of the way Snakemake is calling this script
+                continue
 
-                with open(filename) as gfh:
-                    data_struct['add_in_' + key] = yaml.safe_load(gfh)
+            with open(filename) as gfh:
+                data_struct['add_in_' + key] = yaml.safe_load(gfh)
 
         except ValueError:
             exit("Error parsing {} as add_in_yaml.".format(ai))
@@ -135,16 +135,19 @@ def output_mqc(rids, fh):
     # Nope - apparently not. Had to read the source...
     # 'headers' needs to be a dict of { col_id: {title: ..., format: ... }
     table_headers = ["Lane", "Project", "Pool/Library", "Num Indexes", "Loaded (pmol)", "Loaded PhiX (%)"]
+    table_formats = ["",     "{:s}",    "{:s}",         "{:d}",        "{:s}",          "{:s}"           ]
 
     if 'add_in_yield' in rids:
-        table_headers.extend(["Clusters PF", "Q30 (%)", "Yield"])
+        table_headers.extend(["Clusters PF", "Q30 (%)", "Yield GB"])
+        table_formats.extend(["{:d}",        "{:.3f}",  "{:.3f}"  ])
     if 'add_in_wd' in rids:
         table_headers.extend(["Well Dups (%)"])
+        table_formats.extend(["{:.2f}"       ])
 
     # col1_header is actually col0_header!
     mqc_out['pconfig']['col1_header'] = table_headers[0]
     for colnum, col in list(enumerate(table_headers))[1:]:
-        mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title=col, format='{:s}')
+        mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title=col, format=table_formats[colnum])
 
     for lane in rids['Lanes']:
         #Logic here is just copied from output_tsv, but we also want the total num_indexes

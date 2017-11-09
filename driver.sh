@@ -66,7 +66,7 @@ debug(){ if [ "${VERBOSE:-0}" != 0 ] ; then log "$@" ; fi }
 # Unfortunately this can get scrambled if we try to run read1 processing and demux
 # at the same time, so have a plog1 for that.
 plog() {
-    projlog="$DEMUX_OUTPUT_FOLDER/pipeline/pipeline.log"
+    projlog="$DEMUX_OUTPUT_FOLDER/pipeline.log"
     if ! { [ $# = 0 ] && cat >> "$projlog" || echo "$*" >> "$projlog" ; } ; then
        log '!!'" Failed to write to $projlog"
        log "$@"
