@@ -48,11 +48,11 @@ TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ.get('TOOLBOX', '/lustre/softwa
 # Other than that, ensure that scripts in the directory with this Snakefile are
 # in the PATH (we have to do it here as $PATH does not get preserved on cluster jobs):
 #   fq_base_counter.py, RunMetaData.py, PostRunMetaData.py, summarize_lane_contents.py, grab_bcl2fastq_stats.py
-if ( not os.path.dirname(workflow.snakefile) in os.environ['PATH'] and
-     not os.path.dirname(os.path.abspath(workflow.snakefile)) in os.environ['PATH'] ):
+if ( not os.path.dirname(workflow.snakefile) in os.environ['PATH'].split(':') and
+     not os.path.dirname(os.path.abspath(workflow.snakefile)) in os.environ['PATH'].split(':') ):
      os.environ['PATH'] += ':' + os.path.dirname(workflow.snakefile)
 
-# DEBUG
+# DEBUG. Note that the TOOLBOX doesn't go in the PATH - you have to invoke it explicitly.
 print("PATH is {}".format(os.environ['PATH']), file=sys.stderr)
 
 def glob():
