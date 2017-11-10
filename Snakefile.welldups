@@ -60,7 +60,7 @@ except ValueError:
     # inserting a no-op rule if LAST_LANE == 0 - see wd_main.
     pass
 
-# Lanes to sample is now variable sindce the arrival of Novaseq, so get it from
+# Lanes to sample is now variable since the arrival of Novaseq, so get it from
 # RunInfo.xml...
 LANES_TO_SAMPLE = range(1, int(LAST_LANE) + 1)
 
@@ -68,8 +68,11 @@ LANES_TO_SAMPLE = range(1, int(LAST_LANE) + 1)
 # but some runs only have 51 cycles in read1.
 num_cycles = int(run_info_root.find("Run/Reads/Read[@Number='1']").get('NumCycles'))
 if num_cycles <= (READ_LENGTH + START_POS):
-    assert num_cycles > READ_LENGTH
     START_POS = 0
+    if not num_cycles > READ_LENGTH:
+        # We can't process this run
+        print("Cannot process run with {} cycles in read 1.".format(num_cycles), file=sys.stderr)
+        LANES_TO_SAMPLE = []
 END_POS = READ_LENGTH + START_POS
 
 # If there are 4 swaths per side (NovaSeq) then only do the even tiles
@@ -103,7 +106,7 @@ localrules: wd_main
 if not LANES_TO_SAMPLE:
     rule wd_main:
         # No-op rule
-        shell: "## No tiles found in RunInfo.xml. Assuming this is a MiSeq or 2500 run."
+        shell: ">> No lanes to be sampled. Assuming this is a MiSeq or 2500 run, or read1 is too short."
 else:
     rule wd_main:
         input:
