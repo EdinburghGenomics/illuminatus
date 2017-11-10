@@ -84,7 +84,7 @@ plog1() {
 }
 
 plog_start() {
-    mkdir -vp "$DEMUX_OUTPUT_FOLDER"
+    mkdir -vp "$DEMUX_OUTPUT_FOLDER" |& debug
     plog $'>>>\n>>>\n>>>'" $0 starting action_$STATUS at `date`"
 }
 
@@ -132,8 +132,8 @@ action_new(){
     # We're now sending the logs to the outpur folder too.
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
     set +e ; ( set -e
-      mkdir -v ./pipeline
-      ln -sv "$DEMUX_OUTPUT_FOLDER" ./pipeline/output
+      mkdir -v ./pipeline |& debug
+      ln -sv "$DEMUX_OUTPUT_FOLDER" ./pipeline/output |& debug
 
       plog_start
       fetch_samplesheet_and_report
@@ -233,7 +233,7 @@ action_read1_finished() {
     # Now is the time for WellDups scanning. Note that we press on despite failure,
     # since we don't want a problem here to hold up demultiplexing.
     # There will be a retry at the point of QC with stricter error handling.
-    mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC
+    mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
     BREAK=1
     set +e ; ( set +e
         rundir="`pwd`"
@@ -360,7 +360,7 @@ fetch_samplesheet_and_report() {
     # This requires the QC directory to exist, even before demultiplexing starts.
     # In this case, an error in MultiQC etc. should not prevent demultiplexing from starting.
     set +e
-    mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC
+    mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F -- multiqc_main ) |& plog
 
     if [ ! -e pipeline/sample_summary.yml ] || \
