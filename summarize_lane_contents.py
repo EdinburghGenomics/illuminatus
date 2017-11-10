@@ -151,6 +151,7 @@ def output_mqc(rids, fh):
 
     for lane in rids['Lanes']:
         #Logic here is just copied from output_tsv, but we also want the total num_indexes
+        #like in output_txt.
         #First put all the pools in one dict (not by project)
         pools_union = {k: v for d in lane['Contents'].values() for k, v in d.items()}
         num_indexes = sum(len(v) for v in pools_union.values())

@@ -42,15 +42,18 @@ from snakemake.utils import format
 # Tools we currently need in the toolbox:
 #   cutadapt, fastqc, gnuplot (indirectly),
 #   interop_plot_qscore_heatmap, interop_plot_by_cycle, interop_plot_by_lane
-# If you want to use a test toolbox, just set the env var.
+# If you want to use a test toolbox, just set the env var. No need to hack this code!
 TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ.get('TOOLBOX', '/lustre/software/illuminatus_toolbox'))
 
 # Other than that, ensure that scripts in the directory with this Snakefile are
-# in the PATH:
+# in the PATH (we have to do it here as $PATH does not get preserved on cluster jobs):
 #   fq_base_counter.py, RunMetaData.py, PostRunMetaData.py, summarize_lane_contents.py, grab_bcl2fastq_stats.py
 if ( not os.path.dirname(workflow.snakefile) in os.environ['PATH'] and
      not os.path.dirname(os.path.abspath(workflow.snakefile)) in os.environ['PATH'] ):
      os.environ['PATH'] += ':' + os.path.dirname(workflow.snakefile)
+
+# DEBUG
+print("PATH is {}".format(os.environ['PATH']), file=sys.stderr)
 
 def glob():
     """Regular glob() is useful but it can be improved like so.
@@ -343,11 +346,12 @@ BCL2FASTQ_OUT = "demultiplexing"
 rule get_bcl2fastq_stats:
     # This rule can hopefully be replaced by the direct examination of the .json
     # file by the new module for MultiQC.
-    # Logic is a little contorted as I copied the script from the old pipeline
-    # where it scanned for the input file.
+    # The parameters passed to the script are a little weird as I copied the script
+    # from the old pipeline where it scanned for the input file.
     output: "QC/lane{lane}/{runid}_{lane}.stats.yml"
     input: BCL2FASTQ_OUT + "/lane{lane}/Stats/FastqSummaryF1L{lane}.txt"
-    shell: "grab_bcl2fastq_stats.py {BCL2FASTQ_OUT}/lane{wildcards.lane} {wildcards.runid} {wildcards.lane} > {output}"
+    shell:
+        "grab_bcl2fastq_stats.py {BCL2FASTQ_OUT}/lane{wildcards.lane} {wildcards.runid} {wildcards.lane} > {output}"
 
 localrules: get_bcl2fastq_json
 rule get_bcl2fastq_json:
