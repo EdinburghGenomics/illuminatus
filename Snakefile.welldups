@@ -58,6 +58,7 @@ except ValueError:
     # If there are no tiles we can reasonably assume we're on a non-patterned
     # Flowell (MiSeq or 2500). In this case, do nothing., which we can achieve by
     # inserting a no-op rule if LAST_LANE == 0 - see wd_main.
+    pass
 
 # Lanes to sample is now variable sindce the arrival of Novaseq, so get it from
 # RunInfo.xml...
