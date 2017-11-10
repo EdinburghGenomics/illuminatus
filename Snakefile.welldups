@@ -106,7 +106,7 @@ localrules: wd_main
 if not LANES_TO_SAMPLE:
     rule wd_main:
         # No-op rule
-        shell: ">> No lanes to be sampled. Assuming this is a MiSeq or 2500 run, or read1 is too short."
+        shell: "# No lanes to be sampled. Assuming this is a MiSeq or 2500 run, or read1 is too short."
 else:
     rule wd_main:
         input:
