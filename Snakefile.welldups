@@ -3,7 +3,8 @@
 
 ## This workflow specifically runs the well dups scanner.
 ## This triggers before demultiplexing but contributes to the
-## QC report so it makes sens for it to be separate.
+## final QC report so it makes sens for it to be separate.
+## For non-patterned flowcells this will just be a no-op.
 
 # Contents >>>
 #   + Embedded BASH script to bootstrap the workflow
@@ -47,10 +48,17 @@ START_POS = 20
 LEVELS_TO_SCAN = 5
 REPORT_VERBOSE = True
 
-# We need to examine the run info. OK to do this on each cluster job.
+# We need to examine the run info. OK to do this on every cluster job.
 run_info_root = ET.parse(RUNDIR + "/RunInfo.xml").getroot()
 
-LAST_LANE, LAST_TILE = max(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
+try:
+    LAST_LANE, LAST_TILE = max(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
+except ValueError:
+    # If there are no tiles we can reasonably assume we're on a non-patterned
+    # Flowell (MiSeq or 2500). In this case, do nothing., which we can achieve by
+    # inserting a no-op rule.
+    rule no_op:
+        shell: "## No tiles found in RunInfo.xml. Assuming this is a MiSeq or 2500 run."
 
 # Lanes to sample is now variable sindce the arrival of Novaseq, so get it from
 # RunInfo.xml...
