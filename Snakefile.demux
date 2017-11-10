@@ -96,7 +96,7 @@ rule bcl2fastq:
         stats = "lane{l}/Stats/DemultiplexingStats.xml",
         json = "lane{l}/Stats/Stats.json"
     input:
-        script = "do_demultiplex{l}.sh"
+        script = "lane{l}/do_demultiplex{l}.sh"
     threads: 12 # if you edit this number, also edit the cluster.yml
     shell:
         #The location for bcl2fastq and input/output should already be coded in the script
@@ -107,8 +107,10 @@ rule bcl2fastq:
 
 rule preprocess:
     output:
-        script = "do_demultiplex{l}.sh"
+        script = "lane{l}/do_demultiplex{l}.sh"
     params:
         dest = os.path.abspath('.')
     shell:
-        """{TOOLBOX} BCL2FASTQPreprocessor.py {RUNDIR} {params.dest} {wildcards.l}"""
+        """{TOOLBOX} BCL2FASTQPreprocessor.py {RUNDIR} {params.dest} {wildcards.l}
+           mv do_demultiplex{wildcards.l}.sh {output}
+        """
