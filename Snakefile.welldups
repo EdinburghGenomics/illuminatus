@@ -57,9 +57,7 @@ try:
 except ValueError:
     # If there are no tiles we can reasonably assume we're on a non-patterned
     # Flowell (MiSeq or 2500). In this case, do nothing., which we can achieve by
-    # inserting a no-op rule.
-    rule no_op:
-        shell: "## No tiles found in RunInfo.xml. Assuming this is a MiSeq or 2500 run."
+    # inserting a no-op rule if LAST_LANE == 0 - see wd_main.
 
 # Lanes to sample is now variable sindce the arrival of Novaseq, so get it from
 # RunInfo.xml...
@@ -100,9 +98,15 @@ except Exception:
 
 # === Driver rules ===
 localrules: wd_main
-rule wd_main:
-    input:
-        summary = format('QC/welldups/{TARGETS_TO_SAMPLE}summary.yml')
+
+if not LANES_TO_SAMPLE:
+    rule wd_main:
+        # No-op rule
+        shell: "## No tiles found in RunInfo.xml. Assuming this is a MiSeq or 2500 run."
+else:
+    rule wd_main:
+        input:
+            summary = format('QC/welldups/{TARGETS_TO_SAMPLE}summary.yml')
 
 # === Rules to invoke the duplicate counter ===
 localrules: make_summary
