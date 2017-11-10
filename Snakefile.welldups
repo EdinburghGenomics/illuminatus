@@ -51,6 +51,7 @@ REPORT_VERBOSE = True
 # We need to examine the run info. OK to do this on every cluster job.
 run_info_root = ET.parse(RUNDIR + "/RunInfo.xml").getroot()
 
+LAST_LANE = 0 ; LAST_TILE = '0000'
 try:
     LAST_LANE, LAST_TILE = max(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
 except ValueError:
