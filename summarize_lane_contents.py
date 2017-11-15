@@ -76,7 +76,7 @@ def main(args):
         exit("Error summarizing run.\n{}".format(e) )
 
     #See about extra stuff
-    for ai in args.add_in_yaml:
+    for ai in (args.add_in_yaml or []):
         try:
             key, filename = ai.split('=', 1)
 
@@ -283,18 +283,24 @@ def output_txt(rids, fh):
 
         for project, pools in sorted(lane['Contents'].items()):
 
-            contents_str = ' '.join(squish_project_content(pools))
+            # Special case for PhiX
+            if project == 'ControlLane' and pools == {'': ['PhiX']}:
+                p( "    - PhiX")
 
-            contents_label = 'Libraries' if set(pools.keys()) == [''] else \
-                             'Contents' if pools.get('') else \
-                             'Pool' if len(pools) == 1 else 'Pools'
+            else:
 
-            p( "    - Project {p} -- {cl} {l} -- Number of indexes {ni} ".format(
-                                p  = project,
-                                l  = contents_str,
-                                cl = contents_label,
-                                ni = sum( len(p) for p in pools ) ) )
-            p( "    - See {link}".format(link = prn[project].get('url', prn[project]['name'])) )
+                contents_str = ' '.join(squish_project_content(pools))
+
+                contents_label = 'Libraries' if set(pools.keys()) == [''] else \
+                                 'Contents' if pools.get('') else \
+                                 'Pool' if len(pools) == 1 else 'Pools'
+
+                p( "    - Project {p} -- {cl} {l} -- Number of indexes {ni} ".format(
+                                    p  = project,
+                                    l  = contents_str,
+                                    cl = contents_label,
+                                    ni = sum( len(p) for p in pools ) ) )
+                p( "    - See {link}".format(link = prn[project].get('url', prn[project]['name'])) )
 
 
 def output_tsv(rids, fh):
@@ -359,6 +365,8 @@ def project_real_name(proj_id_list, name_list=''):
             if len(name_match) == 1:
                 res[p] = dict( name = name_match[0],
                                url  = "http://foo.example.com/" + name_match[0] )
+            elif p == "ControlLane":
+                res[p] = dict( name = p )
             else:
                 res[p] = dict( name = p + "_UNKNOWN" )
     else:
@@ -369,6 +377,8 @@ def project_real_name(proj_id_list, name_list=''):
                 if n:
                     res[p] = dict( name = n,
                                    url = "http://foo.example.com/" + n )
+                elif p == "ControlLane":
+                    res[p] = dict( name = p )
                 else:
                     res[p] = dict( name = p + "_UNKNOWN" )
         except Exception as e:
