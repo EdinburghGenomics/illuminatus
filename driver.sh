@@ -59,7 +59,7 @@ mkdir -p `dirname "$MAINLOG"` ; exec 5>>"$MAINLOG"
 log(){ [ $# = 0 ] && cat >&5 || echo "$@" >&5 ; }
 
 # Debug means log only if VERBOSE is set
-debug(){ if [ "${VERBOSE:-0}" != 0 ] ; then log "$@" ; fi }
+debug(){ if [ "${VERBOSE:-0}" != 0 ] ; then log "$@" ; else [ $# = 0 ] && cat >/dev/null || true ; fi ; }
 
 # Per-project log for project progress messages, goes into the output
 # directory.
