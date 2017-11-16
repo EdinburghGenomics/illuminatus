@@ -100,24 +100,35 @@ def split_fq_name(n):
                      read = read,
                      unassigned = (lib == 'unassigned') )
 
-# See what input sequences we are dealing with
+# See what input sequences we are dealing with (if any, yet)
 # I wanted to use a hack to stop this being re-run on every cluster job,
 # but it didn't work as Snakemake re-runs itself even for local jobs.
 all_unassigned_fq = [ split_fq_name(f) for f in glob('*_unassigned_?.fastq.gz') ]
 all_assigned_fq   = [ split_fq_name(f) for f in glob('[1-9]*/*/*.fastq.gz') ]
-all_fq = (all_assigned_fq + all_unassigned_fq)
+all_control_fq    = [ split_fq_name(f) for f in glob('ControlLane/*/*.fastq.gz') ]
+all_fq = (all_assigned_fq + all_unassigned_fq + all_control_fq)
 all_1_fq = [ fq for fq in all_fq if fq['read'] == '1' ]
 
-# There should only be one run, but having runs_and_lanes as a set of pairs is how
-# I've done things elsewhere so I may as well stick with it.
-# On second thoughts - if this script were used on more than one run it would combine
-# lanes across runs, so let's forbid it and keep things simple.
-runs = set( sf['run'] for sf in all_fq )
-assert all_1_fq, "No _1.fastq.gz files found in {}.".format(os.getcwd())
-assert len(runs) == 1, "Expected to find only one run in {} but saw: {}".format(os.getcwd(), runs)
-run, = runs ; del(runs)
+if all_fq:
+    assert all_1_fq, "No _1.fastq.gz files found in {}.".format(os.getcwd())
+
+# There should only be one run. But what is it called?
+# If config['runid'] is set we use that, otherwise infer from all_fq, otherwise the directory name will do.
+try:
+    runs = set( sf['run'] for sf in all_fq )
+    if 'runid' in config: runs.add(config['runid'])
+    assert len(runs) <= 1, "Expected to find only one run in {} but saw: {}".format(os.getcwd(), runs)
+    run, = runs
+except ValueError:
+    # Revert to using name of CWD
+    run = os.path.basename(os.path.realpath(os.getcwd()))
+finally:
+    del(runs)
+
 lanes = sorted( set( sf['lane'] for sf in all_fq ) )
 # All report names - lane1, lane2, ..., overview
+# This will not generate the per-lane reports until the demultiplexing has been done.
+# FIXME - stop the dangling links on the overview that will result from this.
 allreps = expand("lane{l}", l=lanes) + ['overview']
 
 # === Driver rules ===

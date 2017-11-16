@@ -152,9 +152,9 @@ def output_mqc(rids, fh):
     for lane in rids['Lanes']:
         #Logic here is just copied from output_tsv, but we also want the total num_indexes
         #like in output_txt.
-        #First put all the pools in one dict (not by project)
+        #First put all the pools in one dict (not partitioned by project)
         pools_union = {k: v for d in lane['Contents'].values() for k, v in d.items()}
-        num_indexes = sum(len(v) for v in pools_union.values())
+        num_indexes = 0 if lane.get('Unindexed') else sum(len(v) for v in pools_union.values())
         contents_str = ','.join( squish_project_content( pools_union , 5) )
 
         dd = mqc_out['data']['Lane {}'.format(lane['LaneNumber'])] = dict(
@@ -226,11 +226,19 @@ def scan_for_info(run_dir, project_name_list=''):
         #but here's a placeholder.
         thislane['Loading'] = get_lane_loading(rids['Flowcell'])
 
+        lines_for_lane = [ line for line in ss_csv.samplesheet_data
+                           if line[ss_csv.column_mapping['lane']] == lanenum ]
 
-        thislane['Contents'] = summarize_lane(
-                                 [ line for line in ss_csv.samplesheet_data
-                                   if line[ss_csv.column_mapping['lane']] == lanenum ],
-                                 ss_csv.column_mapping )
+        thislane['Contents'] = summarize_lane( lines_for_lane, ss_csv.column_mapping )
+
+        #If the lane contains a single sample, is that one barcode or is it unindexed?
+        #We'd like to report which.
+        if len(lines_for_lane) == 1:
+            index_sequences = ss_csv._get_index_sequences_from_data_row( lines_for_lane[0] , ss_csv.column_mapping )
+            #It's unindexed if there are no indices or if they contain only N's.
+            thislane['Unindexed'] = not any( i.rstrip('N') for i in index_sequences )
+        else:
+            thislane['Unindexed'] = False
 
         rids['Lanes'].append(thislane)
 
@@ -282,6 +290,7 @@ def output_txt(rids, fh):
         p( "Lane {}:".format(lane['LaneNumber']) )
 
         for project, pools in sorted(lane['Contents'].items()):
+            # pools will be a dict of poolname : [ library, ... ]
 
             # Special case for PhiX
             if project == 'ControlLane' and pools == {'': ['PhiX']}:
@@ -291,15 +300,17 @@ def output_txt(rids, fh):
 
                 contents_str = ' '.join(squish_project_content(pools))
 
-                contents_label = 'Libraries' if set(pools.keys()) == [''] else \
+                contents_label = 'Libraries' if list(pools) == [''] else \
                                  'Contents' if pools.get('') else \
                                  'Pool' if len(pools) == 1 else 'Pools'
 
-                p( "    - Project {p} -- {cl} {l} -- Number of indexes {ni} ".format(
+                num_indexes = 0 if lane.get('Unindexed') else sum( len(p) for p in pools.values() )
+
+                p( "    - Project {p} -- {cl} {l} -- Number of indexes {ni}".format(
                                     p  = project,
                                     l  = contents_str,
                                     cl = contents_label,
-                                    ni = sum( len(p) for p in pools ) ) )
+                                    ni = num_indexes ) )
                 p( "    - See {link}".format(link = prn[project].get('url', prn[project]['name'])) )
 
 
