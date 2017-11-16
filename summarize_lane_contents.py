@@ -234,9 +234,9 @@ def scan_for_info(run_dir, project_name_list=''):
         #If the lane contains a single sample, is that one barcode or is it unindexed?
         #We'd like to report which.
         if len(lines_for_lane) == 1:
-            index_sequences = ss_csv._get_index_sequences_from_data_row( lines_for_lane[0] , ss_csv.column_mapping )
+            index_lengths = ss_csv.get_index_lengths_by_lane()[lanenum]
             #It's unindexed if there are no indices or if they contain only N's.
-            thislane['Unindexed'] = not any( i.rstrip('N') for i in index_sequences )
+            thislane['Unindexed'] = not any( index_lengths )
         else:
             thislane['Unindexed'] = False
 
@@ -262,8 +262,9 @@ def summarize_lane(lane_lines, column_mapping):
         else:
             sample_pool, sample_lib = '', sample_id
 
-        #I think this is what we are calling samples without a pool in the SSG
-        #This definitely needs to be standardised.
+        # I think this is what we are calling samples without a pool in the SSG, and
+        # thus the subdirectory name that will be used for the output files.
+        # This definitely needs to be standardised.
         if sample_pool == 'NoPool': sample_pool=''
 
         #Avoid use of defaultdict as it gums up YAML serialization. This is equivalent.

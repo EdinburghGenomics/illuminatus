@@ -2,6 +2,7 @@
 
 import logging as L
 import csv, sys, os
+from itertools import zip_longest
 
 from .SampleSheetClass import SampleSheet
 
@@ -40,7 +41,13 @@ class SampleSheetReader:
         for row in self.samplesheet_data:
             lane = self._get_lane_from_data_row( row , self.column_mapping )
             index_sequences = self._get_index_sequences_from_data_row( row , self.column_mapping )
-            lane_number_index_length [ lane ] = [ len(index_sequences[0]) , len(index_sequences[1]) ]
+
+            # What if the indexes are different lengths? This should not happen, but logically
+            # we have to return the max values, I think...
+            lane_number_index_length[ lane ] = [ max(i) for i in zip_longest(
+                                    lane_number_index_length.get(lane, []),
+                                    [ len(i.rstrip('N')) for i in index_sequences ],
+                                    fillvalue = 0 ) ]
 
         return lane_number_index_length
 

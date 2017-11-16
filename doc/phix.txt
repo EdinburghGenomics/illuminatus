@@ -1,0 +1,36 @@
+How do we process PhiX? Should be fairly simple - bcl2fastq
+without barcode puts the files under PhiX/PhiX. Report in the usual way.
+
+What actually happens now - see
+/lustre/seqdata/171005_K00166_0272_BHLKV7BBXX/SampleSheet.csv.0
+
+Project is 'ControlLane' and Sample_ID is Phix.
+
+At present, this fails because...
+
+1) The SampleSheet contains DummyIndex,NNNNNN which should not be there at all.
+2) The files under ControlLane don't get renamed by the postprocessor script
+
+According to our new naming convention they should be like:
+
+ControlLane/NoPool/171005_K00166_0272_BHLKV7BBXX_2_PhiX_1.fastq.gz
+
+Let's slim down that run and make it work.
+
+OK, I've made the postprocessor a little more forgiving so any samples not following
+the Pool__Library naming convention get put into 'NoPool'. This fixes the PhiX case and
+also allows us to process the older runs, albeit with missing pool info.
+
+I've also edited the logic that reports barcode lengths and added .rstrip('N'), with the
+upshot that barcode-less lanes get reported with length 0, and thus can easily be flagged
+as having no indexes, and also the base mask comes out as n* which is correct and causes
+all the reads to go to that sample. Yay!
+
+While doing this, I noticed bcl2fastq does not write empty files, so I added a hack to make
+these appear. Otherwise, the risk is the would simply be left off the report and we'd not
+notice that a sample was missing and deliver incomplete data.
+
+Other things...
+
+Also, the textual run report should not try to link to the "ControlLane" project.
+This was easily fixed.

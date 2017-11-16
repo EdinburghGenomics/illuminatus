@@ -116,16 +116,19 @@ def delete_d_dirs(path, lanes, log=lambda x: None):
 def delete_fastq(path, lanes, match_pattern, log=lambda x: None, otherdirs=()):
     """Generic file deleter given a path and a pattern.
     """
-    # Find all the matching files. Simplistically, assume that any top-level directory
-    # that contains such files is a project number.
+    # Find all the matching files. Here we have a baked-in idea of what a project number
+    # should look like, so if this changes the code will have to change.
+    ppatterns = ['[0-9]+', 'ControlLane']
+
     projects = set()
     deletions = 0
     emptydirs = 0
     for root, dirs, files in os.walk(path):
-        # At the top level, only descent into directories that are numbers (ie. projects)
+        # At the top level, only descent into directories that are numbers (ie. projects),
+        # or 'ControlLane' as a special case.
         # We expect to see the unassigned reads at this level
         if root == path:
-            dirs[:] = [ d for d in dirs if re.search(r'^[0-9]+$', d) ]
+            dirs[:] = [ d for d in dirs if any(re.search('^{}$'.format(p), d) for p in ppatterns) ]
 
         for f in files:
             mo = re.search(match_pattern, f)

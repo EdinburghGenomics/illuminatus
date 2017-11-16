@@ -104,8 +104,11 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         try:
             pool, library = pool_and_library.split('__')
         except ValueError:
-            log("# skipping (no pool__library) %s" % fastq_file)
-            continue
+            #log("# skipping (no pool__library) %s" % fastq_file)
+            #continue
+            # Decided be a little less strict here. This is also needed for PhiX
+            pool = 'NoPool'
+            library = pool_and_library
 
         new_filename = "{runid}_{lane}_{library}_{readnumber}.fastq.gz".format(**locals())
         new_filename_relative = os.path.join ( project, pool, new_filename )
@@ -148,8 +151,11 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         try:
             pool, library = pool_and_library.split('__')
         except ValueError:
-            log("# skipping (no pool__library) %s" % fastq_file)
-            continue
+            #log("# skipping (no pool__library) %s" % fastq_file)
+            #continue
+            # Decided be a little less strict here. This is also needed for PhiX
+            pool = 'NoPool'
+            library = pool_and_library
 
         new_filename = "{runid}_{lane}_{library}_{readnumber}.fastq.gz".format(**locals())
         new_filename_relative = os.path.join ( project, pool, new_filename )

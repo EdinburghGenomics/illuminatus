@@ -297,7 +297,7 @@ action_redo() {
     # Remove all .redo files and corresponding .done files
     # Also remove ALL old .started files since once the failed file is gone the
     # system will think these are really running. (Nothing should be running just now!)
-    rm -f pipeline/lane?.started
+    ( rm -f pipeline/lane?.started ) 2>/dev/null || true
     for redo in pipeline/lane?.redo ; do
         touch ${redo%.redo}.started
         rm -f ${redo%.redo}.done ; rm $redo
@@ -430,7 +430,7 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
 
   if [ "$STATUS" = complete ] || [ "$STATUS" = aborted ] ; then _log=debug ; else _log=log ; fi
-  $_log "Directory $run contains $RUNID from machine $INSTRUMENT with $LANES lane(s) and status=$STATUS"
+  $_log "$run has $RUNID from $INSTRUMENT with $LANES lane(s) and status=$STATUS"
 
   #Call the appropriate function in the appropriate directory.
   BREAK=0
