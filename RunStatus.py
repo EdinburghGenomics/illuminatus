@@ -167,7 +167,8 @@ class RunStatus:
             return "new"
 
         # RUN IS 'redo' if the run is marked for restarting and is ready for restarting (not running):
-        if self._is_sequencing_finished() and self._was_restarted() and self._was_ended():
+        if self._is_sequencing_finished() and self._was_restarted() and (
+            self._was_ended() or (self._read1_done() and self._was_finished() and not self._qc_started()) ):
             return "redo"
 
         # RUN is 'failed' or 'aborted' if flagged as such. There should be no process running, but

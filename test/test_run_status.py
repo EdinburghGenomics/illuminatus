@@ -164,6 +164,10 @@ class T(unittest.TestCase):
             self.touch('pipeline/lane{}.done'.format(l+1))
         self.assertEqual(gy()['PipelineStatus:'], 'demultiplexed')
 
+        # And if we try to redo a lane before QC starts...
+        self.touch('pipeline/lane2.redo')
+        self.assertEqual(gy()['PipelineStatus:'], 'redo')
+
     def test_read_states_oops(self):
         """Confusion will happen if all lanes fail the first time but
            you only redo one lane and that works. You might do this for testing,
