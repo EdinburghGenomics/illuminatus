@@ -112,7 +112,7 @@ all_1_fq = [ fq for fq in all_fq if fq['read'] == '1' ]
 if all_fq:
     # If there are any fastq files there must be some from read 1.
     assert all_1_fq, "No read1 files found in {}, but there were {} fastq files in total.".format(
-                                              os.getcwd()        len(all_fq) )
+                                              os.getcwd(),       len(all_fq) )
 
 # There should only be one run. But what is it called?
 # If config['runid'] is set we use that, otherwise infer from all_fq, otherwise the directory name will do.
