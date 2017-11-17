@@ -136,7 +136,8 @@ action_new(){
       ln -sv "$DEMUX_OUTPUT_FOLDER" ./pipeline/output |& debug
 
       plog_start
-      fetch_samplesheet_and_report
+      fetch_samplesheet
+      run_multiqc | plog
 
     ) ; [ $? = 0 ] && log OK && BREAK=1 || log FAIL
 }
@@ -157,7 +158,8 @@ action_reads_finished(){
 
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
-    fetch_samplesheet_and_report
+    fetch_samplesheet
+    run_multiqc | plog
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
     # Note that the preprocessor and runner are not aware of the 'demultiplexing'
@@ -241,7 +243,7 @@ action_read1_finished() {
         e=''
         Snakefile.welldups --config rundir="$rundir" -- wd_main || e="$e welldups"
         Snakefile.qc -- interop_main                            || e="$e interop"
-        Snakefile.qc -F -- multiqc_main                         || e="$e multiqc"
+        run_multiqc                                             || e="$e multiqc"
 
         if [ -n "$e" ] ; then
             log "  There were errors in read1 processing (${e# }) on $RUNID. See $projlog1"
@@ -318,7 +320,8 @@ action_redo() {
     # Re-summarize the sample sheet, as it probably changed.
     # TODO - say what lanes are being demuxed in the report, since we can't just now promise
     # that all the altered lanes are the actual ones being re-done.
-    fetch_samplesheet_and_report
+    fetch_samplesheet
+    run_multiqc | plog
 
     set +e ; ( set -e
       mkdir -vp "$DEMUX_OUTPUT_FOLDER"/demultiplexing
@@ -345,10 +348,9 @@ action_unknown() {
 }
 
 ### Other utility functions used by the actions.
-fetch_samplesheet_and_report() {
-    _oreset="`set +o`"
+fetch_samplesheet(){
     # Tries to fetch an updated samplesheet. If this is the first run, or if
-    # a new one was found, send an e-mail report to RT.
+    # a new one was found, delete the stale sample_summary.yml.
     old_ss_link="`readlink -q SampleSheet.csv || true`"
 
     #Currently if samplesheet_fetch.sh returns an error the pipeline aborts, as
@@ -356,38 +358,51 @@ fetch_samplesheet_and_report() {
     samplesheet_fetch.sh | plog
     new_ss_link="`readlink -q SampleSheet.csv || true`"
 
-    #Push any new metadata into the run report.
-    # This requires the QC directory to exist, even before demultiplexing starts.
-    # In this case, an error in MultiQC etc. should not prevent demultiplexing from starting.
-    set +e
-    mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
-    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F -- multiqc_main ) |& plog
+    if [ "$old_ss_link" != "$new_ss_link" ] ; then
+        rm -vf pipeline/sample_summary.yml |& debug
+    fi
+}
 
-    if [ ! -e pipeline/sample_summary.yml ] || \
-       [ "$old_ss_link" != "$new_ss_link" ] ; then
+run_multiqc() {
+    # Runs multiqc. Will not exit on error.
+    # Caller is responsible for log redirection.
+    _oreset="`set +o`"
+    set +e
+
+    if [ ! -e pipeline/sample_summary.yml ] ; then
         #summarize_lane_contents.py --yml pipeline/sample_summary.yml
         #This saves the yml and mails the text in one shot...
         rt_runticket_manager.py -r "$RUNID" --reply \
-            @<(summarize_lane_contents.py --yml pipeline/sample_summary.yml --txt -) |& plog
+            @<(summarize_lane_contents.py --yml pipeline/sample_summary.yml --txt -) 2>&1
     fi
+
+    # Push any new metadata into the run report.
+    # This requires the QC directory to exist, even before demultiplexing starts.
+    # In this case, an error in MultiQC etc. should not prevent demultiplexing from starting.
+    mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
+    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F -- multiqc_main ) 2>&1
+
+    # Snag that return value
+    _retval=$?
+
     eval "$_oreset"
+    return $_retval
 }
 
 run_qc() {
     # Hand over to Snakefile.qc for report generation
-    # Use a sub-shell to avoid changing dir in main shell.
-    (   rundir="`pwd`"
-        cd "$DEMUX_OUTPUT_FOLDER"
-        # First a quick report
-        Snakefile.qc -- demux_stats_main interop_main
-        Snakefile.qc -F -- multiqc_main
+    # First a quick report
+    ( cd "$DEMUX_OUTPUT_FOLDER" && Snakefile.qc -- demux_stats_main interop_main )
+    run_multiqc
 
-        # Then a full QC. Welldups should have run already but it will not
-        # hurt to re-run Snakemake with nothing to do.
-        Snakefile.qc -- md5_main qc_main
-        Snakefile.welldups --config rundir="$rundir" -- wd_main
-        Snakefile.qc -F -- multiqc_main
+    # Then a full QC. Welldups should have run already but it will not
+    # hurt to re-run Snakemake with nothing to do.
+    rundir="`pwd`"
+    ( cd "$DEMUX_OUTPUT_FOLDER"
+      Snakefile.qc -- md5_main qc_main
+      Snakefile.welldups --config rundir="$rundir" -- wd_main
     )
+    run_multiqc
 }
 
 pipeline_fail() {
