@@ -53,7 +53,7 @@ if ( not os.path.dirname(workflow.snakefile) in os.environ['PATH'].split(':') an
      os.environ['PATH'] += ':' + os.path.dirname(workflow.snakefile)
 
 # DEBUG. Note that the TOOLBOX doesn't go in the PATH - you have to invoke it explicitly.
-print("PATH is {}".format(os.environ['PATH']), file=sys.stderr)
+#print("PATH is {}".format(os.environ['PATH']), file=sys.stderr)
 
 def glob():
     """Regular glob() is useful but it can be improved like so.
@@ -110,7 +110,9 @@ all_fq = (all_assigned_fq + all_unassigned_fq + all_control_fq)
 all_1_fq = [ fq for fq in all_fq if fq['read'] == '1' ]
 
 if all_fq:
-    assert all_1_fq, "No _1.fastq.gz files found in {}.".format(os.getcwd())
+    # If there are any fastq files there must be some from read 1.
+    assert all_1_fq, "No read1 files found in {}, but there were {} fastq files in total.".format(
+                                              os.getcwd()        len(all_fq) )
 
 # There should only be one run. But what is it called?
 # If config['runid'] is set we use that, otherwise infer from all_fq, otherwise the directory name will do.

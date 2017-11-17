@@ -239,11 +239,11 @@ action_read1_finished() {
     BREAK=1
     set +e ; ( set +e
         rundir="`pwd`"
-        cd "$DEMUX_OUTPUT_FOLDER"
         e=''
+        cd "$DEMUX_OUTPUT_FOLDER"
         Snakefile.welldups --config rundir="$rundir" -- wd_main || e="$e welldups"
         Snakefile.qc -- interop_main                            || e="$e interop"
-        run_multiqc                                             || e="$e multiqc"
+        cd "$rundir" ; run_multiqc                              || e="$e multiqc"
 
         if [ -n "$e" ] ; then
             log "  There were errors in read1 processing (${e# }) on $RUNID. See $projlog1"
