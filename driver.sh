@@ -148,6 +148,8 @@ action_reads_unfinished(){
 
 action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
+    # Note this action must not attempt to run any QC ops - an interim report will be triggered
+    # by action_demultiplexed before it fires off all the QC jobs.
     eval touch pipeline/"lane{1..$LANES}.started"
 
     log "\_READS_FINISHED $RUNID. Checking for new SampleSheet.csv and preparing to demultiplex."
@@ -159,7 +161,7 @@ action_reads_finished(){
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
     fetch_samplesheet
-    run_multiqc | plog
+    ( run_multiqc | plog ) || true
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
     # Note that the preprocessor and runner are not aware of the 'demultiplexing'
@@ -366,7 +368,7 @@ fetch_samplesheet(){
 run_multiqc() {
     # Runs multiqc. Will not exit on error.
     # Caller is responsible for log redirection.
-    _oreset="`set +o`"
+    set +o | grep '+o errexit' && _ereset='set +e' || _ereset='set -e'
     set +e
 
     if [ ! -e pipeline/sample_summary.yml ] ; then
@@ -386,18 +388,18 @@ run_multiqc() {
     # Snag that return value
     _retval=$?
 
-    eval "$_oreset"
+    eval "$_ereset"
     return $_retval
 }
 
 run_qc() {
     # Hand over to Snakefile.qc for report generation
-    # First a quick report
+    # First a quick report. Continue to QC even if MultiQC fails here.
     ( cd "$DEMUX_OUTPUT_FOLDER" && Snakefile.qc -- demux_stats_main interop_main )
-    run_multiqc
+    run_multiqc || true
 
     # Then a full QC. Welldups should have run already but it will not
-    # hurt to re-run Snakemake with nothing to do.
+    # hurt to re-run Snakemake with nothing to do. All these steps must succeed.
     rundir="`pwd`"
     ( cd "$DEMUX_OUTPUT_FOLDER"
       Snakefile.qc -- md5_main qc_main
