@@ -372,8 +372,9 @@ run_multiqc() {
     if [ ! -e pipeline/sample_summary.yml ] ; then
         #summarize_lane_contents.py --yml pipeline/sample_summary.yml
         #This saves the yml and mails the text in one shot...
-        rt_runticket_manager.py -r "$RUNID" --reply \
-            @<(summarize_lane_contents.py --yml pipeline/sample_summary.yml --txt -) 2>&1
+        #Subshell needed to capture STDERR from summarize_lane_contents.py
+        ( rt_runticket_manager.py -r "$RUNID" --reply \
+            @<(summarize_lane_contents.py --yml pipeline/sample_summary.yml --txt -) ) 2>&1
     fi
 
     # Push any new metadata into the run report.
