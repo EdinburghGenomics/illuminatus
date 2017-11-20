@@ -171,12 +171,13 @@ class RunStatus:
             self._was_ended() or (self._read1_done() and self._was_finished() and not self._qc_started()) ):
             return "redo"
 
-        # RUN is 'failed' or 'aborted' if flagged as such. There should be no process running, but
-        # we can't check this directly.
+        # RUN is 'failed' or 'aborted' if flagged as such. This implies there no processing running, but
+        # we can't check this directly. Maybe could add some indirect checks?
+        if self._was_aborted():
+            # Aborted is a valid end state and takes precedence over 'failed'
+            return "aborted"
         if self._was_failed():
             return "failed"
-        if self._was_aborted():
-            return "aborted"
 
         # If the run is ended without error we're done, but because of the way the
         # redo mechanism works it's possible for a run to fail then be partially

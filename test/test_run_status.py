@@ -246,7 +246,6 @@ class T(unittest.TestCase):
         self.assertEqual(gy()['PipelineStatus:'], 'read1_finished')
 
 
-
     @unittest.skip
     def test_pointless_copying(self):
         """This test is not yet very useful
