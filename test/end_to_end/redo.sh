@@ -14,7 +14,7 @@ fi
 
 if [ -n "${1:-}" ] ; then
     myrun="${SEQDATA_LOCATION}/$1/pipeline"
-elif [ -e "$SEQDATA_LOCATION/${RUN_NAME_REGEX:-}" ] ; then
+elif [ -e "$SEQDATA_LOCATION/${RUN_NAME_REGEX:-0/0/0}" ] ; then
     # Run name regex is set and specifies a single run.
     # Maybe I should grep this properly?
     myrun="${SEQDATA_LOCATION}/${RUN_NAME_REGEX}/pipeline"
