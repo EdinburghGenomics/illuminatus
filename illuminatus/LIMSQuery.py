@@ -9,7 +9,8 @@
    ~/.genologicsrc or equivalent and then just rely on this module to do the best
    thing.
 """
-import os
+import os, sys
+import re
 import configparser
 
 import psycopg2
@@ -32,17 +33,20 @@ def get_project_names(*proj_nums):
     """Given a list of project numbers, return a corresponding
        list of full names.
 
-       This version uses the direct SQL query.
+       This version uses the direct SQL query. I don't bother batching
+       all the queries in one go since there is very little time to be saved.
     """
     res = []
     with MyLimsDB() as ldb:
         for pn in proj_nums:
             qres = ldb.select("SELECT name FROM project WHERE name LIKE %s || '_%%'", pn)
 
-            if len(qres) > 1:
+            projects = filter_names(( r.name for r in qres ))
+
+            if len(projects) > 1:
                 raise LookupError("More than one project found with prefix %s", pn)
             else:
-                res.append(qres[0].name if qres else None)
+                res.append(projects[0] if projects else None)
 
     return res
 
@@ -116,15 +120,17 @@ class MyLims:
 
         #Yes I'm scanning the list many times, but the key thing is I only fetch it once.
         res = []
+        projects = filter_names(( p.name for p in projects ))
+
         for p_num in proj_nums:
             p_prefix = str(p_num) + '_'
             p_name = None
-            for proj in projects:
-                if proj.name.startswith(p_prefix):
+            for pn in projects:
+                if pn.startswith(p_prefix):
                     if p_name:
                         raise LookupError("More than one project found with prefix " + p_prefix)
                     else:
-                        p_name = proj.name
+                        p_name = pn
             res.append(p_name)
 
         return res
@@ -144,6 +150,8 @@ class MyLims:
 
         #Yes I'm scanning the list many times, but the key thing is I only fetch it once.
         res = []
+        projects = filter_names(projects)
+
         for p_num in proj_nums:
             p_prefix = str(p_num) + '_'
             p_name = None
@@ -156,6 +164,19 @@ class MyLims:
             res.append(p_name)
 
         return res
+
+def filter_names(names_in):
+    """Due to there being test guff in the LIMS database we need to disregard some
+       names that come back.
+    """
+    regexes = [ '_test_' ]
+
+    res = []
+    for n in names_in:
+        if not any(re.search(r, n) for r in regexes):
+            res.append(n)
+
+    return res
 
 def get_config(section='genologics', parts=['BASEURI', 'USERNAME', 'PASSWORD']):
     """The genologics.config module is braindead and broken.

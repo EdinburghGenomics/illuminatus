@@ -382,6 +382,8 @@ def project_real_name(proj_id_list, name_list=''):
             else:
                 res[p] = dict( name = p + "_UNKNOWN" )
     else:
+        # Go to the LIMS. The current query mode hits the database as configured
+        # by ~/.genologicsrc.
         try:
             from illuminatus.LIMSQuery import get_project_names
 
