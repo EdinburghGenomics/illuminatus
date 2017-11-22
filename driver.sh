@@ -439,13 +439,16 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
 
   # invoke runinfo and collect some meta-information about the run. We're passing info
   # to the state functions via global variables.
-  RUNINFO_OUTPUT="`RunStatus.py $run`" || RunStatus.py $run | log 2>&1
+  RUNINFO_OUTPUT="$(RunStatus.py "$run")" || RunStatus.py $run | log 2>&1
 
   LANES=`grep ^LaneCount: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   STATUS=`grep ^PipelineStatus: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' ' || echo unknown`
   RUNID=`grep ^RunID: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   INSTRUMENT=`grep ^Instrument: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
+
+  # FIXME - should probably check that [ "$RUNID" = `basename "$run")` ] or else BAD THINGS (TM)
+  # will happen when later bits of the pipeline just assume that it is!
 
   if [ "$STATUS" = complete ] || [ "$STATUS" = aborted ] ; then _log=debug ; else _log=log ; fi
   $_log "$run has $RUNID from $INSTRUMENT with $LANES lane(s) and status=$STATUS"
