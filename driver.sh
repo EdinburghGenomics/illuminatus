@@ -383,6 +383,8 @@ run_multiqc() {
     # This requires the QC directory to exist, even before demultiplexing starts.
     # In this case, an error in MultiQC etc. should not prevent demultiplexing from starting.
     mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
+    # Interop may fail. This is fine.
+    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- interop_main ) 2>&1
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F -- multiqc_main ) 2>&1
 
     # Snag that return value

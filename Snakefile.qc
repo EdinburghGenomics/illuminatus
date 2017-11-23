@@ -183,7 +183,9 @@ rule qc_main:
 # busy, but then the risk is arbitrary delay if the cluster is full up.
 # Note this rule does not trigger qc_main etc., because we need to be able to make a
 # skeleton report before we have the actual data, so you need to trigger any qc steps
-# explicitly. We do demand metadata, though.
+# explicitly. It should be possible to run multicq_main with the -F flag (force full
+# re-run) without triggering any cluster jobs, so to that end we can't depend on laneinfo,
+# as this processes the InterOP stuff.
 localrules: multiqc_main, run_multiqc
 rule multiqc_main:
     input:
@@ -196,7 +198,7 @@ rule run_multiqc:
         data = "QC/multiqc_report_{l}_data"
     input:
         config   = "QC/multiqc_config.yml",
-        laneinfo = rules.metadata_main.input.laneinfo,
+        #laneinfo = rules.metadata_main.input.laneinfo,
         runinfo  = rules.metadata_main.input.runinfo
     shell:
         """echo "multiqc is `which multiqc`" >&2
@@ -331,6 +333,7 @@ rule fqscreen:
            if [ -n "$_slen" ] && [ "$_slen" -gt "{params.maxlen}" ] ; then
                 _trim=$(("$_slen" - "{params.maxlen}")) ; else _trim=0
            fi
+           set -x
            {TOOLBOX} fastq_screen --threads {threads} --subset {params.subset} \
             --bowtie "--trim3 $_trim" {input}
            for f in {output} ; do
