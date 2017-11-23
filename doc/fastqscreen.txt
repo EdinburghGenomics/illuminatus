@@ -6,7 +6,7 @@ is the command that is run:
 PATH=/path/to/bowtie-1.1.2:/fluidfs/f1/software/linux_x86_64/Illumina_pipeline_scripts/software_dependencies/perl/pipeline_current/bin:$PATH
 /path/to/fastq_screen_v0.4.2/fastq_screen
 --aligner bowtie
---conf /path/to/fastq_screen.conf_bowtie1
+--conf /path/to/fastq_screen.conf_bowtie1 (which is /ifs/software/linux_x86_64/fastq_screen/fastq_screen_v0.4.2/fastq_screen.conf_bowtie1)
 --threads 1 --quiet --subset 1000000
 --bowtie '--trim3 100'
 --outdir /fluidfs/f1/runqc/171019_A00291_0006_BH57JWDMXX/QC
@@ -20,11 +20,30 @@ set on the command line this is literally all it defines.
 I think this should exist outside
 of Illuminatus, since the databases are outside of Illuminatus, so let's have a script called:
 
-/lustre/software/illuminatus_toolbox/fastq_screen_with_bowtie
+/lustre/software/illuminatus_toolbox/fastq_screen
 
 This will set the --aligner and --bowtie and --conf (libraries) options as we like them,
 and invoke /lustre/software/fastq_screen/fastq_screen_v0.11.3/fastq_screen.
 
-I think the config file should then live in /lustre/references/fastqscreen/fastq_screen.conf_bowtie1_20171108
+I think the config file should then live in /lustre/references/fastqscreen/fastq_screen.conf_bowtie1_20171122,
+and everything should also be linked in this directory, so dangling symlinks become obvious.
+** Nope - can't do that, because the configuration needs to have the REAL path to the index. **
 
+And the actual genomes can live under genomes or under production_qc. All will need to be indexed with
+bowtie and bowtie2. (Note the comment in the old code that bowtie2 has out-of-memory issues)
+
+Also note that MultiQC looks for fastqscreen files called *_screen.txt, so make them with this name
+and see if the results are any use.
+
+Tasks:
+
+1) Install bowtie on GSEG - done (used pre-built 1.2.1.1)
+2) Install newest fastqscreen on GSEG - done (0.11.3 back on Oct 17)
+3) Install the config file as above - done and edited.
+4) Copy over and clean up all genomes - done
+5) Put the illuminatus_toolbox/fastq_screen script in place
+6) Test it on some inputs large and small
+
+$ mkdir ~/fastq_screen_test
+$ /lustre/software/illuminatus_toolbox/fastq_screen --threads 2 --subset 10000 
 

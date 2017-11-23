@@ -2,3 +2,5 @@
 # if they need more than the standard single processor.
 __default__              : {slurm_opts: '--mincpus=1'}
 bcl2fastq                : {slurm_opts: '--mem=26000 --mincpus=12'}
+fastqc                   : {slurm_opts: '--mem=10000 --mincpus=2'}
+fqscreen                 : {slurm_opts: '--mem=10000 --mincpus=2'}

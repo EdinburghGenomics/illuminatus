@@ -170,10 +170,11 @@ rule metadata_main:
 
 rule qc_main:
     # QC inspects the actual fastq.gz files but also depends on interop and
-    # demux stats which we can get earlier
+    # demux stats which we probably already made earlier.
     input:
         cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out', fq=all_1_fq ),
         fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',   fq=all_fq ),
+        fqscreen = expand( 'QC/lane{fq[lane]}/{fq[fname]}_screen.txt',   fq=all_1_fq ),
         interop  = rules.interop_main.input,
         demux    = rules.demux_stats_main.input,
         meta     = rules.metadata_main.input
@@ -310,6 +311,33 @@ rule cutadapt_scan:
         """{TOOLBOX} cutadapt -f fastq -O 9 -o /dev/null `for a in {params.adapters} ; do echo -a $a ; done` \
            {input} > {output}
         """
+
+# fastqscreen also on only read1 until I hear otherwise (--paired was removed in version 0.5)
+# because of temporary files, run in a shallow shadow then move the results to the right dir
+rule fqscreen:
+    output:
+        txt  = "QC/lane{l,[0-9]+}/{fq}_screen.txt",
+        html = "QC/lane{l,[0-9]+}/{fq}_screen.html",
+        png  = "QC/lane{l,[0-9]+}/{fq}_screen.png"
+    input: "{fq}.fastq.gz"
+    shadow: 'shallow'
+    params:
+        maxlen = 50,
+        subset = 1000000,
+    threads: 2
+    shell:
+        """set +o pipefail
+           _slen=`zcat {input} | head -n 2 | awk 'NR==2{{print length($1)}}'`
+           if [ -n "$_slen" ] && [ "$_slen" -gt "{params.maxlen}" ] ; then
+                _trim=$(("$_slen" - "{params.maxlen}")) ; else _trim=0
+           fi
+           {TOOLBOX} fastq_screen --threads {threads} --subset {params.subset} \
+            --bowtie "--trim3 $_trim" {input}
+           for f in {output} ; do
+                mv -t `dirname $f` `basename $f`
+           done
+        """
+
 
 # fastqc runs on single FASTQ files, not read pairs. Apparently this is as it should be.
 rule fastqc:
