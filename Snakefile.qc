@@ -16,8 +16,10 @@ set -euo pipefail
 
 source "`dirname $0`"/shell_helper_functions.sh
 
-# This $PATH doesn't get passed to worker nodes on SLURM but I only need it
-# for local rules.
+# $PATH doesn't get passed to worker nodes on SLURM but I only need it
+# for local rules to see programs in this directory. Toolbox path is a separate
+# thing and will be added explicitly.
+export TOOLBOX="$(find_toolbox)"
 export PATH="${PATH}:$(dirname "$0")"
 
 snakerun_drmaa "$0" "$@"
@@ -43,7 +45,7 @@ from snakemake.utils import format
 #   cutadapt, fastqc, gnuplot (indirectly),
 #   interop_plot_qscore_heatmap, interop_plot_by_cycle, interop_plot_by_lane
 # If you want to use a test toolbox, just set the env var. No need to hack this code!
-TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ.get('TOOLBOX', '/lustre/software/illuminatus_toolbox'))
+TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ['TOOLBOX'])
 
 # Other than that, ensure that scripts in the directory with this Snakefile are
 # in the PATH (we have to do it here as $PATH does not get preserved on cluster jobs):

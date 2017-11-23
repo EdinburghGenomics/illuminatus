@@ -18,7 +18,9 @@ set -euo pipefail
 source "`dirname $0`"/shell_helper_functions.sh
 
 # $PATH doesn't get passed to worker nodes on SLURM but I only need it
-# for local rules. Toolbox path is set in the Python code.
+# for local rules to see programs in this directory. Toolbox path is a separate
+# thing and will be added explicitly.
+export TOOLBOX="$(find_toolbox)"
 export PATH="${PATH}:$(dirname "$0")"
 
 # Caller needs to supply --config lanes='? ? ?' rundir=?
@@ -32,7 +34,7 @@ snakerun_drmaa "$0" --keep-going -F "$@"
 import yaml
 
 # The pre-processor needs to find bcl2fastq in the toolbox.
-TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ.get('TOOLBOX', '/lustre/software/illuminatus_toolbox'))
+TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ['TOOLBOX']))
 
 def glob():
     """Regular glob() is useful but it can be improved like so.

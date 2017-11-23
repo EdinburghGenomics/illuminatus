@@ -13,6 +13,16 @@ function cat_cluster_yml(){
     cat "`dirname $0`"/cluster.`is_new_cluster && echo slurm || echo sge`.yml
 }
 
+find_toolbox() {
+    #The toolbox used by the pipeline can be set by setting TOOLBOX in the
+    #environment (or environ.sh). Otherwise look for it in the program dir.
+    _def_toolbox="$(readlink -f $(dirname "$BASH_SOURCE")/toolbox)"
+    echo "${TOOLBOX:-$_def_toolbox}"
+
+    if ! [ -e "${TOOLBOX:-$_def_toolbox}/" ] ; then
+        echo "WARNING - find_toolbox - No such directory ${TOOLBOX:-$_def_toolbox}" >&2
+    fi
+}
 
 # Functions to run a Snakefile
 find_snakefile() {
