@@ -11,12 +11,12 @@
 # You probably also want to add --bowtie '--trim3 {N}' where N=max(readlen-50,0)
 # but to do this you need to know readlen.
 
-export PATH="/lustre/software/bowtie/bowtie-1.2.1.1:$PATH"
+export PATH="/lustre/software/bowtie/bowtie-1.2.2-beta-linux-x86_64:$PATH"
 
 # Remove this line to disable graph generation...
 export PERL5LIB=/lustre/software/fastq_screen/perl_libs/share/perl5/
 
-exec /lustre/software/fastq_screen/fastq_screen_v0.11.3/fastq_screen \
+exec /lustre/software/fastq_screen/fastq_screen_v0.11.3_debug/fastq_screen \
     --aligner bowtie \
     --conf /lustre/references/fastqscreen/fastq_screen.conf_bowtie1_20171122 \
     "$@"

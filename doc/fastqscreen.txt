@@ -41,9 +41,14 @@ Tasks:
 2) Install newest fastqscreen on GSEG - done (0.11.3 back on Oct 17)
 3) Install the config file as above - done and edited.
 4) Copy over and clean up all genomes - done
-5) Put the illuminatus_toolbox/fastq_screen script in place
-6) Test it on some inputs large and small
+5) Put the toolbox/fastq_screen script in place - done
+6) Test it on some inputs large and small - done see below
 
 $ mkdir ~/fastq_screen_test
-$ /lustre/software/illuminatus_toolbox/fastq_screen --threads 2 --subset 10000 
+$ /lustre/software/illuminatus_toolbox/fastq_screen --threads 2 --subset 10000 /lustre/fastqdata/171005_M01270_0384_000000000-BFH3L/171005_M01270_0384_000000000-BFH3L_1_unassigned_?.fastq.gz
 
+This fails because I need to set "--bowtie '--trim3 0'", where 0 is max(readlen-50,0). Annoyingly bowtie has no "trim-to-N" option so
+I have to calculate this and feed it in. Meh.
+
+OK, having debugged both Bowtie and fastq_screen I think that it is behaving. Next step is to see what the results look like as presented by
+MultiQC, by default.
