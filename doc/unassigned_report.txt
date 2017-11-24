@@ -1,0 +1,18 @@
+The unassigned report is something of a mess. However, rather than re-write it
+just now I'm going to make the old version work in the new pipeline.
+
+This is the version that also checks the LIMS for barcodes which are not
+explicitly listed in the configuration file. In future this should be all of them.
+
+We have one problem - the counters need to run on the cluster as the job is
+reasonably substantial, but the database fetch can only happen on the login node.
+Therefore I need one job that fetches and dumps the barcodes, and another that
+loads them in and does the scan. Not too hard, really.
+
+Here is how the old script is called in the pipeline:
+
+gzip -d -c /ifs/seqarchive/171023_K00166_0291_AHM2WGBBXX/171023_K00166_0291_AHM2WGBBXX_5_unassigned_1.sanfastq.gz | /ifs/software/linux_x86_64/Illumina_pipeline_scripts/tags/v1.9.9/count_barcodes_in_unassigned_reads3.pl -flagtablestart -noprogress -numtooutput 30 -cutoff 1500 -sortby count -out '/ifs/runqc/171023_K00166_0291_AHM2WGBBXX/QC/171023_K00166_0291_AHM2WGBBXX_5_unassigned_1_counts_of_unassigned_barcodes.stdout' -reportfile '/ifs/runqc/171023_K00166_0291_AHM2WGBBXX/QC/171023_K00166_0291_AHM2WGBBXX_5_unassigned_1_counts_of_unassigned_barcodes'  -hiSeqRun4000
+
+Then to tack on the percentages (not done on the cluster)...
+
+count_barcodes_in_unassigned_reads3.pl -noprogress -in /ifs/runqc/171023_K00166_0291_AHM2WGBBXX/QC/171023_K00166_0291_AHM2WGBBXX_1_unassigned_1_counts_of_unassigned_barcodes  -addnumlanepercent 341081494 -reportfile /ifs/runqc/171023_K00166_0291_AHM2WGBBXX/QC/171023_K00166_0291_AHM2WGBBXX_1_unassigned_1_counts_of_unassigned_barcodes_percent_of_lane
