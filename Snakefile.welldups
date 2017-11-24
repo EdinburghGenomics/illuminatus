@@ -31,7 +31,7 @@ from snakemake.utils import format
 
 # See notes in Snakefile.qc regarding the toolbox.
 # Here we need wd_get_cached_targets and wd_count_well_duplicates to be available.
-TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ.get['TOOLBOX'])
+TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ['TOOLBOX'])
 
 def glob():
     """Regular glob() is useful but it can be improved like so.
