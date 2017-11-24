@@ -331,7 +331,7 @@ rule fqscreen:
         """set +o pipefail
            _slen=`zcat {input} | head -n 2 | awk 'NR==2{{print length($1)}}'`
            if [ -n "$_slen" ] && [ "$_slen" -gt "{params.maxlen}" ] ; then
-                _trim=$(("$_slen" - "{params.maxlen}")) ; else _trim=0
+                _trim=$(($_slen - {params.maxlen})) ; else _trim=0
            fi
            set -x
            {TOOLBOX} fastq_screen --threads {threads} --subset {params.subset} \
