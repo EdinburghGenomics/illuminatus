@@ -16,3 +16,13 @@ gzip -d -c /ifs/seqarchive/171023_K00166_0291_AHM2WGBBXX/171023_K00166_0291_AHM2
 Then to tack on the percentages (not done on the cluster)...
 
 count_barcodes_in_unassigned_reads3.pl -noprogress -in /ifs/runqc/171023_K00166_0291_AHM2WGBBXX/QC/171023_K00166_0291_AHM2WGBBXX_1_unassigned_1_counts_of_unassigned_barcodes  -addnumlanepercent 341081494 -reportfile /ifs/runqc/171023_K00166_0291_AHM2WGBBXX/QC/171023_K00166_0291_AHM2WGBBXX_1_unassigned_1_counts_of_unassigned_barcodes_percent_of_lane
+
+So the first thing is to have a mode that fetches and saves the barcodes and quits. I can get Snakemake to run this
+once per project.
+
+Actually, no, the first thing is to get DBD::Pg installed on the login node. This should be easy with YUM.
+Ensure that the script doesn't try to load the DBI modules when not in fetch mode.
+
+Done and done and done. Barcodes are dumped and re-loaded. Note that you have to set the hiseq 4000 mode
+at the point of first loading the barcodes, as well as when scanning. I can't be bothered to sort this
+issue right now.

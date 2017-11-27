@@ -28,7 +28,8 @@
 use strict;
 use warnings;
 use Getopt::Long;
-
+use Data::Dumper;
+use FindBin qw($Bin);
 
 my ($infile,$outfile)=('-','-'); # To default to StdIn, and StdOut
 # my $indexLength=8; # Defaults to 8 bases, ie. Sanger indexes.
@@ -46,9 +47,12 @@ my $noprogress;
 my $hiSeqRunX;
 my $showbarcodes;
 my $hiSeqRun4000;
+my $loadbcfrom;
+my $savebcto;
 my ($knownonly,$wiki,$xmlwiki,$flagtablestart); # To output wiki table markup. or flag start of table.
 my $commify_qc_results=1;
-my $barcodes_config_file = '/ifs/software/linux_x86_64/Illumina_pipeline_scripts/software_dependencies/Illumina_pipeline_scripts/tags/current/Barcodes.config';
+# List of barcodes embedded in the code is problematic but use of LIMS should kill it off!
+my $barcodes_config_file = "$Bin/Barcodes.config";
 
 #my $infile="/scratch/111128_SN182_0265_AC06M9ACXX/Unaligned_SampleSheet_111128_all_lanes_lanes12345678_readlen101_index8/myDummyTestFile_head100000lines.fastq";
 #my $infile="/scratch/111128_SN182_0265_AC06M9ACXX/Unaligned_SampleSheet_111128_all_lanes_lanes12345678_readlen101_index8/111128_0265_AC06M9ACXX_1_unassigned_2.sanfastq.gz"
@@ -158,7 +162,7 @@ GetOptions
   "findsamplesheetbarcodenames=s" => \$findsamplesheetbarcodenames,
   "flagtablestart" => \$flagtablestart,
   "numtooutput=i"=> \$num_to_output, # Number of barcodes to output in each table summary.
-  "knownonly"    =>\$knownonly, # To output only the known barcodes, 
+  "knownonly"    =>\$knownonly, # To output only the known barcodes,
 #  "lanetotal=i"  =>\$lane_total, # To compute the extra column if the total reads for the lane is known - no do this separately at the end.
   "help"         => \$show_help,
   "in=s"         => \$infile,  # Input fastq file. If not given then assumes stdin. If compressed archive, then pipe from 'gzip -cd file.fastq.gz | .... '
@@ -172,6 +176,8 @@ GetOptions
   "sortby=s"     => \$sortBy, # To sort the output by Barcode name, or by Count. (Default is by Barcode Name)
   "wiki"         => \$wiki,   # To output a table as wiki markup
   "xmlwiki"      => \$xmlwiki, # To output table in XML format for the new Confluence 5 wiki
+  "loadbc=s"     => \$loadbcfrom, # To load the barocde list from a file (Perl format as made by -savebc)
+  "savebc=s"     => \$savebcto    # To save the list of barcodes to a file (- for stdout) (Perl format with Data::Dumper)
 );
 #  "length=i"     => \$indexLength, # Index length. Is either 6 for Illumina or 8 for Sanger indexes.
 
@@ -222,6 +228,7 @@ if (defined $numReadsInLane) # As this doesn't need to do any barcode counting s
 }
 
 
+# Original comment...
 # This list if barcodes is from Tim's script: /ifs/software/linux_x86_64/Illumina_pipeline_scripts/software_dependencies/pipeline_tools_python/pipeline_tools_python_trunk/sbin/get_sample_sheet_from_wiki.py
 # Added TruSeq barcodes IL-TP-001 to IL-TP-048 below. Stephen, 12-jan-2012. (Originally used 'ILL-AD' to match wiki for that run. Stephen, 22-Dec-2011):
 #   Originally 'ILL-AD-...' was used on wiki page, but aggreed at Solexa meeting to use 'IL-TP-' prefix for 'Illumina-TruseqPairedend-'.
@@ -229,9 +236,36 @@ if (defined $numReadsInLane) # As this doesn't need to do any barcode counting s
 #   TruSeq Small RNA libraries use indexes 1-48.
 # Note 'IL-PE-003' same as PhiX below:
 
+# New comment for Illuminatus...
+# We'll make a hybrid dict of barocdes from the static file and the LIMS, and maybe
+# dump it or load it depending on the options set for -loadbc and -savebc.
 my (%barcode_hash,%Dual_P7,%Dual_P5,%Dual_RAND,%Dual_TM_P5);
-&read_barcodes();
-&read_barcodes_from_clarity_lims_database(0, defined $hiSeqRun4000, defined $hiSeqRunX);
+if($loadbcfrom){
+    open(my $BCDUMP, '<', $loadbcfrom) or die $!;
+    eval(join('', <$BCDUMP>));
+    close $BCDUMP;
+}
+else{
+    &read_barcodes();
+    &read_barcodes_from_clarity_lims_database(0, defined $hiSeqRun4000, defined $hiSeqRunX);
+}
+
+if($savebcto){
+    my $DH;
+    if($savebcto ne '-'){
+        open($DH, '>', $savebcto) or die $!;
+    }
+    else{
+        $DH = \*STDOUT;
+    }
+    my $d = Data::Dumper->new([ \%barcode_hash,\%Dual_P7,\%Dual_P5,\%Dual_RAND,\%Dual_TM_P5],
+                              [qw(*barcode_hash *Dual_P7  *Dual_P5  *Dual_RAND  *Dual_TM_P5)]);
+    $d->Sortkeys(1);
+    print $DH $d->Dump();
+    close $DH;
+    exit(0);
+}
+# End of new load/save logic.
 
 sub read_barcodes {
 
@@ -279,8 +313,8 @@ sub read_barcodes {
 
 sub read_barcodes_from_clarity_lims_database
 {
-    use DBI;
-    use DBD::Pg;
+    require DBI; DBI->import();
+    require DBD::Pg;
     # Tries to get a list of barcodes from the LIMS, and add them to
     # the barcode hash.
     # If the database connection fails we'll print a warning and carry on regardless.
