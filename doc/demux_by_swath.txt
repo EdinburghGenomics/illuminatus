@@ -1,0 +1,27 @@
+The NovaSeq makes big files. Really big files.
+
+For things like PhiX runs, we may well have to demultiplex by Swath to arificially get smaller
+output files. This will give us 8 (pairs of) files per lane, rather than 1. But can I do it?
+
+1) Snakefile.demux and dependent files
+
+We can't just run 8 processes in parallel, as all the file names will collide.
+We can either run as if there are 8 virtual lanes, or else we can run bcl2fastq
+8 times per job and shuffle the results in between. The former seems the most
+sensible, but do the lab want to think that way? They may have to!
+
+How do we name the output? We have always assumed that lane numbers are numeric but
+now we have to have a new naming scheme. 1A, 1B, 1C or 1S1, 1S2, 1S3 or ???
+Either way it's going to break some things.
+
+Good news is the QC should be simple since it just gathers up the files for the
+specified lane. I'd need to change my Snakefile.qc to correctly extract the lane.
+Thing is, if we have separate tabs in the report per-lane then we would need the
+InterOP data per-swath which we are lacking. Or else I could combine the reports
+per-lane and then I'd need to split out the samples to 8 virtual samples or else
+numerically combine the data.
+
+Ick, it's not fun. Lets see what we can do with our big data files before we start this
+messing around. If we want to run more things (like bcl2fastq) over a subset of reads maybe
+we can do the subset one using whatever method is in fastq_screen - this saves reading
+the file multiple times.

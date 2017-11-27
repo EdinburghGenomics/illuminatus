@@ -39,3 +39,5 @@ maybe a .yml file for MultiQC to snag) and then I just need a spot for the targe
 /lustre/software/wellduplicates/var/shared_cluster_lists seems fine to me, even though I'm slightly
 uneasy about the pipeline writing back into the directory. Maybe have a wrapper script - actually yes,
 definitely take this logic out of the Snakefile and into a little Python/shell script.
+
+(Note there are also related notes in qc_trigger.txt)
