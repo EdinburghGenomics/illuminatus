@@ -34,7 +34,7 @@ snakerun_drmaa "$0" --keep-going -F "$@"
 import yaml
 
 # The pre-processor needs to find bcl2fastq in the toolbox.
-TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ['TOOLBOX']))
+TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ['TOOLBOX'])
 
 def glob():
     """Regular glob() is useful but it can be improved like so.
@@ -43,7 +43,7 @@ def glob():
     return lambda p: sorted( (f.rstrip('/') for f in glob(os.path.expanduser(p))) )
 glob = glob()
 
-# Config
+# Config - must be supplied
 LANES = config['lanes'].split()
 RUNDIR = config['rundir']
 
