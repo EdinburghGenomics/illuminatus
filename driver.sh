@@ -234,7 +234,7 @@ action_read1_finished() {
 
     touch pipeline/read1.started
     plog_start
-    plog "See pipeline_read1.log for details on that."
+    plog ">>> See pipeline_read1.log for details on read1 processing."
     plog1 </dev/null  #Log1 must be primed before entering subshell!
 
     # Now is the time for WellDups scanning. Note that we press on despite failure,
