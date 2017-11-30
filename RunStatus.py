@@ -20,6 +20,7 @@ class RunStatus:
 
         self.trigger_cycles = [1]
         self.last_read1_read = 1
+
         try:
             self.runinfo_xml = RunInfoXMLParser( runinfo_xml_location )
 
@@ -39,6 +40,7 @@ class RunStatus:
 
         except Exception:
             #if we can't read it we can't get much info
+            if os.environ.get('DEBUG', '0') != '0': raise
             self.runinfo_xml = None
 
     def _is_sequencing_finished( self ):
@@ -234,7 +236,9 @@ class RunStatus:
                     'Flowcell: {i[Flowcell]}\n' +
                     'PipelineStatus: {s}\n' +
                     'MachineStatus: {t}').format( i=self.runinfo_xml.run_info, s=self.get_status(), t=self.get_machine_status() )
-        except AttributeError: # possible that the provided run folder was not a valid run folder e.g. did not contain a RunInfo.xml
+        except Exception: # possible that the provided run folder was not a valid run folder e.g. did not contain a RunInfo.xml
+            if os.environ.get('DEBUG', '0') != '0': raise
+
             out = ( 'RunID: unknown\n' +
                     'LaneCount: 0\n' +
                     'Instrument: unknown\n' +

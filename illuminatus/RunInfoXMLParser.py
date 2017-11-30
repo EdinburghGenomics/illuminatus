@@ -5,9 +5,12 @@ import xml.etree.ElementTree as ET
 
 from datetime import datetime
 
+instrument_types = "M:miseq D:hiseq2500 E:hiseqX K:hiseq4000 A:novaseq".split()
+
 class RunInfoXMLParser:
     """Uses the python xml parser to extract some run information and store it in a dictionary
     """
+
     def __init__( self , runinfo_file ):
 
         # If given a directory, look for the file inside
@@ -43,17 +46,11 @@ class RunInfoXMLParser:
 
             self.run_info[ 'Instrument' ] = read.text
 
-            if self.run_info[ 'Instrument' ][0] == 'M':
-                self.run_info[ 'Instrument' ] = 'miseq_' + self.run_info[ 'Instrument' ]
+            for idmap in instrument_types:
 
-            elif self.run_info[ 'Instrument' ][0] == 'D':
-                self.run_info[ 'Instrument' ] = 'hiseq2500_' + self.run_info[ 'Instrument' ]
-
-            elif self.run_info[ 'Instrument' ][0] == 'E':
-                self.run_info[ 'Instrument' ] = 'hiseqX_' + self.run_info[ 'Instrument' ]
-
-            elif self.run_info[ 'Instrument' ][0] == 'K':
-                self.run_info[ 'Instrument' ] = 'hiseq4000_' + self.run_info[ 'Instrument' ]
+                if self.run_info['Instrument'].startswith(idmap[0]):
+                    self.run_info['Instrument'] = idmap[2:] + '_' + self.run_info['Instrument']
+                    continue
 
         for read in root.iter('Flowcell'):
             if '-' in read.text:
