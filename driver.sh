@@ -127,9 +127,10 @@ action_new(){
     # For now the sample sheet summary will just be a copy of the sample sheet
     # If this works we can BREAK, but if not go on to process more runs
 
-    # In order to run the initial round of MultiQC we'll also and up making the
-    # $DEMUX_OUTPUT_FOLDER/QC/ directory.
-    # We're now sending the logs to the outpur folder too.
+    # In order to run the initial round of MultiQC we'll also end up making the
+    # $DEMUX_OUTPUT_FOLDER/QC/ directory. The symlink ./pipeline/output will
+    # be made to point to this.
+    # We're now sending the logs to the output folder too.
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
     set +e ; ( set -e
       mkdir -v ./pipeline |& debug
@@ -139,6 +140,8 @@ action_new(){
       fetch_samplesheet
       run_multiqc | plog
 
+      # Add a link back in the other direction, now the output folder is there.
+      ln -sv "`pwd -P`" "$DEMUX_OUTPUT_FOLDER"/seqdata
     ) ; [ $? = 0 ] && log OK && BREAK=1 || log FAIL
 }
 

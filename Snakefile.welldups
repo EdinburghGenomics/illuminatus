@@ -40,8 +40,8 @@ def glob():
     return lambda p: sorted( (f.rstrip('/') for f in glob(os.path.expanduser(p))) )
 glob = glob()
 
-# Caller must set this, as with Snakefile.demux
-RUNDIR = config['rundir']
+# Caller must set this, or else there needs to be a symlink, as with Snakefile.demux
+RUNDIR = os.path.realpath(config.get('rundir', './seqdata'))
 
 # Other settings
 TARGETS_TO_SAMPLE = 2500

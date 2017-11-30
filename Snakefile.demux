@@ -45,7 +45,7 @@ glob = glob()
 
 # Config - must be supplied
 LANES = config['lanes'].split()
-RUNDIR = config['rundir']
+RUNDIR = os.path.realpath(config.get('rundir', './seqdata')) #symlink now made by driver.sh
 
 def get_sequential_file(pattern):
     """Given a filename like foo???.log, find the next available filename that
@@ -102,8 +102,10 @@ rule bcl2fastq:
     threads: 12 # if you edit this number, also edit the cluster.yml
     shell:
         #The location for bcl2fastq and input/output should already be coded in the script
-        #Log will go to "lane{l}/bcl2fastq.log"
+        #Log will go to "lane{l}/bcl2fastq.log" which is a bit annoying but I need it there
+        #for the make-empty-fastq hack.
         """set -x
+           echo "Log will be written to lane{wildcards.l}/bcl2fastq.log"
            PROCESSING_THREADS={threads} ; source {input.script}
         """
 
