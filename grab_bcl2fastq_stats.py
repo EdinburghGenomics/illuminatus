@@ -133,9 +133,14 @@ def gather_fastq_stats(fastq_stats_file):
     #Annoyingly I've already done a load of QC with the old values and I can't re-generate
     #them as the logs are gone.
 
-    dc['Mean Reads Per Sample'] = mean(reads_per_sample.values())
+    if reads_per_sample:
+        dc['Mean Reads Per Sample'] = mean(reads_per_sample.values())
+    else:
+        #This shouldn't happen if the sample sheet is valid!
+        dc['Mean Reads Per Sample'] = 0
+
     if len(reads_per_sample) <= 1:
-        #Withon only one barcode in the lane the calculation is meaningless
+        #With only one barcode in the lane the calculation is meaningless
         dc['Barcode Balance'] = 'NA'
     else:
         dc['Barcode Balance'] = stdev(reads_per_sample.values()) / dc['Mean Reads Per Sample']
