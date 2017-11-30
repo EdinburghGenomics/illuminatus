@@ -50,6 +50,7 @@ class BCL2FASTQPreprocessor:
                 if k == '--barcode-mismatches-lane%s' % self.lane:
                     self.ini_settings['bcl2fastq']['--barcode-mismatches'] = \
                         self.ini_settings['bcl2fastq'][k]
+                # delete it to avoid further processing
                 if k.startswith('--barcode-mismatches-'):
                     del self.ini_settings['bcl2fastq'][k]
 
