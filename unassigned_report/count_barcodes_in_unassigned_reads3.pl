@@ -54,6 +54,9 @@ my $commify_qc_results=1;
 # List of barcodes embedded in the code is problematic but use of LIMS should kill it off!
 my $barcodes_config_file = "$Bin/Barcodes.config";
 
+# Save the whole command line we need it later.
+my $cmdline = "$0 " . join(' ', @ARGV);
+
 #my $infile="/scratch/111128_SN182_0265_AC06M9ACXX/Unaligned_SampleSheet_111128_all_lanes_lanes12345678_readlen101_index8/myDummyTestFile_head100000lines.fastq";
 #my $infile="/scratch/111128_SN182_0265_AC06M9ACXX/Unaligned_SampleSheet_111128_all_lanes_lanes12345678_readlen101_index8/111128_0265_AC06M9ACXX_1_unassigned_2.sanfastq.gz"
 
@@ -254,6 +257,7 @@ if($savebcto){
     my $DH;
     if($savebcto ne '-'){
         open($DH, '>', $savebcto) or die $!;
+        print $DH "## Saved out by\n## $cmdline\n"
     }
     else{
         $DH = \*STDOUT;

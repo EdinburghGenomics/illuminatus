@@ -27,7 +27,7 @@ snakerun_drmaa "$0" "$@"
 "exit""" ### End of shell script part
 
 #!/usr/bin/env snakemake
-import yaml
+import yaml, json
 from snakemake.utils import format
 
 # /lustre/software/illuminatus_toolbox is the default place for all external deps.
@@ -109,7 +109,8 @@ all_unassigned_fq = [ split_fq_name(f) for f in glob('*_unassigned_?.fastq.gz') 
 all_assigned_fq   = [ split_fq_name(f) for f in glob('[1-9]*/*/*.fastq.gz') ]
 all_control_fq    = [ split_fq_name(f) for f in glob('ControlLane/*/*.fastq.gz') ]
 all_fq = (all_assigned_fq + all_unassigned_fq + all_control_fq)
-all_1_fq = [ fq for fq in all_fq if fq['read'] == '1' ]
+all_1_fq  = [ fq for fq in all_fq if fq['read'] == '1' ]
+all_u1_fq = [ fq for fq in all_unassigned_fq if fq['read'] == '1' ]
 
 if all_fq:
     # If there are any fastq files there must be some from read 1.
@@ -117,7 +118,8 @@ if all_fq:
                                               os.getcwd(),       len(all_fq) )
 
 # There should only be one run. But what is it called?
-# If config['runid'] is set we use that, otherwise infer from all_fq, otherwise the directory name will do.
+# If config['runid'] is set we use that, otherwise infer from all_fq, otherwise
+# the current directory name will do.
 try:
     runs = set( sf['run'] for sf in all_fq )
     if 'runid' in config: runs.add(config['runid'])
@@ -144,7 +146,7 @@ rule md5_main:
 # qc_main depends on other rules so it's now down below.
 
 # Interop files in eg. /lustre/seqdata/170627_D00261_0417_ACAU93ANXX/InterOp/
-# The location will be inferred from SEQDATA/{runid}/InterOp
+# The location will be inferred from SEQDATA/InterOp
 rule interop_main:
     input:
         plots  = expand( "QC/overview/interop/{plot}.interop_plot",
@@ -172,9 +174,10 @@ rule qc_main:
     # QC inspects the actual fastq.gz files but also depends on interop and
     # demux stats which we probably already made earlier.
     input:
-        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out', fq=all_1_fq ),
-        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',   fq=all_fq ),
-        fqscreen = expand( 'QC/lane{fq[lane]}/{fq[fname]}_screen.txt',   fq=all_1_fq ),
+        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out',   fq=all_1_fq ),
+        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',     fq=all_fq ),
+        fqscreen = expand( 'QC/lane{fq[lane]}/{fq[fname]}_screen.txt',     fq=all_1_fq ),
+        unass    = expand( 'QC/lane{fq[lane]}/{fq[fname]}_unassigned.txt', fq=all_u1_fq ),
         interop  = rules.interop_main.input,
         demux    = rules.demux_stats_main.input,
         meta     = rules.metadata_main.input
@@ -248,28 +251,32 @@ rule configure_multiqc:
 
 # === Actual data-gathering rules ===
 
-# Presumably interop data is under {SEQDATA}/{runid}/InterOp
-# Yes, I think we can make that stipulation - no renaming data folders!
-SEQDATA = config.get('seqdata', os.environ.get('SEQDATA_LOCATION', '.'))
+# Presumably interop data is under {SEQDATA_LOCATION}/{runid}/InterOp
+# But if there is a seqdata symlink, follow that instead.
+# And as always, config takes priority over both.
+SEQDATA = os.path.realpath('./seqdata')
+if not os.path.isdir(SEQDATA) or ('seqdata' in config):
+    # Nope, look for a match by name.
+    SEQDATA = config.get('seqdata', os.path.join(os.environ.get('SEQDATA_LOCATION', '.'), run))
 
 rule interop_qscore_heatmap:
     output: "{foo}/qscore_heatmap.interop_plot"
-    input: format("{SEQDATA}/{run}/InterOp")
+    input: format("{SEQDATA}/InterOp")
     shell: "{TOOLBOX} interop_plot_qscore_heatmap {input}/.. > {output}"
 
 rule interop_by_cycle:
     output: "{foo}/by_cycle.interop_plot"
-    input: format("{SEQDATA}/{run}/InterOp")
+    input: format("{SEQDATA}/InterOp")
     shell: "{TOOLBOX} interop_plot_by_cycle {input}/.. > {output}"
 
 rule interop_by_lane:
     output: "{foo}/by_lane.interop_plot"
-    input: format("{SEQDATA}/{run}/InterOp")
+    input: format("{SEQDATA}/InterOp")
     shell: "{TOOLBOX} interop_plot_by_lane {input}/.. > {output}"
 
 rule interop_flowcell:
     output: "{foo}/flowcell.interop_plot"
-    input: format("{SEQDATA}/{run}/InterOp")
+    input: format("{SEQDATA}/InterOp")
     shell: "{TOOLBOX} interop_plot_flowcell {input}/.. > {output}"
 
 # This makes use of the interop library that needs to be installed into the Python
@@ -282,7 +289,7 @@ rule interop_yield_table:
     output:
         tables = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps ),
         yaml   = "QC/yield.yml"
-    input: format("{SEQDATA}/{run}/InterOp")
+    input: format("{SEQDATA}/InterOp")
     shell: "summarize_yield.py {input}/.. QC 1 > {output.yaml}"
 
 # md5summer that keeps the file path out of the .md5 file
@@ -341,6 +348,44 @@ rule fqscreen:
            done
         """
 
+# Even though there should simply be one per lane, do this per unassigned fastq
+# to match all the other rules.
+# For now, I've symlinked the count-unassigned script into the same directory as
+# this file so it will be in the PATH. I think really it should be broken out
+# as a separate thing and put in the TOOLBOX.
+run unassigned_scan:
+    output:
+        txt = "QC/lane{l,[0-9]+}/{fq}_unassigned.txt"
+    input:
+        bcs = "QC/known_barcodes.pdump",
+        stats = "QC/lane{l}/Stats.json", #we can extract total reads from this
+        fq = "{fq}.fastq.gz"
+    threads: 2
+    params:
+        # See if a 4000 (or X) run. There should probably be a more generic way
+        flag4000: '-hiSeqRun4000' if run.split('_')[1][0] in 'KE' else ''
+    run:
+        with open(input.stats) as jfh:
+            json_info = json.loads(jfh.read())
+
+            reads_in_lane = json_info['ConversionResults']['TotalClustersPF']
+
+        shell("""gzip -d -c {input.fq} | \
+                 count_unassigned -flagtablestart -noprogress -numtooutput 30 -cutoff 1500 -sortby count \
+                   -loadbc {params.bcs} -reportfile {output.txt}.tmp {params.flag4000}""")
+        shell("""count_unassigned -noprogress -in {output.txt}.tmp -addnumlanepercent {reads_in_lane} \
+                   -reportfile {output.txt}""")
+
+        os.unlink(format("{output.txt}.tmp"))
+
+# This rule needs to run just once on the login node.
+localrules: lookup_known_barcodes
+rule lookup_known_barcodes:
+    output: "QC/known_barcodes.pdump"
+    params:
+        flag4000: '-hiSeqRun4000' if run.split('_')[1][0] in 'KE' else ''
+    shell:
+        "count_unassigned -noprogress -savebc {output} {params.flag4000}"
 
 # fastqc runs on single FASTQ files, not read pairs. Apparently this is as it should be.
 rule fastqc:
@@ -357,9 +402,9 @@ rule fastqc:
 localrules: get_run_metadata, get_postrun_metadata, get_lane_summary
 rule get_run_metadata:
     output: "QC/run_info.{runid}.1.yml"
-    input: SEQDATA + "/{runid}/pipeline"
+    input: SEQDATA + "/pipeline"
     shell:
-        "RunMetaData.py {SEQDATA}/{wildcards.runid} > {output}"
+        "RunMetaData.py {SEQDATA} > {output}"
 
 # post-run metadata is per lane and also overall. Should be updated if ever
 # the demultiplexing directory contents change
@@ -378,7 +423,7 @@ rule get_postrun_metadata:
 rule get_lane_summary:
     output: "QC/overview/lane_summary_{runid}_mqc.yaml"
     input:
-        samples_yaml = SEQDATA + "/{runid}/pipeline/sample_summary.yml",
+        samples_yaml = SEQDATA + "/pipeline/sample_summary.yml",
         well_dups_yaml = ifexists("QC/welldups/*summary.yml", single=True),
         yield_yaml = ifexists("QC/yield.yml")
     shell:
