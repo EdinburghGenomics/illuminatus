@@ -7,6 +7,7 @@ from __future__ import division, print_function, absolute_import
 #
 # Assuming that the lanes are never mixed (and we're banking on this anyway) this script
 # will extract the info from those files.
+# Note that we can now get the same from Stats.json - should probably do that!
 
 import os, sys
 from glob import glob
@@ -71,6 +72,7 @@ def get_data_container():
     # or so Donald says, so blame him if it's wrong.
 
     return FixedOrderedDict([
+        "Number of Indexes",
         "Assigned Reads Raw",
         "Unassigned Reads Raw",
         "Assigned Reads PF",
@@ -145,6 +147,7 @@ def gather_fastq_stats(fastq_stats_file):
     else:
         dc['Barcode Balance'] = stdev(reads_per_sample.values()) / dc['Mean Reads Per Sample']
 
+    dc['Number of Indexes'] = len(reads_per_sample)
 
     return dc
 
