@@ -1,0 +1,53 @@
+digraph G {
+  //rankdir=LR;
+  // $ msrender <<<'read1_finished: [run1, run2]' doc/qc_states.gv.tmpl | \
+  // > dot -Tpdf -o doc/qc_states.pdf
+  labelfloat=True;
+  node [ style = dashed ]
+  "Sequencer Start" [ shape=rectangle style=bold ]
+  "Sequencer Start"   -> "New"
+  "New"               -> "Reads_Unfinished"
+  "New"               -> "Read1_Finished"
+  "New" [color="0.700 0.900 1.000" {{#new}}style=bold {{/new}}]
+  "Reads_Unfinished"  -> "Read1_Finished"
+  "Read1_Finished"    -> "In_Read1_QC"
+  "In_Read1_QC"       -> "In_Read1_QC_Reads_Finished"
+  "In_Read1_QC"       -> "Reads_Unfinished"
+  "In_Read1_QC"       -> "Demultiplexed"
+  "In_Read1_QC" [color="0.201 1.000 1.000"]
+  "Read1_Finished"    -> "In_Read1_QC_Reads_Finished"
+  "Read1_Finished" [color="0.700 0.900 1.000" {{#read1_finished}}style=bold {{/read1_finished}} ]
+  "Read1_Finished" [label=<Read1_Finished<FONT POINT-SIZE="12"><B>{{#read1_finished}}<BR />{{.}}{{/read1_finished}}</B></FONT>>]
+  "In_Read1_QC_Reads_Finished" -> "In_Demultiplexing"
+  "In_Read1_QC_Reads_Finished" -> "Reads_Finished"
+  "In_Read1_QC_Reads_Finished" [color="0.201 1.000 1.000"]
+  "In_Read1_QC_Reads_Finished" [color="0.700 0.900 1.000"]
+  "Reads_Unfinished"  -> "Reads_Finished"
+  "Reads_Finished"    -> "In_Demultiplexing"
+  "Reads_Finished" [color="0.700 0.900 1.000"]
+  "In_Demultiplexing" -> "In_Read1_QC"
+  "In_Demultiplexing" -> "Demultiplexed"
+  "In_Demultiplexing" [color="0.201 1.000 1.000"]
+  "Demultiplexed"     -> "In_QC"
+  "Demultiplexed" [color="0.700 0.900 1.000"]
+  "In_QC"             -> "Complete"
+  "In_QC"             -> "Failed"
+  "In_QC"             -> "Partially_Complete"
+  "In_QC" [color="0.201 1.000 1.000"]
+  "In_Demultiplexing" -> "Failed"
+  "Failed"            -> "Redo"
+  "Demultiplexed"     -> "Redo"
+  "Complete"          -> "Redo"
+  "Partially_Complete" -> "Redo"
+  "Partially_Complete" [color="0.000 0.600 1.000"]
+  "Failed"            -> "Demultiplexed"
+  "Failed" [color="0.000 0.600 1.000"]
+  "Redo"              -> "In_Demultiplexing"
+  "Redo" [color="0.700 0.900 1.000"]
+  "New"               -> "Aborted"
+  "Reads_Unfinished"  -> "Aborted"
+  "Failed"            -> "Aborted"
+  "Valid End State" [ shape = rectangle ]
+  "Complete"          -> "Valid End State"
+  "Aborted"           -> "Valid End State"
+}

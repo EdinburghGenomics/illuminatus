@@ -2,6 +2,7 @@ digraph G {
   //rankdir=LR;
   // $ dot -Tpdf doc/qc_trigger.gv -o doc/qc_trigger.pdf
   labelfloat=True;
+  node [ style=bold ]
   "Sequencer Start" [ shape = rectangle ]
   "Sequencer Start"   -> "New" [ label = "Sequencer creates seqdata dir,\n writes RunInfo.xml" ]
   "New"               -> "Reads_Unfinished" [ label = "Pipeline makes RT ticket,\n fetches sample sheet,\n initial run report" ]
