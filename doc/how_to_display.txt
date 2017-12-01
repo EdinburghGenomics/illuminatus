@@ -1,0 +1,16 @@
+# At the moment, I'm just looking to push the reports to web1. In future, we can maybe have something more
+# sophisticated with versioned reports being kept.
+
+# Anyway, a shell function:
+
+pushrep (){ (
+    cd "$1"
+    runname="`basename $PWD`"
+
+    # Note the proxy setting in ~/.ssh/config which lets both ssh
+    # and rsync through monitor transparently.
+    dest=web1:/var/runinfo/illuminatus_reports
+
+    rsync -drvl --include='multiqc_*' --exclude='*' QC/ $dest/$runname/
+    ssh ${dest%%:*} ln -s multiqc_report_overview.html ${dest#*:}/$runname/index.html
+) ; }
