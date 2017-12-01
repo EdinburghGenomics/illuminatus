@@ -139,10 +139,10 @@ action_new(){
       plog_start
       fetch_samplesheet
       run_multiqc | plog
-
-      # Add a link back in the other direction, now the output folder is there.
-      ln -sv "`pwd -P`" "$DEMUX_OUTPUT_FOLDER"/seqdata
     ) ; [ $? = 0 ] && log OK && BREAK=1 || log FAIL
+
+    # Add a link back in the other direction, now the output folder is there.
+    ln -sv "`pwd -P`" "$DEMUX_OUTPUT_FOLDER"/seqdata |& debug || true
 }
 
 action_reads_unfinished(){

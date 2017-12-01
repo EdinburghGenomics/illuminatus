@@ -353,7 +353,7 @@ rule fqscreen:
 # For now, I've symlinked the count-unassigned script into the same directory as
 # this file so it will be in the PATH. I think really it should be broken out
 # as a separate thing and put in the TOOLBOX.
-run unassigned_scan:
+rule unassigned_scan:
     output:
         txt = "QC/lane{l,[0-9]+}/{fq}_unassigned.txt"
     input:
@@ -363,7 +363,7 @@ run unassigned_scan:
     threads: 2
     params:
         # See if a 4000 (or X) run. There should probably be a more generic way
-        flag4000: '-hiSeqRun4000' if run.split('_')[1][0] in 'KE' else ''
+        flag4000 = '-hiSeqRun4000' if run.split('_')[1][0] in 'KE' else ''
     run:
         with open(input.stats) as jfh:
             json_info = json.loads(jfh.read())
@@ -383,7 +383,7 @@ localrules: lookup_known_barcodes
 rule lookup_known_barcodes:
     output: "QC/known_barcodes.pdump"
     params:
-        flag4000: '-hiSeqRun4000' if run.split('_')[1][0] in 'KE' else ''
+        flag4000 = '-hiSeqRun4000' if run.split('_')[1][0] in 'KE' else ''
     shell:
         "count_unassigned -noprogress -savebc {output} {params.flag4000}"
 

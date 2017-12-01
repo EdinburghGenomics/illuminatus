@@ -51,3 +51,7 @@ Then I need to check that there is no issue with the names being too long: 10000
 Nope, seems fine.
 
 On 5th July - this is all implemented and tested.
+
+Further to this on 1st Dec 2017 - if junk is put into the Sample_Name column it will mess up the report
+when the bcl2fastq module uses this instead of the Sample_ID. So the column must either contain the sample
+name or be blank.

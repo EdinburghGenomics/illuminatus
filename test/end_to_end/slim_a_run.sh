@@ -41,10 +41,10 @@ for lane in $LANES ; do
   cp -v "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/s_*_1101.filter "$DEST"/Data/Intensities/BaseCalls/$lane/
   #Only for MiSeq machines I think
   cp -v "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/s_*_1101.control "$DEST"/Data/Intensities/BaseCalls/$lane/ || true
-  #For non-patterned machines where there is a .locs file per-tile
+  #For non-patterned machines where there is a .locs (or .clocs) file per-tile
   if [ -e "$RUN_PATH"/Data/Intensities/$lane ] ; then
     mkdir -p "$DEST"/Data/Intensities/$lane/
-    cp -v "$RUN_PATH"/Data/Intensities/$lane/s_*_1101.locs "$DEST"/Data/Intensities/$lane/
+    cp -v "$RUN_PATH"/Data/Intensities/$lane/s_*_1101.*locs "$DEST"/Data/Intensities/$lane/
   fi
 
   CYCLES="`ls "$RUN_PATH"/Data/Intensities/BaseCalls/$lane | grep -x 'C[0-9]\+.1'`"
