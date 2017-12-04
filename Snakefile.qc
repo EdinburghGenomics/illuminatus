@@ -306,7 +306,7 @@ rule base_count_file:
     output: "counts/{fq}.count"
     input:
         fq = "{fq}.gz",
-        json = lambda wc: "{}/lane{}/Stats/Stats.json".format(BCL2FASTQ_OUT, split_fq_name(wc.fq)['lane'])
+        json = lambda wc: "demultiplexing/lane{}/Stats/Stats.json".format(split_fq_name(wc.fq)['lane'])
     shell:
         "fq_base_counter.py -j {input.json} {input.fq} > {output}"
 
@@ -453,7 +453,7 @@ rule get_bcl2fastq_stats:
 
 localrules: get_bcl2fastq_json
 rule get_bcl2fastq_json:
-    # Straight up just copies the file into place
+    # Straight up just copies the file into place, for MultiQC to find
     output: "QC/lane{lane}/Stats.json"
-    input: BCL2FASTQ_OUT + "/lane{lane}/Stats/Stats.json"
+    input: "demultiplexing/lane{lane}/Stats/Stats.json"
     shell: "cp {input} {output}"
