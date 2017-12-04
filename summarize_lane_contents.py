@@ -75,13 +75,13 @@ def main(args):
     except FileNotFoundError as e:
         exit("Error summarizing run.\n{}".format(e) )
 
-    #See about extra stuff
+    #See about extra stuff that we learn as processing goes on
     for ai in (args.add_in_yaml or []):
         try:
             key, filename = ai.split('=', 1)
 
-            if not key in ["wd", "yield"]:
-                exit("Key for add_in_yaml must be wd or yield.")
+            if not key in ["wd", "yield", "b2f"]:
+                exit("Key for add_in_yaml must be wd, b2f or yield.")
 
             if not filename:
                 #Empty val can be an artifact of the way Snakemake is calling this script
@@ -143,6 +143,9 @@ def output_mqc(rids, fh):
     if 'add_in_wd' in rids:
         table_headers.extend(["Well Dups (%)"])
         table_formats.extend(["{:.2f}"       ])
+    if 'add_in_b2f' in rids:
+        table_headers.extend(["Barcode Balance"])
+        table_formats.extend(["{:.4f}"       ])
 
     # col1_header is actually col0_header!
     mqc_out['pconfig']['col1_header'] = table_headers[0]
@@ -173,10 +176,14 @@ def output_mqc(rids, fh):
 
         if 'add_in_wd' in rids:
             #table_headers.extend(["Well Dups (%)"])
-            # This will be the last header. We'll have to do this properly if I add more
-            # extras categories.
             lane_wd_info = rids['add_in_wd']['{}'.format(lane['LaneNumber'])]['mean']
-            dd[max(mqc_out['headers'])] = lane_wd_info['raw']
+            # Can no longer assume this is the last header...
+            dd_col, = [ k for k, v in mqc_out['headers'] if v['title'].startswith("Well Dups") ]
+            dd[dd_col] = lane_wd_info['raw']
+
+        if 'add_in_b2f' in rids:
+            dd_col, = [ k for k, v in mqc_out['headers'] if v['title'].startswith("Barcode Balance") ]
+            dd[dd_col] = rids['add_in_b2f'][int(lane['LaneNumber'])]['Barcode Balance']
 
     print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
 

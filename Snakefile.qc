@@ -423,26 +423,33 @@ rule get_postrun_metadata:
 rule get_lane_summary:
     output: "QC/overview/lane_summary_{runid}_mqc.yaml"
     input:
-        samples_yaml = SEQDATA + "/pipeline/sample_summary.yml",
+        samples_yaml   = SEQDATA + "/pipeline/sample_summary.yml",
         well_dups_yaml = ifexists("QC/welldups/*summary.yml", single=True),
-        yield_yaml = ifexists("QC/yield.yml")
+        yield_yaml     = ifexists("QC/yield.yml"),
+        b2f_yaml       = ifexists("QC/bcl2fastq_stats.yml")
     shell:
         """summarize_lane_contents.py --from_yml {input.samples_yaml} --mqc {output} \
-           --add_in_yaml wd={input.well_dups_yaml} yield={input.yield_yaml}
+           --add_in_yaml wd={input.well_dups_yaml} yield={input.yield_yaml} \
+                         b2f={input.b2f_yaml}
         """
 
-# per-lane infos
-BCL2FASTQ_OUT = "demultiplexing"
-
-rule get_bcl2fastq_stats:
+localrules: get_bcl2fastq_stats_old, get_bcl2fastq_stats
+rule get_bcl2fastq_stats_old:
     # This rule can hopefully be replaced by the direct examination of the .json
     # file by the new module for MultiQC.
     # The parameters passed to the script are a little weird as I copied the script
     # from the old pipeline where it scanned for the input file.
     output: "QC/lane{lane}/{runid}_{lane}.stats.yml"
-    input: BCL2FASTQ_OUT + "/lane{lane}/Stats/FastqSummaryF1L{lane}.txt"
+    input: "demultiplexing/lane{lane}/Stats/FastqSummaryF1L{lane}.txt"
     shell:
-        "grab_bcl2fastq_stats.py {BCL2FASTQ_OUT}/lane{wildcards.lane} {wildcards.runid} {wildcards.lane} > {output}"
+        "grab_bcl2fastq_stats.py demultiplexing/lane{wildcards.lane} {wildcards.runid} {wildcards.lane} > {output}"
+
+rule get_bcl2fastq_stats:
+    output: "QC/bcl2fastq_stats.yml"
+    input:
+        json = expand("QC/lane{l}/Stats.json", l=lanes)
+    shell:
+        "stats_json_aggregator.py {input.json} > {output}"
 
 localrules: get_bcl2fastq_json
 rule get_bcl2fastq_json:
