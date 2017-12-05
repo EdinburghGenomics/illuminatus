@@ -57,6 +57,10 @@ if ( not os.path.dirname(workflow.snakefile) in os.environ['PATH'].split(':') an
 # DEBUG. Note that the TOOLBOX doesn't go in the PATH - you have to invoke it explicitly.
 #print("PATH is {}".format(os.environ['PATH']), file=sys.stderr)
 
+# Special case for count_unassigned, which really should be made into a separate tool and
+# then put in the TOOLBOX
+UNASS = os.path.dirname(workflow.snakefile) + '/unassigned_report'
+
 def glob():
     """Regular glob() is useful but it can be improved like so.
     """
@@ -175,10 +179,10 @@ rule qc_main:
     # QC inspects the actual fastq.gz files but also depends on interop and
     # demux stats which we probably already made earlier.
     input:
-        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out',   fq=all_1_fq ),
-        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',     fq=all_fq ),
-        fqscreen = expand( 'QC/lane{fq[lane]}/{fq[fname]}_screen.txt',     fq=all_1_fq ),
-        unass    = expand( 'QC/lane{fq[lane]}/{fq[fname]}_unassigned.txt', fq=all_u1_fq ),
+        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out',  fq=all_1_fq ),
+        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',    fq=all_fq ),
+        fqscreen = expand( 'QC/lane{fq[lane]}/{fq[fname]}_screen.txt',    fq=all_1_fq ),
+        unass    = expand( 'QC/lane{fq[lane]}/{fq[fname]}.unassigned',    fq=all_u1_fq ),
         interop  = rules.interop_main.input,
         demux    = rules.demux_stats_main.input,
         meta     = rules.metadata_main.input
@@ -351,12 +355,10 @@ rule fqscreen:
 
 # Even though there should simply be one per lane, do this per unassigned fastq
 # to match all the other rules.
-# For now, I've symlinked the count-unassigned script into the same directory as
-# this file so it will be in the PATH. I think really it should be broken out
-# as a separate thing and put in the TOOLBOX.
+# The output is an HTML file but I can't use an .html extension because then
+# MultiQC will refuse to look at it.
 rule unassigned_scan:
-    output:
-        txt = "QC/lane{l,[0-9]+}/{fq}_unassigned.txt"
+    output: "QC/lane{l,[0-9]+}/{fq}.unassigned"
     input:
         bcs = "QC/known_barcodes.pdump",
         stats = "QC/lane{l}/Stats.json", #we can extract total reads from this
@@ -369,15 +371,23 @@ rule unassigned_scan:
         with open(input.stats) as jfh:
             json_info = json.loads(jfh.read())
 
-            reads_in_lane = json_info['ConversionResults']['TotalClustersPF']
+            # Normally there should be just one lane in the JSON but let's be
+            # explicit anyway.
+            reads_in_lane, = [ cr['TotalClustersPF'] for cr in
+                               json_info['ConversionResults'] if
+                               cr['LaneNumber'] == int(wildcards.l) ]
 
         shell("""gzip -d -c {input.fq} | \
-                 count_unassigned -flagtablestart -noprogress -numtooutput 30 -cutoff 1500 -sortby count \
-                   -loadbc {params.bcs} -reportfile {output.txt}.tmp {params.flag4000}""")
-        shell("""count_unassigned -noprogress -in {output.txt}.tmp -addnumlanepercent {reads_in_lane} \
-                   -reportfile {output.txt}""")
+                 {UNASS}/count -flagtablestart -noprogress -numtooutput 30 -cutoff 1500 -sortby count \
+                   -loadbc {input.bcs} -reportfile {output}.tmp1 {params.flag4000}""")
+        shell("""{UNASS}/count -xmlwiki -noprogress -in {output}.tmp1 -addnumlanepercent {reads_in_lane} \
+                   -reportfile {output}.tmp2""")
 
-        os.unlink(format("{output.txt}.tmp"))
+        # Make it vaguely readable
+        shell("""cat {UNASS}/page_header.html {output}.tmp1 {UNASS}/page_footer.html > {output}""")
+
+        # Clean up.
+        os.unlink(format("{output}.tmp{1,2}"))
 
 # This rule needs to run just once on the login node.
 localrules: lookup_known_barcodes
@@ -386,7 +396,7 @@ rule lookup_known_barcodes:
     params:
         flag4000 = '-hiSeqRun4000' if run.split('_')[1][0] in 'KE' else ''
     shell:
-        "count_unassigned -noprogress -savebc {output} {params.flag4000}"
+        "{UNASS} count -noprogress -savebc {output} {params.flag4000}"
 
 # fastqc runs on single FASTQ files, not read pairs. Apparently this is as it should be.
 rule fastqc:
