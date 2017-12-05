@@ -29,7 +29,7 @@ use strict;
 use warnings;
 use Getopt::Long;
 use Data::Dumper;
-use FindBin qw($Bin);
+use FindBin qw($RealBin);
 
 my ($infile,$outfile)=('-','-'); # To default to StdIn, and StdOut
 # my $indexLength=8; # Defaults to 8 bases, ie. Sanger indexes.
@@ -52,7 +52,7 @@ my $savebcto;
 my ($knownonly,$wiki,$xmlwiki,$flagtablestart); # To output wiki table markup. or flag start of table.
 my $commify_qc_results=1;
 # List of barcodes embedded in the code is problematic but use of LIMS should kill it off!
-my $barcodes_config_file = "$Bin/Barcodes.config";
+my $barcodes_config_file = "$RealBin/Barcodes.config";
 
 # Save the whole command line we need it later.
 my $cmdline = "$0 " . join(' ', @ARGV);

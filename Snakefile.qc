@@ -156,13 +156,14 @@ rule interop_main:
         yyaml  = "QC/yield.yml"
 
 rule demux_stats_main:
-    # TODO - gather stats from the bcl2fastq logs etc. Calculate barcode balance, ...
-    # Also we have the new Stats.json to compete with our stats.yml. A little confusing -
-    # do we need both?
+    # Gather stats from the bcl2fastq logs etc. Calculate barcode balance, ...
+    # We have the new Stats.json to compete with our old per-lane stats.yml derived
+    # from the CSV output. A little confusing - do we need both?
     input:
-        stats   = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
-        json    = expand("QC/lane{l}/Stats.json",        l=lanes),
-        runinfo = expand("QC/{rep}/run_info.{r}.2.yml",  rep=allreps, r=[run])
+        stats    = "QC/bcl2fastq_stats.yml",
+        oldstats = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
+        json     = expand("QC/lane{l}/Stats.json",        l=lanes),
+        runinfo  = expand("QC/{rep}/run_info.{r}.2.yml",  rep=allreps, r=[run])
 
 rule metadata_main:
     # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
