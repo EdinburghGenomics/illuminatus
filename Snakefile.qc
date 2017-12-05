@@ -384,7 +384,7 @@ rule unassigned_scan:
                    -reportfile {output}.tmp2""")
 
         # Make it vaguely readable
-        shell("""cat {UNASS}/page_header.html {output}.tmp1 {UNASS}/page_footer.html > {output}""")
+        shell("""cat {UNASS}/page_header.html {output}.tmp2 {UNASS}/page_footer.html > {output}""")
 
         # Clean up.
         shell("""rm {output}.tmp{{1,2}}""")
