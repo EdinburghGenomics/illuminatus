@@ -387,7 +387,7 @@ rule unassigned_scan:
         shell("""cat {UNASS}/page_header.html {output}.tmp1 {UNASS}/page_footer.html > {output}""")
 
         # Clean up.
-        os.unlink(format("{output}.tmp{{1,2}}"))
+        shell("""rm {output}.tmp{{1,2}}""")
 
 # This rule needs to run just once on the login node.
 localrules: lookup_known_barcodes
