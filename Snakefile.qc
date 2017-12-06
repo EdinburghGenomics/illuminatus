@@ -396,7 +396,7 @@ rule lookup_known_barcodes:
     params:
         flag4000 = '-hiSeqRun4000' if run.split('_')[1][0] in 'KE' else ''
     shell:
-        "{UNASS} count -noprogress -savebc {output} {params.flag4000}"
+        "{UNASS}/count -noprogress -savebc {output} {params.flag4000}"
 
 # fastqc runs on single FASTQ files, not read pairs. Apparently this is as it should be.
 rule fastqc:
