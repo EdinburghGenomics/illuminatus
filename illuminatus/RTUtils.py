@@ -4,7 +4,7 @@ Updated Jan 2017
 
 @author: tcezard, tbooth2, mberinsk
 '''
-import os, re
+import os, sys, re
 from warnings import warn
 import configparser
 
@@ -132,7 +132,7 @@ class RT_manager():
 
         return int(self.tracker.create_ticket(
                 Subject   = subject,
-                Queue     = c['run_queue'],
+                Queue     = c.get('run_queue', self.default_queue),
                 Requestor = c['requestor'],
                 Cc        = c.get('run_cc'),
                 Text      = text or ""      )), True
@@ -146,17 +146,25 @@ class RT_manager():
             #In dummy mode, all tickets are 999
             return 999
 
-        tickets = self.tracker.search( Queue = c['run_queue'],
-                                       Subject__like = '%{}%'.format(run_id))
+        # Note - if the tickets aren't opened then 'new' tickets will just pile up in RT,
+        # but I don't think that should happen.
+        tickets = self.tracker.search( Queue = c.get('run_queue', self.default_queue),
+                                       Subject__like = '%{}%'.format(run_id),
+                                       Status = 'open'
+                                     )
 
-        if len(tickets) == 1:
-            tid = int(tickets[0].get('id').strip('ticket/'))
-            return tid if tid > 0 else None
-        elif len(tickets) > 1:
-            raise InvalidUse("More than one open ticket for run {}".format(run_id))
+        if not tickets:
+            return None
+
+        tid = max([ int(t.get('id').strip('ticket/')) for t in tickets ])
+
+        if len(tickets) > 1:
+            # Should use really use proper logging here
+            print("Warning: We have {} open tickets for run {}! Using the latest, {}".format(
+                                    len(tickets),           run_id,               tid), file=sys.stderr)
 
         #Failing that...
-        return None
+        return tid if tid > 0 else None
 
     def reply_to_ticket(self, ticket_id, message, subject=None):
         """Sends a reply to the ticket.

@@ -184,6 +184,7 @@ action_reads_finished(){
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
       done
+      # TODO - consider if RT errors could/should be non fatal here.
       rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
       log "  Completed bcl2fastq on $RUNID."
 
