@@ -163,7 +163,7 @@ def output_mqc(rids, fh):
         # First put all the pools in one dict (not partitioned by project)
         pools_union = {k: v for d in lane['Contents'].values() for k, v in d.items()}
         num_indexes = 0 if lane.get('Unindexed') else sum(len(v) for v in pools_union.values())
-        contents_str = ', '.join( squish_project_content( pools_union , 5) )
+        contents_str = ', '.join( squish_project_content( pools_union , 20) )
 
         dd = mqc_out['data']['Lane {}'.format(lane['LaneNumber'])] = dict(
                                     col_01 = ','.join( sorted(lane['Contents']) ),
