@@ -152,13 +152,18 @@ def output_mqc(rids, fh):
     for colnum, col in list(enumerate(table_headers))[1:]:
         mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title=col, format=table_formats[colnum])
 
+    # As a special case, force the Pool/Library column to be treated as text.
+    # I might be asked to make the full list of libs appear in the popup, but let's
+    # not second guess that.
+    mqc_out['headers']['col_02']['textcell'] = True
+
     for lane in rids['Lanes']:
-        #Logic here is just copied from output_tsv, but we also want the total num_indexes
-        #like in output_txt.
-        #First put all the pools in one dict (not partitioned by project)
+        # Logic here is just copied from output_tsv, but we also want the total num_indexes
+        # like in output_txt.
+        # First put all the pools in one dict (not partitioned by project)
         pools_union = {k: v for d in lane['Contents'].values() for k, v in d.items()}
         num_indexes = 0 if lane.get('Unindexed') else sum(len(v) for v in pools_union.values())
-        contents_str = ','.join( squish_project_content( pools_union , 5) )
+        contents_str = ', '.join( squish_project_content( pools_union , 5) )
 
         dd = mqc_out['data']['Lane {}'.format(lane['LaneNumber'])] = dict(
                                     col_01 = ','.join( sorted(lane['Contents']) ),

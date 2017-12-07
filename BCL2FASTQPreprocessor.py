@@ -30,8 +30,10 @@ class BCL2FASTQPreprocessor:
 
         self._bme = BaseMaskExtractor(self._samplesheet, self._runinfo)
 
-        #Allow lanes to be filled in automatically
+        #Check the lane is valid
         self.lane = str(lane)
+        assert self._bme.get_lanes(), \
+            "SampleSheet.csv does not seem to list any lanes."
         assert self.lane in [ str(l) for l in self._bme.get_lanes() ], \
             "{!r} not in {!r}".format(lane, self._bme.get_lanes())
 
