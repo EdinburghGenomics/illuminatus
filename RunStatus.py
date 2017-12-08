@@ -15,6 +15,11 @@ class RunStatus:
 
         # here the RunInfo.xml is parsed into an object
         self.run_path_folder = os.path.join( run_path , run_folder )
+        # In the case where we're looking at a fastqdata directory, examine the
+        # seqdata link
+        if os.path.isdir(os.path.join(self.run_path_folder, 'seqdata', 'pipeline')):
+            self.run_path_folder = os.path.join(self.run_path_folder, 'seqdata')
+
         runinfo_xml_location = os.path.join( self.run_path_folder , 'RunInfo.xml' )
         self._exists_cache = {}
 
