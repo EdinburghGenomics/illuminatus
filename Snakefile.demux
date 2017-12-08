@@ -101,10 +101,12 @@ rule bcl2fastq:
         script = "lane{l}/do_demultiplex{l}.sh"
     threads: 12 # if you edit this number, also edit the cluster.yml
     shell:
-        #The location for bcl2fastq and input/output should already be coded in the script
-        #Log will go to "lane{l}/bcl2fastq.log" which is a bit annoying but I need it there
-        #for the make-empty-fastq hack.
+        # The location for bcl2fastq and input/output should already be coded in the script
+        # Log will go to "lane{l}/bcl2fastq.log" which is a bit annoying but I need it there
+        # for the make-empty-fastq hack. For convenience, dump the tail of the log
+        # to stderr using a shell trap.
         """set -x
+           trap 'tail -v -n 20 lane{wildcards.l}/bcl2fastq.log >&2' exit
            echo "Log will be written to lane{wildcards.l}/bcl2fastq.log"
            PROCESSING_THREADS={threads} ; source {input.script}
         """

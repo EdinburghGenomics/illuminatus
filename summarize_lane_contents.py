@@ -187,8 +187,12 @@ def output_mqc(rids, fh):
             dd[dd_col] = lane_wd_info['raw']
 
         if 'add_in_b2f' in rids:
+            #table_headers.extend(["Barcode Balance"])
             dd_col, = [ k for k, v in mqc_out['headers'].items() if v['title'].startswith("Barcode Balance") ]
-            dd[dd_col] = rids['add_in_b2f'][int(lane['LaneNumber'])]['Barcode Balance']
+            # If all the entries are blank does MultiQC hide the column for me or do I need to
+            # do that myself??
+            if 'Barcode Balance' in rids['add_in_b2f'][int(lane['LaneNumber'])]:
+                dd[dd_col] = rids['add_in_b2f'][int(lane['LaneNumber'])]['Barcode Balance']
 
     print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
 
