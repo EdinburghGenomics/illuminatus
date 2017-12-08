@@ -167,6 +167,9 @@ class RunStatus:
             Behaviour with the touchfiles in invalid states is undefined, but we'll always
             report a valid status and in general, if in doubt, we'll report a status that
             does not trigger an action.
+            ** This logic is convoluted. Before modifying anything, make a test that reflects
+               the change you want to see, then after making the change always run the tests.
+               Otherwise you will get bitten in the ass!
         """
 
         # 'new' takes precedence
@@ -184,7 +187,11 @@ class RunStatus:
             # Aborted is a valid end state and takes precedence over 'failed'
             return "aborted"
         if self._was_failed():
-            return "failed"
+            # But we might still be busy processing read 1
+            if self._read1_triggered() and not self._read1_done():
+                return "in_read1_qc"
+            else:
+                return "failed"
 
         # If the run is ended without error we're done, but because of the way the
         # redo mechanism works it's possible for a run to fail then be partially

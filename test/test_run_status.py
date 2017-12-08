@@ -225,8 +225,21 @@ class T(unittest.TestCase):
         self.touch('pipeline/read1.started')
         self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc_reads_finished')
 
-        # Adding read1.done should get us to reads_finished
+        # A failure at this point should drop us back to 'in_read1_qc'
+        self.touch('pipeline/failed')
+        self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc')
+
+        # This should make no difference...
+        self.touch('pipeline/lane1.started')
+        self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc')
+
+        # Then only when the read1 finishes should we be failed
         self.touch('pipeline/read1.done')
+        self.assertEqual(gy()['PipelineStatus:'], 'failed')
+
+        # Clearing the failure and leaving read1.done should get us to reads_finished
+        self.rm('pipeline/lane1.started')
+        self.rm('pipeline/failed')
         self.assertEqual(gy()['PipelineStatus:'], 'reads_finished')
 
         self.touch('pipeline/lane1.started')
