@@ -60,7 +60,15 @@ class RunInfoXMLParser:
                 self.run_info[ 'Flowcell' ] = read.text
 
         for date_elem in root.iter('Date'):
-            # The date is in format YYMMDD but we want YYYY-MM-DD
-            self.run_info[ 'Run Date' ] = '20{}-{}-{}'.format(date_elem.text[0:2], date_elem.text[2:4], date_elem.text[4:6])
+            d = date_elem.text
+            if d[2] == '/':
+                # Novaseq runs are being dated like '11/24/2017 4:52:13 AM'
+                self.run_info[ 'Run Date' ] = '{}-{}-{}'.format(d[6:10], d[0:2], d[3:5])
+            elif len(d) == 6:
+                # The date is in format YYMMDD but we want YYYY-MM-DD
+                self.run_info[ 'Run Date' ] = '20{}-{}-{}'.format(d[0:2], d[2:4], d[4:6])
+            else:
+                # Dunno. Just use it unmodified.
+                self.run_info[ 'Run Date' ] = d
 
 
