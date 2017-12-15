@@ -71,17 +71,19 @@ def format_mqc(lane, info):
     # 'headers' needs to be a dict of { col_id: {title: ..., format: ... } }
     table_headers = ["Read", "Cycles", "Yield GB", "Projected Yield",   "Error Rate", "Q 30"]
     table_keys    = [None,   "cycles", "yield_g",  "projected_yield_g", "error_rate", "percent_gt_q30"]
-    table_formats = [None,   "{:d}",   "{:f}",     "{:f}",              "{:f}",       "{:f}"]
-    table_scales  = [None,   "GnBu",   "GnBu",     "GnBu",              "OrRd",       "GnBu"]
+
+    table_foo = { '__default__':    {'format': "{:f}", "scale": "GnBu"},
+                  'cycles':         {'format': "{:d}"},
+                  'error_rate':     {'scale': "OrRd", min:0, max: 10},
+                  'percent_gt_q30': {min: 0, max:100} }
 
     # Set headers and formats. col1_header is actually used to set col0_header!
     mqc_out['pconfig']['col1_header'] = table_headers[0]
     for colnum, col in list(enumerate(table_headers))[1:]:
         # So colnum will start at 1...
-        mqc_out['headers']['col_{:02}'.format(colnum)] = dict( title = col,
-                                                               format = table_formats[colnum],
-                                                               scale  = table_scales[colnum] )
-
+        d = mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title = col)
+        d.update(table_foo['__default__'])
+        d.update(table_foo.get(table_keys[colnum], {})
     # TODO - do we want to explicitly flag index reads?
     for read, rinfo in info.items():
         mqc_out['data'][read] = { 'col_{:02}'.format(colnum): rinfo[key]
