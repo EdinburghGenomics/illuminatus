@@ -231,6 +231,8 @@ rule configure_multiqc:
                       dict( type = 'regex',
                             pattern = '.*__' ),
                       dict( type = 'regex',
+                            pattern = '_[12]_screen' ),
+                      dict( type = 'regex',
                             pattern = '[Uu]ndetermined$',
                             replace = 'unassigned' ),
                      ],
@@ -248,7 +250,9 @@ rule configure_multiqc:
                      fastqc_config = dict(
                         plots_enabled = [ "sequence_quality_plot", "per_seq_quality_plot",
                                           "sequence_content_plot", "gc_content_plot",
-                                          "n_content_plot", "seq_dup_levels_plot" ] )
+                                          "n_content_plot", "seq_dup_levels_plot" ] ),
+                     fastq_screen_config = dict(
+                        tack_on_images = True ),
                    )
 
         with open(output[0], "w") as cfh:
@@ -338,7 +342,7 @@ rule fqscreen:
     params:
         maxlen = 50,
         subset = 1000000,
-    threads: 1  # Has to be 1 until the bug in Bowtie is fixed!
+    threads: 2  # Has to be 1 until the bug in Bowtie is fixed!
     shell:
         """set +o pipefail
            _slen=`zcat {input} | head -n 2 | awk 'NR==2{{print length($1)}}'`
