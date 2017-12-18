@@ -248,9 +248,12 @@ rule configure_multiqc:
                      #Custom content
                      top_modules = [ 'custom_content', 'edgen_interop' ],
                      fastqc_config = dict(
-                        plots_enabled = [ "sequence_quality_plot", "per_seq_quality_plot",
-                                          "sequence_content_plot", "gc_content_plot",
-                                          "n_content_plot", "seq_dup_levels_plot" ] ),
+                        plots_enabled = [ "sequence_quality_plot",
+                                          "per_seq_quality_plot",
+                                          #"sequence_content_plot",
+                                          "gc_content_plot",
+                                          "n_content_plot",
+                                          "seq_dup_levels_plot" ] ),
                      fastq_screen_config = dict(
                         tack_on_images = True ),
                    )
