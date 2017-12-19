@@ -126,16 +126,22 @@ class RT_manager():
         if ticket_id:
             return ticket_id, False
 
+        #Since dummy mode returns 999, we can proceed with real ops.
+
         #Text munge
         text = re.sub(r'\n', r'\n      ', text.rstrip()) if text \
                else ""
 
-        return int(self.tracker.create_ticket(
+        ticket_id = int(self.tracker.create_ticket(
                 Subject   = subject,
                 Queue     = c.get('run_queue', self.default_queue),
                 Requestor = c['requestor'],
                 Cc        = c.get('run_cc'),
-                Text      = text or ""      )), True
+                Text      = text or ""      ))
+
+        #Open the ticket, or we'll not find it again.
+        self.tracker.edit_ticket(ticket_id, Status='open')
+        return ticket_id, True
 
     def search_run_ticket(self, run_id):
         """Search for a ticket referencing this run, and return the ticket number,
@@ -153,7 +159,7 @@ class RT_manager():
                                        Status = 'open'
                                      )
 
-        if not tickets:
+        if not list(tickets):
             return None
 
         tid = max([ int(t.get('id').strip('ticket/')) for t in tickets ])

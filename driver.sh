@@ -3,13 +3,13 @@ set -euo pipefail
 shopt -sq failglob
 
 # A driver script that is to be called directly from the CRON.
-# It will go through all runs in SEQDATA_LOCATION and take action on them.
-# As a well behaved CRON job it should only output error messages
-# to stdout.
+# It will go through all runs in SEQDATA_LOCATION and take action on them as needed.
+# As a well behaved CRON job it should only output critical error messages
+# to stdout - this is controlled by the MAINLOG setting.
 # The script wants to run every 5 minutes or so, and having multiple instances
-# in flight at once if fine, though in fact there are race conditions possible if two
+# in flight at once is fine, though in fact there are race conditions possible if two
 # instances start at once and claim the same run for processing (Snakemake locking
-# should catch any fallout).
+# should catch any fallout before data is scrambled).
 
 # Note within this script I've tried to use ( subshell blocks ) along with "set -e"
 # to emulate eval{} statements in Perl. It does work but you have to be really careful
@@ -185,7 +185,7 @@ action_reads_finished(){
           mv $f ${f%.started}.done
       done
       # TODO - consider if RT errors could/should be non fatal here.
-      rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed'
+      rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed. QC will trigger on next CRON cycle'
       log "  Completed bcl2fastq on $RUNID."
 
     ) |& plog ; [ $? = 0 ] || pipeline_fail Demultiplexing
@@ -207,16 +207,24 @@ action_demultiplexed() {
     log "  Now commencing QC on $RUNID."
 
     # This touch file puts the run into status in_qc.
+    # Upload of report is regarded as the final QC step, so if this fails wen need to
+    # log a failure.
     touch pipeline/qc.started
     BREAK=1
     set +e ; ( set -e
         run_qc
-
         log "  Completed QC on $RUNID."
-        mv pipeline/qc.started pipeline/qc.done
 
-        rt_runticket_manager.py -r "$RUNID" --comment "QC of $RUNID completed"
+        if [ -n "$last_upload_report" ] ; then
+            mv pipeline/qc.started pipeline/qc.done
+            rt_runticket_manager.py -r "$RUNID" --subject "finished" \
+                --reply $'Pipeline completed on $RUNID and QC report is available at\n'"$last_upload_report"
+        else
+            # ||true avoids calling the error handler twice
+            pipeline_fail QC_report_final_upload || true
+        fi
     ) |& plog ; [ $? = 0 ] || pipeline_fail QC
+
 }
 
 # Also what about the copying to backup? I feel this should be an entirely separate
@@ -317,11 +325,16 @@ action_redo() {
     rm -f pipeline/qc.started pipeline/qc.done pipeline/failed pipeline/aborted
 
     BREAK=1  # If we fail after this, don't try to process more runs on this cycle.
+
+    # Clear the 'finished' subject on the ticket
+    rt_runticket_manager.py -r "$RUNID" --subject "redo" \
+        --comment "Re-Demultiplexing of lanes ${redo_list[*]} was requested." || true
+
     set +e ; ( set -e
       if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
         BCL2FASTQCleanup.py "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
       fi
-    ) |& plog ; [ $? = 0 ] || pipeline_fail Cleanup_for_Re-demultiplexing
+    ) |& plog ; [ $? = 0 ] || { pipeline_fail Cleanup_for_Re-demultiplexing ; return ; }
 
     # Re-summarize the sample sheet, as it probably changed.
     # TODO - say what lanes are being demuxed in the report, since we can't just now promise
@@ -388,12 +401,16 @@ run_multiqc() {
     # This requires the QC directory to exist, even before demultiplexing starts.
     # In this case, an error in MultiQC etc. should not prevent demultiplexing from starting.
     mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
-    # Interop may fail. This is fine.
+    # Interop may fail. This is fine at this point.
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- interop_main ) 2>&1
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F --config pstatus="$pstatus" -- multiqc_main ) 2>&1
 
     # Snag that return value
     _retval=$?
+
+    # Push to server and note the result (if upload_report.sh does not error it must return a URL)
+    last_upload_report=$(upload_report.sh "$DEMUX_OUTPUT_FOLDER")
+    if [ $? != 0 ] ; then last_upload_report= ; fi
 
     eval "$_ereset"
     return $_retval
@@ -414,7 +431,8 @@ run_qc() {
       Snakefile.welldups --config rundir="$rundir" -- wd_main
     )
 
-    # If we get here, the pipeline completed (or was partially complete)
+    # If we get here, the pipeline completed (or was partially complete) but a failure to
+    # upload the final report must still count as a pipeline failure (trapped by the caller)
     run_multiqc "Completed QC"
 }
 

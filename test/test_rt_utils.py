@@ -72,14 +72,16 @@ class T(unittest.TestCase):
         rtman.tracker.search.return_value = [ dict( Subject = "Run 9999_8888 foo",
                                                     id = "ticket/1234" ) ]
         res = rtman.search_run_ticket("9999_8888")
-        rtman.tracker.search.assert_called_with(Queue = "bfx-run", Subject__like='%9999_8888%')
+        #We now open the tickets.
+        rtman.tracker.search.assert_called_with(Queue = "bfx-run", Subject__like='%9999_8888%', Status='open')
         self.assertEqual(res, 1234)
 
     def test_find_or_create_run_ticket(self):
 
         rtman = self.mock_connect()
+        rtman.tracker.create_ticket.return_value = 4044
 
-        rtman.find_or_create_run_ticket(1234, "my subject", text = "1\n2\n3\n")
+        rtman.find_or_create_run_ticket("blah_run", "my subject", text = "1\n2\n3\n")
 
         #The ticket won't be found so should be created with the
         #subject specified.
@@ -91,7 +93,10 @@ class T(unittest.TestCase):
                         Cc        = "",
                         Text      = "1\n      2\n      3" )
 
-        #What I can't test here is whether the real Rt returns a string or an int.
+        #What I can't test here is whether the real Rt returns a string or an int :-/
+
+        # Ticket should now be opened after creation
+        rtman.tracker.edit_ticket.assert_called_with( 4044, Status='open' )
 
     '''
     # Not adding test coverage to these for now as they are pretty simple.

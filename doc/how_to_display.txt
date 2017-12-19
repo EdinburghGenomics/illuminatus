@@ -1,5 +1,5 @@
 # At the moment, I'm just looking to push the reports to web1. In future, we can maybe have something more
-# sophisticated with versioned reports being kept.
+# sophisticated with versioned reports being kept, maybe with delta packing...
 
 # Anyway, a shell function:
 
@@ -14,3 +14,8 @@ pushrep (){ (
     rsync -drvl --include='multiqc_*' --exclude='*' QC/ $dest/$runname/
     ssh ${dest%%:*} ln -s multiqc_report_overview.html ${dest#*:}/$runname/index.html
 ) ; }
+
+So, to make this actually work. I can put this in a script and run it after running the QC.
+It should take a setting from the environment, just like everything else.
+I need to consider how to handle failure. Uploading of final QC should be a fail but uploading
+of intermediate QC is just a warning.

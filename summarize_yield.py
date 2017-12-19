@@ -83,7 +83,7 @@ def format_mqc(lane, info):
         # So colnum will start at 1...
         d = mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title = col)
         d.update(table_foo['__default__'])
-        d.update(table_foo.get(table_keys[colnum], {})
+        d.update(table_foo.get(table_keys[colnum], {}))
     # TODO - do we want to explicitly flag index reads?
     for read, rinfo in info.items():
         mqc_out['data'][read] = { 'col_{:02}'.format(colnum): rinfo[key]
