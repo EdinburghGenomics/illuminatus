@@ -1,0 +1,27 @@
+We want to see the external sample names and the barcode sequences in the report.
+Both are slightly problematic. The latter less so, since we have the info in the
+sample sheet and also (if need be) in the bcl2fastq log. ... Hang on, scrub that -
+we have it in Stats.json. I can just add it as a feature to the bcl2fastq module.
+
+There is one question over whether we want to revcomp the second index to for 4000/X
+runs to show the barcode in canonical format. I suspect not - we want the index in
+the same way it appears in the sample sheet. We could also do a reverse-lookup of
+well-known codes so that for the Illumina barcodes we just see the name. I can
+suggest this at the next meeting. For now, just add the codes, using the syntax
+'AAAA+AAAA' to match the FASTQ headers (actually this is what we see in Stats.json. Awesome).
+
+- Done in MultiQC and added to config
+
+Adding the external names is more problematic, since we can't put these into the
+sample sheet (because we can't robustly quote them or guarantee length) so I'll
+need to snag them from the LIMS. But I'm snagging from the LIMS in any case so
+whotevaaaa.
+
+This needs to be poked into the General Statistics table - see
+"plot_type: generalstats" in http://multiqc.info/docs/#data-as-part-of-multiqc-config
+Good news - we can apparently do this without adding another custom module.
+
+...
+
+Ah, I just realised I need to add the pool name too. Let's look at that tomorrow.
+I can snag it out of the Stats.json too, I think.

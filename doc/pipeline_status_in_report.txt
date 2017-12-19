@@ -1,0 +1,5 @@
+At this point (19 Dec 2017) the pipeline status is missing from the Illuminatus report.
+
+It should be simple to add it. Since this is purely a property of where the driver.sh
+script has got to, I'll just tag the status into multiqc. Makes no sense to try to
+save it out to a file.
