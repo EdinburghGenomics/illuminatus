@@ -138,7 +138,7 @@ action_new(){
 
       plog_start
       fetch_samplesheet
-      run_multiqc | plog
+      run_multiqc "Waiting for data" | plog
     ) ; [ $? = 0 ] && log OK && BREAK=1 || log FAIL
 
     # Add a link back in the other direction, now the output folder is there.
@@ -164,7 +164,7 @@ action_reads_finished(){
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
     fetch_samplesheet
-    ( run_multiqc | plog ) || true
+    ( run_multiqc "Demultiplexing" | plog ) || true
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
     # Note that the preprocessor and runner are not aware of the 'demultiplexing'
@@ -198,10 +198,10 @@ action_in_read1_qc_reads_finished(){
     action_reads_finished
 }
 
-# What about the transition from demultiplexing to QC. Do we need a new status,
+# What about the transition from demultiplexing to QC? Do we need a new status,
 # or is the QC part just hooked off the back of BCL2FASTQ?
 # I say the former, or else it is harder to re-run QC without re-demultiplexing,
-# and also to see exactly where the run is.
+# and also to see exactly where the run is. (See state diagram)
 action_demultiplexed() {
     log "\_DEMULTIPLEXED $RUNID"
     log "  Now commencing QC on $RUNID."
@@ -249,7 +249,7 @@ action_read1_finished() {
         cd "$DEMUX_OUTPUT_FOLDER"
         Snakefile.welldups --config rundir="$rundir" -- wd_main || e="$e welldups"
         Snakefile.qc -- interop_main                            || e="$e interop"
-        cd "$rundir" ; run_multiqc                              || e="$e multiqc"
+        cd "$rundir" ; run_multiqc "Waiting for RTAComplete"    || e="$e multiqc"
 
         if [ -n "$e" ] ; then
             log "  There were errors in read1 processing (${e# }) on $RUNID. See $projlog1"
@@ -327,7 +327,7 @@ action_redo() {
     # TODO - say what lanes are being demuxed in the report, since we can't just now promise
     # that all the altered lanes are the actual ones being re-done.
     fetch_samplesheet
-    run_multiqc | plog
+    run_multiqc "Re-demultiplexing lanes ${redo_list[*]}" | plog
 
     set +e ; ( set -e
       mkdir -vp "$DEMUX_OUTPUT_FOLDER"/demultiplexing
@@ -374,6 +374,7 @@ run_multiqc() {
     # Caller is responsible for log redirection.
     set +o | grep '+o errexit' && _ereset='set +e' || _ereset='set -e'
     set +e
+    pstatus="${1:-}"
 
     if [ ! -e pipeline/sample_summary.yml ] ; then
         #summarize_lane_contents.py --yml pipeline/sample_summary.yml
@@ -389,7 +390,7 @@ run_multiqc() {
     mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
     # Interop may fail. This is fine.
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- interop_main ) 2>&1
-    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F -- multiqc_main ) 2>&1
+    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F --config pstatus="$pstatus" -- multiqc_main ) 2>&1
 
     # Snag that return value
     _retval=$?
@@ -399,10 +400,11 @@ run_multiqc() {
 }
 
 run_qc() {
+    # At present, this is only ever called by action_demultiplexed.
     # Hand over to Snakefile.qc for report generation
     # First a quick report. Continue to QC even if MultiQC fails here.
     ( cd "$DEMUX_OUTPUT_FOLDER" && Snakefile.qc -- demux_stats_main interop_main )
-    run_multiqc || true
+    run_multiqc "In QC" || true
 
     # Then a full QC. Welldups should have run already but it will not
     # hurt to re-run Snakemake with nothing to do. All these steps must succeed.
@@ -411,7 +413,9 @@ run_qc() {
       Snakefile.qc -- md5_main qc_main
       Snakefile.welldups --config rundir="$rundir" -- wd_main
     )
-    run_multiqc
+
+    # If we get here, the pipeline completed (or was partially complete)
+    run_multiqc "Completed QC"
 }
 
 pipeline_fail() {

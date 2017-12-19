@@ -141,6 +141,9 @@ lanes = sorted( set( sf['lane'] for sf in all_fq ) )
 # FIXME - stop the dangling links on the overview that will result from this.
 allreps = expand("lane{l}", l=lanes) + ['overview']
 
+# Also when generating the reports the driver can tell the pipeline what status it is in
+pstatus = config.get('pstatus') or 'not specified'
+
 # === Driver rules ===
 rule md5_main:
     input:
@@ -212,7 +215,8 @@ rule run_multiqc:
         """echo "multiqc is `which multiqc`" >&2
            rm -rf {output.data}
            ln -srf {input.runinfo} QC/{wildcards.l}/
-           {TOOLBOX} multiqc -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/{wildcards.l} --lane {wildcards.l}
+           {TOOLBOX} multiqc -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/{wildcards.l} \
+                --lane {wildcards.l} --pipeline_status {pstatus}
         """
 
 localrules: configure_multiqc
@@ -256,6 +260,9 @@ rule configure_multiqc:
                                           "seq_dup_levels_plot" ] ),
                      fastq_screen_config = dict(
                         tack_on_images = True ),
+                     bcl2fastq_config = dict(
+                        add_index_sequences = True,
+                        add_pool_names = True ),
                    )
 
         with open(output[0], "w") as cfh:
