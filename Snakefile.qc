@@ -138,7 +138,9 @@ finally:
 lanes = sorted( set( sf['lane'] for sf in all_fq ) )
 # All report names - lane1, lane2, ..., overview
 # This will not generate the per-lane reports until the demultiplexing has been done.
-# FIXME - stop the dangling links on the overview that will result from this.
+# FIXME - stop the dangling links on the overview that will result from this. Or else
+# make empty reports, but they won't have the samples on as I'm getting these from
+# Stats.json.
 allreps = expand("lane{l}", l=lanes) + ['overview']
 
 # Also when generating the reports the driver can tell the pipeline what status it is in
@@ -216,7 +218,7 @@ rule run_multiqc:
            rm -rf {output.data}
            ln -srf {input.runinfo} QC/{wildcards.l}/
            {TOOLBOX} multiqc -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/{wildcards.l} \
-                --lane {wildcards.l} --pipeline_status {pstatus}
+                --lane {wildcards.l} --pipeline_status '{pstatus}'
         """
 
 localrules: configure_multiqc

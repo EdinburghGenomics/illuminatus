@@ -131,7 +131,7 @@ action_new(){
     # $DEMUX_OUTPUT_FOLDER/QC/ directory. The symlink ./pipeline/output will
     # serve as a shortcut to this, and we'll also have a link in the other direction.
     # We're now sending the logs to the output folder too.
-    log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
+    log "\_NEW $RUNID. Creating ./pipeline folder and making skeleton report."
     set +e ; ( set -e
       mkdir -v ./pipeline |& debug
       mkdir -vp "$DEMUX_OUTPUT_FOLDER" |&debug
@@ -140,11 +140,11 @@ action_new(){
 
       plog_start
       fetch_samplesheet
-    ) ; [ $? = 0 ] && log OK && BREAK=1 || log FAIL
+    ) ; [ $? = 0 ] && BREAK=1 || { pipeline_fail Scan_new_run ; return ; }
 
     # Run an initial report but don't abort the pipeline if this fails.
     # If necessary, Snakefile.qc and upload_report.sh could be run manually.
-    run_multiqc "Waiting for data" | plog
+    run_multiqc "Waiting for data" | plog && echo DONE
 }
 
 action_reads_unfinished(){
@@ -217,6 +217,7 @@ action_demultiplexed() {
         run_qc
         log "  Completed QC on $RUNID."
 
+        last_upload_report="`cat pipeline/report_upload_url.txt`"
         if [ -n "$last_upload_report" ] ; then
             rt_runticket_manager.py -r "$RUNID" --subject finished \
                 --reply $'Pipeline completed on $RUNID and QC report is available at\n'"$last_upload_report"
@@ -392,12 +393,16 @@ run_multiqc() {
     set +e
     pstatus="${1:-}"
 
+    plog </dev/null #Just to set $projlog
+
+    # So this will summarize the samples into RT, but at this point there is no
+    # link to the report. We don't get the link until we do the upload and we can't
+    # do the upload til we make the report and we can't make the report without the
+    # sample summary. This should be addressed somehow.
+    send_summary=0
     if [ ! -e pipeline/sample_summary.yml ] ; then
-        #summarize_lane_contents.py --yml pipeline/sample_summary.yml
-        #This saves the yml and mails the text in one shot...
-        #Subshell needed to capture STDERR from summarize_lane_contents.py
-        ( rt_runticket_manager.py -r "$RUNID" --reply \
-            @<(summarize_lane_contents.py --yml pipeline/sample_summary.yml --txt -) ) 2>&1
+        send_summary=1 #Note for later.
+        summarize_lane_contents.py --yml pipeline/sample_summary.yml 2>&1
     fi
 
     # Push any new metadata into the run report.
@@ -411,10 +416,23 @@ run_multiqc() {
     # Snag that return value
     _retval=$?
 
-    # Push to server and note the result (if upload_report.sh does not error it must return a URL)
-    last_upload_report=
+    # Push to server and captur the result (if upload_report.sh does not error it must print a URL)
+    # We want stderr from upload_report.sh to go to stdout, so it gets plogged.
+    echo "Report generation failed" > pipeline/report_upload_url.txt
     if [ $_retval = 0 ] ; then
-        last_upload_report=$(upload_report.sh "$DEMUX_OUTPUT_FOLDER") || last_upload_report=
+        upload_report.sh "$DEMUX_OUTPUT_FOLDER" 2>&1 >pipeline/report_upload_url.txt || \
+            { log "Upload error. See $projlog" ;
+              echo "Report upload failed" > pipeline/report_upload_url.txt ; }
+    fi
+
+    if [ "$send_summary" = 1 ] ; then
+        # A new summary was made so we need to send it.
+        # Subshell needed to capture STDERR from summarize_lane_contents.py
+        last_upload_report="`cat pipeline/report_upload_url.txt`"
+        ( rt_runticket_manager.py -r "$RUNID" --reply \
+            @<(echo "Run report is at $last_upload_report" ;
+               summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt - ) ) 2>&1
+        _retval=$(( $? + $_retval ))
     fi
 
     eval "$_ereset"

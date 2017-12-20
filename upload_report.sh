@@ -5,7 +5,7 @@ set -euo pipefail
 # Normal report destination is web1.genepool.private:/var/runinfo/illuminatus_reports
 
 # Push reports onto the server.
-if [ "${REPORT_DESTINATION:-none}" == none ] ;
+if [ "${REPORT_DESTINATION:-none}" == none ] ; then
     echo "Skipping report upload, as no \$REPORT_DESTINATION is set." >&2
     echo "[upload of report was skipped]"
 fi

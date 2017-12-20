@@ -185,7 +185,8 @@ class T(unittest.TestCase):
         #Sample sheet should be summarized
         expected_calls = self.bm.empty_calls()
         expected_calls['samplesheet_fetch.sh'] = ['']
-        expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml --txt -']
+        expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml',
+                                                        '--from_yml pipeline/sample_summary.yml --txt -']
         expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --reply @???']
         expected_calls['Snakefile.qc'] = ['-- interop_main', '-F --config pstatus=Waiting for data -- multiqc_main']
         expected_calls['upload_report.sh'] = [self.temp_dir + '/fastqdata/160606_K00166_0102_BHF22YBBXX']
