@@ -113,11 +113,12 @@ class T(unittest.TestCase):
 
         fqgz = find_by_pattern(out_dir + "/demultiplexing", "*.fastq.gz")
 
-        # Files should still be there
+        # Files should still be there - all fail either the regex match or the
+        # lane sanity-check.
         self.assertEqual(fqgz, [
             'lane1/10510/10510GC0017L01/blahblah_blah_L001_R1_001.fastq.gz',
             'lane1/10510/10510GCpool05__10510GC0017L01/mystery.fastq.gz',
-            'lane1/10510/blah_S1_L001_R1_001.fastq.gz',
+            'lane1/10510/blah_S1_L002_R1_001.fastq.gz',
             'lane1/10510/blahblah_blah_L001_R1_001.fastq.gz',
             ])
 

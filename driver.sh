@@ -216,9 +216,10 @@ action_demultiplexed() {
         log "  Completed QC on $RUNID."
 
         if [ -n "$last_upload_report" ] ; then
-            mv pipeline/qc.started pipeline/qc.done
-            rt_runticket_manager.py -r "$RUNID" --subject "finished" \
+            rt_runticket_manager.py -r "$RUNID" --subject finished \
                 --reply $'Pipeline completed on $RUNID and QC report is available at\n'"$last_upload_report"
+            # Final success is contingent on the report upload AND that message going to RT.
+            mv pipeline/qc.started pipeline/qc.done
         else
             # ||true avoids calling the error handler twice
             pipeline_fail QC_report_final_upload || true
@@ -327,7 +328,7 @@ action_redo() {
     BREAK=1  # If we fail after this, don't try to process more runs on this cycle.
 
     # Clear the 'finished' subject on the ticket
-    rt_runticket_manager.py -r "$RUNID" --subject "redo" \
+    rt_runticket_manager.py -r "$RUNID" --subject redo \
         --comment "Re-Demultiplexing of lanes ${redo_list[*]} was requested." || true
 
     set +e ; ( set -e
@@ -354,7 +355,7 @@ action_redo() {
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
       done
-      rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed"
+      rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed" || true
       log "  Completed demultiplexing on $RUNID lanes ${redo_list[*]}."
 
     ) |& plog ; [ $? = 0 ] || pipeline_fail Re-demultiplexing
@@ -418,6 +419,9 @@ run_multiqc() {
 
 run_qc() {
     # At present, this is only ever called by action_demultiplexed.
+    # If qc failed, the ticket subject will be 'failed' so reset it.
+    rt_runticket_manager.py -r "$RUNID" --subject in_qc
+
     # Hand over to Snakefile.qc for report generation
     # First a quick report. Continue to QC even if MultiQC fails here.
     ( cd "$DEMUX_OUTPUT_FOLDER" && Snakefile.qc -- demux_stats_main interop_main )
@@ -444,7 +448,7 @@ pipeline_fail() {
     # Send an alert when demultiplexing fails. This always requires attention!
     # Note that after calling 'plog' we can query '$projlog' since all shell vars are global.
     plog "Attempting to notify error to RT"
-    if rt_runticket_manager.py -r "$RUNID" --reply "$stage failed. See log in $projlog" |& plog ; then
+    if rt_runticket_manager.py -r "$RUNID" --subject failed --reply "$stage failed. See log in $projlog" |& plog ; then
         log "FAIL $stage $RUNID. See $projlog"
     else
         # RT failure. Complain to STDERR in the hope this will generate an alert mail via CRON

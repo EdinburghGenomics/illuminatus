@@ -165,7 +165,7 @@ class T(unittest.TestCase):
             )
 
     def test_hiseq_lanes_5(self):
-        """Not sure exactly what is in this HiSeq run?
+        """This has all sorts of stuff. Lane 5 has no index.
         """
         run_id = '160607_D00248_0174_AC9E4KANXX'
 
@@ -181,13 +181,28 @@ class T(unittest.TestCase):
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'/lane${LANE}" % self.out_dir ,
                 "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
-                "--use-bases-mask '5:Y50n,I8,I8'",
+                "--use-bases-mask '5:Y50n,n*,n*'",
                 "--tiles=s_[$LANE]",
                 "--barcode-mismatches 1",
                 "--fastq-compression-level 6",
                 "-p ${PROCESSING_THREADS:-10}",
                 "2>'/mock/out'/lane${LANE}/bcl2fastq.log"
             ])
+
+        #Lane 1 has 8-base dual index
+        self.run_preprocessor(run_id, 1)
+        bm, = [ a.split()[1] for a in self.bcl2fastq_command_split[2] if a.startswith('--use-bases') ]
+        self.assertEqual(bm, "'1:Y50n,I8,I8'")
+
+        #Lane 3 has 6-base single index
+        self.run_preprocessor(run_id, 3)
+        bm, = [ a.split()[1] for a in self.bcl2fastq_command_split[2] if a.startswith('--use-bases') ]
+        self.assertEqual(bm, "'3:Y50n,I6n*,n*'")
+
+        #Lane 4 has 8-base single index
+        self.run_preprocessor(run_id, 4)
+        bm, = [ a.split()[1] for a in self.bcl2fastq_command_split[2] if a.startswith('--use-bases') ]
+        self.assertEqual(bm, "'4:Y50n,I8,n*'")
 
 
     @patch('sys.stdout', new_callable=StringIO)

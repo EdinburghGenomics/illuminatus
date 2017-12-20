@@ -85,7 +85,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
         #os.path.split is unhelpful here. Just do it the obvious way.
         # something like: 10528, 10528EJ0019L01, 10528EJpool03_S19_L005_R1_001.fastq.gz
-        project, pool_and_library, filename = fastq_file.split('/')[-3:]
+        lane_dir, project, pool_and_library, filename = fastq_file.split('/')[-4:]
 
         #Note the project as one we've processed.
         proj_seen.add(project)
@@ -99,6 +99,11 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         samplename = re_match.group(1) # e.g.: We ignore this!
         lane = re_match.group(3) # e.g.: L00(5)
         readnumber = re_match.group(4) # e.g.: R(1)
+
+        # Check lane matches the directory name
+        if not lane_dir == 'lane{}'.format(lane):
+            log("# skipping (lane mismatch) %s" % fastq_file)
+            continue
 
         # split out library and pool
         try:
@@ -131,7 +136,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
         #os.path.split is unhelpful here. Just do it the obvious way.
         # something like: 10528, 10528EJ0019L01, 10528EJpool03_S19_L005_R1_001.fastq.gz
-        project, filename = fastq_file.split('/')[-2:]
+        lane_dir, project, filename = fastq_file.split('/')[-3:]
 
         #Note the project as one we've processed.
         proj_seen.add(project)
@@ -146,6 +151,11 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         pool_and_library = re_match.group(1) # e.g.: 10528EJpool03__10528EJ0019L01
         lane = re_match.group(3) # e.g.: L00(5)
         readnumber = re_match.group(4) # e.g.: R(1)
+
+        # Check lane matches the directory name
+        if not lane_dir == 'lane{}'.format(lane):
+            log("# skipping (lane mismatch) %s" % fastq_file)
+            continue
 
         # split out library and pool
         try:
@@ -174,7 +184,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
     # Now deal with the undetermined files.
     for undet_file_absolute in glob(os.path.join( output_dir, "demultiplexing/lane*", "[Uu]ndetermined_*" )):
-        filename = undet_file_absolute.split('/')[-1]
+        lane_dir, filename = undet_file_absolute.split('/')[-2:]
 
         # eg. Undetermined_S0_L004_R1_001.fastq.gz
         re_match = re.match( r'undetermined_(.*)_L00(\d)_R(\d)_\d+.fastq.gz', filename, re.I)
@@ -185,6 +195,11 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
         lane = re_match.group(2)
         readnumber = re_match.group(3)
+
+        # Check lane matches the directory name
+        if not lane_dir == 'lane{}'.format(lane):
+            log("# skipping (lane mismatch) %s" % fastq_file)
+            continue
 
         # eg. 160811_D00261_0355_BC9DA7ANXX_4_unassigned_1.fastq.gz
         new_filename = "{runid}_{lane}_unassigned_{readnumber}.fastq.gz".format(**locals())
