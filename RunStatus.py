@@ -241,7 +241,13 @@ class RunStatus:
             return "reads_unfinished"
 
     def get_yaml(self):
+        pstatus = 'unknown'
         try:
+            # Check for an 'aborted' file, since we want to recognise aborted runs no matter
+            # what else we see.
+            if self._was_aborted():
+                pstatus = 'aborted'
+
             out = ( 'RunID: {i[RunId]}\n' +
                     'LaneCount: {i[LaneCount]}\n' +
                     'Instrument: {i[Instrument]}\n' +
@@ -255,8 +261,8 @@ class RunStatus:
                     'LaneCount: 0\n' +
                     'Instrument: unknown\n' +
                     'Flowcell: unknown\n' +
-                    'PipelineStatus: unknown\n' +
-                    'MachineStatus: unknown')
+                    'PipelineStatus: {s}\n' +
+                    'MachineStatus: unknown').format( s=pstatus )
         return out
 
 if __name__ == '__main__':
