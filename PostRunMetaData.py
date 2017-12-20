@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import os, sys, re
 from glob import glob
-from collections import defaultdict
-from datetime import datetime
 
 import yaml
 
@@ -43,7 +41,7 @@ class PostRunMetaData:
 
 def munge_lanes(l):
     """Take the lanes arguments and return a dict {'lanes': [int, int, int]} or else
-       an empty dict.
+       an empty dict - ie. converts sys.argv to **kwargs format.
     """
     res = dict(lanes=[])
     for al in l:

@@ -3,7 +3,7 @@ import sys, os
 import datetime
 import yaml
 from argparse import ArgumentParser
-from pprint import pprint, pformat
+#from pprint import pprint, pformat
 
 from illuminatus.SampleSheetReader import SampleSheetReader
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser

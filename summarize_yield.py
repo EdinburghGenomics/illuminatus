@@ -10,8 +10,6 @@
 # is very pertinent.
 
 import os, sys
-from pprint import pprint
-from math import isnan
 import yaml
 
 from interop import py_interop_run_metrics, py_interop_run, py_interop_summary

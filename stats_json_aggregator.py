@@ -2,9 +2,9 @@
 
 """ There are already a few scripts that read Stats.json. Information that
     is extracted per-lane should be handled by the multiqc module.
-    This will combine stats from across all/multiple lanes.
+    This will combine stats from across all/multiple lanes for the overview report.
 """
-import os, sys, re
+#import os, sys, re
 from argparse import ArgumentParser
 import json
 from statistics import mean, stdev
