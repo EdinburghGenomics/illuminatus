@@ -70,10 +70,10 @@ def format_mqc(lane, info):
     table_headers = ["Read", "Cycles", "Yield GB", "Projected Yield",   "Error Rate", "Q 30"]
     table_keys    = [None,   "cycles", "yield_g",  "projected_yield_g", "error_rate", "percent_gt_q30"]
 
-    table_foo = { '__default__':    {'format': "{:f}", "scale": "GnBu"},
-                  'cycles':         {'format': "{:d}"},
-                  'error_rate':     {'scale': "OrRd", min:0, max: 10},
-                  'percent_gt_q30': {min: 0, max:100} }
+    table_foo = { '__default__':    dict(format="{:f}", scale="GnBu"),
+                  'cycles':         dict(format="{:d}"),
+                  'error_rate':     dict(scale="OrRd", min=0, max=10),
+                  'percent_gt_q30': dict(min=0, max=100) }
 
     # Set headers and formats. col1_header is actually used to set col0_header!
     mqc_out['pconfig']['col1_header'] = table_headers[0]

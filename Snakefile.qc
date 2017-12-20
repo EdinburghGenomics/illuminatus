@@ -216,6 +216,7 @@ rule run_multiqc:
     shell:
         """echo "multiqc is `which multiqc`" >&2
            rm -rf {output.data}
+           mkdir -p  QC/{wildcards.l}
            ln -srf {input.runinfo} QC/{wildcards.l}/
            {TOOLBOX} multiqc -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/{wildcards.l} \
                 --lane {wildcards.l} --pipeline_status '{pstatus}'

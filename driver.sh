@@ -409,8 +409,10 @@ run_multiqc() {
     # This requires the QC directory to exist, even before demultiplexing starts.
     # In this case, an error in MultiQC etc. should not prevent demultiplexing from starting.
     mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
-    # Interop may fail. This is fine at this point.
-    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- interop_main ) 2>&1
+    # Note - running interop here is a problem because if the cluster is busy this will
+    # hang until the jobs run. I think it was redundant anyway as read1 and pre-QC trigger it
+    # explicitly. What I do need is the metadata.
+    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- metadata_main ) 2>&1
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F --config pstatus="$pstatus" -- multiqc_main ) 2>&1
 
     # Snag that return value
@@ -446,7 +448,7 @@ run_qc() {
 
     # Hand over to Snakefile.qc for report generation
     # First a quick report. Continue to QC even if MultiQC fails here.
-    ( cd "$DEMUX_OUTPUT_FOLDER" && Snakefile.qc -- demux_stats_main interop_main )
+    ( cd "$DEMUX_OUTPUT_FOLDER" && Snakefile.qc -- demux_stats_main interop_main ) || true
     run_multiqc "In QC" || true
 
     # Then a full QC. Welldups should have run already but it will not

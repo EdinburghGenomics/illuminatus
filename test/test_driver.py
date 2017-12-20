@@ -188,7 +188,7 @@ class T(unittest.TestCase):
         expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml',
                                                         '--from_yml pipeline/sample_summary.yml --txt -']
         expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --reply @???']
-        expected_calls['Snakefile.qc'] = ['-- interop_main', '-F --config pstatus=Waiting for data -- multiqc_main']
+        expected_calls['Snakefile.qc'] = ['-- metadata_main', '-F --config pstatus=Waiting for data -- multiqc_main']
         expected_calls['upload_report.sh'] = [self.temp_dir + '/fastqdata/160606_K00166_0102_BHF22YBBXX']
 
         #The call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
