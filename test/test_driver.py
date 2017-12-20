@@ -200,6 +200,25 @@ class T(unittest.TestCase):
         #Log file should appear (here accessed via the output symlink)
         self.assertTrue(os.path.isfile(test_data + '/pipeline/output/pipeline.log') )
 
+    def test_new_multiqc_fail(self):
+        """Same as above but MultiQC fails for some reason.
+           This needs to be non-fatal as we still want demultiplexing to kick in.
+        """
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+        os.system("rm " + test_data + "/RTAComplete.txt")
+
+        self.bm.add_mock('Snakefile.qc', fail=True)
+
+        self.bm_rundriver()
+
+        self.assertTrue(os.path.isdir(test_data + '/pipeline'))
+        self.assertTrue(os.path.islink(test_data + '/pipeline/output'))
+        self.assertTrue(os.path.islink(test_data + '/pipeline/output/seqdata'))
+
+        self.assertEqual( len(self.bm.last_calls['rt_runticket_manager.py']), 1 )
+        self.assertEqual( self.bm.last_calls['upload_report.sh'], [] )
+        self.assertFalse( os.path.exists(test_data + '/pipeline/failed') )
+
     def test_reads_finished(self):
         """A run ready to go through the main pipeline (read1 + demux).
              SampleSheet.csv should be converted to a symlink

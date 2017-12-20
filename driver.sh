@@ -129,20 +129,22 @@ action_new(){
 
     # In order to run the initial round of MultiQC we'll also end up making the
     # $DEMUX_OUTPUT_FOLDER/QC/ directory. The symlink ./pipeline/output will
-    # be made to point to this.
+    # serve as a shortcut to this, and we'll also have a link in the other direction.
     # We're now sending the logs to the output folder too.
     log "\_NEW $RUNID. Creating ./pipeline folder and making sample summary."
     set +e ; ( set -e
       mkdir -v ./pipeline |& debug
+      mkdir -vp "$DEMUX_OUTPUT_FOLDER" |&debug
       ln -sv "$DEMUX_OUTPUT_FOLDER" ./pipeline/output |& debug
+      ln -sv "`pwd -P`" ./pipeline/output/seqdata |& debug
 
       plog_start
       fetch_samplesheet
-      run_multiqc "Waiting for data" | plog
     ) ; [ $? = 0 ] && log OK && BREAK=1 || log FAIL
 
-    # Add a link back in the other direction, now the output folder is there.
-    ln -sv "`pwd -P`" "$DEMUX_OUTPUT_FOLDER"/seqdata |& debug || true
+    # Run an initial report but don't abort the pipeline if this fails.
+    # If necessary, Snakefile.qc and upload_report.sh could be run manually.
+    run_multiqc "Waiting for data" | plog
 }
 
 action_reads_unfinished(){
@@ -410,8 +412,10 @@ run_multiqc() {
     _retval=$?
 
     # Push to server and note the result (if upload_report.sh does not error it must return a URL)
-    last_upload_report=$(upload_report.sh "$DEMUX_OUTPUT_FOLDER")
-    if [ $? != 0 ] ; then last_upload_report= ; fi
+    last_upload_report=
+    if [ $_retval = 0 ] ; then
+        last_upload_report=$(upload_report.sh "$DEMUX_OUTPUT_FOLDER") || last_upload_report=
+    fi
 
     eval "$_ereset"
     return $_retval
