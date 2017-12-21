@@ -234,7 +234,15 @@ def scan_for_info(run_dir, project_name_list=''):
 
     #Slice the sample sheet by lane
     rids['Lanes'] = []
-    ss_lanes = [ line[ss_csv.column_mapping['lane']] for line in ss_csv.samplesheet_data ]
+
+    # NOTE - if a samplesheet has no 'lane' column then we shouldn't really be processing it,
+    # but as far as bcl2fastq is concerned this just means all lanes are identical, so for
+    # the purposes of this script I'll go with that.
+    if 'lane' in ss_csv.column_mapping:
+        ss_lanes = [ line[ss_csv.column_mapping['lane']] for line in ss_csv.samplesheet_data ]
+    else:
+        ss_lanes = [ str(x + 1) for x in range(int(rids['LaneCount'])) ]
+
     for lanenum in sorted(set(ss_lanes)):
         thislane = {'LaneNumber': lanenum}
 
@@ -243,7 +251,8 @@ def scan_for_info(run_dir, project_name_list=''):
         thislane['Loading'] = get_lane_loading(rids['Flowcell'])
 
         lines_for_lane = [ line for line in ss_csv.samplesheet_data
-                           if line[ss_csv.column_mapping['lane']] == lanenum ]
+                           if 'lane' not in ss_csv.column_mapping or
+                              line[ss_csv.column_mapping['lane']] == lanenum ]
 
         thislane['Contents'] = summarize_lane( lines_for_lane, ss_csv.column_mapping )
 
