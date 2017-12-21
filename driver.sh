@@ -27,6 +27,8 @@ if [ -e "$ENVIRON_SH" ] ; then
     popd >/dev/null
 fi
 
+ILLUMINATUS_VERSION=$(cat "$(dirname $BASH_SOURCE)"/version.txt || echo unknown)
+
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
 
@@ -122,6 +124,10 @@ fi
 
 # All actions can read LANES STATUS RUNID INSTRUMENT
 
+save_start_time(){
+    ( echo -n "$ILLUMINATUS_VERSION@" ; date ) >>pipeline/start_times
+}
+
 action_new(){
     # Create a pipeline/ folder and make a sample sheet summary
     # For now the sample sheet summary will just be a copy of the sample sheet
@@ -161,7 +167,7 @@ action_reads_finished(){
     plog_start
 
     # Log the start in a way we can easily read back (humans can check the main log!)
-    date >>pipeline/start_times
+    save_start_time
 
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
@@ -309,7 +315,7 @@ action_redo() {
     plog_start
 
     # Log the start in a way we can easily read back (humans can check the main log!)
-    date >>pipeline/start_times
+    save_start_time
 
     # Get a list of what needs redoing.
     redo_list=()

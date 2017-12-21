@@ -44,16 +44,30 @@ class RunMetaData:
                               os.path.realpath(
                                 os.path.join( self.run_path_folder , 'SampleSheet.csv' )) ]
 
-        #If the pipeline started actually demultiplexing we can get some other bits of info
-        #The pipeline/start_times file contains the start time, and extra lines are added on each redo
-        #It's written out directly by driver.sh just before it triggers this script (to update the report
-        #prior to running Snakefile.demux)
+        # If the pipeline started actually demultiplexing we can get some other bits of info
+        # The pipeline/start_times file contains the start time, and extra lines are added on each redo
+        # It's written out directly by driver.sh just before it first triggers this script (to update the report
+        # prior to running Snakefile.demux)
         self.pipeline_info = dict()
         try:
             with open(os.path.join( self.run_path_folder , 'pipeline/start_times')) as stfh:
                 self.pipeline_info['start'] = list(stfh)[-1].rstrip('\n')
 
-            # If the pipeline started, the sequencer must have finished.
+            if '@' in self.pipeline_info['start']:
+                self.pipeline_info['version'], self.pipeline_info['start'] = \
+                    self.pipeline_info['start'].split('@', 1)
+            else:
+                #If the version wasn't logged, this must have been 0.0.2 (or earlier)
+                self.pipeline_info['version'] = '0.0.?'
+
+            # Now if this script belong to a different version we need to say so, and we
+            # end up with a version like 0.0.3+0.1.0. Redo the run from scratch to ensure consistency.
+            myvers = get_pipeline_version()
+
+            if myvers != self.pipeline_info['version']:
+                self.pipeline_info['version'] += "+" + myvers
+
+            # If the pipeline started, the sequencer MUST have finished.
             touch_file = os.path.join( self.run_path_folder , 'RTAComplete.txt' )
             self.pipeline_info['Sequencer Finish'] = datetime.fromtimestamp(os.stat(touch_file).st_mtime).ctime()
 
@@ -81,7 +95,7 @@ class RunMetaData:
 
         if self.pipeline_info:
             idict['post_start_info'] = {
-                'Pipeline Version': get_pipeline_version(),
+                'Pipeline Version': self.pipeline_info['version'],
                 'Pipeline Start': self.pipeline_info['start'],
                 'Sequencer Finish': self.pipeline_info['Sequencer Finish']
             }
@@ -97,7 +111,7 @@ def get_pipeline_version():
         with open( os.path.dirname(__file__) + '/version.txt') as vfh:
             return vfh.read().strip()
     except Exception:
-        return '0.0.0'
+        return 'unknown'
 
 def get_pipeline_script():
     return os.path.realpath(os.path.dirname(__file__)) + '/driver.sh'
