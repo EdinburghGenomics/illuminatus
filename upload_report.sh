@@ -18,7 +18,7 @@ runname="`basename $PWD`"
 # Note the proxy setting in my ~/.ssh/config which lets both ssh
 # and rsync run through monitor transparently.
 echo "Uploading report for $runname to $dest..." >&2
-rsync -drvl --include='multiqc_*' --exclude='*' QC/ $dest/$runname/ >&2
+rsync -drvl --include='multiqc_*' --include='multiqc_*/**' --exclude='*' QC/ $dest/$runname/ >&2
 
 # Add the index.
 ssh ${dest%%:*} ln -svf multiqc_report_overview.html ${dest#*:}/$runname/index.html >&2
