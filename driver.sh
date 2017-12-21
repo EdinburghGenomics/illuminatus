@@ -404,6 +404,7 @@ run_multiqc() {
         send_summary=1 #Note for later.
         summarize_lane_contents.py --yml pipeline/sample_summary.yml 2>&1
     fi
+    _retval=$?
 
     # Push any new metadata into the run report.
     # This requires the QC directory to exist, even before demultiplexing starts.
@@ -416,7 +417,7 @@ run_multiqc() {
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F --config pstatus="$pstatus" -- multiqc_main ) 2>&1
 
     # Snag that return value
-    _retval=$?
+    _retval=$(( $? + $_retval ))
 
     # Push to server and captur the result (if upload_report.sh does not error it must print a URL)
     # We want stderr from upload_report.sh to go to stdout, so it gets plogged.
@@ -433,7 +434,9 @@ run_multiqc() {
         last_upload_report="`cat pipeline/report_upload_url.txt`"
         ( rt_runticket_manager.py -r "$RUNID" --reply \
             @<(echo "Run report is at $last_upload_report" ;
-               summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt - ) ) 2>&1
+               echo ;
+               summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt - \
+               || echo "Error while summarizing lane contents." ) ) 2>&1
         _retval=$(( $? + $_retval ))
     fi
 
