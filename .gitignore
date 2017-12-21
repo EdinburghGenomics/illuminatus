@@ -12,6 +12,7 @@ sge_output
 _py*_venv*/
 doc/*.ps
 doc/*.pdf
+test/end_to_end/*.pdf
 
 # This is volatile and used for tinkering/testing
 environ.sh

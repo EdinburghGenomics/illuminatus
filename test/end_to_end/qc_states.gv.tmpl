@@ -1,6 +1,6 @@
 digraph G {
   //rankdir=LR;
-  // $ msrender <<<'read1_finished: [run1, run2]' doc/qc_states.gv.tmpl | \
+  // $ msrender <<<'read1_finished: { rcount: 2, runs: [run1, run2] }' doc/qc_states.gv.tmpl | \
   // > dot -Tpdf -o doc/qc_states.pdf
   labelfloat=True;
   node [ style = dashed ]
@@ -9,6 +9,7 @@ digraph G {
   "New"               -> "Reads_Unfinished"
   "New"               -> "Read1_Finished"
   "New" [color="0.700 0.900 1.000" {{#new}}style=bold {{/new}}]
+  "New" [label=<New<FONT POINT-SIZE="12"><B> {{#new.runs}}<BR />{{.}}{{/new.runs}}</B></FONT>>]
   "Reads_Unfinished"  -> "Read1_Finished"
   "Read1_Finished"    -> "In_Read1_QC"
   "In_Read1_QC"       -> "In_Read1_QC_Reads_Finished"
@@ -17,7 +18,7 @@ digraph G {
   "In_Read1_QC" [color="0.201 1.000 1.000"]
   "Read1_Finished"    -> "In_Read1_QC_Reads_Finished"
   "Read1_Finished" [color="0.700 0.900 1.000" {{#read1_finished}}style=bold {{/read1_finished}} ]
-  "Read1_Finished" [label=<Read1_Finished<FONT POINT-SIZE="12"><B>{{#read1_finished}}<BR />{{.}}{{/read1_finished}}</B></FONT>>]
+  "Read1_Finished" [label=<Read1_Finished<FONT POINT-SIZE="12"><B> {{#read1_finished.runs}}<BR />{{.}}{{/read1_finished.runs}}</B></FONT>>]
   "In_Read1_QC_Reads_Finished" -> "In_Demultiplexing"
   "In_Read1_QC_Reads_Finished" -> "Reads_Finished"
   "In_Read1_QC_Reads_Finished" [color="0.201 1.000 1.000"]
@@ -47,7 +48,10 @@ digraph G {
   "New"               -> "Aborted"
   "Reads_Unfinished"  -> "Aborted"
   "Failed"            -> "Aborted"
-  "Valid End State" [ shape = rectangle ]
+  "Valid End State" [ shape = rectangle style = bold ]
   "Complete"          -> "Valid End State"
+  "Complete" [{{#complete}}style=bold {{/complete}} ]
+  "Complete" [label=<Complete<FONT POINT-SIZE="12"><B> {{#complete.runs}}<BR />{{.}}{{/complete.runs}}</B></FONT>>]
   "Aborted"           -> "Valid End State"
+  {{#unknown}}"Unknown"         [ ]{{/unknown}}
 }
