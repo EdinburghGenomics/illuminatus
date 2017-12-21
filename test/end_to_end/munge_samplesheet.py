@@ -38,7 +38,13 @@ def munge_lines(lines):
     data_line = lines.index('[Data]')
 
     #Check the header
-    assert lines[data_line+1].startswith('Lane,Sample_ID,Sample_Name,')
+    if lines[data_line+1].startswith('Sample_ID,Sample_Name,'):
+        sn_col = 1
+        si_col = 0
+    else:
+        assert lines[data_line+1].startswith('Lane,Sample_ID,Sample_Name,')
+        sn_col = 2
+        si_col = 1
     assert lines[data_line+1].endswith(',Description')
 
     first_line = data_line + 2
@@ -54,18 +60,18 @@ def munge_lines(lines):
     for l in range(first_line, last_line+1):
         split_line = lines[l].split(',')
 
-        if '__' in split_line[1]:
+        if '__' in split_line[si_col]:
             # Already looks right
             return False
 
         # In the sheets we're dealing with, Sample_Name and Description should be set the same.
-        assert split_line[2] == split_line[-1]
+        assert split_line[sn_col] == split_line[-1]
 
-        pool = split_line[2] or 'NoPool'
+        pool = split_line[-1] or 'NoPool'
 
         # Make the change.
-        split_line[1] = pool + '__' + split_line[1]
-        split_line[2] = ''
+        split_line[si_col] = pool + '__' + split_line[si_col]
+        split_line[sn_col] = ''
 
         lines[l] = ','.join(split_line)
 

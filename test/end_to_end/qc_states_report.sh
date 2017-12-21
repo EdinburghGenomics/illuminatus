@@ -4,6 +4,9 @@ set -euo pipefail
 # Reports the state of all the runs. At some point this will be a real thing.
 ENVIRON_SH="${ENVIRON_SH:-./environ.sh}"
 
+# You can report on the live runs from the devel code:
+# env RUN_NAME_REGEX='171[012].._.*_.*' ENVIRON_SH=./environ.sh.sample test/end_to_end/qc_states_report.sh
+
 PATH="$(readlink -f "$(dirname $BASH_SOURCE)"/../..):$PATH"
 if [ -e "$ENVIRON_SH" ] ; then
     pushd "$(dirname "$ENVIRON_SH")" >/dev/null && \
@@ -37,7 +40,8 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
 
   # We assume there is a symlink or else the run ID and the dirname as the same!
-  if [ ! -e "$run/pipeline/output" ] && [ ! -e "$FASTQ_LOCATION"/"$RUNID" ] && [ "$STATUS" != new ] ; then
+  if [ ! -e "$run/pipeline/output" ] && [ ! -e "$FASTQ_LOCATION"/"$RUNID" ] && \
+     [ "$STATUS" != new ] && [ "$STATUS" != aborted ] ; then
     echo "$RUNID has a pipeline dir but no fastq directory!"
   fi
 
@@ -45,6 +49,12 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   eval "r_by_status_${STATUS}+=($RUNID)"
   eval "i_by_status_${STATUS}+=($INSTRUMENT)"
   #eval "m_count_${INSTRUMENT}=\$(( \${m_count_${INSTRUMENT}:-0} + 1 ))"
+
+  # If complete, see what version it was done with
+  if [ "$STATUS" = "complete" ] ; then
+    echo "Run $RUNID completed with pipeline version "`cat $run/pipeline/output/QC/run_info.*.yml | sed -n '/^[ ]*Pipeline Version:/s/.*: //p'`
+  fi
+
 done
 
 # Now we need to stash a summary in YAML format:
@@ -84,8 +94,8 @@ if [ ! -s "$OFH" ] ; then
     echo '{}' >&10
 fi
 
-echo "### Run report as YAML:"
-cat "$OFH"
+debug "### Run report as YAML:"
+debug "`cat "$OFH"`"
 
 # Now lets render that puppy as PDF (needs my msrender script which I'll add to the project)...
 # Since the PDF is disposable I'll just clobber it for now.
