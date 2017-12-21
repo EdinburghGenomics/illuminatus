@@ -217,10 +217,10 @@ action_demultiplexed() {
         run_qc
         log "  Completed QC on $RUNID."
 
-        last_upload_report="`cat pipeline/report_upload_url.txt`"
+        last_upload_report="`cat pipeline/report_upload_url.txt 2>/dev/null || true`"
         if [ -n "$last_upload_report" ] ; then
             rt_runticket_manager.py -r "$RUNID" --subject finished \
-                --reply $'Pipeline completed on $RUNID and QC report is available at\n'"$last_upload_report"
+                --reply "Pipeline completed on $RUNID and QC report is available at"$'\n'"$last_upload_report"
             # Final success is contingent on the report upload AND that message going to RT.
             mv pipeline/qc.started pipeline/qc.done
         else
@@ -419,21 +419,23 @@ run_multiqc() {
     # Snag that return value
     _retval=$(( $? + $_retval ))
 
-    # Push to server and captur the result (if upload_report.sh does not error it must print a URL)
+    # Push to server and capture the result (if upload_report.sh does not error it must print a URL)
     # We want stderr from upload_report.sh to go to stdout, so it gets plogged.
-    echo "Report generation failed" > pipeline/report_upload_url.txt
+    # Note that the code relies on checking the existence of this file to see if the upload worked,
+    # so if the upload fails it needs to be removed.
+    rm -f pipeline/report_upload_url.txt
     if [ $_retval = 0 ] ; then
         upload_report.sh "$DEMUX_OUTPUT_FOLDER" 2>&1 >pipeline/report_upload_url.txt || \
             { log "Upload error. See $projlog" ;
-              echo "Report upload failed" > pipeline/report_upload_url.txt ; }
+              rm -f pipeline/report_upload_url.txt ; }
     fi
 
     if [ "$send_summary" = 1 ] ; then
         # A new summary was made so we need to send it.
         # Subshell needed to capture STDERR from summarize_lane_contents.py
-        last_upload_report="`cat pipeline/report_upload_url.txt`"
+        last_upload_report="`cat pipeline/report_upload_url.txt 2>/dev/null || echo "Report generation or upload failed"`"
         ( rt_runticket_manager.py -r "$RUNID" --reply \
-            @<(echo "Run report is at $last_upload_report" ;
+            @<(echo "Run report is at "$'\n'"$last_upload_report" ;
                echo ;
                summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt - \
                || echo "Error while summarizing lane contents." ) ) 2>&1
@@ -441,6 +443,8 @@ run_multiqc() {
     fi
 
     eval "$_ereset"
+    # Retval will be >1 if anything failed. It's up to the caller what to do with this info.
+    # The exception is for the upload. If this returns 0 and the URL file is missing we know that failed.
     return $_retval
 }
 

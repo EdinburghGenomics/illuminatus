@@ -26,5 +26,4 @@ echo "...done. Report loaded and linked." >&2
 
 # Say where to find it:
 # eg. http://web1.genepool.private/runinfo/illuminatus_reports/...
-REPORT_LINK="${REPORT_LINK:-$REPORT_DESTINATION}"
-echo "$REPORT_DESTINATION/$runname"
+echo "${REPORT_LINK:-$REPORT_DESTINATION}/$runname"
