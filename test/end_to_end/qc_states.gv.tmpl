@@ -6,23 +6,20 @@ digraph G {
   node [ style = dashed ]
   "Sequencer Start" [ shape=rectangle style=bold ]
   "Sequencer Start"   -> "New"
+  "New" [color="0.700 0.900 1.000"]
   "New"               -> "Reads_Unfinished"
   "New"               -> "Read1_Finished"
-  "New" [color="0.700 0.900 1.000" {{#new}}style=bold {{/new}}]
-  "New" [label=<New<FONT POINT-SIZE="12"><B> {{#new.runs}}<BR />{{.}}{{/new.runs}}</B></FONT>>]
   "Reads_Unfinished"  -> "Read1_Finished"
+  "Read1_Finished" [color="0.700 0.900 1.000"]
   "Read1_Finished"    -> "In_Read1_QC"
+  "In_Read1_QC" [color="0.201 1.000 1.000"]
   "In_Read1_QC"       -> "In_Read1_QC_Reads_Finished"
   "In_Read1_QC"       -> "Reads_Unfinished"
   "In_Read1_QC"       -> "Demultiplexed"
-  "In_Read1_QC" [color="0.201 1.000 1.000"]
   "Read1_Finished"    -> "In_Read1_QC_Reads_Finished"
-  "Read1_Finished" [color="0.700 0.900 1.000" {{#read1_finished}}style=bold {{/read1_finished}} ]
-  "Read1_Finished" [label=<Read1_Finished<FONT POINT-SIZE="12"><B> {{#read1_finished.runs}}<BR />{{.}}{{/read1_finished.runs}}</B></FONT>>]
+  "In_Read1_QC_Reads_Finished" [color="0.700 0.900 1.000"]
   "In_Read1_QC_Reads_Finished" -> "In_Demultiplexing"
   "In_Read1_QC_Reads_Finished" -> "Reads_Finished"
-  "In_Read1_QC_Reads_Finished" [color="0.201 1.000 1.000"]
-  "In_Read1_QC_Reads_Finished" [color="0.700 0.900 1.000"]
   "Reads_Unfinished"  -> "Reads_Finished"
   "Reads_Finished"    -> "In_Demultiplexing"
   "Reads_Finished" [color="0.700 0.900 1.000"]
@@ -48,10 +45,72 @@ digraph G {
   "New"               -> "Aborted"
   "Reads_Unfinished"  -> "Aborted"
   "Failed"            -> "Aborted"
-  "Valid End State" [ shape = rectangle style = bold ]
+  "Valid End State" [ shape=rectangle style=bold ]
   "Complete"          -> "Valid End State"
-  "Complete" [{{#complete}}style=bold {{/complete}} ]
-  "Complete" [label=<Complete<FONT POINT-SIZE="12"><B> {{#complete.runs}}<BR />{{.}}{{/complete.runs}}</B></FONT>>]
   "Aborted"           -> "Valid End State"
-  {{#unknown}}"Unknown"         [ ]{{/unknown}}
+
+  // Now all the templated stuff to add the actual runs in...
+  {{#new}}"New" [style=bold]
+  "New" [label=<New<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/new}}
+
+  {{#reads_unfinished}}"Reads_Unfinished" [style=bold]
+  "Reads_Unfinished" [label=<Reads_Unfinished<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/reads_unfinished}}
+
+  {{#read1_finished}}"Read1_Finished" [style=bold]
+  "Read1_Finished" [label=<Read1_Finished<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/read1_finished}}
+
+  {{#in_read1_qc}}"In_Read1_QC" [style=bold]
+  "In_Read1_QC" [label=<In_Read1_QC<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/in_read1_qc}}
+
+  {{#in_read1_qc_reads_finished}}"In_Read1_QC_Reads_Finished" [style=bold]
+  "In_Read1_QC_Reads_Finished" [labels=<In_Read1_QC_Reads_Finished<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/in_read1_qc_reads_finished}}
+
+  {{#reads_finished}}"Reads_Finished" [style=bold]
+  "Reads_Finished" [label=<Reads_Finished<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/reads_finished}}
+
+  {{#in_demultiplexing}}"In_Demultiplexing" [style=bold]
+  "In_Demultiplexing" [label=<In_Demultiplexing<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/in_demultiplexing}}
+
+  {{#failed}}"Failed" [style=bold]
+  "Failed" [label=<Failed<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/failed}}
+
+  {{#demultiplexed}}"Demultiplexed" [style=bold]
+  "Demultiplexed" [label=<Demultiplexed<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/demultiplexed}}
+
+  {{#in_qc}}"In_QC" [style=bold]
+  "In_QC" [label=<In_QC<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/in_qc}}
+
+  {{#partially_complete}}"Partially_Complete" [style=bold]
+  "Partially_Complete" [label=<Partially_Complete<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/partially_complete}}
+
+  {{#redo}}"Redo" [style=bold]
+  "Redo" [label=<Redo<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/redo}}
+
+
+  //For complete runs just show counts.
+  {{#complete}}"Complete" [style=bold]
+  "Complete" [label=<Complete<FONT POINT-SIZE="12"><B> {{#instruments}}<BR />{{count}} on {{name}}{{/instruments}}</B></FONT>>]
+  {{/complete}}
+
+  //Same for aborted
+  {{#aborted}}"Aborted" [style=bold]
+  "Aborted" [label=<Aborted<FONT POINT-SIZE="12"><B> {{#instruments}}<BR />{{count}} on {{name}}{{/instruments}}</B></FONT>>]
+  {{/aborted}}
+
+  //This only appears at all if there are actually unknown runs.
+  {{#unknown}}"Unknown"         [ style = bold ]
+  "Unknown" [label=<Unknown<FONT POINT-SIZE="12"><B> {{#runs}}<BR />{{.}}{{/runs}}</B></FONT>>]
+  {{/unknown}}
 }

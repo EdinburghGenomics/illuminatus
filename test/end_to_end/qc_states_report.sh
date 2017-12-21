@@ -32,7 +32,7 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   RUNINFO_OUTPUT="$(RunStatus.py "$run")" || RunStatus.py $run | log 2>&1
   LANES=`grep ^LaneCount: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   STATUS=`grep ^PipelineStatus: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' ' || echo unknown`
-  RUNID=`grep ^RunID: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
+  #RUNID=`grep ^RunID: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   INSTRUMENT=`grep ^Instrument: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
 
@@ -52,7 +52,7 @@ true "
 new:
     rcount: 12
     runs: [id1, id2]
-    instruments: {i1: 3, i2: 2}
+    instruments: [ {name: i1, count: 3}, {name: i2, count: 2} ]
 in_qc:
     ...
 "
@@ -75,9 +75,14 @@ for statusv in `set | grep -o '^r_by_status_[^=]\+'` ; do
     echo "${!statusv}]" | sed 's/ /, /g' >&10
 
     instruv="i_by_status_${statusn}[@]"
-    echo -n "    instruments: {" >&10
-    grep -wo '[^ ]*' <<<${!instruv} | sort | uniq -c | awk 'BEGIN{OFS=": ";ORS=", "}{print $2,$1}' | sed 's/. $/}\n/' >&10
+    echo -n "    instruments: [" >&10
+    grep -wo '[^ ]*' <<<${!instruv} | sort | uniq -c | awk 'BEGIN{ORS=", "}{print "{name: "$2",count: "$1"}"}' | sed 's/, $/]\n/' >&10
 done
+
+#If nothing was processed, we need to make an empty dict.
+if [ ! -s "$OFH" ] ; then
+    echo '{}' >&10
+fi
 
 echo "### Run report as YAML:"
 cat "$OFH"
