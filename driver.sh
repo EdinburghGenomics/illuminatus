@@ -331,8 +331,8 @@ action_redo() {
     BREAK=1  # If we fail after this, don't try to process more runs on this cycle.
 
     # Clear the 'finished' subject on the ticket
-    rt_runticket_manager.py -r "$RUNID" --subject redo \
-        --comment "Re-Demultiplexing of lanes ${redo_list[*]} was requested." || true
+    ( rt_runticket_manager.py -r "$RUNID" --subject redo \
+        --comment "Re-Demultiplexing of lanes ${redo_list[*]} was requested." || true ) |& plog
 
     set +e ; ( set -e
       if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
