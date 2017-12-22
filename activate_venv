@@ -57,6 +57,7 @@ else
     pip3 install Rt
     pip3 install genologics
     pip3 install psycopg2
+    pip3 install pystache
 
     # FIXME - push the pre-built stuff into GIT so I can pip install it rather than
     # relying on a specific local file path.

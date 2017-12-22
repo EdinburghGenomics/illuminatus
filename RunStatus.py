@@ -3,7 +3,7 @@ import os.path
 from glob import glob
 import sys
 
-from illuminatus.RunInfoXMLParser import RunInfoXMLParser
+from illuminatus.RunInfoXMLParser import RunInfoXMLParser, instrument_types
 
 class RunStatus:
     """This Class provides information about a sequencing run, given a run folder.
@@ -11,14 +11,16 @@ class RunStatus:
          RunInfo.xml file - to obtain LaneCount
          Run directory content (including pipeline subdir) - to obtain status information
     """
-    def __init__( self , run_folder , run_path = '' ):
+    def __init__( self , run_folder , opts = '' ):
 
         # here the RunInfo.xml is parsed into an object
-        self.run_path_folder = os.path.join( run_path , run_folder )
+        self.run_path_folder = run_folder
         # In the case where we're looking at a fastqdata directory, examine the
         # seqdata link
         if os.path.isdir(os.path.join(self.run_path_folder, 'seqdata', 'pipeline')):
             self.run_path_folder = os.path.join(self.run_path_folder, 'seqdata')
+
+        self.quick_mode = 'q' in opts
 
         runinfo_xml_location = os.path.join( self.run_path_folder , 'RunInfo.xml' )
         self._exists_cache = {}
@@ -27,21 +29,25 @@ class RunStatus:
         self.last_read1_read = 1
 
         try:
-            self.runinfo_xml = RunInfoXMLParser( runinfo_xml_location )
+            if self.quick_mode:
+                # We only care about instrument (and pipelinestatus)
+                self.runinfo_xml = QuickInfo( self.run_path_folder )
+            else:
+                self.runinfo_xml = RunInfoXMLParser( runinfo_xml_location )
 
-            #Get a list of the first cycle number of each read
-            for r, l in sorted(self.runinfo_xml.read_and_length.items()):
-                self.trigger_cycles.append(self.trigger_cycles[-1] + int(l))
+                #Get a list of the first cycle number of each read
+                for r, l in sorted(self.runinfo_xml.read_and_length.items()):
+                    self.trigger_cycles.append(self.trigger_cycles[-1] + int(l))
 
-            #At some point, we might redefine read1 as ending after the last index read.
-            #For now, we have it ending after the actual first read.
+                #At some point, we might redefine read1 as ending after the last index read.
+                #For now, we have it ending after the actual first read.
 
-            # try:
-            #     self.last_read1_read = max( k for k, v in self.runinfo_xml.read_and_indexed.items()
-            #                                 where v == 'Y' )
-            # except ValueError:
-            #     # No index reads. Keep the default value of 1.
-            #     pass
+                # try:
+                #     self.last_read1_read = max( k for k, v in self.runinfo_xml.read_and_indexed.items()
+                #                                 where v == 'Y' )
+                # except ValueError:
+                #     # No index reads. Keep the default value of 1.
+                #     pass
 
         except Exception:
             #if we can't read it we can't get much info
@@ -149,9 +155,11 @@ class RunStatus:
         return self._qc_done() or self._was_aborted() or self._was_failed()
 
     def get_machine_status( self ):
-        # workout the status of a sequencer by checking the existence of various touchfiles found in the run folder.
-        # possible values are:
-        # RUN IS 'complete':
+        """ work out the status of a sequencer by checking the existence of various touchfiles found in the run folder.
+        """
+        if self.quick_mode:
+            return 'not_reported'
+
         if self._is_sequencing_finished():
             return "complete"
         for n in range(len(self.trigger_cycles), 0 , -1):
@@ -265,8 +273,50 @@ class RunStatus:
                     'MachineStatus: unknown').format( s=pstatus )
         return out
 
+class QuickInfo:
+    """ Just get the instrument name out of the dir name.
+        Involves a little copy/paste from RunInfoXMLParser
+        We also need to know the number of lanes, which for now we'll just guess at
+    """
+    def __init__(self, run_dir):
+
+        try:
+            runid = os.path.basename(run_dir).split('.')[0]
+            instr = runid.split('_')[1]
+        except Exception:
+            runid = os.path.basename(os.path.dirname(run_dir)).split('.')[0]
+            instr = runid.split('_')[1]
+
+        instr0 = instr[0]
+        for idmap in instrument_types:
+            if instr0 == idmap[0]:
+                name = idmap[2:] + '_' + instr
+                break
+
+        # Guess the lane count without reading the XML
+        lane_count = 0
+        if instr0 in 'M':
+            lane_count = 1
+        elif instr0 in 'KE':
+            lane_count = 8
+        elif instr0 in 'D':
+            lane_count = 2 if runid.split('_')[3][1] == 'H' else 8
+        elif instr0 in 'A':
+            # FIXME - it could soon be 4
+            lane_count = 2
+
+        # Assuming that the run id is the directory name is a little risky but fine for quick mode
+        self.run_info = dict( RunId=runid, LaneCount=lane_count, Instrument=instr, Flowcell='not_reported' )
+
 if __name__ == '__main__':
+    #Very cursory options parsing
+    optind = 1 ; opts = ''
+    if sys.argv[optind:] and sys.argv[optind].startswith('-'):
+        optind += 1
+        opts = sys.argv[optind][1:]
+
     #If no run specified, examine the CWD.
-    run = sys.argv[1] if len(sys.argv) > 1 else '.'
-    run_info = RunStatus(run)
-    print ( run_info.get_yaml() )
+    runs = sys.argv[optind:] or ['.']
+    for run in runs:
+        run_info = RunStatus(run, opts)
+        print ( run_info.get_yaml() )

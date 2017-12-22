@@ -47,10 +47,9 @@ class RunInfoXMLParser:
             self.run_info[ 'Instrument' ] = read.text
 
             for idmap in instrument_types:
-
                 if self.run_info['Instrument'].startswith(idmap[0]):
                     self.run_info['Instrument'] = idmap[2:] + '_' + self.run_info['Instrument']
-                    continue
+                    break
 
         for read in root.iter('Flowcell'):
             if '-' in read.text:

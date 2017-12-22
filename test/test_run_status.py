@@ -42,7 +42,7 @@ class T(unittest.TestCase):
         #If you want to change files around, do that then make a new RunStatus
         #by copying the line below.
         if make_run_info:
-            return RunStatus(self.current_run, run_path = self.run_dir)
+            return RunStatus(os.path.join(self.run_dir, self.current_run))
 
     def cleanup_run(self):
         """If self.tmp_dir has been set, delete the temporary
