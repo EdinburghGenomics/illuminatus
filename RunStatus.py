@@ -276,7 +276,7 @@ class RunStatus:
 class QuickInfo:
     """ Just get the instrument name out of the dir name.
         Involves a little copy/paste from RunInfoXMLParser
-        We also need to know the number of lanes, which for now we'll just guess at
+        We also need to know the number of lanes, which for now we'll just guess(!)
     """
     def __init__(self, run_dir):
 
@@ -290,7 +290,7 @@ class QuickInfo:
         instr0 = instr[0]
         for idmap in instrument_types:
             if instr0 == idmap[0]:
-                name = idmap[2:] + '_' + instr
+                instr = idmap[2:] + '_' + instr
                 break
 
         # Guess the lane count without reading the XML

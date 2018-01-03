@@ -118,15 +118,17 @@ class BCL2FASTQPreprocessor:
         if self._destdir:
             cmd.append("2>'%s'/lane${LANE}/bcl2fastq.log" % self._destdir)
 
-            # Add the hack that ensures we get empty FASTQ files for missing samples (but not missing
+            # Here's a hack that ensures we get empty FASTQ files for missing samples (but not missing
             # unassigned, apparently)
             # Actually we may not need this, if the samples still show up in Stats.json and therefore
             # in the reports???
-            # TODO - check if we need this or not.
-            cmds.append(['#Hack to force creation of empty files'])
-            cmds.append([
-                 (r'''sed -ne '/INFO: Created FASTQ file /s/.*"\(.*\)"/\1/p' '%s'/lane${LANE}/bcl2fastq.log''' % self._destdir),
-                 (r''' | ( while read -r l; do [ -e "$l" ] || true | gzip -c > "$l" ; done )''') ])
+            # It seems they do (see run 171115_M01145_0050_000000000-BHCPV) so I've disabled this. The
+            # empty files upset FastQC and probably other things too.
+
+            # cmds.append(['#Hack to force creation of empty files'])
+            # cmds.append([
+            #      (r'''sed -ne '/INFO: Created FASTQ file /s/.*"\(.*\)"/\1/p' '%s'/lane${LANE}/bcl2fastq.log''' % self._destdir),
+            #      (r''' | ( while read -r l; do [ -e "$l" ] || true | gzip -c > "$l" ; done )''') ])
 
         return cmds
 
