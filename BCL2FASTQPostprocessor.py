@@ -125,10 +125,14 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         #Paranoia. Rather than checking if the file exists, create it exclusively.
         #That way, no possible race condition that can cause one file to be renamed over
         #another file (ignoring remote NFS race conditions).
-        with open(new_filename_absolute, 'x') as tmp_fd:
+        try:
             log( "mv %s %s" % ('/'.join(fastq_file.split('/')[-4:]), new_filename_relative) )
 
-            os.replace(fastq_file, new_filename_absolute)
+            with open(new_filename_absolute, 'x') as tmp_fd:
+                os.replace(fastq_file, new_filename_absolute)
+        except FileExistsError:
+            log("# FileExistsError renaming %s" % new_filename_relative)
+            raise
 
     # Now go again for files not in a subdirectory (if Sample_Name was blank)
     # (apologies for the copy-paste)
@@ -174,13 +178,17 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         #Make the directory to put it in
         os.makedirs(os.path.dirname(new_filename_absolute), exist_ok=True)
 
-        #Paranoia. Rather than checking if the file exists, create it exclusively.
+        #Paranoia? Rather than checking if the file exists, create it exclusively.
         #That way, no possible race condition that can cause one file to be renamed over
         #another file.
-        with open(new_filename_absolute, 'x') as tmp_fd:
+        try:
             log( "mv %s %s" % ('/'.join(fastq_file.split('/')[-3:]), new_filename_relative) )
 
-            os.replace(fastq_file, new_filename_absolute)
+            with open(new_filename_absolute, 'x') as tmp_fd:
+                os.replace(fastq_file, new_filename_absolute)
+        except FileExistsError:
+            log("# FileExistsError renaming %s" % new_filename_relative)
+            raise
 
     # Now deal with the undetermined files.
     for undet_file_absolute in glob(os.path.join( output_dir, "demultiplexing/lane*", "[Uu]ndetermined_*" )):
@@ -207,9 +215,14 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         new_filename_absolute = os.path.join ( output_dir, new_filename )
 
         #See comment above
-        with open(new_filename_absolute, 'x') as tmp_fd:
+        try:
             log( "mv %s %s" % ( os.path.join("demultiplexing", filename), new_filename) )
-            os.rename(undet_file_absolute, new_filename_absolute)
+
+            with open(new_filename_absolute, 'x') as tmp_fd:
+                os.rename(undet_file_absolute, new_filename_absolute)
+        except FileExistsError:
+            log("# FileExistsError renaming %s" % new_filename)
+            raise
 
     # Cleanup empty project directories (as per Cleanup.py) then warn if any dirs
     # remain (or, if fact, that's an error).
