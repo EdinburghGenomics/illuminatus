@@ -192,8 +192,8 @@ action_reads_finished(){
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
       done
-      # TODO - consider if RT errors could/should be non fatal here.
-      rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed. QC will trigger on next CRON cycle'
+      #' I'm pretty sure RT errors could/should be non-fatal here.
+      rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed. QC will trigger on next CRON cycle' || true
       log "  Completed bcl2fastq on $RUNID."
 
     ) |& plog ; [ $? = 0 ] || pipeline_fail Demultiplexing
@@ -456,8 +456,8 @@ run_multiqc() {
 
 run_qc() {
     # At present, this is only ever called by action_demultiplexed.
-    # If qc failed, the ticket subject will be 'failed' so reset it.
-    rt_runticket_manager.py -r "$RUNID" --subject in_qc
+    # If qc failed, the ticket subject will be 'failed' so reset it (but an RT error should not be fatal).
+    rt_runticket_manager.py -r "$RUNID" --subject in_qc || true
 
     # Hand over to Snakefile.qc for report generation
     # First a quick report. Continue to QC even if MultiQC fails here.
