@@ -141,8 +141,8 @@ action_new(){
     set +e ; ( set -e
       mkdir -v ./pipeline |& debug
       mkdir -vp "$DEMUX_OUTPUT_FOLDER" |&debug
-      ln -sv "$DEMUX_OUTPUT_FOLDER" ./pipeline/output |& debug
-      ln -sv "`pwd -P`" ./pipeline/output/seqdata |& debug
+      ln -nsv "$DEMUX_OUTPUT_FOLDER" ./pipeline/output |& debug
+      ln -nsv "`pwd -P`" ./pipeline/output/seqdata |& debug
 
       plog_start
       fetch_samplesheet

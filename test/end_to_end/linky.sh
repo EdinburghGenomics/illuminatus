@@ -10,6 +10,6 @@ if [ "`dirname $PWD`" = '/lustre/seqdata' ] ; then
 fi
 
 if [ "`dirname $PWD`" = '/lustre/fastqdata' ] ; then
-    ln -vs /lustre/seqdata/"`basename $PWD`" seqdata
-    ln -vs /lustre/fastqdata/"`basename $PWD`" seqdata/pipeline/output
+    ln -nvs /lustre/seqdata/"`basename $PWD`" seqdata
+    ln -nvs /lustre/fastqdata/"`basename $PWD`" seqdata/pipeline/output
 fi
