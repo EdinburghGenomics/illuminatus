@@ -340,7 +340,7 @@ rule cutadapt_scan:
         adapters = ["AGATCGGAAGAGC", "CTGTCTCTTATA"]
     shell:
         """{TOOLBOX} cutadapt -f fastq -O 9 -o /dev/null `for a in {params.adapters} ; do echo -a $a ; done` \
-           {input} > {output}
+             {input} > {output}
         """
 
 # fastqscreen also on only read1 until I hear otherwise (--paired was removed in version 0.5)

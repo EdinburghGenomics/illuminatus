@@ -45,7 +45,7 @@ class RunMetaData:
                                 os.path.join( self.run_path_folder , 'SampleSheet.csv' )) ]
 
         # If the pipeline started actually demultiplexing we can get some other bits of info
-        # The pipeline/start_times file contains the start time, and extra lines are added on each redo
+        # The pipeline/start_times file contains the start time, as well as the version, and extra lines are added on each redo
         # It's written out directly by driver.sh just before it first triggers this script (to update the report
         # prior to running Snakefile.demux)
         self.pipeline_info = dict()
@@ -61,7 +61,8 @@ class RunMetaData:
                 self.pipeline_info['version'] = '0.0.?'
 
             # Now if this script belong to a different version we need to say so, and we
-            # end up with a version like 0.0.3+0.1.0. Redo the run from scratch to ensure consistency.
+            # end up with a version like 0.0.3+0.1.0. Redo the run from scratch if you need to
+            # ensure consistency.
             myvers = get_pipeline_version()
 
             if myvers != self.pipeline_info['version']:
