@@ -37,10 +37,10 @@ def get_dates_list(date_ymd, maxdays=(10*366)):
     days_back = 0
 
     while True:
-        assert days_back < maxdays, "We went back too far - more than %d days." % maxdays
+        assert days_back < maxdays, "We went back too far - more than {} days.".format(maxdays)
 
         # Horribly inefficient way of doing things...
-        date_list.append(resolve_time_spec('%d days ago' % days_back))
+        date_list.append(resolve_time_spec('{:d} days ago'.format(days_back)))
 
         if date_list[-1] == date_ymd:
             break
@@ -74,22 +74,25 @@ def list_to_regex(alist):
         if k[0:2] != min_year:
             s2.add(k[0:2] + '.*')
         elif k[0:4] != min_month:
-            s1.add(k[0:4] + '..')
+            s1.add(k[0:4]) # + '..'
         elif (k[4] == '3' and v == '01') or (k[4] == '0' and v == '123456789')  or (v == '0123456789'):
-            s2.add(k[0:5] + '.')
+            s1.add(k[0:5]) # + '.'
         elif len(v) == 1:
             s2.add(k[0:5] + v )
         else:
             s2.add(k[0:5] + '[' + v + ']')
 
-    # OK, that's not too bad. Now we can further simplify anything ending in a .. (which is
-    # now in s1) to combine whole months.
+    # OK, that's not too bad. Now we can further simplify anything ending in a . or .. (which is
+    # now in s1) to combine whole months or decadays.
     d2 = dd(str)
     for d in sorted(s1):
-        d2[d[0:3]] += d[3]
+        d2[d[:-1]] += d[-1]
 
     for k, v in d2.items():
-        s2.add(k[0:3] + '[' + v + ']..')
+        if len(v) == 1:
+            s2.add(k + v + ('.' * (5 - len(k))))
+        else:
+            s2.add(k + '[' + v + ']' + ('.' * (5 - len(k))))
 
     return "(" + "|".join(sorted(s2)) + ")"
 
@@ -102,6 +105,6 @@ def main(args):
     if len(machine_name) == 1:
         machine_name = machine_name + '.*'
 
-    print("RUN_NAME_REGEX=%s_%s_.*_[^.]*" % (list_to_regex(all_dates), machine_name))
+    print("RUN_NAME_REGEX={}_{}_.*_[^.]*".format(list_to_regex(all_dates), machine_name))
 
 main(sys.argv[1:])
