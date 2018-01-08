@@ -74,7 +74,7 @@ if flock -x -n $FLOCK_ON ; then
 
     # 2e) Find any directory on /lustre where the RTAComplete.txt file is missing and do a full RSYNC
     #     if there is a corresponding RTAComplete.txt on /ifs.
-    for dest_run in /lustre/seqdata/17*_*_*_* ; do
+    for dest_run in /lustre/seqdata/18*_*_*_* ; do
         if [ ! -e "$dest_run/RTAComplete.txt" ] ; then
             src_run="/ifs/seqdata/$(basename $dest_run)"
             if [ -e "$src_run/RTAComplete.txt" ] ; then
