@@ -200,7 +200,7 @@ my ($Lhin,$Mhin,$Rhin, $Lin,$Min,$Rin, $Bin,$Bendin, $H5in,$H5endin, $tablein,$t
 if (defined $wiki and defined $xmlwiki) {die "count_barcodes_in_unassigned_reads3.pl(): Both '-wiki' and '-xmlwiki' options were specified on the command-line, but you should choose only one.";}
 
 if    (defined $wiki)    {($Lh,$Mh,$Rh, $L,$M,$R, $B,$Bend, $H5,$H5end, $table,$tableend)=("|| "," || "," ||", "| "," | "," |", "*","*","h5.","","","");} # For wiki table markup.
-elsif (defined $xmlwiki) {($Lh,$Mh,$Rh, $L,$M,$R, $B,$Bend, $H5,$H5end, $table,$tableend)=("<tr><th><p> "," </p></th><th><p> "," </p></th></tr>", "<tr><td><p> "," </p></td><td><p> "," </p></td></tr>", "<b>","</b>", "<h5>","</h5>\n", "<table>\n", "</table>\n");}
+elsif (defined $xmlwiki) {($Lh,$Mh,$Rh, $L,$M,$R, $B,$Bend, $H5,$H5end, $table,$tableend)=("<thead><tr><th><p> "," </p></th><th><p> "," </p></th></tr></thead>\n", "<tr><td><p> "," </p></td><td><p> "," </p></td></tr>", "<b>","</b>", "<h5>","</h5>\n", "<table>\n", "</tbody></table>\n");}
 
 # Using variables for text, so that can add the percentages of total number of reads later.
 my $totalNumberOfUnassignedReadsText="Total number of unassigned reads=";
@@ -635,7 +635,7 @@ sub add_percentage_of_reads_in_lane {
         if (defined $xmlwiki) {print $REPORT "$tableend\n";}
         undef $isInTable;
       }
-      if ($line=~/^(Known Barcode counts|Unknown barcodes over|Unknown \d-base barcodes)/) {$line="${H5}$line${H5end}";}
+      if ($line=~/^(Known Barcode counts|Unknown barcodes over|Unknown \d-base barcode sequences)/) {$line="${H5}$line${H5end}";}
     }
     else
     {
