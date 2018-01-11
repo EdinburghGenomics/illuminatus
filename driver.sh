@@ -148,7 +148,8 @@ action_new(){
       fetch_samplesheet
     ) ; [ $? = 0 ] && BREAK=1 || { pipeline_fail Scan_new_run ; return ; }
 
-    # Run an initial report but don't abort the pipeline if this fails.
+    # Run an initial report but don't abort the pipeline if this fails - the error
+    # will be noted by the main loop.
     # If necessary, Snakefile.qc and upload_report.sh could be run manually
     # to get the skeleton report.
     run_multiqc "Waiting for data" | plog && echo DONE

@@ -220,6 +220,46 @@ class T(unittest.TestCase):
         self.assertEqual( self.bm.last_calls['upload_report.sh'], [] )
         self.assertFalse( os.path.exists(test_data + '/pipeline/failed') )
 
+    def test_rt_failure(self):
+        """A failure to contact RT when finishing up with read1 processing should
+           not cause the pipeline to jam in eg. read1_processing state.
+        """
+        test_data = self.copy_run("160603_M01270_0196_000000000-AKGDE")
+
+        # For this, we want summarize_lane_contents.py to actually make a file
+        self.bm.add_mock("summarize_lane_contents.py",
+                         side_effect = "echo TEST > pipeline/sample_summary.yml")
+
+        # Run the driver (first with everything OK)
+        self.bm_rundriver()
+
+        # Test that rt_runticket_manager.py was called but read1.done still
+        # appeared.
+        self.assertEqual(len(self.bm.last_calls['rt_runticket_manager.py']), 1)
+        self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
+        self.assertTrue(os.path.isfile( test_data + "/pipeline/sample_summary.yml" ))
+
+        # Look for the failure note in the log
+        self.assertInStdout("Completed read1 processing")
+
+        # Make it so rt_runticket_manager fails, and remove the output files, and
+        # go once more.
+        self.bm.add_mock('rt_runticket_manager.py', fail=True)
+        os.system("rm " + test_data + "/pipeline/read1.done")
+        os.system("rm " + test_data + "/pipeline/sample_summary.yml")
+        self.bm_rundriver()
+
+        # Test (again) that rt_runticket_manager.py was called but read1.done still
+        # appeared.
+        self.assertEqual(len(self.bm.last_calls['rt_runticket_manager.py']), 1)
+        self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
+
+        # Possibly driver.sh should remove this if RT communication fails??
+        self.assertTrue(os.path.isfile( test_data + "/pipeline/sample_summary.yml" ))
+
+        # Look for the failure note in the log
+        self.assertInStdout("errors in read1 processing")
+
     def test_reads_finished(self):
         """A run ready to go through the main pipeline (read1 + demux).
              SampleSheet.csv should be converted to a symlink
@@ -297,12 +337,12 @@ class T(unittest.TestCase):
     def test_new_and_finished(self):
         """A run which is complete which has no pipeline folder.
         """
-        #At the moment, the run will be treated as new, and the summary SampleSheet will
-        #be dropped into the pipeline/ directory. Only on the next iteration will the
-        #pipeline actually be started.
+        # At the moment, the run will be treated as new, and the summary SampleSheet will
+        # be dropped into the pipeline/ directory. Only on the next iteration will the
+        # pipeline actually be started.
 
-        #Therefore this test is the same as for test_new, but without removing the
-        #RTAComplete file.
+        # Therefore this test is the same as for test_new, but without removing the
+        # RTAComplete file.
         self.test_new(self.copy_run("160606_K00166_0102_BHF22YBBXX"))
 
 

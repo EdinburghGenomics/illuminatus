@@ -126,9 +126,10 @@ class RT_manager():
         if ticket_id:
             return ticket_id, False
 
-        #Since dummy mode returns 999, we can proceed with real ops.
+        # Since dummy mode returns 999, we can infer we have a real
+        # connection and proceed with real ops.
 
-        #Text munge
+        # Text munge
         text = re.sub(r'\n', r'\n      ', text.rstrip()) if text \
                else ""
 
@@ -139,7 +140,7 @@ class RT_manager():
                 Cc        = c.get('run_cc'),
                 Text      = text or ""      ))
 
-        #Open the ticket, or we'll not find it again.
+        # Open the ticket, or we'll not find it again.
         self.tracker.edit_ticket(ticket_id, Status='open')
         return ticket_id, True
 
