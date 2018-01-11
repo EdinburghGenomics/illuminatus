@@ -149,7 +149,8 @@ action_new(){
     ) ; [ $? = 0 ] && BREAK=1 || { pipeline_fail Scan_new_run ; return ; }
 
     # Run an initial report but don't abort the pipeline if this fails.
-    # If necessary, Snakefile.qc and upload_report.sh could be run manually.
+    # If necessary, Snakefile.qc and upload_report.sh could be run manually
+    # to get the skeleton report.
     run_multiqc "Waiting for data" | plog && echo DONE
 }
 
@@ -267,7 +268,7 @@ action_read1_finished() {
         cd "$DEMUX_OUTPUT_FOLDER"
         Snakefile.welldups --config rundir="$rundir" -- wd_main || e="$e welldups"
         Snakefile.qc -- interop_main                            || e="$e interop"
-        cd "$rundir" ; run_multiqc "Waiting for RTAComplete"    || e="$e multiqc"
+        cd "$rundir" ; run_multiqc "Waiting for RTAComplete" "$projlog1"  || e="$e multiqc"
 
         if [ -n "$e" ] ; then
             log "  There were errors in read1 processing (${e# }) on $RUNID. See $projlog1"
@@ -394,17 +395,25 @@ fetch_samplesheet(){
 
 run_multiqc() {
     # Runs multiqc. Will not exit on error.
-    # Caller is responsible for log redirection.
+    # Caller is responsible for log redirection, so this function just prints any
+    # progress messages.
     set +o | grep '+o errexit' && _ereset='set +e' || _ereset='set -e'
     set +e
-    pstatus="${1:-}"
 
-    plog </dev/null #Just to set $projlog
+    _pstatus="${1:-}"
+
+    if [ -n "${2:-}" ] ; then
+        _plog="$2" # Caller may hint where the log is going.
+    else
+        plog </dev/null #Just to set $projlog
+        _plog="${projlog}"
+    fi
+
 
     # So this will summarize the samples into RT, but at this point there is no
-    # link to the report. We don't get the link until we do the upload and we can't
-    # do the upload til we make the report and we can't make the report without the
-    # sample summary. This should be addressed somehow.
+    # link to the report to send to RT. We don't get the link until we do the upload
+    # and we can't do the upload til we make the report and we can't make the report
+    # without the sample summary. So that's the order we'll do things.
     send_summary=0
     if [ ! -e pipeline/sample_summary.yml ] ; then
         send_summary=1 #Note for later.
@@ -420,7 +429,7 @@ run_multiqc() {
     # hang until the jobs run. I think it was redundant anyway as read1 and pre-QC trigger it
     # explicitly. What I do need is the metadata.
     ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- metadata_main ) 2>&1
-    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F --config pstatus="$pstatus" -- multiqc_main ) 2>&1
+    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F --config pstatus="$_pstatus" -- multiqc_main ) 2>&1
 
     # Snag that return value
     _retval=$(( $? + $_retval ))
@@ -432,12 +441,15 @@ run_multiqc() {
     rm -f pipeline/report_upload_url.txt
     if [ $_retval = 0 ] ; then
         upload_report.sh "$DEMUX_OUTPUT_FOLDER" 2>&1 >pipeline/report_upload_url.txt || \
-            { log "Upload error. See $projlog" ;
+            { log "Upload error. See $_plog" ;
               rm -f pipeline/report_upload_url.txt ; }
     fi
 
     if [ "$send_summary" = 1 ] ; then
         # A new summary was made so we need to send it.
+        # If this fails, the pipeline will continue, but you need to remove pipeline/sample_summary.yml
+        # so that it will be re-generated and re-sent.
+        echo "Sending new summary of run contents to RT."
         # Subshell needed to capture STDERR from summarize_lane_contents.py
         last_upload_report="`cat pipeline/report_upload_url.txt 2>/dev/null || echo "Report generation or upload failed"`"
         ( rt_runticket_manager.py -r "$RUNID" --reply \
@@ -448,9 +460,11 @@ run_multiqc() {
         _retval=$(( $? + $_retval ))
     fi
 
+    echo "driver.sh::run_multiqc() is returning with $_retval"
+
     eval "$_ereset"
     # Retval will be >1 if anything failed. It's up to the caller what to do with this info.
-    # The exception is for the upload. If this returns 0 and the URL file is missing we know that failed.
+    # The exception is for the upload. Caller should check for the URL file to see if that that failed.
     return $_retval
 }
 
