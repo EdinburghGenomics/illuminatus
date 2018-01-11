@@ -59,7 +59,7 @@ class RT_manager():
 
         self.tracker = None
 
-    def connect(self):
+    def connect(self, timeout=60):
 
         if not self._config:
             warn("Making dummy connection - all operations will be no-ops.")
@@ -76,6 +76,18 @@ class RT_manager():
 
         if not self.tracker.login():
             raise AuthorizationError('login() failed on {_config_name} ({tracker.url})'.format(self))
+
+        # Here comes the big monkey-patch-o-doom!
+        # It will force a 60-second timeout on the Rt session, assuming the internal implementation
+        # of session is not changed in the requests library.
+        from types import MethodType
+        foo = self.tracker.session
+        foo._merge_environment_settings = foo.merge_environment_settings
+        foo.merge_environment_settings = MethodType(
+                lambda s, *a: dict([*s._merge_environment_settings(*a).items(), ('timeout', s.timeout)]),
+                foo )
+        foo.timeout = timeout
+        # End of monkey business
 
         return self
 
