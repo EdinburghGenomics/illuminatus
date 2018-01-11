@@ -1,0 +1,12 @@
+In order to write data into Illuminatus, the sequencers have to be able to see the SBM-mounted directory.
+(For early testing we had a hacky rsync copy process going - see sync_and_driver.sh)
+
+This is exported from gseg-login0 (of course!) by setting up a SAMBA share with very basic user/pass auth.
+
+See the notes at the end of /etc/samba/smb.conf, but basically the /lustre/seqdata area is exported read/write
+to the pipeline user and the password has been set to the same on used on Isilon (Tw...) using
+sudo smbpasswd -a pipeline.
+
+So to connect, map drive L (for Lustre!) to seqdata on gseg-login0.genepool.private and use the context
+\gseg\pipeline and the password ...
+
