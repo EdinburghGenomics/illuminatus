@@ -13,7 +13,7 @@ def main(infile):
 
     # Slurp and strip
     with open(infile) as ifh:
-        lines = [ l.rstrip("\n") for l in ifh ]
+        lines = [ l.rstrip(",\n") for l in ifh ]
         # Keep a fresh copy in case munge_lines raises an exception
         new_lines = lines.copy()
 
@@ -74,6 +74,10 @@ def munge_lines(lines):
         split_line[sn_col] = ''
 
         lines[l] = ','.join(split_line)
+
+        # FIXME - since fixing the basemask, we also need to remove any NNNNNNN dummy indexes in the second
+        # index slot. This is a really dirty version
+        lines[l] = re.sub(',NNNNNNNN,DummyIndex,', ',,DummyIndex,', lines[l])
 
     # Note the processing
     desc_line = lines.index('Description')
