@@ -382,7 +382,7 @@ action_unknown() {
 fetch_samplesheet(){
     # Tries to fetch an updated samplesheet. If this is the first run, or if
     # a new one was found, delete the stale sample_summary.yml.
-    old_ss_link="`readlink -q SampleSheet.csv || true`"
+    old_ss_link="`readlink -q SampleSheet.csv 2>/dev/null || true`"
 
     #Currently if samplesheet_fetch.sh returns an error the pipeline aborts, as
     #this indicates a fundamental problem.
