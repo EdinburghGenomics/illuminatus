@@ -26,6 +26,10 @@ install_multiqc() {
     #Install/upgrade MultiQC from GIT
     #pip3 install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git#egg=multiqc'
     # For now, use the dev branch
+
+    # For now we need older versions of these modules:
+    pip3 install 'networkx==1.11' 'spectra==0.0.8' 'colormath==2.1.1'
+
     for url in \
         'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc' \
         'git+ssh://git@gitlab.genepool.private/production-team/MultiQC_EdGen.git#egg=multiqc_edgen'
@@ -36,6 +40,9 @@ install_multiqc() {
             pip3 install "$url"
         fi
     done
+
+    # Quick check that it's (maybe) working:
+    python -c "from multiqc.utils import config ; config.avail_modules['fastqc'].load()"
 }
 
 if [ -e ./_py3_venv/bin/activate ] ; then

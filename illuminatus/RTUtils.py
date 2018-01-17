@@ -8,6 +8,12 @@ import os, sys, re
 from warnings import warn
 import configparser
 
+# This is specific to our GSEG server and RT SSL setup, but at least fixing it here
+# prevents having to apply the fix to everything that might use
+# this library...
+if ('REQUESTS_CA_BUNDLE' not in os.environ) and os.path.exists("/etc/pki/tls/certs"):
+    os.environ['REQUESTS_CA_BUNDLE'] = "/etc/pki/tls/certs"
+
 import rt
 from rt import AuthorizationError, InvalidUse
 
