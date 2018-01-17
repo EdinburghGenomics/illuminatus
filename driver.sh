@@ -174,7 +174,10 @@ action_reads_finished(){
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
     fetch_samplesheet
-    ( run_multiqc "Demultiplexing" | plog ) || true
+    ( run_multiqc "Reads finished, demultiplexing starting" | plog ) || true
+
+    # Karim wants an e-mail alert here, with a lane summary.
+    send_summary_to_rt demultiplexing "The run finished and demultiplexing will now start. Report is at"
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
     # Note that the preprocessor and runner are not aware of the 'demultiplexing'
@@ -195,7 +198,8 @@ action_reads_finished(){
           mv $f ${f%.started}.done
       done
       #' I'm pretty sure RT errors could/should be non-fatal here.
-      rt_runticket_manager.py -r "$RUNID" --comment 'Demultiplexing completed. QC will trigger on next CRON cycle' || true
+      rt_runticket_manager.py -r "$RUNID" --subject demultiplexed \
+        --comment 'Demultiplexing completed. QC will trigger on next CRON cycle' || true
       log "  Completed bcl2fastq on $RUNID."
 
     ) |& plog ; [ $? = 0 ] || pipeline_fail Demultiplexing
@@ -225,10 +229,9 @@ action_demultiplexed() {
         run_qc
         log "  Completed QC on $RUNID."
 
-        last_upload_report="`cat pipeline/report_upload_url.txt 2>/dev/null || true`"
-        if [ -n "$last_upload_report" ] ; then
-            rt_runticket_manager.py -r "$RUNID" --subject finished \
-                --reply "Pipeline completed on $RUNID and QC report is available at"$'\n'"$last_upload_report"
+        if [ -s pipeline/report_upload_url.txt ] ; then
+            send_summary_to_rt finished \
+                "Pipeline completed on $RUNID and QC report is available at"
             # Final success is contingent on the report upload AND that message going to RT.
             mv pipeline/qc.started pipeline/qc.done
         else
@@ -366,7 +369,8 @@ action_redo() {
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
       done
-      rt_runticket_manager.py -r "$RUNID" --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed" || true
+      rt_runticket_manager.py -r "$RUNID" --subject re-demultiplexed \
+        --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed" || true
       log "  Completed demultiplexing on $RUNID lanes ${redo_list[*]}."
 
     ) |& plog ; [ $? = 0 ] || pipeline_fail Re-demultiplexing
@@ -403,13 +407,12 @@ run_multiqc() {
 
     _pstatus="${1:-}"
 
-    if [ -n "${2:-}" ] ; then
+    if [ "${2:--}" != - ] ; then
         _plog="$2" # Caller may hint where the log is going.
     else
         plog </dev/null #Just to set $projlog
         _plog="${projlog}"
     fi
-
 
     # So this will summarize the samples into RT, but at this point there is no
     # link to the report to send to RT. We don't get the link until we do the upload
@@ -448,25 +451,44 @@ run_multiqc() {
 
     if [ "$send_summary" = 1 ] ; then
         # A new summary was made so we need to send it.
-        # If this fails, the pipeline will continue, but you need to remove pipeline/sample_summary.yml
-        # so that it will be re-generated and re-sent.
-        echo "Sending new summary of run contents to RT."
-        # Subshell needed to capture STDERR from summarize_lane_contents.py
-        last_upload_report="`cat pipeline/report_upload_url.txt 2>/dev/null || echo "Report generation or upload failed"`"
-        ( rt_runticket_manager.py -r "$RUNID" --reply \
-            @<(echo "Run report is at "$'\n'"$last_upload_report" ;
-               echo ;
-               summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt - \
-               || echo "Error while summarizing lane contents." ) ) 2>&1
-        _retval=$(( $? + $_retval ))
+        send_summary_to_rt
     fi
 
+    # If this fails, the pipeline will continue, but we need to remove pipeline/sample_summary.yml
+    # so that it will be re-generated and re-sent at the next opportunity.
+    if [ $? != 0 ] ; then
+        _retval=$(( $_retval + 1 ))
+        rm -vf pipeline/sample_summary.yml
+    fi
+
+    # Leaving this in due to unresolved unexpected behaviour after RT timeout.
     echo "driver.sh::run_multiqc() is returning with $_retval"
 
     eval "$_ereset"
     # Retval will be >1 if anything failed. It's up to the caller what to do with this info.
     # The exception is for the upload. Caller should check for the URL file to see if that that failed.
     return $_retval
+}
+
+send_summary_to_rt() {
+    # Sends a summary to RT. It is assumed that pipeline/report_upload_url.txt and pipeline/sample_summary.yml
+    # are in place and can be read.
+    # Other than that, supply run_status and premble if you want this.
+    _run_status="${1:-}"
+    _preamble="${2:-Run report is at}"
+
+    if [ -n "$_run_status" ] ; then
+        _run_status="--subject $_run_status"
+    fi
+
+    echo "Sending new summary of run contents to RT."
+    # Subshell needed to capture STDERR from summarize_lane_contents.py
+    last_upload_report="`cat pipeline/report_upload_url.txt 2>/dev/null || echo "Report was not generated or upload failed"`"
+    ( rt_runticket_manager.py -r "$RUNID" $_run_status --reply \
+        @<(echo "$_preamble "$'\n'"$last_upload_report" ;
+           echo ;
+           summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt - \
+           || echo "Error while summarizing lane contents." ) ) 2>&1
 }
 
 run_qc() {

@@ -255,7 +255,8 @@ class T(unittest.TestCase):
         self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
 
         # Possibly driver.sh should remove this if RT communication fails??
-        self.assertTrue(os.path.isfile( test_data + "/pipeline/sample_summary.yml" ))
+        # Yes, I've now added this. Hopefully it doesn't cause unintended breakage.
+        self.assertFalse(os.path.isfile( test_data + "/pipeline/sample_summary.yml" ))
 
         # Look for the failure note in the log
         self.assertInStdout("errors in read1 processing")
@@ -440,7 +441,8 @@ class T(unittest.TestCase):
                           ["-r 160606_K00166_0102_BHF22YBBXX --subject redo --comment" + \
                            " Re-Demultiplexing of lanes 1 2 was requested.",
 
-                           "-r 160606_K00166_0102_BHF22YBBXX --comment Re-Demultiplexing of lanes 1 2 completed"] )
+                           "-r 160606_K00166_0102_BHF22YBBXX --subject re-demultiplexed" + \
+                           " --comment Re-Demultiplexing of lanes 1 2 completed"] )
 
     def test_redo_fail_cleanup(self):
         """If BCL2FASTQCleanup.py fails then it should stop processing the run, not continuing
