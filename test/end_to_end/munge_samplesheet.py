@@ -13,7 +13,7 @@ def main(infile):
 
     # Slurp and strip
     with open(infile) as ifh:
-        lines = [ l.rstrip(",\n") for l in ifh ]
+        lines = [ l.rstrip("\n") for l in ifh ]
         # Keep a fresh copy in case munge_lines raises an exception
         new_lines = lines.copy()
 
@@ -25,6 +25,7 @@ def main(infile):
     except Exception as e:
         # Just warn (to stderr)
         traceback.print_tb(e.__traceback__)
+        print(e, file=sys.stderr)
 
     for l in new_lines:
         print(l)
@@ -34,8 +35,10 @@ def munge_lines(lines):
        If the file is already right, return False to keep the old one without printing
        an error trace.
     """
-
-    data_line = lines.index('[Data]')
+    # Strip trailing commas until we hit the [Data] line
+    for data_line, l in enumerate(lines):
+        lines[data_line] = l.rstrip(',')
+        if lines[data_line] == '[Data]': break
 
     #Check the header
     if lines[data_line+1].startswith('Sample_ID,Sample_Name,'):
@@ -65,7 +68,7 @@ def munge_lines(lines):
             return False
 
         # In the sheets we're dealing with, Sample_Name and Description should be set the same.
-        assert split_line[sn_col] == split_line[-1]
+        assert split_line[sn_col] == split_line[-1], "{} != {}".format(split_line[sn_col], split_line[-1])
 
         pool = split_line[-1] or 'NoPool'
 

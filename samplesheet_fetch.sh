@@ -70,7 +70,10 @@ fi
 # Read the Genologics configuration with the same priorities as the LIMSQuery.py code.
 # This is a bit hacky, but it is effective.
 eval `grep -h '^FS_ROOT=' /etc/genologics.conf genologics.cfg genologics.conf ~/.genologicsrc ${GENOLOGICSRC:-/dev/null} 2>/dev/null`
-test -d "$FS_ROOT"
+if ! [ -d "${FS_ROOT:-}" ] ; then
+    echo "No such directory FS_ROOT=${FS_ROOT:-}. Check your genologiscrc file." >&2
+    false "${FS_ROOT}" # triggers an unbound variable error message if appropriate, else exits the script
+fi
 
 # The latest one that matches the flowvell ID is the one we want.
 # Or do we want to sort on some other criterion?

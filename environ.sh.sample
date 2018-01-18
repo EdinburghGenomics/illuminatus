@@ -33,7 +33,7 @@ export PROJECT_PAGE_URL=https://genowiki.is.ed.ac.uk/display/GenePool/
 
 # Things you'll probably only need for testing...
 # export MAINLOG=/dev/stdout                         ## log stright to terminal
-# export RUN_NAME_REGEX='[0-9]{6}_K00166_.*_[^.]*'   ## restrict the runs examined (BASH regex syntax)
+# export RUN_NAME_REGEX='[0-9]{6}_K00166_.*_[^_.]*'  ## restrict the runs examined (BASH regex syntax)
 # export PROJECT_NAME_LIST=10676_Watson_Mick,10645_Hickey_John,10680_Hickey_John,10749_Dunlop_Malcolm
 #                                                    ## bypasses attempts to connect to the LIMS for project name
 #                                                    ## lookups - this list will be scanned instead
