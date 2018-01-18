@@ -199,8 +199,15 @@ my ($Lhin,$Mhin,$Rhin, $Lin,$Min,$Rin, $Bin,$Bendin, $H5in,$H5endin, $tablein,$t
 
 if (defined $wiki and defined $xmlwiki) {die "count_barcodes_in_unassigned_reads3.pl(): Both '-wiki' and '-xmlwiki' options were specified on the command-line, but you should choose only one.";}
 
-if    (defined $wiki)    {($Lh,$Mh,$Rh, $L,$M,$R, $B,$Bend, $H5,$H5end, $table,$tableend)=("|| "," || "," ||", "| "," | "," |", "*","*","h5.","","","");} # For wiki table markup.
-elsif (defined $xmlwiki) {($Lh,$Mh,$Rh, $L,$M,$R, $B,$Bend, $H5,$H5end, $table,$tableend)=("<thead><tr><th><p> "," </p></th><th><p> "," </p></th></tr></thead>\n", "<tr><td><p> "," </p></td><td><p> "," </p></td></tr>", "<b>","</b>", "<h5>","</h5>\n", "<table>\n", "</tbody></table>\n");}
+if    (defined $wiki)    {
+    ($Lh,$Mh,$Rh, $L,$M,$R, $B,$Bend, $H5,$H5end, $table,$tableend)=(
+    "|| "," || "," ||", "| "," | "," |", "*","*","h5.","","","");
+} # For wiki table markup.
+elsif (defined $xmlwiki) {
+    ($Lh,$Mh,$Rh, $L,$M,$R, $B,$Bend, $H5,$H5end, $table,$tableend)=(
+    "<thead><tr><th> "," </th><th> "," </th></tr></thead>\n", "<tr><td> "," </td><td> ",
+    " </td></tr>", "<b>","</b>", "<h5>","</h5>\n",
+    "<div class='container'><table class='display' cellspacing='0' width='100%'>\n", "</tbody></table></div>\n");}
 
 # Using variables for text, so that can add the percentages of total number of reads later.
 my $totalNumberOfUnassignedReadsText="Total number of unassigned reads=";

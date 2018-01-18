@@ -10,11 +10,10 @@
 <script>
 $(document).ready(function() {
     var s = $('table').dataTable({
-            dom: 'Bfrtip',
-                "paging":   false,
-            buttons: [
-                'copy', 'csv', 'print'
-            ]
+        dom:        'Bfrtip',
+        paging:     false,
+        buttons:    [ 'copy', 'csv', 'print' ],
+        autoWidth:  false
     });
 } );
 </script>
