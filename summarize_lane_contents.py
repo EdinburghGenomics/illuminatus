@@ -145,11 +145,11 @@ def output_mqc(rids, fh):
     # Nope - apparently not. Had to read the source...
     # 'headers' needs to be a dict of { col_id: {title: ..., format: ... }
     table_headers = ["Lane", "Project", "Pool/Library", "Num Indexes", "Loaded (pmol)", "Loaded PhiX (%)"]
-    table_formats = ["",     "{:s}",    "{:s}",         "{:d}",        "{:s}",          "{:s}"           ]
+    table_formats = ["",     "{:s}",    "{:s}",         "{:,}",        "{:s}",          "{:s}"           ]
 
     if 'add_in_yield' in rids:
         table_headers.extend(["Clusters PF", "Q30 (%)", "Yield GB"])
-        table_formats.extend(["{:d}",        "{:.3f}",  "{:.3f}"  ])
+        table_formats.extend(["{:,}",        "{:.3f}",  "{:.3f}"  ])
     if 'add_in_wd' in rids:
         table_headers.extend(["Well Dups (%)"])
         table_formats.extend(["{:.2f}"       ])
