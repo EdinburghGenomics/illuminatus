@@ -8,6 +8,16 @@ from argparse import ArgumentParser
 from illuminatus.SampleSheetReader import SampleSheetReader
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
 
+# Project links can be set by an environment var, presumably in environ.sh
+PROJECT_PAGE_URL = os.environ.get('PROJECT_PAGE_URL', "http://foo.example.com/")
+try:
+    if PROJECT_PAGE_URL.format('test') == PROJECT_PAGE_URL:
+        PROJECT_PAGE_URL += '{}'
+except Exception:
+    print("The environment variable PROJECT_PAGE_URL={} is not a valid format string.".format(
+                PROJECT_PAGE_URL), file=sys.stderr)
+    raise
+
 def parse_args():
     description = """This script is part of the Illuminatus pipeline.
 It makes the Samplesheet report that was previously handled by
@@ -401,7 +411,7 @@ def project_real_name(proj_id_list, name_list=''):
             name_match = [ n for n in name_list_split if n.startswith(p) ]
             if len(name_match) == 1:
                 res[p] = dict( name = name_match[0],
-                               url  = "http://foo.example.com/" + name_match[0] )
+                               url  = PROJECT_PAGE_URL.format(name_match[0]) )
             elif p == "ControlLane":
                 res[p] = dict( name = p )
             else:
@@ -415,7 +425,7 @@ def project_real_name(proj_id_list, name_list=''):
             for p, n in zip(proj_id_list, get_project_names(*proj_id_list)):
                 if n:
                     res[p] = dict( name = n,
-                                   url = "http://foo.example.com/" + n )
+                                   url = PROJECT_PAGE_URL.format(n) )
                 elif p == "ControlLane":
                     res[p] = dict( name = p )
                 else:
