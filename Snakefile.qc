@@ -133,6 +133,7 @@ except ValueError:
     # Revert to using name of CWD
     run = os.path.basename(os.path.realpath(os.getcwd()))
 finally:
+    assert '_' in run
     del(runs)
 
 lanes = sorted( set( sf['lane'] for sf in all_fq ) )
@@ -247,12 +248,12 @@ rule configure_multiqc:
                       dict( name = 'read_pairs',
                             regex = '_([12])$' ),
                      ],
-                     #Why did I add this? Oh, to only see the merged data, not the per run-element data.
-                     #But it doesn't apply to run reports anyway.
+                     # Why did I add this? Oh, to only see the merged data, not the per run-element data.
+                     # But it doesn't apply to run reports anyway.
                      fn_ignore_paths = [ '*__*/1*' ],
-                     #Interactive plots please
+                     # Interactive plots please
                      plots_flat_numseries = 1000,
-                     #Custom content
+                     # Custom content
                      top_modules = [ 'custom_content', 'edgen_interop' ],
                      fastqc_config = dict(
                         plots_enabled = [ "sequence_quality_plot",
@@ -266,6 +267,8 @@ rule configure_multiqc:
                      bcl2fastq_config = dict(
                         add_index_sequences = True,
                         add_pool_names = True ),
+                     # Karim asked me to try this:
+                     fastqscreen_simpleplot = 10000,
                    )
 
         with open(output[0], "w") as cfh:

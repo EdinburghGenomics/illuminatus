@@ -6,7 +6,7 @@ import unittest
 sys.path.insert(0,'.')
 from test.binmocker import BinMocker
 
-class TestBinMocker(unittest.TestCase):
+class T(unittest.TestCase):
     """Internal testing for BinMocker helper
     """
     def test_bin_mocker(self):
