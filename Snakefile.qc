@@ -335,12 +335,15 @@ rule base_count_file:
     shell:
         "fq_base_counter.py -j {input.json} {input.fq} > {output}"
 
-# cutadapt used only for adapter dimer detection on read 1
+# cutadapt used only for adapter dimer/short insert detection on read 1 only
+# I'm not making the list of adapters configurable since they are supposed to be generic for all
+# runs. More detailed analysis belongs in project QC.
 rule cutadapt_scan:
     output: "QC/lane{l,[0-9]+}/{fq}.cutadapt_out"
     input: "{fq}.fastq.gz"
     params:
-        adapters = ["AGATCGGAAGAGC", "CTGTCTCTTATA"]
+        # 3' adapters: truseq           nextera         illumina_smallrna
+        adapters =    ["AGATCGGAAGAGC", "CTGTCTCTTATA", "TGGAATTCTCGGGTGCCAAGG"]
     shell:
         """{TOOLBOX} cutadapt -f fastq -O 9 -o /dev/null `for a in {params.adapters} ; do echo -a $a ; done` \
              {input} > {output}
