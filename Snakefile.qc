@@ -488,6 +488,7 @@ rule get_bcl2fastq_stats:
 localrules: get_bcl2fastq_json
 rule get_bcl2fastq_json:
     # Straight up just copies the file into place, for MultiQC to find
+    # Doing it this way means you can delete the QC dir and Snakemake will put this file back.
     output: "QC/lane{lane}/Stats.json"
     input: "demultiplexing/lane{lane}/Stats/Stats.json"
     shell: "cp {input} {output}"
