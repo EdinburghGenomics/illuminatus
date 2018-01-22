@@ -51,7 +51,7 @@ Soon it will ask the LIMS for additional details (loading conc) too.
                    help="Output in TSV format to the specified file (- for stdout)." )
     a.add_argument("--add_in_yaml", nargs="*",
                    help="Add columns by sucking in etra bits of YAML. Items must be" +
-                        " of the form key=file where key is [wd, yield]")
+                        " of the form key=file where key is [wd, yield, b2f]")
 
     a.add_argument("run_dir", nargs='?', default='.',
                    help="Supply a directory to scan, if not the current directory.")

@@ -123,12 +123,15 @@ rule make_summary:
     run:
         from collections import deque
         from time import sleep
-        sleep(2) # Avoids re-running due to clock skew
+        sleep(2) # Avoids annoying re-running due to clock skew
+
+        # Result will be of the form { lane: { side: { metric: 12.34 } } }
         res = dict()
 
         for f in input:
-            lane = res[f[-6]] = dict()
-            side = lane[f[-5]] = dict()
+            # Since files end in 2T.txt or whatever, populate res
+            lane = res.setdefault(f[-6], dict())
+            side = lane.setdefault(f[-5], dict())
 
             #Look at the last 3 lines of the file
             with open(f) as fh:
