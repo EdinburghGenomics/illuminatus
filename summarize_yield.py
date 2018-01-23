@@ -48,8 +48,10 @@ def main(run_dir, out_dir=None, always_dump=False):
                     print(yaml.safe_dump(format_mqc(k, v)), file=kofh, end='')
 
 def format_mqc(lane, info):
-    """Format the data structure as wanted by MQC. This will be turned
-       directly into the mqc.yaml. Using summarize_lane_contents as a basis.
+    """Format the data structure as wanted by MultiQC. This will be turned
+       directly into the mqc.yaml to make the Yield Summary table. I'm using
+       summarize_lane_contents as a basis, but note that script also sucks some of
+       the info from here into the Overview/Lane Summary table.
         lane : 'laneN' or 'overview'
         info : keys should be read numbers or 'Total ...'
     """
@@ -177,9 +179,12 @@ def extract_info(summary):
             mylaneinfo['Totals']           = get_dict(None, _q30=[0,0], _e=[0,0])
             mylaneinfo['Non-Index Totals'] = get_dict(None, _q30=[0,0], _e=[0,0])
 
-            # reads and reads_pf and available for the whole lane under read 0.
+            # reads and reads_pf are available for the whole lane under read 0.
             # And by reads we mean fragments, as opposed to everywhere else in this script
             # where we mean groups-of-cycles!!
+            # In the report I'm calling them "clusters" or "fragments"
+            # Note that for patterned flowcells 'reads' is a constant property determined by the
+            # tile layout.
             mylaneinfo['Totals']['reads'] = int(summary.at(0).at(lane).reads())
             mylaneinfo['Totals']['reads_pf'] = int(summary.at(0).at(lane).reads_pf())
 

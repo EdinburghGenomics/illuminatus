@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 
 from illuminatus.SampleSheetReader import SampleSheetReader
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
+from illuminatus.Formatters import pct
 
 # Project links can be set by an environment var, presumably in environ.sh
 PROJECT_PAGE_URL = os.environ.get('PROJECT_PAGE_URL', "http://foo.example.com/")
@@ -148,8 +149,8 @@ def output_mqc(rids, fh):
     table_formats = ["",     "{:s}",    "{:s}",         "{:,}",        "{:s}",          "{:s}"           ]
 
     if 'add_in_yield' in rids:
-        table_headers.extend(["Clusters PF", "Q30 (%)", "Yield GB"])
-        table_formats.extend(["{:,}",        "{:.3f}",  "{:.3f}"  ])
+        table_headers.extend(["PF (%)", "Q30 (%)", "Yield GB"])
+        table_formats.extend(["{:.3f}", "{:.3f}",  "{:.3f}"  ])
     if 'add_in_wd' in rids:
         table_headers.extend(["Well Dups (%)"])
         table_formats.extend(["{:.2f}"       ])
@@ -183,9 +184,10 @@ def output_mqc(rids, fh):
                                     col_05 = lane['Loading'].get('phix', 'unknown') )
 
         if 'add_in_yield' in rids:
-            #table_headers.extend(["Clusters PF", "Q30 (%)", "Yield"])
+            # was: table_headers.extend(["Clusters PF", "Q30 (%)", "Yield"])
+            # now: table_headers.extend(["PF (%)", "Q30 (%)", "Yield"])
             lane_yield_info = rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals']
-            dd['col_06'] = lane_yield_info['reads_pf']
+            dd['col_06'] = pct(lane_yield_info['reads_pf'], lane_yield_info['reads'])
             dd['col_07'] = lane_yield_info['percent_gt_q30']
             dd['col_08'] = lane_yield_info['yield_g']
 
