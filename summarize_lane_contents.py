@@ -161,7 +161,10 @@ def output_mqc(rids, fh):
     # col1_header is actually col0_header!
     mqc_out['pconfig']['col1_header'] = table_headers[0]
     for colnum, col in list(enumerate(table_headers))[1:]:
-        mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title=col, format=table_formats[colnum])
+        # This is a bit of a hack, but if the header contains a '%' symbol set min and max
+        # accordingly:
+        bounds = dict(min=0, max=100) if '%' in col else dict()
+        mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title=col, format=table_formats[colnum], **bounds)
 
     # As a special case, force the Pool/Library column to be treated as text.
     # I might be asked to make the full list of libs appear in the popup, but let's
