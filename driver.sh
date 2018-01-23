@@ -230,7 +230,7 @@ action_demultiplexed() {
         log "  Completed QC on $RUNID."
 
         if [ -s pipeline/report_upload_url.txt ] ; then
-            send_summary_to_rt finished \
+            send_summary_to_rt "Finished pipeline" \
                 "Pipeline completed on $RUNID and QC report is available at"
             # Final success is contingent on the report upload AND that message going to RT.
             mv pipeline/qc.started pipeline/qc.done
@@ -480,7 +480,7 @@ send_summary_to_rt() {
     _preamble="${2:-Run report is at}"
 
     if [ -n "$_run_status" ] ; then
-        _run_status="--subject $_run_status"
+        _run_status="--subject '$_run_status'"
     fi
 
     echo "Sending new summary of run contents to RT."
