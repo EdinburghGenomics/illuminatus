@@ -226,11 +226,16 @@ rule run_multiqc:
 localrules: configure_multiqc
 rule configure_multiqc:
     # Emits configuration for MultiQC. This may want to be split out into a separate
-    # module but for now I'll just embed it here.
+    # module but for now I'll just embed it here. The config wants to be saved out per run
+    # so we can have provenance. Strictly, we should have a 'min_multiqc_version' since I'm
+    # often adding new possible settings in MultiQC then adding them to this config and they
+    # are not backwards-compatible.
     output: "QC/multiqc_config.yml"
     run:
         conf = dict( title = 'placeholder',
                      intro_text = False,
+                     # MultiQC should not try to contact the internet in any way...
+                     no_version_check = True,
                      extra_fn_clean_exts = [
                       dict( type = 'regex',
                             pattern = '\.(?:san|)fastq$' ),
