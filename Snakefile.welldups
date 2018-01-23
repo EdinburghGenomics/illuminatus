@@ -125,6 +125,7 @@ rule make_summary:
         from time import sleep
         sleep(2) # Avoids annoying re-running due to clock skew
 
+        # TODO - I really should make a unit test for this!
         # Result will be of the form { lane: { side: { metric: 12.34 } } }
         res = dict()
 

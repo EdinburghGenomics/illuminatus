@@ -336,8 +336,8 @@ action_redo() {
         [[ "$redo" =~ .*(.)\.redo ]]
         redo_list+=(${BASH_REMATCH[1]})
     done
-    # Clean out all the other flags, then the actual data.
-    rm -f pipeline/qc.started pipeline/qc.done pipeline/failed pipeline/aborted
+    # Clean out all the other flags, and the sample summary
+    rm -f pipeline/{qc.started,qc.done,failed,aborted,sample_summary.yml}
 
     BREAK=1  # If we fail after this, don't try to process more runs on this cycle.
 
@@ -345,15 +345,17 @@ action_redo() {
     ( rt_runticket_manager.py -r "$RUNID" --subject redo \
         --comment "Re-Demultiplexing of lanes ${redo_list[*]} was requested." || true ) |& plog
 
+    # Clean out the actual data
     set +e ; ( set -e
       if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
         BCL2FASTQCleanup.py "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
       fi
     ) |& plog ; [ $? = 0 ] || { pipeline_fail Cleanup_for_Re-demultiplexing ; return ; }
 
-    # Re-summarize the sample sheet, as it probably changed.
+    # Re-summarize the sample sheet, as it probably changed, and I've deleted sample_summary.yml
+    # in any case.
     # TODO - say what lanes are being demuxed in the report, since we can't just now promise
-    # that all the altered lanes are the actual ones being re-done.
+    # that all the lanes changed in the sample sheet are the actual ones being re-done.
     fetch_samplesheet
     run_multiqc "Re-demultiplexing lanes ${redo_list[*]}" | plog
 

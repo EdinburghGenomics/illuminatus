@@ -191,9 +191,11 @@ def output_mqc(rids, fh):
 
         if 'add_in_wd' in rids:
             #table_headers.extend(["Well Dups (%)"])
-            lane_wd_info = rids['add_in_wd']['{}'.format(lane['LaneNumber'])]['mean']
-            # Can no longer assume this is the last header...
+            # See at which index in the table this header has ended up...
             dd_col, = [ k for k, v in mqc_out['headers'].items() if v['title'].startswith("Well Dups") ]
+            # Get the relevant dict from the YAML data file which is indexed by lane and surface
+            lane_wd_info = rids['add_in_wd']['{}'.format(lane['LaneNumber'])]['mean']
+            # Add the raw value for now - could choose v1 or v2 instead?
             dd[dd_col] = lane_wd_info['raw']
 
         if 'add_in_b2f' in rids:
