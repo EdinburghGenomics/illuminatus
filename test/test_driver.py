@@ -433,13 +433,27 @@ class T(unittest.TestCase):
                              False,           True,         False ])
 
         # Check that summarize_lane_contents.py really wasn't called
-        self.assertEqual( self.bm.last_calls['summarize_lane_contents.py'], [] )
+        #self.assertEqual( self.bm.last_calls['summarize_lane_contents.py'], [] )
+        #
+        # Nope - I'm now deleting the summary on redo because the links might have changed.
+        # And since we now send the summary each time anyway it doesn't make sense to bother
+        # detecting if the sample sheet changed or not.
+        # So check the summary is re-made and then read back to make the e-mail:
+        self.assertEqual( self.bm.last_calls['summarize_lane_contents.py'], [
+                                '--yml pipeline/sample_summary.yml',
+                                '--from_yml pipeline/sample_summary.yml --txt -' ] )
 
         # And two notes should go to RT - one about the redo starting and one about the success.
         # (We may want to reduce the frequency of these messages - not sure how useful they really are)
+        # We also get another lane summary since the old one was removed.
+        # The second call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
+        self.bm.last_calls['rt_runticket_manager.py'][1] = re.sub(
+                                    r'@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][1] )
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
                           ["-r 160606_K00166_0102_BHF22YBBXX --subject redo --comment" + \
                            " Re-Demultiplexing of lanes 1 2 was requested.",
+
+                           '-r 160606_K00166_0102_BHF22YBBXX --reply @???',
 
                            "-r 160606_K00166_0102_BHF22YBBXX --subject re-demultiplexed" + \
                            " --comment Re-Demultiplexing of lanes 1 2 completed"] )
