@@ -479,6 +479,8 @@ send_summary_to_rt() {
     _run_status="${1:-}"
     _preamble="${2:-Run report is at}"
 
+    # Quoting of a subject with spaces requires use of arrays but beware this:
+    # https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
     if [ -n "$_run_status" ] ; then
         _run_status=(--subject "$_run_status")
     else
@@ -488,7 +490,7 @@ send_summary_to_rt() {
     echo "Sending new summary of run contents to RT."
     # Subshell needed to capture STDERR from summarize_lane_contents.py
     last_upload_report="`cat pipeline/report_upload_url.txt 2>/dev/null || echo "Report was not generated or upload failed"`"
-    ( rt_runticket_manager.py -r "$RUNID" "${_run_status[@]}" --reply \
+    ( set +u ; rt_runticket_manager.py -r "$RUNID" "${_run_status[@]}" --reply \
         @<(echo "$_preamble "$'\n'"$last_upload_report" ;
            echo ;
            summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt - \
