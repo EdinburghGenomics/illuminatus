@@ -147,24 +147,34 @@ def output_mqc(rids, fh):
     # 'headers' needs to be a dict of { col_id: {title: ..., format: ... }
     table_headers = ["Lane", "Project", "Pool/Library", "Num Indexes", "Loaded (pmol)", "Loaded PhiX (%)"]
     table_formats = ["",     "{:s}",    "{:s}",         "{:,}",        "{:s}",          "{:s}"           ]
+    table_desc =    [None,   None,      "Summary of lane contents. See per-lane pages for a full list.",
+                                                        "Number of samples, or 0 for a single unindexed sample.",
+                                                                       None,            None ]
 
     if 'add_in_yield' in rids:
         table_headers.extend(["PF (%)", "Q30 (%)", "Yield GB"])
         table_formats.extend(["{:.3f}", "{:.3f}",  "{:.3f}"  ])
+        table_desc.extend(   ["Percent of reads passing filter",
+                                        "Percent of bases being Q30 or more",
+                                                   "Yield in Gigabases"  ])
     if 'add_in_wd' in rids:
         table_headers.extend(["Well Dups (%)"])
         table_formats.extend(["{:.2f}"       ])
+        table_desc.extend(   ["Average well dups (raw figure from count_well_dups) over the lane"])
     if 'add_in_b2f' in rids:
         table_headers.extend(["Barcode Balance"])
         table_formats.extend(["{:.4f}"       ])
+        table_desc.extend(   ["Barcode balance expressed in terms of CV (from bcl2fastq)"])
 
     # col1_header is actually col0_header!
     mqc_out['pconfig']['col1_header'] = table_headers[0]
     for colnum, col in list(enumerate(table_headers))[1:]:
+        column_settings = dict(title=col, format=table_formats[colnum])
         # This is a bit of a hack, but if the header contains a '%' symbol set min and max
-        # accordingly:
-        bounds = dict(min=0, max=100) if '%' in col else dict()
-        mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title=col, format=table_formats[colnum], **bounds)
+        # accordingly. Also add the description.:
+        if '%' in col: column_settings.update(min=0, max=100)
+        if table_desc[colnum]: column_settings.update(description=table_desc[colnum])
+        mqc_out['headers']['col_{:02}'.format(colnum)] = column_settings
 
     # As a special case, force the Pool/Library column to be treated as text.
     # I might be asked to make the full list of libs appear in the popup, but let's
