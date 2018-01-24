@@ -19,3 +19,28 @@ So, to make this actually work. I can put this in a script and run it after runn
 It should take a setting from the environment, just like everything else.
 I need to consider how to handle failure. Uploading of final QC should be a fail but uploading
 of intermediate QC is just a warning.
+
+---
+
+On 24/01/18 - OK, I have upload_report.sh and I'm happy with how I've integrated it into driver.sh
+which passes the report URL to RT and also handles intermittent failures up to pushing the final
+report (which is considered a QC fail).
+
+I still think that having a server-side system which properly handles the versions and does some
+delta-packing and deduplication is what we really need, but for now I can tackle the immediate
+problem that reports are being clobbered and keep them on web1.
+Or, actually, I'll keep all the reports in fastqdata/<run>/multiqc_reports and sync the whole tree
+over.
+
+Strategy is:
+
+1) Have a directory in /lustre/fastqdata/180115_A00291_0010_BH5N22DMXX/multiqc_reports
+
+( not under QC because I want to be able to delete the QC directory without losing the history )
+
+2) upload_report.sh moves the files into there before sync-ing the whole lot up to web1
+
+3) The files are put in directories like v_0001 and there is a "current" symlink. index.html
+   sends users to the right place if they just want the latest report. Oh, but then the index
+   masks the list of versions. So make it v/0001 instead. Yep, that works.
+   Oh, and make the symlink "latest" not current.
