@@ -44,3 +44,7 @@ Strategy is:
    sends users to the right place if they just want the latest report. Oh, but then the index
    masks the list of versions. So make it v/0001 instead. Yep, that works.
    Oh, and make the symlink "latest" not current.
+
+I suppose I could have a cunning bit of javascript that, based on the URL (window.location.href)
+infers what number report it is and makes links to the previous versions. But as noted earlier I'm
+not keen to go down this route - we need a versioned document repo of some sort.
