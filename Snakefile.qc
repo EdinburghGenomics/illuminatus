@@ -272,8 +272,8 @@ rule configure_multiqc:
                      bcl2fastq_config = dict(
                         add_index_sequences = True,
                         add_pool_names = True ),
-                     # Karim asked me to try this:
-                     fastqscreen_simpleplot = 10000,
+                     # Karim asked me to try changing this setting, but the default seems OK
+                     fastqscreen_simpleplot = 160,
                    )
 
         with open(output[0], "w") as cfh:
