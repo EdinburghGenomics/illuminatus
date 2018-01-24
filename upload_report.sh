@@ -76,6 +76,10 @@ ssh ${dest%%:*} "cat > ${dest#*:}/$runname/index.php" <<'END'
 </html>
 END
 
+# For stuff already uploaded we have an index.html symlink which must be (cautiously) removed.
+# TODO - remove this in a month or so when there's no danger of a clash.
+ssh ${dest%%:*} "[ ! -L ${dest#*:}/$runname/index.html ] || rm ${dest#*:}/$runname/index.html"
+
 echo "...done. Report uploaded and index.php written to ${dest#*:}/$runname/." >&2
 
 # Say where to find it:
