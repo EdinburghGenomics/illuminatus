@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 from __future__ import division, print_function, absolute_import
 
-# Not sure where this logic should actually go, but I'm hoping we can get something useful
-# from the files /ifs/runqc/{runid}/*/Stats/FastqSummaryF1L{lane}.txt and
-# /ifs/runqc/{runid}/*/Stats/DemuxSummaryF1L{lane}.txt.
-#
-# Assuming that the lanes are never mixed (and we're banking on this anyway) this script
-# will extract the info from those files.
-# Note that we can now get the same from Stats.json - should probably do that!
+# FIXME - this should be replaced by stats_json_aggregator.py which is doing the same job but
+# in a better way.
+
+# Eg. Try this:
+# $ cd /lustre/fastqdata/<anyrun>
+# $ grab_bcl2fastq_stats.py demultiplexing/lane1 180119_M01145_0008_000000000-B8RR9 1
+# $ stats_json_aggregator.py demultiplexing/lane1/Stats/Stats.json
 
 import os, sys
 from glob import glob
 from collections import defaultdict, OrderedDict
 from illuminatus.FixedOrderedDict import FixedOrderedDict
 from illuminatus.YAMLOrdered import yaml
+from illuminatus.Formatters import rat
 
 #I guess I want pstdev since I'm calculating variance over the whole run?
 #Nope, to be compatible with Illumina we want regular sample stdev
@@ -120,10 +121,10 @@ def gather_fastq_stats(fastq_stats_file):
     #If it didn't pass the filter, it wasn't assigned, right?
     #Apparently this only applies to 4000 and X runs!
     if dc['Assigned Reads Raw'] != dc['Assigned Reads PF']:
-        dc['Fraction Assigned Raw'] = ((dc['Assigned Reads Raw']) / total_reads_raw)
+        dc['Fraction Assigned Raw'] = rat((dc['Assigned Reads Raw']), total_reads_raw)
 
-    dc['Fraction PF'] = ((dc['Assigned Reads PF'] + dc['Unassigned Reads PF']) / total_reads_raw )
-    dc['Fraction Assigned'] = ((dc['Assigned Reads PF']) / total_reads_raw)
+    dc['Fraction PF'] = rat((dc['Assigned Reads PF'] + dc['Unassigned Reads PF']), total_reads_raw )
+    dc['Fraction Assigned'] = rat((dc['Assigned Reads PF']), total_reads_raw)
 
     #Barcode balance... manual calculation of pop std dev
     #Mean Reads Per Sample = Assigned Reads PF / len(reads_per_sample)
@@ -145,7 +146,7 @@ def gather_fastq_stats(fastq_stats_file):
         #With only one barcode in the lane the calculation is meaningless
         dc['Barcode Balance'] = 'NA'
     else:
-        dc['Barcode Balance'] = stdev(reads_per_sample.values()) / dc['Mean Reads Per Sample']
+        dc['Barcode Balance'] = rat(stdev(reads_per_sample.values()), dc['Mean Reads Per Sample'])
 
     dc['Number of Indexes'] = len(reads_per_sample)
 

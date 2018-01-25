@@ -10,6 +10,7 @@ import json
 from statistics import mean, stdev
 from illuminatus.FixedOrderedDict import FixedOrderedDict
 from illuminatus.YAMLOrdered import yaml
+from illuminatus.Formatters import rat
 
 def get_data_container():
     return FixedOrderedDict([
@@ -58,8 +59,8 @@ def main(args):
             # No barcode balance to report.
             assert len(dres) == 1, "If there are zero or one indexes I expect exactly one sample, but see {}.".format(len(dres))
         else:
-            s['Barcode Balance'] = (
-                stdev(d["NumberReads"] for d in dres) / mean(d["NumberReads"] for d in dres) )
+            s['Barcode Balance'] = rat( stdev(d["NumberReads"] for d in dres),
+                                        mean(d["NumberReads"] for d in dres) )
 
         sum_assigned = sum(d["NumberReads"] for d in dres)
         s['Assigned Reads'] = sum_assigned
@@ -72,9 +73,9 @@ def main(args):
         #s['Unassigned Reads Raw'] = all_tots[lane]['totraw'] - sum_assigned
         s['Total Reads Raw'] = all_tots[lane]['totraw']
 
-        s["Fraction PF"] = all_tots[lane]['totpf'] / all_tots[lane]['totraw']
+        s["Fraction PF"] = rat( all_tots[lane]['totpf'], all_tots[lane]['totraw'] )
         # This matches the existing behaviour.
-        s["Fraction Assigned"] = sum_assigned / all_tots[lane]['totraw']
+        s["Fraction Assigned"] = rat(sum_assigned, all_tots[lane]['totraw'])
 
         s['Mean Reads Per Sample'] = mean(d["NumberReads"] for d in dres)
 

@@ -49,7 +49,7 @@ TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ['TOOLBOX'])
 
 # Other than that, ensure that scripts in the directory with this Snakefile are
 # in the PATH (we have to do it here as $PATH does not get preserved on cluster jobs):
-#   fq_base_counter.py, RunMetaData.py, PostRunMetaData.py, summarize_lane_contents.py, grab_bcl2fastq_stats.py
+#   fq_base_counter.py, RunMetaData.py, PostRunMetaData.py, summarize_lane_contents.py, stats_json_aggregator.py
 if ( not os.path.dirname(workflow.snakefile) in os.environ['PATH'].split(':') and
      not os.path.dirname(os.path.abspath(workflow.snakefile)) in os.environ['PATH'].split(':') ):
      os.environ['PATH'] += ':' + os.path.dirname(workflow.snakefile)
