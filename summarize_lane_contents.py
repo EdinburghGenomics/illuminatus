@@ -173,6 +173,7 @@ def output_mqc(rids, fh):
         # This is a bit of a hack, but if the header contains a '%' symbol set min and max
         # accordingly. Also add the description.:
         if '%' in col: column_settings.update(min=0, max=100)
+        if 'Barcode Balance' in col: column_settings.update(min=0, max=1)
         if table_desc[colnum]: column_settings.update(description=table_desc[colnum])
         mqc_out['headers']['col_{:02}'.format(colnum)] = column_settings
 
