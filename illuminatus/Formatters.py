@@ -2,10 +2,10 @@
 
 # Some data formatters that I seem to need from time to time...
 
-def rat(n, d, nan=None, mul=1.0):
+def rat(n, d, nan=float('nan'), mul=1.0):
     """ Calculate a ratio while avoiding division by zero errors.
         Strictly speaking we should have nan=float('nan') but for practical
-        purposes we'll normally report None (or 0.0?).
+        purposes we'll maybe want to report None (or 0.0?).
     """
     try:
         return ( float(n) * mul ) / float(d)
