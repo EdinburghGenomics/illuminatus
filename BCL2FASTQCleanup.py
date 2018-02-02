@@ -45,8 +45,8 @@ def main(output_dir, *lanes):
             projects.update(delete_p_fastq(output_dir, lanes, log=log))
 
             # Deleting the [other stuff]
-            # md5sums are removed by the 'otherdirs' option passed to delete_fastq.
-            # Do we need to scrub the QC? Stale info in the MultiQC reports will be bad!!
+            # md5sums and counts are removed by the 'otherdirs' option passed to delete_fastq.
+            # We should also scrub the QC? Stale info in the MultiQC reports will be bad!!
             del_qc = "rm -rf {od}/QC/lane[{l}] {od}/QC/multiqc_report_lane[{l}]*".format(l=''.join(lanes), od=output_dir)
             os.system(del_qc)
             log(del_qc)
@@ -142,8 +142,11 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None, otherdirs=()):
                 deletions += 1
 
                 # Deal with otherdirs - ie places where supplementary files lurk.
+                # We're looking for files with a matching name, but a different extension.
+                # Note this is an inefficient way to scan the file system but Lustre seems
+                # OK with it.
                 for od in otherdirs:
-                    for odf in glob( "{}/{}/{}.*".format(od, root, f) ):
+                    for odf in glob( "{}/{}/{}.*".format(od, root, f.split('.')[0]) ):
                         os.remove(odf)
                         log( "rm '{}'".format(odf) )
 
