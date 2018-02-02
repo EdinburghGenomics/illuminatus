@@ -10,6 +10,8 @@ def main(output_dir, *lanes):
     Given an output folder, clean up old FASTQ files ready for re-demultiplexing.
     Also clean [other stuff]. See design criteria at:
       https://genowiki.is.ed.ac.uk/pages/viewpage.action?pageId=319660973
+
+    Also see the unit tests (as always)
     """
 
     output_dir = os.path.abspath(output_dir)
@@ -121,7 +123,8 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None, otherdirs=()):
     ppatterns = ['[0-9]+', 'ControlLane']
 
     projects = set()
-    deletions = 0
+    deletions = list()
+    od_deletions = 0
     emptydirs = 0
     for root, dirs, files in os.walk(path):
         # At the top level, only descent into directories that are numbers (ie. projects),
@@ -139,16 +142,7 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None, otherdirs=()):
 
                 os.remove(os.path.join(root, f))
                 log( "rm '{}'".format(os.path.join(root, f)) )
-                deletions += 1
-
-                # Deal with otherdirs - ie places where supplementary files lurk.
-                # We're looking for files with a matching name, but a different extension.
-                # Note this is an inefficient way to scan the file system but Lustre seems
-                # OK with it.
-                for od in otherdirs:
-                    for odf in glob( "{}/{}/{}.*".format(od, root, f.split('.')[0]) ):
-                        os.remove(odf)
-                        log( "rm '{}'".format(odf) )
+                deletions.append(os.path.join(root[len(path):], f))
 
         # Useful for debugging
         #    else:
@@ -156,6 +150,16 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None, otherdirs=()):
         #            log("# lane %s is not in %s" % (mo.group(1), lanes))
         #        else:
         #            log("# %s does not match %s" % (f, match_pattern))
+
+    # Deal with otherdirs - ie places where supplementary files lurk.
+    # We're looking for files with a matching name, but a different extension.
+    for od in otherdirs:
+        for f in deletions:
+            for odf in glob( "{}/{}/{}.*".format(path, od, f.split('.')[0]) ):
+                os.remove(odf)
+                log( "rm '{}'".format(odf) )
+                od_deletions += 1
+
 
     # Now remove empty directories. We only want to look at those in projects.
     for proj in projects:
@@ -167,8 +171,8 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None, otherdirs=()):
             except Exception:
                 pass # Assume it was non-empty.
 
-    msg = "Deleted %i files and %i directories from %s relating to %i projects." % (
-                   deletions,   emptydirs,  os.path.basename(path), len(projects) )
+    msg = "Deleted {} fastq files and {} ancillary files and {} directories from {} relating to {} projects.".format(
+                   len(deletions),    od_deletions,          emptydirs, os.path.basename(path), len(projects) )
     log('# ' + msg)
     #print(msg)
     return projects

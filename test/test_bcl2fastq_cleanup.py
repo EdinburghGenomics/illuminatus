@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import unittest
 from unittest.mock import Mock, patch
-import sys, os, glob, re
+import sys, os, re
+from glob import glob
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
 from io import StringIO
@@ -72,6 +73,42 @@ class T(unittest.TestCase):
         self.assertTrue(os.path.exists(run_id + '/' + run_id + '_2_unassigned_1.fastq.gz'))
         self.assertFalse(os.path.exists(run_id + '/demultiplexing/lane1/Undetermined_S0_L001_R2_001.fastq.gz'))
         self.assertTrue(os.path.exists(run_id + '/demultiplexing/lane2/Undetermined_S0_L002_R2_001.fastq.gz'))
+
+    def test_cleanup_2(self):
+        """180118_K00166_0327_BHNJHGBBXX represent a fully processed run
+           with 2 projects. I've cut it down to 3 lanes.
+        """
+        run_id = '180118_K00166_0327_BHNJHGBBXX'
+        self.copy_run(run_id)
+
+        # Sanity-check
+        self.assertEqual( len(glob(run_id + '/*_unassigned_*')), 6 )
+        self.assertEqual( len(glob(run_id + '/11130/*/*')), 52 )
+        self.assertEqual( len(glob(run_id + '/11131/*/*')), 100 )
+        self.assertEqual( len(glob(run_id + '/md5sums/*/*/*')), 152 )
+        self.assertEqual( len(glob(run_id + '/counts/*/*/*')), 152 )
+        self.assertEqual( len(glob(run_id + '/QC/lane*')), 3 )
+        self.assertEqual( len(glob(run_id + '/demultiplexing/lane*')), 3 )
+        with open(run_id + '/projects_ready.txt') as fh:
+            self.assertEqual(sorted([ l.rstrip('\n') for l in fh ]), ['11130', '11131'])
+
+        # Clean lane 1 should leave project 11131 pending
+        self.c_main(run_id, '1')
+        with open(run_id + '/projects_pending.txt') as fh:
+            self.assertEqual(sorted([ l.rstrip('\n') for l in fh ]), ['11131'])
+
+        # But projects_ready.txt stays as it is (I think?)
+        with open(run_id + '/projects_ready.txt') as fh:
+            self.assertEqual(sorted([ l.rstrip('\n') for l in fh ]), ['11130', '11131'])
+
+        # And we should have removed the appropriate number of everything
+        self.assertEqual( len(glob(run_id + '/*_unassigned_*')), 4 )
+        self.assertEqual( len(glob(run_id + '/11130/*/*')), 52 )
+        self.assertEqual( len(glob(run_id + '/11131/*/*')), 50 )
+        self.assertEqual( len(glob(run_id + '/md5sums/*/*/*')), 102 )
+        self.assertEqual( len(glob(run_id + '/counts/*/*/*')), 102 )
+        self.assertEqual( len(glob(run_id + '/QC/lane*')), 2 )
+        self.assertEqual( len(glob(run_id + '/demultiplexing/lane*')), 2 )
 
     def test_cleanup_badargs(self):
         """ Run 170329_K00166_0198_BHJ53FBBXX has three projects.
