@@ -484,9 +484,12 @@ rule get_bcl2fastq_stats_old:
         "grab_bcl2fastq_stats.py demultiplexing/lane{wildcards.lane} {wildcards.runid} {wildcards.lane} > {output}"
 
 rule get_bcl2fastq_stats:
+    # If no FASTQ files were found and yet demultiplexing stats are requested, this
+    # rule will end up being run with no input. Hence the dummy input acts as an error
+    # message.
     output: "QC/bcl2fastq_stats.yml"
     input:
-        json = expand("QC/lane{l}/Stats.json", l=lanes)
+        json = expand("QC/lane{l}/Stats.json", l=lanes) or 'No FASTQ files found'
     shell:
         "stats_json_aggregator.py {input.json} > {output}"
 
