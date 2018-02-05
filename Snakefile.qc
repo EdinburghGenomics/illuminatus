@@ -106,13 +106,21 @@ def split_fq_name(n):
                      read = read,
                      unassigned = (lib == 'unassigned') )
 
+def get_assigned_fq():
+    try:
+        with open("projects_ready.txt") as fh:
+            all_projects = fh.read().split()
+    except FileNotFoundError:
+        # Not sure if we want this fallback or not?
+        all_projects = ["[1-9]*", "ControlLane"]
+    return [ fq for p in all_projects for fq in glob(p + '/*/*.fastq.gz') ]
+
 # See what input sequences we are dealing with (if any, yet)
 # I wanted to use a hack to stop this being re-run on every cluster job,
-# but it didn't work as Snakemake re-runs itself even for local jobs.
+# but it didn't work as Snakemake somethimes re-runs itself even for local jobs.
 all_unassigned_fq = [ split_fq_name(f) for f in glob('*_unassigned_?.fastq.gz') ]
-all_assigned_fq   = [ split_fq_name(f) for f in glob('[1-9]*/*/*.fastq.gz') ]
-all_control_fq    = [ split_fq_name(f) for f in glob('ControlLane/*/*.fastq.gz') ]
-all_fq = (all_assigned_fq + all_unassigned_fq + all_control_fq)
+all_assigned_fq   = [ split_fq_name(f) for f in get_assigned_fq() ]
+all_fq = (all_assigned_fq + all_unassigned_fq)
 all_1_fq  = [ fq for fq in all_fq if fq['read'] == '1' ]
 all_u1_fq = [ fq for fq in all_unassigned_fq if fq['read'] == '1' ]
 
