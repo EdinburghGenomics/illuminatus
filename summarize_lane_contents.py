@@ -152,11 +152,20 @@ def output_mqc(rids, fh):
                                                                        None,            None ]
 
     if 'add_in_yield' in rids:
-        table_headers.extend(["PF (%)", "Q30 (%)", "Yield GB"])
-        table_formats.extend(["{:.3f}", "{:.3f}",  "{:.3f}"  ])
-        table_desc.extend(   ["Percent of reads passing filter",
-                                        "Percent of bases being Q30 or more",
-                                                   "Yield in Gigabases"  ])
+        table_headers.extend(["Clusters PF", "PF (%)", "Q30 (%)", "Yield GB"])
+        table_formats.extend(["{:,}",        "{:.3f}", "{:.3f}",  "{:.3f}"  ])
+        table_desc.extend(   ["Count of clusters/wells passing filter",
+                                             "Percent of clusters/wells passing filter",
+                                                       "Percent of bases being Q30 or more",
+                                                                  "Yield in Gigabases"  ])
+
+        # Also tack on a grand total to the description line of the table:
+        yield_totals = [ v['Totals'] for v in rids['add_in_yield'].values() ]
+        mqc_out['description'] += ", with {:,} of {:,} clusters passing filter ({:.3f}%)".format(
+                    sum(t['reads_pf'] for t in yield_totals),
+                        sum(t['reads'] for t in yield_totals),
+                            pct( sum(t['reads_pf'] for t in yield_totals), sum(t['reads'] for t in yield_totals) ))
+
     if 'add_in_wd' in rids:
         table_headers.extend(["Well Dups (%)"])
         table_formats.extend(["{:.2f}"       ])
@@ -199,11 +208,12 @@ def output_mqc(rids, fh):
 
         if 'add_in_yield' in rids:
             # was: table_headers.extend(["Clusters PF", "Q30 (%)", "Yield"])
-            # now: table_headers.extend(["PF (%)", "Q30 (%)", "Yield"])
+            # now: table_headers.extend(["Clusters PF", "PF (%)", "Q30 (%)", "Yield"])
             lane_yield_info = rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals']
-            dd['col_06'] = pct(lane_yield_info['reads_pf'], lane_yield_info['reads'])
-            dd['col_07'] = lane_yield_info['percent_gt_q30']
-            dd['col_08'] = lane_yield_info['yield_g']
+            dd['col_06'] = lane_yield_info['reads_pf']
+            dd['col_07'] = pct(lane_yield_info['reads_pf'], lane_yield_info['reads'])
+            dd['col_08'] = lane_yield_info['percent_gt_q30']
+            dd['col_09'] = lane_yield_info['yield_g']
 
         if 'add_in_wd' in rids:
             #table_headers.extend(["Well Dups (%)"])

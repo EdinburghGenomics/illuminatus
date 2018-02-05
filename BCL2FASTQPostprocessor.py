@@ -81,6 +81,8 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
     # No attempt to define what directories are 'project' directories by naming pattern.
     # If it contains fastq.gz files it must be a project dir.
+    # FIXME - this leads to problems further down the line where it's possible to put
+    # FASTQ files into directories not seen by Snakefile.qc.
     for fastq_file in glob(os.path.join( output_dir, "demultiplexing/lane*" , "*/*/*.fastq.gz" )):
 
         #os.path.split is unhelpful here. Just do it the obvious way.
