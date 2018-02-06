@@ -160,7 +160,7 @@ def output_mqc(rids, fh):
                                                                   "Yield in Gigabases"  ])
 
         # Also tack on a grand total to the description line of the table:
-        yield_totals = [ v['Totals'] for v in rids['add_in_yield'].values() ]
+        yield_totals = [ rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals'] for lane in rids['Lanes'] ]
         mqc_out['description'] += ", with {:,} of {:,} clusters passing filter ({:.3f}%)".format(
                     sum(t['reads_pf'] for t in yield_totals),
                         sum(t['reads'] for t in yield_totals),
