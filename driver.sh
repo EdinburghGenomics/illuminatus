@@ -152,7 +152,7 @@ action_new(){
     # will be noted by the main loop.
     # If necessary, Snakefile.qc and upload_report.sh could be run manually
     # to get the skeleton report.
-    run_multiqc "Waiting for data" | plog && echo DONE
+    run_multiqc "Waiting for data" | plog && log DONE
 }
 
 action_reads_unfinished(){
