@@ -946,10 +946,10 @@ sub print_counts {
     my $percent = &percentage($barcodes_count{$key},$total);
     print $REPORT "${L}$reverse_barcode_hash{$key} ".(exists $is_at_start_of{$key} ? $is_at_start_of{$key} : '')."${M}$key${M}".&commify($barcodes_count{$key})."${M}$percent${R}\n";
   }
-  my $percent=&percentage($total_above,$total);  print $REPORT "${L}Total of the above Known barcodes:${M} ${M}".&commify($total_above)."${M}$percent${R}\n";
+  my $percent=&percentage($total_above,$total);  print $REPORT "${L}Total of the above barcodes:${M} ${M}".&commify($total_above)."${M}$percent${R}\n";
 
   $percent=&percentage($total_under_cutoff,$total);
-  print $REPORT "${L}Total of Known barcodes with frequency under ".&commify($cutoff)." reads:${M} ${M}".&commify($total_under_cutoff)."${M}$percent${R}\n";
+  print $REPORT "${L}Total of other barcodes with frequency under ".&commify($cutoff)." reads:${M} ${M}".&commify($total_under_cutoff)."${M}$percent${R}\n";
   print $REPORT $tableend;
   # if (defined $flagtablestart) {print $REPORT "#TABLE_END\n";}
 
@@ -998,10 +998,10 @@ sub print_counts {
       }
       print $REPORT "${R}\n";
     }
-    $percent=&percentage($total_above,$total);  print $REPORT "${L}Total of the above Unknown over 8-base barcodes: ${M}".&commify($total_above)."${M}$percent${R}\n";
+    $percent=&percentage($total_above,$total);  print $REPORT "${L}Total of the above Unknown over-8-base barcodes: ${M}".&commify($total_above)."${M}$percent${R}\n";
 
     $percent=&percentage($total_under_cutoff,$total);
-    print $REPORT "${L}Total of other Unknown over 8-base barcodes with frequency under ".($minimun_unknown_barcode_count)." reads:${M}".&commify($total_under_cutoff)."${M}$percent${R}\n";
+    print $REPORT "${L}Total of other Unknown over-8-base barcodes with frequency under ".($minimun_unknown_barcode_count)." reads:${M}".&commify($total_under_cutoff)."${M}$percent${R}\n";
   }
   print $REPORT $tableend;
   # if (defined $flagtablestart) {print $REPORT "#TABLE_END\n";}
