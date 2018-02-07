@@ -152,7 +152,7 @@ action_new(){
     # will be noted by the main loop.
     # If necessary, Snakefile.qc and upload_report.sh could be run manually
     # to get the skeleton report.
-    run_multiqc "Waiting for data" | plog && log DONE
+    run_multiqc "Waiting for data" - new | plog && log DONE
 }
 
 action_reads_unfinished(){
@@ -403,12 +403,14 @@ fetch_samplesheet(){
 
 run_multiqc() {
     # Runs multiqc. Will not exit on error.
+    # usage: run_multiqc [report_status] [plog_dest] [rt_comment]
     # Caller is responsible for log redirection, so this function just prints any
     # progress messages.
     set +o | grep '+o errexit' && _ereset='set +e' || _ereset='set -e'
     set +e
 
     _pstatus="${1:-}"
+    _rtcomment="${3:-}"
 
     if [ "${2:--}" != - ] ; then
         _plog="$2" # Caller may hint where the log is going.
@@ -454,7 +456,7 @@ run_multiqc() {
 
     if [ "$send_summary" = 1 ] ; then
         # A new summary was made so we need to send it.
-        send_summary_to_rt
+        send_summary_to_rt "$_rtcomment"
     fi
 
     # If this fails, the pipeline will continue, but we need to remove pipeline/sample_summary.yml
