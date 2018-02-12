@@ -40,6 +40,10 @@ def munge_lines(lines):
         lines[data_line] = l.rstrip(',')
         if lines[data_line] == '[Data]': break
 
+    # Strip rogue commas
+    for l in range(data_line+1, len(lines)):
+        lines[l] = lines[l].rstrip().rstrip(',')
+
     #Check the header
     if lines[data_line+1].startswith('Sample_ID,Sample_Name,'):
         sn_col = 1
