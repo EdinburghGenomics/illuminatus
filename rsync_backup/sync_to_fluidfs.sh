@@ -23,7 +23,7 @@ export PATH="$ILLUMINATUS_HOME:$PATH"
 # $ env ENVIRON_SH=/dev/null FASTQ_LOCATION=foo BACKUP_LOCATION=bar sync_to_fluidfs.sh
 
 # Where are runs coming from?
-# Where are runs going to?
+# Where are runs going to (can be a local directory or host:/path)?
 echo "Backing up data from $FASTQ_LOCATION to $BACKUP_LOCATION"
 
 # We can supply a BACKUP_NAME_REGEX or fall back to RUN_NAME_REGEX (the default here
@@ -59,27 +59,20 @@ for run in "$FASTQDATA_LOCATION"/*/ ; do
     debug "Ignoring incomplete $run_name"
   fi
 
-  # Maybe we should have a time cutoff? Look for anything in pipeline less than N days old.
-  # There should be no changes in the output without some record in the pipeline.
-  # if [ -e "$run/seqdata/pipeline" ] && [ "${BACKUP_MAX_DAYS:-0}" != 0 ]  ; then
-  #   if find "$run/seqdata/pipeline" -mtime -"$BACKUP_MAX_DAYS" | grep -q . ; then
-  #     debug "Found recent pipeline activity for $run_name"
-  #   else
-  #     debug "No recent pipeline activity for $run_name"
-  #     continue
-  #   fi
-  # else
+  # If the pipeline.log is missing we have problems
+  if [ ! -e "$run/pipeline.log" ] ; then
+    echo "Missing $run/pipeline.log - something is wrong here! Run will not be copied!"
+    continue
+  fi
 
-  # I could alternatively look at pipeline.log - simpler.
-  if [ -e "$run/pipeline.log" ] && [ "${BACKUP_MAX_DAYS:-0}" != 0 ]  ; then
-    if find "$run/pipeline.log" -mtime -"$BACKUP_MAX_DAYS" | grep -q . ; then
-      debug "Found recent pipeline activity logged for $run_name"
-    else
-      debug "No recent pipeline activity for $run_name"
-      continue
-    fi
+  # Comparing times on pipeline.log is probably the simplest way to see if the copy
+  # is up-to-date and saves my sync-ing everything again and again
+  if rsync -nsa --itemize-changes "$run/pipeline.log" "$BACKUP_LOCATION/$run_name/pipeline.log" | grep -q . ; then
+    log_size=`stat -c %s "$run/pipeline.log"`
+    debug "Detected new pipeline log activity for $run_name with log size $log_size"
   else
-    echo "Backing up $run_name regardless of last activity"
+    debug "No recent pipeline activity for $run_name"
+    continue
   fi
 
   # === OK, here we go with the actual sync... ===
@@ -90,12 +83,22 @@ for run in "$FASTQDATA_LOCATION"/*/ ; do
     continue
   fi
 
-  rsync -av --exclude=.snakemake --exclude=slurm_output --exclude=seqdata \
-    "$run" $BACKUP_LOCATION
+  rsync -sav --exclude=.snakemake --exclude=slurm_output --exclude=seqdata --exclude=pipeline.log \
+    "$run" "$BACKUP_LOCATION"
 
   # Now add the pipeline directory and the SampleSheets
-  rsync -av --include=pipeline --include='SampleSheet*' --include='*.xml'
-    "$run"/seqdata $BACKUP_LOCATION
+  rsync -sav --include=pipeline --include='SampleSheet*' --include='*.xml'
+    "$run"/seqdata "$BACKUP_LOCATION/$run_name"
+
+  # And finally the log. Do this last so if copying was interrupted/incomplete it will be obvious.
+  # If the log has changed size during the copy process it's a problem.
+  # I'm not sure how to deal with the problem but this is one way.
+  rsync -sa --itemize-changes "$run/pipeline.log" "$BACKUP_LOCATION/$run_name/pipeline.log"
+  if [ `stat -c %s "$run/pipeline.log"` != $log_size ] ; then
+    echo "Log file size has changed during sync. To ensure that no new data is missed, the timestamp"
+    echo "on this file will be updated now, which will trigger a re-sync on the next scan."
+    sleep 1 ; touch "$run/pipeline.log"
+  fi
 
   echo "*** Copied FASTQ data and pipeline metadata for $run_name ***"
 done
