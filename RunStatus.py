@@ -276,7 +276,8 @@ class RunStatus:
 class QuickInfo:
     """ Just get the instrument name out of the dir name.
         Involves a little copy/paste from RunInfoXMLParser
-        We also need to know the number of lanes, which for now we'll just guess(!)
+        We also need to know the number of lanes, in order to calculate "_was_finished",
+        which for now we'll just guess(!)
     """
     def __init__(self, run_dir):
 
