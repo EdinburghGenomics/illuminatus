@@ -59,6 +59,10 @@ class T(unittest.TestCase):
         # extra header we'll just keep generating alternate sheets, one for the sequencer
         # and one for the pipeline.
 
+        # Addendum - the extra header is not a problem but we need to do some quick-y filtering
+        # of the sample sheet to actually make this work. Note the assumption that lane MUST
+        # be in the first column here (which it is).
+
         self.assertCountEqual(self.bcl2fastq_command_split[0], ["LANE=1"])
 
         self.assertCountEqual(self.bcl2fastq_command_split[1],
@@ -72,7 +76,7 @@ class T(unittest.TestCase):
             [   self.bcl2fastq_path,
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'/lane${LANE}" % self.out_dir ,
-                "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
+                '--sample-sheet <(grep -v "`tr -d $LANE <<<\'^[12345678],\'`" \'%s\')' % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
                 "--fastq-compression-level 6", # Do we still need this? Yes.
                 "--barcode-mismatches 1",  # If anything?
                 "--use-bases-mask '1:Y50n,I8,I8'",
@@ -100,7 +104,7 @@ class T(unittest.TestCase):
             self.bcl2fastq_path,
             "-R '%s'" % shadow_dir,
             "-o '%s'/lane${LANE}" % self.out_dir ,
-            "--sample-sheet '%s'" % os.path.join(shadow_dir, "SampleSheet.csv"),
+            '--sample-sheet <(grep -v "`tr -d $LANE <<<\'^[12345678],\'`" \'%s\')' % os.path.join(shadow_dir, "SampleSheet.csv"),
             "--fastq-compression-level 6",
             "--barcode-mismatches 100",  # Should be set by .ini
             "--use-bases-mask '1:Y50n,I8,I8'",
@@ -180,7 +184,7 @@ class T(unittest.TestCase):
             [   self.bcl2fastq_path,
                 "-R '%s/%s'" % (self.seqdata_dir, run_id),
                 "-o '%s'/lane${LANE}" % self.out_dir ,
-                "--sample-sheet '%s'" % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
+                '--sample-sheet <(grep -v "`tr -d $LANE <<<\'^[12345678],\'`" \'%s\')' % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
                 "--use-bases-mask '5:Y50n,n*,n*'",
                 "--tiles=s_[$LANE]",
                 "--barcode-mismatches 1",

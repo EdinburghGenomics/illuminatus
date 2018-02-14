@@ -81,7 +81,6 @@ class BCL2FASTQPreprocessor:
         cmd.append("-R '%s'" % self._rundir)
         if self._destdir:
             cmd.append("-o '%s'/lane${LANE}" % self._destdir)
-        cmd.append("--sample-sheet '%s'" % os.path.join( self._rundir, "SampleSheet.csv" ) )
         cmd.append("--fastq-compression-level 6")
 
         #Add base mask for this lane
@@ -91,6 +90,13 @@ class BCL2FASTQPreprocessor:
         # Specify the lane to process, which is controlled by --tiles
         # Slimmed-down runs override this setting but will still include $LANE to pick up the lane number
         cmd.append("--tiles=s_[$LANE]")
+
+        # And we actually need to strip the other lanes out of the SampleSheet.csv, due to the bug that bcl2fastq
+        # will do an index collision check for ALL lanes even if you are only trying to process one,
+        # which breaks the per-lane-base-mask feature.
+        # We can do this munging on the fly (assuming we never see more than 8 lanes)...
+        cmd.append('''--sample-sheet <(grep -v "`tr -d $LANE <<<'^[12345678],'`" '%s')''' %
+                        os.path.join( self._rundir, "SampleSheet.csv" ) )
 
         # Number of threads to use should be set by the caller (ie. Snakemake)
         cmd.append("-p ${PROCESSING_THREADS:-10}")
