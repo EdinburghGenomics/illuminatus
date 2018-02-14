@@ -26,7 +26,7 @@ export RT_SYSTEM=production-rt
 # Link to project pages for use in summary e-mails and (at some point) reports.
 # This can either include a {} placeholder or else the project name will just be
 # appended, so you do need to include the slash on the end here.
-export PROJECT_PAGE_URL=https://genowiki.is.ed.ac.uk/display/GenePool/
+export PROJECT_PAGE_URL=https://www.wiki.ed.ac.uk/display/GenePool/
 
 # GENOLOGICSRC can be set if needed but it's normally easier to just edit ~/.genologicsrc
 # export GENOLOGICSRC=my_custom_genologicsrc
