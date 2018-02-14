@@ -15,7 +15,7 @@ the Illuminatus code, so that is where you'll find it, along with an up-to-date 
 this file under rsync_backup/.
 (Actually, no, I'll look at the touch files directly - RunStatus.py is overkill)
 
-Note here's the rsync line being used for transfer backup, prior to the transfer server moving
+Note: here's the rsync line being used for transfer backup, prior to the transfer server moving
 to gseg-dt. It runs off /etc/cron.daily/transfer_rsync:
 
 rsync -av /var/transfer/ /lustre/transfer/ > /root/transfer_rsync.log
