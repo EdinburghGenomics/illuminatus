@@ -1,0 +1,40 @@
+This is of general interest but important for Illuminatus. The text below is copied from
+/etc/pki/tls/certs/how_to_add_a_cert.txt
+
+Note the last line which needs to be set on a per-application basis if you use Python3 requests!
+
+---
+
+I (Tim) had to add the TERENA certificate since all our SSL certificates are based off it
+and wget, Python, etc (basically anything that uses OpenSSL) needs the thing
+installed in a particular way. Here's how:
+
+Go to https://pki.cesnet.cz/en/ch-tcs-ssl-ca-2-crt-crl.html and download the Certificate chain in
+PEM format (it was near the bottom - ignore all the other stuff).
+
+$ sudo wget https://pki.cesnet.cz/certs/chain_TERENA_SSL_CA_2.pem
+
+Save it in this dir, and give it a test:
+
+$ openssl s_client -connect rt.genomics.ed.ac.uk:443 -CAfile chain_TERENA_SSL_CA_2.pem
+
+Don't forget to make the file world-readable!
+
+$ chmod 644 chain_TERENA_SSL_CA_2.pem
+
+Finally I need to make a symlink so the .pem will actually be found based on the x509 hash:
+
+$ sudo ln -s chain_TERENA_SSL_CA_2.pem `openssl x509 -hash -in chain_TERENA_SSL_CA_2.pem -noout`.0
+
+And after that, I was able to connect using wget and Python without disabling certificate checking.
+
+... Oh, but wait. There's more. If I want to use curl or Python requests library it still don't work.
+
+$ cd /etc/pki/ca-trust/source
+$ sudo ln -s /etc/pki/tls/certs/chain_TERENA_SSL_CA_2.pem ./anchors
+$ sudo update-ca-trust extract
+
+OK, so now curl is happy. Finally for Python3 requests, I'm struggling to see how to set this globally
+but you can do this:
+
+export REQUESTS_CA_BUNDLE=/etc/pki/tls/certs
