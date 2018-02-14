@@ -55,10 +55,11 @@ for run in "$FASTQ_LOCATION"/*/ ; do
     continue
   fi
 
-  # If the pipeline dir is missing, sync it on suspicion.
+  # If the pipeline dir is missing, sync this run it on suspicion, but otherwise
+  # wait for qc.done.
   # Maybe I should RSYNC anyway here and not wait for final QC?
   if [ -e "$run/seqdata/pipeline" ] && [ ! -e "$run/seqdata/pipeline/qc.done" ] ; then
-    debug "Ignoring incomplete $run_name"
+    echo "Ignoring incomplete $run_name"
     continue
   fi
 
@@ -70,9 +71,10 @@ for run in "$FASTQ_LOCATION"/*/ ; do
 
   # Comparing times on pipeline.log is probably the simplest way to see if the copy
   # is up-to-date and saves my sync-ing everything again and again
-  if rsync -nsa --itemize-changes --include='pipeline.log' --exclude='*' "$run" "$BACKUP_LOCATION/$run_name" | grep -qF pipeline.log ; then
+  # Note this will also trigger if the directory itself has changed (perms or mtime)
+  if rsync -nsa --itemize-changes --include='pipeline.log' --exclude='*' "$run" "$BACKUP_LOCATION/$run_name" | grep -q . ; then
     log_size=`stat -c %s "$run/pipeline.log"`
-    debug "Detected new pipeline log activity for $run_name with log size $log_size"
+    echo "Detected activity for $run_name with log size $log_size"
   else
     debug "No recent pipeline activity for $run_name"
     continue
@@ -97,13 +99,13 @@ for run in "$FASTQ_LOCATION"/*/ ; do
     "$run"seqdata/ "$BACKUP_LOCATION/$run_name/seqdata"
 
   # And finally the log. Do this last so if copying was interrupted/incomplete it will be obvious.
-  # If the log has changed size during the copy process it's a problem.
-  # My solution is to touch the pipeline.log so the next iteration will spot it and re-sync.
+  # If the log has changed at all during the copy process it's not a problem, because this
+  # step will alter the mtime of the directory and trigger a second sync.
+  # (I actually discovered this as a bug, but it turns out to be a handy feature!)
   rsync -sa --itemize-changes "$run/pipeline.log" "$BACKUP_LOCATION/$run_name/pipeline.log"
   if [ `stat -c %s "$run/pipeline.log"` != $log_size ] ; then
-    echo "Log file size has changed during sync. To ensure that no new data is missed, the timestamp"
-    echo "on this file will be updated now, which will trigger a re-sync on the next scan."
-    sleep 1 ; touch "$run/pipeline.log"
+    echo "Log file size has changed during sync. However this should not be a problem as a second"
+    echo "sync is going to be triggered."
   fi
 
   echo "*** Copied FASTQ data and pipeline metadata for $run_name ***"
