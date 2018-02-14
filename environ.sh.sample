@@ -39,6 +39,10 @@ export PROJECT_PAGE_URL=https://www.wiki.ed.ac.uk/display/GenePool/
 #                                                    ## lookups - this list will be scanned instead
 # export VERBOSE=1                                   ## verbose log messages form driver.sh
 
-## Send reports to localhost rather than web1. There won't be a valid http:// link.
+## You could end reports to localhost rather than web1. There won't be a valid http:// link.
 # export REPORT_DESTINATION='gseg-login0:test_fastqdata/uploaded_reports'
 # export REPORT_LINK=
+
+# Settings for rsync_backup can now be set from here too...
+#export BACKUP_NAME_REGEX='(1[89]|[^1].).._.*_.*_[^._]*'
+export BACKUP_LOCATION=/fluidfs/f1/fastqdata_copy
