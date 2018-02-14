@@ -5,12 +5,14 @@ import sys, os
 import glob
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
+from pprint import pprint
 
 # Adding this to sys.path makes the test work if you just run it directly.
 sys.path.insert(0,'.')
 from RunStatus import RunStatus
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')
+VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
 class T(unittest.TestCase):
 
@@ -99,6 +101,52 @@ class T(unittest.TestCase):
         run_info = self.use_run('160606_K00166_0102_BHF22YBBXX')
         self.assertFalse( run_info._was_finished() )
 
+    def test_messy_redo( self ):
+        """ If some lanes fail, then you redo just one and it works, then you redo
+            everything. I spotted this as a bug while tinkering with run
+            180209_D00261_0449_ACC8FGANXX
+        """
+        run_info = self.use_run('160726_K00166_0120_BHCVH2BBXX', copy=True)
+        self.touch('pipeline/read1.done')
+        self.touch('RTAComplete.txt')
+
+        def gs():
+            """ Clear the cache and get the status
+            """
+            run_info._exists_cache = dict()
+            return dictify(run_info.get_yaml())['PipelineStatus:']
+
+        self.assertEqual(gs(), 'reads_finished')
+
+        # Fail demultiplex...
+        for l in '12345678':
+            self.touch('pipeline/lane{}.started'.format(l))
+        self.touch('pipeline/failed')
+        self.assertEqual(gs(), 'failed')
+
+        # Just redo one lane... currently driver.sh will remove all the .started files
+        # and re-demultiplex the selected lane.
+        for l in '12345678':
+            self.rm('pipeline/lane{}.started'.format(l))
+        self.rm('pipeline/failed')
+        self.touch('pipeline/lane5.done')
+        # Now this is not a happy state because you should have restarted ALL the failed
+        # lanes. However the design says that we should proceed to QC and thus get to
+        # partially_complete:
+        self.assertEqual(gs(), 'demultiplexed')
+
+        self.touch('pipeline/qc.done')
+        self.assertEqual(gs(), 'partially_complete')
+
+        # But what is for sure is that a redo of all lanes should get us into state=redo,
+        # whether or not the qc.done file is present...
+        for l in '12345678':
+            self.touch('pipeline/lane{}.redo'.format(l))
+        self.assertEqual(gs(), 'redo')
+
+        self.rm('pipeline/qc.done')
+        self.assertEqual(gs(), 'redo')
+
     def test_read_states_4000(self):
         """Ensure that the YAML output is what we expect.
            Don't fully parse the YAML as we don't want the extra dependency.
@@ -160,8 +208,13 @@ class T(unittest.TestCase):
         self.touch('pipeline/lane1.started')
         self.assertEqual(gy()['PipelineStatus:'], 'in_demultiplexing')
 
-        for l in range(8):
-            self.touch('pipeline/lane{}.done'.format(l+1))
+        # And finish it
+        for l in '12345678':
+            self.touch('pipeline/lane{}.done'.format(l))
+        self.assertEqual(gy()['PipelineStatus:'], 'in_demultiplexing')
+
+        # Finish it properly!
+        self.rm('pipeline/lane1.started')
         self.assertEqual(gy()['PipelineStatus:'], 'demultiplexed')
 
         # And if we try to redo a lane before QC starts...
@@ -201,7 +254,9 @@ class T(unittest.TestCase):
             """ Clear the cache and get the status
             """
             run_info._exists_cache = dict()
-            return dictify(run_info.get_yaml())
+            res = dictify(run_info.get_yaml())
+            if VERBOSE: pprint(run_info._exists_cache)
+            return res
 
         self.assertEqual(gy(), expected)
 
@@ -245,6 +300,7 @@ class T(unittest.TestCase):
         self.touch('pipeline/lane1.started')
         self.assertEqual(gy()['PipelineStatus:'], 'in_demultiplexing')
 
+        self.rm('pipeline/lane1.started')
         self.touch('pipeline/lane1.done')
         self.assertEqual(gy()['PipelineStatus:'], 'demultiplexed')
 

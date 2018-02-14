@@ -128,6 +128,13 @@ class RunStatus:
 
         return self._exists( 'pipeline/lane?.done' ) == number_of_lanes
 
+    def _was_demultiplexed( self ):
+        """ In contrast to the above, a run can be partially demultiplexed but ready for
+            QC nonetheless.
+            So return true if there is at least one .done file and no .started files/
+        """
+        return self._exists( 'pipeline/lane?.done' ) > 0 and self._exists( 'pipeline/lane?.started' ) == 0
+
     def _qc_started( self ):
         return self._exists( 'pipeline/qc.started' ) or self._exists( 'pipeline/qc.done' )
 
@@ -186,7 +193,7 @@ class RunStatus:
 
         # RUN IS 'redo' if the run is marked for restarting and is ready for restarting (not running):
         if self._is_sequencing_finished() and self._was_restarted() and (
-            self._was_ended() or (self._read1_done() and self._was_finished() and not self._qc_started()) ):
+            self._was_ended() or (self._read1_done() and self._was_demultiplexed() and not self._qc_started()) ):
             return "redo"
 
         # RUN is 'failed' or 'aborted' if flagged as such. This implies there no processing running, but
@@ -234,7 +241,7 @@ class RunStatus:
 
         # That should be all the Read1 states out of the way.
 
-        if self._was_finished():
+        if self._was_demultiplexed():
             return "demultiplexed"
         elif self._was_started():
             return "in_demultiplexing"
