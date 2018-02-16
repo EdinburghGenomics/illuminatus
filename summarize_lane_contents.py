@@ -238,10 +238,18 @@ def output_mqc(rids, fh):
         if 'add_in_b2f' in rids:
             #table_headers.extend(["Barcode Balance"])
             dd_col, = [ k for k, v in mqc_out['headers'].items() if v['title'].startswith("Barcode Balance") ]
+            lane_b2f_totals = rids['add_in_b2f'][int(lane['LaneNumber'])]
+
             # If all the entries are blank does MultiQC hide the column for me or do I need to
-            # do that myself??
-            if 'Barcode Balance' in rids['add_in_b2f'][int(lane['LaneNumber'])]:
-                dd[dd_col] = rids['add_in_b2f'][int(lane['LaneNumber'])]['Barcode Balance']
+            # do that myself?? Or do I even want to?
+            if 'Barcode Balance' in lane_b2f_totals:
+                dd[dd_col] = lane_b2f_totals['Barcode Balance']
+
+            # If b2f data is provided, use the more accurate yield numbers, overwriting those from
+            # interop.
+            if 'add_in_yield' in rids:
+                dd['col_06'] = lane_b2f_totals.get('Assigned Reads',0) + lane_b2f_totals.get('Unassigned Reads PF',0)
+
 
     print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
 
