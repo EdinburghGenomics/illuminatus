@@ -1,0 +1,119 @@
+Cycles: 151 [8] 151
+CyclesAsList:
+- - '151'
+  - false
+- - '8'
+  - true
+- - '151'
+  - false
+Flowcell: HHMYHCCXY
+Instrument: hiseqX_E00397
+LaneCount: '8'
+Lanes:
+- Contents:
+    '11132':
+      11132HPpool01:
+      - 11132HP0002L01
+      - 11132HP0005L01
+      - 11132HP0006L01
+      - 11132HP0008L01
+      - 11132HP0009L01
+  LaneNumber: '1'
+  Loading: {}
+  Unindexed: false
+- Contents:
+    '11132':
+      11132HPpool01:
+      - 11132HP0002L01
+      - 11132HP0005L01
+      - 11132HP0006L01
+      - 11132HP0008L01
+      - 11132HP0009L01
+  LaneNumber: '2'
+  Loading: {}
+  Unindexed: false
+- Contents:
+    '11132':
+      11132HPpool01:
+      - 11132HP0002L01
+      - 11132HP0005L01
+      - 11132HP0006L01
+      - 11132HP0008L01
+      - 11132HP0009L01
+  LaneNumber: '3'
+  Loading: {}
+  Unindexed: false
+- Contents:
+    '11225':
+      11225KJpool01:
+      - 11225KJ0001L01
+      - 11225KJ0001L02
+      - 11225KJ0001L03
+      - 11225KJ0001L04
+  LaneNumber: '4'
+  Loading: {}
+  Unindexed: false
+- Contents:
+    '11225':
+      11225KJpool02:
+      - 11225KJ0002L01
+      - 11225KJ0002L02
+      - 11225KJ0002L03
+      - 11225KJ0002L04
+  LaneNumber: '5'
+  Loading: {}
+  Unindexed: false
+- Contents:
+    '11127':
+      ? ''
+      : - 11127BM0001L03
+        - 11127BM0002L03
+        - 11127BM0003L03
+        - 11127BM0004L03
+        - 11127BM0005L03
+        - 11127BM0006L03
+        - 11127BM0007L03
+        - 11127BM0008L03
+  LaneNumber: '6'
+  Loading: {}
+  Unindexed: false
+- Contents:
+    '11217':
+      11217BMpool01:
+      - 11217BM0001L01
+      - 11217BM0002L01
+      - 11217BM0003L01
+      - 11217BM0004L01
+  LaneNumber: '7'
+  Loading: {}
+  Unindexed: false
+- Contents:
+    '11242':
+      11242RLpool01:
+      - 11242RL0001L01
+      - 11242RL0002L01
+      - 11242RL0003L01
+      - 11242RL0004L01
+  LaneNumber: '8'
+  Loading: {}
+  Unindexed: false
+ProjectInfo:
+  '11127':
+    name: 11127_Blaxter_Mark
+    url: https://genowiki.is.ed.ac.uk/display/GenePool/11127_Blaxter_Mark
+  '11132':
+    name: 11132_Hedley_Peter
+    url: https://genowiki.is.ed.ac.uk/display/GenePool/11132_Hedley_Peter
+  '11217':
+    name: 11217_Blaxter_Mark
+    url: https://genowiki.is.ed.ac.uk/display/GenePool/11217_Blaxter_Mark
+  '11225':
+    name: 11225_Kenny_John
+    url: https://genowiki.is.ed.ac.uk/display/GenePool/11225_Kenny_John
+  '11242':
+    name: 11242_Ross_Laura
+    url: https://genowiki.is.ed.ac.uk/display/GenePool/11242_Ross_Laura
+ReportDateTime: '2018-02-09 18:05:05'
+Run Date: '2018-02-09'
+RunId: 180209_E00397_0086_AHHMYHCCXY
+SampleSheet: SampleSheet.csv.1

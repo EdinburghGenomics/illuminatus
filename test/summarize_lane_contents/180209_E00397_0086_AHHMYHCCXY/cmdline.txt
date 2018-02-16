@@ -1,0 +1,3 @@
+# In this test we check the generation of the mqc.yaml file from the input summaries.
+# The command below produced a full table, but the total clusters was wrong. Hence my test.
+summarize_lane_contents.py --from_yml /lustre/seqdata/180209_E00397_0086_AHHMYHCCXY/pipeline/sample_summary.yml --mqc QC/overview/lane_summary_180209_E00397_0086_AHHMYHCCXY_mqc.yaml --add_in_yaml wd=QC/welldups/2500summary.yml yield=QC/yield.yml b2f=QC/bcl2fastq_stats.yml

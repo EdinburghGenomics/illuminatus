@@ -1,0 +1,73 @@
+1:
+  Number of Indexes: 5
+  Total Reads Raw: 621211104
+  Assigned Reads: 459411194
+  Unassigned Reads PF: 5105299
+  Fraction PF: 0.747759481453184
+  Fraction Assigned: 0.7395411818008971
+  Mean Reads Per Sample: 91882238.8
+  Barcode Balance: 0.12606749188393115
+2:
+  Number of Indexes: 5
+  Total Reads Raw: 621211104
+  Assigned Reads: 473497015
+  Unassigned Reads PF: 5082810
+  Fraction PF: 0.7703980529620411
+  Fraction Assigned: 0.7622159551739114
+  Mean Reads Per Sample: 94699403
+  Barcode Balance: 0.13210943564142322
+3:
+  Number of Indexes: 5
+  Total Reads Raw: 621211104
+  Assigned Reads: 473949450
+  Unassigned Reads PF: 5759252
+  Fraction PF: 0.772215272571818
+  Fraction Assigned: 0.7629442663664943
+  Mean Reads Per Sample: 94789890
+  Barcode Balance: 0.1356767726639707
+4:
+  Number of Indexes: 4
+  Total Reads Raw: 621211104
+  Assigned Reads: 446688807
+  Unassigned Reads PF: 9662020
+  Fraction PF: 0.734614729294987
+  Fraction Assigned: 0.7190612082169091
+  Mean Reads Per Sample: 111672201.75
+  Barcode Balance: 0.217356970087913
+5:
+  Number of Indexes: 4
+  Total Reads Raw: 621211104
+  Assigned Reads: 399070055
+  Unassigned Reads PF: 13466344
+  Fraction PF: 0.6640840711694683
+  Fraction Assigned: 0.6424065063073953
+  Mean Reads Per Sample: 99767513.75
+  Barcode Balance: 0.16475232376194598
+6:
+  Number of Indexes: 8
+  Total Reads Raw: 621211104
+  Assigned Reads: 520852631
+  Unassigned Reads PF: 6058430
+  Fraction PF: 0.8481996822130211
+  Fraction Assigned: 0.8384470716093317
+  Mean Reads Per Sample: 65106578.875
+  Barcode Balance: 0.1490469326559915
+7:
+  Number of Indexes: 4
+  Total Reads Raw: 621211104
+  Assigned Reads: 514440858
+  Unassigned Reads PF: 4578180
+  Fraction PF: 0.8354954292639302
+  Fraction Assigned: 0.8281256640254776
+  Mean Reads Per Sample: 128610214.5
+  Barcode Balance: 0.10520870913813746
+8:
+  Number of Indexes: 4
+  Total Reads Raw: 621211104
+  Assigned Reads: 496122150
+  Unassigned Reads PF: 4247651
+  Fraction PF: 0.8054746571304044
+  Fraction Assigned: 0.7986369638363708
+  Mean Reads Per Sample: 124030537.5
+  Barcode Balance: 0.11680115903892173
+

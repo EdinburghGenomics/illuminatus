@@ -22,6 +22,8 @@ class T(unittest.TestCase):
         self.formatted = { k: None for k in 'yml mqc txt tsv'.split() }
         self.formatted_as_list = self.formatted.copy()
 
+        self.maxDiff = None
+
     def test_name_lookup(self):
         """Test the name lookup logic
         """
@@ -74,6 +76,41 @@ class T(unittest.TestCase):
         # At present, just check there was output
         self.assertTrue( all( self.formatted.values() ))
 
+    def test_all_addins(self):
+        """ Added after I got the wrong value for the number of raw clusters on
+            my QC report. I need test coverage for the addins anyway.
+            Basically, trust the b2f value over the InterOP.
+        """
+        proj_dir = LC_DIR + '/180209_E00397_0086_AHHMYHCCXY'
+        self.scan_project(proj_dir + '/sample_summary.yml',
+                            addins = { 'wd':    proj_dir + '/2500summary.yml',
+                                       'b2f':   proj_dir + '/bcl2fastq_stats.yml',
+                                       'yield': proj_dir + '/yield.yml' } )
+
+        # The mqc.yaml should be as per the sample provided
+        with open(LC_DIR + '/180209_E00397_0086_AHHMYHCCXY/ls_mqc.yaml') as yfh:
+           sample_mqc_yml = yaml.safe_load(yfh)
+
+        self.assertEqual(sample_mqc_yml, yaml.safe_load(self.formatted['mqc']))
+
+    def test_some_addins(self):
+        """ Added after I got the wrong value for the number of raw clusters on
+            my QC report. I need test coverage for the addins anyway.
+            Here we do not have the b2f data, so take the total clusters
+            from the IterOP. Otherwise as above.
+        """
+        proj_dir = LC_DIR + '/180209_E00397_0086_AHHMYHCCXY'
+        self.scan_project(proj_dir + '/sample_summary.yml',
+                            addins = { 'wd':    proj_dir + '/2500summary.yml',
+                                       'b2f':   None,
+                                       'yield': proj_dir + '/yield.yml' } )
+
+        # The mqc.yaml should be as per the sample provided
+        with open(LC_DIR + '/180209_E00397_0086_AHHMYHCCXY/ls_nob2f_mqc.yaml') as yfh:
+           sample_mqc_yml = yaml.safe_load(yfh)
+
+        self.assertEqual(sample_mqc_yml, yaml.safe_load(self.formatted['mqc']))
+
     def assertRegex(self, output, regex, expected):
         """Assertion based on regexes
         """
@@ -85,15 +122,23 @@ class T(unittest.TestCase):
 
         self.assertEqual(matches, expected)
 
-    def scan_project(self, fname):
+    def scan_project(self, fname, addins=None):
         """Scan a project folder and do all the conversions at once.
-           Dummy name-list will be set to avoid LIMS look-ups.
+           Dummy name-list of '-' will be set to avoid LIMS look-ups.
+           Text oupput will be captured to out_buf so if a test wants to examine
+           the contents it needs to re-parse it.
         """
         if os.path.isdir(fname):
             rids = scan_for_info(fname, '-')
         else:
             with open(fname) as yfh:
                 rids = yaml.safe_load(yfh)
+
+        # Add-ins
+        for key, filename in (addins or {}).items():
+            if filename:
+                with open(filename) as gfh:
+                    rids['add_in_' + key] = yaml.safe_load(gfh)
 
         for formatter in list(self.formatted):
             out_buf = io.StringIO()

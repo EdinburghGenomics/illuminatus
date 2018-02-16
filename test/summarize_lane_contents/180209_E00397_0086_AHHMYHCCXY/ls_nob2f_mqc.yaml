@@ -1,0 +1,147 @@
+data:
+  Lane 1:
+    col_01: '11132'
+    col_02: 11132HPpool01
+    col_03: 5
+    col_04: unknown
+    col_05: unknown
+    col_06: 464516448
+    col_07: 74.77592934576839
+    col_08: 85.66502278480156
+    col_09: 142.92937350273132
+    col_10: 10.04
+  Lane 2:
+    col_01: '11132'
+    col_02: 11132HPpool01
+    col_03: 5
+    col_04: unknown
+    col_05: unknown
+    col_06: 478579776
+    col_07: 77.03978550290142
+    col_08: 88.669565455533
+    col_09: 147.25291776657104
+    col_10: 7.26
+  Lane 3:
+    col_01: '11132'
+    col_02: 11132HPpool01
+    col_03: 5
+    col_04: unknown
+    col_05: unknown
+    col_06: 479708608
+    col_07: 77.22150019188321
+    col_08: 89.1675137696903
+    col_09: 147.60709190368652
+    col_10: 6.6450000000000005
+  Lane 4:
+    col_01: '11225'
+    col_02: 11225KJpool01
+    col_03: 4
+    col_04: unknown
+    col_05: unknown
+    col_06: 456350944
+    col_07: 73.46148041117095
+    col_08: 88.49128228600716
+    col_09: 140.6258635520935
+    col_10: 4.140000000000001
+  Lane 5:
+    col_01: '11225'
+    col_02: 11225KJpool02
+    col_03: 4
+    col_04: unknown
+    col_05: unknown
+    col_06: 412536352
+    col_07: 66.40838928853826
+    col_08: 78.43727054658076
+    col_09: 126.89518523216248
+    col_10: 3.7699999999999996
+  Lane 6:
+    col_01: '11127'
+    col_02: 11127BM0001L03, 11127BM0002L03, 11127BM0003L03, 11127BM0004L03, 11127BM0005L03,
+      11127BM0006L03, 11127BM0007L03, 11127BM0008L03
+    col_03: 8
+    col_04: unknown
+    col_05: unknown
+    col_06: 526910976
+    col_07: 84.81994143054729
+    col_08: 92.43053438764441
+    col_09: 161.90175032615662
+    col_10: 3.5999999999999996
+  Lane 7:
+    col_01: '11217'
+    col_02: 11217BMpool01
+    col_03: 4
+    col_04: unknown
+    col_05: unknown
+    col_06: 519018976
+    col_07: 83.5495200344102
+    col_08: 88.45078762191126
+    col_09: 159.45637607574463
+    col_10: 4.505
+  Lane 8:
+    col_01: '11242'
+    col_02: 11242RLpool01
+    col_03: 4
+    col_04: unknown
+    col_05: unknown
+    col_06: 500369792
+    col_07: 80.54745181670904
+    col_08: 87.80406405172441
+    col_09: 153.74987292289734
+    col_10: 3.175
+description: Content of lanes in the run, with 3,837,991,872 of 4,969,689,600 clusters
+  passing filter, according to InterOP (77.228%)
+headers:
+  col_01:
+    format: '{:s}'
+    title: Project
+  col_02:
+    description: Summary of lane contents. See per-lane pages for a full list.
+    format: '{:s}'
+    textcell: true
+    title: Pool/Library
+  col_03:
+    description: Number of samples, or 0 for a single unindexed sample.
+    format: '{:,}'
+    title: Num Indexes
+  col_04:
+    format: '{:s}'
+    title: Loaded (pmol)
+  col_05:
+    format: '{:s}'
+    max: 100
+    min: 0
+    title: Loaded PhiX (%)
+  col_06:
+    description: Count of clusters/wells passing filter
+    format: '{:,}'
+    title: Clusters PF
+  col_07:
+    description: Percent of clusters/wells passing filter
+    format: '{:.3f}'
+    max: 100
+    min: 0
+    title: PF (%)
+  col_08:
+    description: Percent of bases being Q30 or more
+    format: '{:.3f}'
+    max: 100
+    min: 0
+    title: Q30 (%)
+  col_09:
+    description: Yield in Gigabases
+    format: '{:.3f}'
+    title: Yield GB
+  col_10:
+    description: Average well dups (raw figure from count_well_dups) over the lane
+    format: '{:.2f}'
+    max: 100
+    min: 0
+    title: Well Dups (%)
+id: lane_summary
+pconfig:
+  col1_header: Lane
+  no_beeswarm: true
+  sortRows: true
+  title: ''
+plot_type: table
+section_name: Lane Summary

@@ -159,9 +159,11 @@ def output_mqc(rids, fh):
                                                        "Percent of bases being Q30 or more",
                                                                   "Yield in Gigabases"  ])
 
-        # Also tack on a grand total to the description line of the table:
+    # Also tack on a grand total to the description line of the table,
+    # unless we have the more accurate b2f values available.
+    if 'add_in_yield' in rids and not 'add_in_b2f' in rids:
         yield_totals = [ rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals'] for lane in rids['Lanes'] ]
-        mqc_out['description'] += ", with {:,} of {:,} clusters passing filter ({:.3f}%)".format(
+        mqc_out['description'] += ", with {:,} of {:,} clusters passing filter, according to InterOP ({:.3f}%)".format(
                     sum(t['reads_pf'] for t in yield_totals),
                         sum(t['reads'] for t in yield_totals),
                             pct( sum(t['reads_pf'] for t in yield_totals), sum(t['reads'] for t in yield_totals) ))
@@ -174,6 +176,15 @@ def output_mqc(rids, fh):
         table_headers.extend(["Barcode Balance"])
         table_formats.extend(["{:.4f}"       ])
         table_desc.extend(   ["Barcode balance expressed in terms of CV (from bcl2fastq)"])
+
+        # Tack on a grand total to the description line of the table
+        yield_totals = [ rids['add_in_b2f'][int(lane['LaneNumber'])] for lane in rids['Lanes'] ]
+        grand_total_raw = sum(t.get('Total Reads Raw') for t in yield_totals)
+        grand_total_pf = sum(t.get('Assigned Reads',0) + t.get('Unassigned Reads PF',0) for t in yield_totals)
+        mqc_out['description'] += ", with {:,} of {:,} clusters passing filter, according to BCL2FASTQ ({:.3f}%)".format(
+                                          grand_total_pf,
+                                                  grand_total_raw,
+                                                                    pct( grand_total_pf, grand_total_raw ))
 
     # col1_header is actually col0_header!
     mqc_out['pconfig']['col1_header'] = table_headers[0]

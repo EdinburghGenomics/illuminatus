@@ -1,0 +1,325 @@
+_run_dir: /lustre/seqdata/180209_E00397_0086_AHHMYHCCXY/InterOp/..
+lane1:
+  '1':
+    cycles: 151
+    error_rate: 0.5715621709823608
+    is_index: false
+    percent_gt_q30: 91.70416259765625
+    projected_yield_g: 69.83978271484375
+    yield_g: 69.83978271484375
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 94.22891998291016
+    projected_yield_g: 3.2550265789031982
+    yield_g: 3.2550265789031982
+  '3':
+    cycles: 151
+    error_rate: 0.9151639938354492
+    is_index: false
+    percent_gt_q30: 79.22623443603516
+    projected_yield_g: 69.83456420898438
+    yield_g: 69.83456420898438
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 0.743363082408905
+    percent_gt_q30: 85.4651985168457
+    projected_yield_g: 139.67434692382812
+    yield_g: 139.67434692382812
+  Totals:
+    cycles: 310
+    error_rate: .nan
+    percent_gt_q30: 85.66502278480156
+    projected_yield_g: 142.92937350273132
+    reads: 621211200
+    reads_pf: 464516448
+    yield_g: 142.92937350273132
+lane2:
+  '1':
+    cycles: 151
+    error_rate: 0.4812701940536499
+    is_index: false
+    percent_gt_q30: 93.50031280517578
+    projected_yield_g: 71.94951629638672
+    yield_g: 71.94951629638672
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 95.082763671875
+    projected_yield_g: 3.3540377616882324
+    yield_g: 3.3540377616882324
+  '3':
+    cycles: 151
+    error_rate: 0.7816310524940491
+    is_index: false
+    percent_gt_q30: 83.53953552246094
+    projected_yield_g: 71.9493637084961
+    yield_g: 71.9493637084961
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 0.6314506232738495
+    percent_gt_q30: 88.51992416381836
+    projected_yield_g: 143.8988800048828
+    yield_g: 143.8988800048828
+  Totals:
+    cycles: 310
+    error_rate: .nan
+    percent_gt_q30: 88.669565455533
+    projected_yield_g: 147.25291776657104
+    reads: 621211200
+    reads_pf: 478579776
+    yield_g: 147.25291776657104
+lane3:
+  '1':
+    cycles: 151
+    error_rate: 0.4500878155231476
+    is_index: false
+    percent_gt_q30: 93.8010025024414
+    projected_yield_g: 72.1224365234375
+    yield_g: 72.1224365234375
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 95.37948608398438
+    projected_yield_g: 3.3617000579833984
+    yield_g: 3.3617000579833984
+  '3':
+    cycles: 151
+    error_rate: 0.7132368683815002
+    is_index: false
+    percent_gt_q30: 84.24413299560547
+    projected_yield_g: 72.12295532226562
+    yield_g: 72.12295532226562
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 0.5816623419523239
+    percent_gt_q30: 89.02256774902344
+    projected_yield_g: 144.24539184570312
+    yield_g: 144.24539184570312
+  Totals:
+    cycles: 310
+    error_rate: .nan
+    percent_gt_q30: 89.1675137696903
+    projected_yield_g: 147.60709190368652
+    reads: 621211200
+    reads_pf: 479708608
+    yield_g: 147.60709190368652
+lane4:
+  '1':
+    cycles: 151
+    error_rate: 0.45176103711128235
+    is_index: false
+    percent_gt_q30: 93.43118286132812
+    projected_yield_g: 68.7115249633789
+    yield_g: 68.7115249633789
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 94.4501724243164
+    projected_yield_g: 3.203263759613037
+    yield_g: 3.203263759613037
+  '3':
+    cycles: 151
+    error_rate: 0.8214003443717957
+    is_index: false
+    percent_gt_q30: 83.27330017089844
+    projected_yield_g: 68.71107482910156
+    yield_g: 68.71107482910156
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 0.636580690741539
+    percent_gt_q30: 88.35224151611328
+    projected_yield_g: 137.42259979248047
+    yield_g: 137.42259979248047
+  Totals:
+    cycles: 310
+    error_rate: .nan
+    percent_gt_q30: 88.49128228600716
+    projected_yield_g: 140.6258635520935
+    reads: 621211200
+    reads_pf: 456350944
+    yield_g: 140.6258635520935
+lane5:
+  '1':
+    cycles: 151
+    error_rate: 0.411408394575119
+    is_index: false
+    percent_gt_q30: 87.60044860839844
+    projected_yield_g: 62.00364685058594
+    yield_g: 62.00364685058594
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 90.2732162475586
+    projected_yield_g: 2.889665365219116
+    yield_g: 2.889665365219116
+  '3':
+    cycles: 151
+    error_rate: 0.8623926639556885
+    is_index: false
+    percent_gt_q30: 68.72174835205078
+    projected_yield_g: 62.00187301635742
+    yield_g: 62.00187301635742
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 0.6369005292654037
+    percent_gt_q30: 78.16109848022461
+    projected_yield_g: 124.00551986694336
+    yield_g: 124.00551986694336
+  Totals:
+    cycles: 310
+    error_rate: .nan
+    percent_gt_q30: 78.43727054658076
+    projected_yield_g: 126.89518523216248
+    reads: 621211200
+    reads_pf: 412536352
+    yield_g: 126.89518523216248
+lane6:
+  '1':
+    cycles: 151
+    error_rate: 0.4251096546649933
+    is_index: false
+    percent_gt_q30: 95.0800552368164
+    projected_yield_g: 79.10797882080078
+    yield_g: 79.10797882080078
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 97.21334838867188
+    projected_yield_g: 3.6862809658050537
+    yield_g: 3.6862809658050537
+  '3':
+    cycles: 151
+    error_rate: 0.7153539657592773
+    is_index: false
+    percent_gt_q30: 89.55781555175781
+    projected_yield_g: 79.10749053955078
+    yield_g: 79.10749053955078
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 0.5702318102121353
+    percent_gt_q30: 92.31893539428711
+    projected_yield_g: 158.21546936035156
+    yield_g: 158.21546936035156
+  Totals:
+    cycles: 310
+    error_rate: .nan
+    percent_gt_q30: 92.43053438764441
+    projected_yield_g: 161.90175032615662
+    reads: 621211200
+    reads_pf: 526910976
+    yield_g: 161.90175032615662
+lane7:
+  '1':
+    cycles: 151
+    error_rate: 0.4493542015552521
+    is_index: false
+    percent_gt_q30: 93.86856079101562
+    projected_yield_g: 77.9128646850586
+    yield_g: 77.9128646850586
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 96.84033203125
+    projected_yield_g: 3.630974769592285
+    yield_g: 3.630974769592285
+  '3':
+    cycles: 151
+    error_rate: 0.8752464652061462
+    is_index: false
+    percent_gt_q30: 82.6415023803711
+    projected_yield_g: 77.91253662109375
+    yield_g: 77.91253662109375
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 0.6623003333806992
+    percent_gt_q30: 88.25503158569336
+    projected_yield_g: 155.82540130615234
+    yield_g: 155.82540130615234
+  Totals:
+    cycles: 310
+    error_rate: .nan
+    percent_gt_q30: 88.45078762191126
+    projected_yield_g: 159.45637607574463
+    reads: 621211200
+    reads_pf: 519018976
+    yield_g: 159.45637607574463
+lane8:
+  '1':
+    cycles: 151
+    error_rate: 0.33111152052879333
+    is_index: false
+    percent_gt_q30: 92.01819610595703
+    projected_yield_g: 75.12420654296875
+    yield_g: 75.12420654296875
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 96.82880401611328
+    projected_yield_g: 3.50042986869812
+    yield_g: 3.50042986869812
+  '3':
+    cycles: 151
+    error_rate: 0.7185031771659851
+    is_index: false
+    percent_gt_q30: 83.16877746582031
+    projected_yield_g: 75.12523651123047
+    yield_g: 75.12523651123047
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 0.5248073488473892
+    percent_gt_q30: 87.59348678588867
+    projected_yield_g: 150.24944305419922
+    yield_g: 150.24944305419922
+  Totals:
+    cycles: 310
+    error_rate: .nan
+    percent_gt_q30: 87.80406405172441
+    projected_yield_g: 153.74987292289734
+    reads: 621211200
+    reads_pf: 500369792
+    yield_g: 153.74987292289734
+overview:
+  '1':
+    cycles: 151
+    error_rate: 0.42792028188705444
+    is_index: false
+    percent_gt_q30: 92.75131225585938
+    projected_yield_g: 576.7719116210938
+    yield_g: 576.77197265625
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 95.18102264404297
+    projected_yield_g: 26.881378173828125
+    yield_g: 26.881380081176758
+  '3':
+    cycles: 151
+    error_rate: 0.7717715501785278
+    is_index: false
+    percent_gt_q30: 82.13661193847656
+    projected_yield_g: 576.7650756835938
+    yield_g: 576.7650756835938
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 0.595501184463501
+    percent_gt_q30: 87.44400024414062
+    projected_yield_g: 1153.5369873046875
+    yield_g: 1153.537109375
+  Totals:
+    cycles: 310
+    error_rate: .nan
+    percent_gt_q30: 87.62019348144531
+    projected_yield_g: 1180.41845703125
+    reads: 4969689600
+    reads_pf: 3837991872
+    yield_g: 1180.41845703125
