@@ -9,7 +9,7 @@ def main(output_dir, *lanes):
 
     Given an output folder, clean up old FASTQ files ready for re-demultiplexing.
     Also clean [other stuff]. See design criteria at:
-      https://genowiki.is.ed.ac.uk/pages/viewpage.action?pageId=319660973
+      https://www.wiki.ed.ac.uk/pages/viewpage.action?pageId=319660973
 
     Also see the unit tests (as always)
     """

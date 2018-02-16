@@ -86,7 +86,7 @@ class RunMetaData:
                 'Run Date': info['Run Date'],
                 'LaneCount': int(info['LaneCount']),
                 'Experiment Name': params['Experiment Name'],
-                'Run ID': [ info['RunId'], 'https://genowiki.is.ed.ac.uk/display/GenePool/{}'.format(info['RunId']) ],
+                'Run ID': info['RunId'],
                 'Machine': info['Instrument'],
                 'Cycles':  info['Cycles'], # '251 [12] 251',
                 'Run Start': params['Start Time'],
