@@ -146,7 +146,7 @@ sub reverseComplement {
 
   my ($seq)=@_;
   # Note that needed to escape the '-' inside the [] as otherwise is a range:
-  if ($seq=~/([^ACGTUacgtuRYSWKMBDHVNn.\-]+)/) {&dieLog("Error: Input sequence must only contain 'ACGTUacgtuRYSWKMBDHVNn.-', but found '$1'\n");}
+  if ($seq=~/([^ACGTUacgtuRYSWKMBDHVNn.\-]+)/) {die("Error: Input sequence must only contain 'ACGTUacgtuRYSWKMBDHVNn.-', but found '$seq'\n");}
   my $revComp = reverse $seq;
   # The Perl translate/transliterate command is just what we need:
   $revComp =~ tr/ACGTUacgtuRYSWKMBDHV/TGCAAtgcaaYRWSMKACGT/;
@@ -357,7 +357,7 @@ sub read_barcodes_from_clarity_lims_database
                     rl.name,
                     substring(rl.name FROM '.*\\((.*)\\)') as barcode
              FROM reagentlabel rl
-             WHERE name LIKE '%(%)'
+             WHERE name ~ '^[^()]+\\([ATCG-]+\\)\$'
              AND lastmodifieddate > 'today'::date - interval '1 year'
              ORDER BY barcode, lastmodifieddate DESC;");
     } or return 0;
