@@ -4,7 +4,8 @@
 # and summarizes the yield and error rate per lane and overall.
 
 # To make my life simpler, I'll use the Python bindings to read the InterOp
-# files directly. (Try 'python -m interop --test' to see if the install is good)
+# files directly. (This is now a standard PyPi module - try
+# 'python3 -m interop --test' to see if the install is good)
 
 # The tutorial at https://github.com/Illumina/interop/blob/master/docs/src/Tutorial_01_Intro.ipynb
 # is very pertinent.
@@ -26,7 +27,10 @@ def main(run_dir, out_dir=None, always_dump=False):
             res = yaml.safe_load(yfh)
     else:
         #Actually gather the metadata
-        summary = get_run_metrics_handle(run_dir)
+        try:
+            summary = get_run_metrics_handle(run_dir)
+        except Exception:
+            exit("Usage: summarize_yield.py <yaml_file or run_dir> [mqc_output_path] [always_dump_flag]")
 
         res = extract_info(summary)
         res['_run_dir'] = run_dir.rstrip('/')

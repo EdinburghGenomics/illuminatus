@@ -66,9 +66,8 @@ else
     pip3 install psycopg2
     pip3 install pystache
 
-    # FIXME - push the pre-built stuff into GIT so I can pip install it rather than
-    # relying on a specific local file path.
-    cd /lustre/software/interop/interop-1.1.1/build/src/ext/python && python3 setup.py install
+    # InterOP is not on PyPI so no pre-build needed :-)
+    pip3 install interop
 
     # Needed if well_dups runs in the local VEnv, which it currently does.
     pip3 install python-Levenshtein
