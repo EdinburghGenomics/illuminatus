@@ -84,13 +84,17 @@ def get_sequential_file(pattern):
 # It's important for preprocess to run locally so it sees the right $PATH
 localrules: preprocess, postprocess
 
+# I accidentally put '../projects_ready.txt' as an output of this rule but then
+# the file gets clobbered on a REDO, so don't do that again! This file should
+# be modified by the post processor and never removed.
 rule postprocess:
-    output: 'renames.log', '../projects_ready.txt'
+    output: 'renames.log', '../.projects_ready.txt.bak'
     input: expand("lane{l}/Stats/DemuxSummaryF1L{l}.txt", l=LANES)
     run:
         log_file = get_sequential_file('renames.log.???')
         shell("ln -s {log_file} renames.log")
         shell("BCL2FASTQPostprocessor.py ..")
+        shell("test -s ../projects_ready.txt && cp ../projects_ready.txt ../.projects_ready.txt.bak")
 
 rule bcl2fastq:
     output:
