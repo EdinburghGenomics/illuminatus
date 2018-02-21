@@ -90,6 +90,7 @@ def scan_fq(filename):
     return dict( total_reads = (n + 1) // 4,
                  min_read_len = min(lens_found.keys() or [0]),
                  max_read_len = max(lens_found.keys() or [0]),
+                 total_bases = sum([ l * c for l, c in lens_found.items()]),
                  n_bases = ns_found,
                  bcs_found = bcs_found )
 
@@ -165,6 +166,7 @@ def print_info(fq_info, fn='input.fastq.gz'):
 
         print( "read_length: {}".format(fq_info['min_read_len']) )
     else:
+        # This must have been counted directly
         total_bases = fq_info['total_bases']
 
         print( "read_length: {}-{}".format(fq_info['min_read_len'], fq_info['max_read_len']) )
