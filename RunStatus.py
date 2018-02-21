@@ -310,8 +310,8 @@ class QuickInfo:
         elif instr0 in 'D':
             lane_count = 2 if runid.split('_')[3][1] == 'H' else 8
         elif instr0 in 'A':
-            # FIXME - it could soon be 4
-            lane_count = 2
+            # FIXME - this is a wild guess. Also what about the single-lane flowcell?
+            lane_count = 2 if runid.split('_')[3][-3] == 'M' else 4
 
         # Assuming that the run id is the directory name is a little risky but fine for quick mode
         self.run_info = dict( RunId=runid, LaneCount=lane_count, Instrument=instr, Flowcell='not_reported' )
