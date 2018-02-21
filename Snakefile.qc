@@ -321,6 +321,7 @@ rule interop_flowcell:
 # VEnv - see the activate_venv script.
 # Due to the way the files are read I'm making this a one-shot thing that always
 # outputs all the reports. Rely on summarize_yield.py to name the files as expected.
+# Arguments it takes are: <run_dir> [out_dir] [always_dump]
 # Make the rule depend on the InterOp dir to spot changes, even though the script
 # takes the parent dir as the input.
 rule interop_yield_table:
