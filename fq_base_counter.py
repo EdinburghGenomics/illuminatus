@@ -65,6 +65,7 @@ def scan_fq(filename):
                      n_bases = 0       )
 
     try:
+        n = 0
         with gzip.open(filename, mode='rb') as fh:
             for n, l in enumerate(fh):
                 #Extract barcode
@@ -87,8 +88,8 @@ def scan_fq(filename):
         raise
 
     return dict( total_reads = (n + 1) // 4,
-                 min_read_len = min(lens_found.keys()),
-                 max_read_len = max(lens_found.keys()),
+                 min_read_len = min(lens_found.keys() or [0]),
+                 max_read_len = max(lens_found.keys() or [0]),
                  n_bases = ns_found,
                  bcs_found = bcs_found )
 
@@ -182,7 +183,7 @@ def print_info(fq_info, fn='input.fastq.gz'):
 
     barcode = 'unknown'
     if len(bcs_found) == 0:
-        barcode = 'none'
+        barcode = None
     elif len(bcs_found) == 1:
         barcode, = [ x.decode() for x in bcs_found.keys() ]
     else:
@@ -192,7 +193,8 @@ def print_info(fq_info, fn='input.fastq.gz'):
         if common_bcs[0][1] >= common_bcs[1][1] * 2:
             barcode =  common_bcs[0][0].decode()
 
-    print( "index_seq:   {}".format(barcode) )
+    if barcode:
+        print( "index_seq:   {}".format(barcode) )
 
 if __name__ == '__main__':
     main(parse_args())
