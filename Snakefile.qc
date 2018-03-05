@@ -207,7 +207,7 @@ rule qc_main:
 # skeleton report before we have the actual data, so you need to trigger any qc steps
 # explicitly. It should be possible to run multicq_main with the -F flag (force full
 # re-run) without triggering any cluster jobs, so to that end we can't depend on laneinfo,
-# as this processes the InterOP stuff.
+# as this potentially triggers the InterOP stuff.
 localrules: multiqc_main, run_multiqc
 rule multiqc_main:
     input:

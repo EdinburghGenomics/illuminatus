@@ -16,8 +16,12 @@ class PostRunMetaData:
 
         self.run_path_folder = os.path.join( fastqdata_path , run_folder )
 
-        # If bcl2fastq ran already, the version will be recorded (if there was a cleanup, these files need to
-        # be purged before this script is run). It's possible we will find multiple versions in different lanes.
+        self.find_bcl2fastq_versions(lanes)
+
+    def find_bcl2fastq_versions(self, lanes):
+        """If bcl2fastq ran already, the version will be recorded (if there was a cleanup, these files need to
+           be purged before this script is run). It's possible we will find multiple versions in different lanes.
+        """
         self.bcl2fastq_versions = set()
         for lane in lanes:
             for vf in glob(os.path.join( self.run_path_folder , 'demultiplexing/lane{}/bcl2fastq.version'.format(lane) )):
@@ -36,6 +40,8 @@ class PostRunMetaData:
         idict['post_demux_info'] = {
                 'bcl2fastq version': ', '.join(sorted(self.bcl2fastq_versions)) or 'unknown'
             }
+
+        # I thought about adding the pipeline finish time, but it doesn't belong here.
 
         return yaml.safe_dump(idict, default_flow_style=False)
 
