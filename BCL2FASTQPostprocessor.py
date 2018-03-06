@@ -70,6 +70,17 @@ def save_projects_ready(output_dir, proj_seen):
     except FileNotFoundError:
         pass
 
+def check_project_name(proj_name):
+    """ BCL2FASTQ is already quite fussy about project names.
+        This will just chack that the project name isn't going to clobber any
+        of our folders.
+    """
+    if "." in proj_name:
+        raise ValueError("Invalid project name {!r} contains a period.".format(proj_name))
+
+    if proj_name in "counts demultiplexing md5sums multiqc_reports QC seqdata slurm_output".split():
+        raise ValueError("Invalid project name {!r} conflicts with reserved names.".format(proj_name))
+
 def do_renames(output_dir, runid, log = lambda m: print(m)):
     """ The main part of the code that does the renaming (moving).
         Primary reason for splitting this out from main() is to separate
@@ -78,11 +89,13 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         Returns the list of projects for which files have been renamed.
     """
     proj_seen = set()
+    def add_project(proj_name):
+        check_project_name(proj_name)
+        proj_seen.add(proj_name)
 
     # No attempt to define what directories are 'project' directories by naming pattern.
     # If it contains fastq.gz files it must be a project dir.
-    # FIXME - this leads to problems further down the line where it's possible to put
-    # FASTQ files into directories not seen by Snakefile.qc.
+    # There will be a little sanity checking applied by check_project_name()
     for fastq_file in glob(os.path.join( output_dir, "demultiplexing/lane*" , "*/*/*.fastq.gz" )):
 
         #os.path.split is unhelpful here. Just do it the obvious way.
@@ -90,7 +103,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         lane_dir, project, pool_and_library, filename = fastq_file.split('/')[-4:]
 
         #Note the project as one we've processed.
-        proj_seen.add(project)
+        add_project(project)
 
         # get information from the filename
         re_match = re.match( r'(.*)_(S[0-9]+)_L00(\d)_R(\d)_\d+.fastq.gz', filename, re.I)
@@ -145,7 +158,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         lane_dir, project, filename = fastq_file.split('/')[-3:]
 
         #Note the project as one we've processed.
-        proj_seen.add(project)
+        add_project(project)
 
         # get information from the filename
         # Note this ignores index reads.

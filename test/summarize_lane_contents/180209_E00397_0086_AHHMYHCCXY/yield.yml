@@ -35,6 +35,7 @@ lane1:
     reads: 621211200
     reads_pf: 464516448
     yield_g: 142.92937350273132
+    density: 1234567.0
 lane2:
   '1':
     cycles: 151
@@ -71,6 +72,7 @@ lane2:
     reads: 621211200
     reads_pf: 478579776
     yield_g: 147.25291776657104
+    density: 2234567.0
 lane3:
   '1':
     cycles: 151
@@ -107,6 +109,7 @@ lane3:
     reads: 621211200
     reads_pf: 479708608
     yield_g: 147.60709190368652
+    density: 3234567.0
 lane4:
   '1':
     cycles: 151
@@ -143,6 +146,7 @@ lane4:
     reads: 621211200
     reads_pf: 456350944
     yield_g: 140.6258635520935
+    density: 4234567.0
 lane5:
   '1':
     cycles: 151
@@ -179,6 +183,7 @@ lane5:
     reads: 621211200
     reads_pf: 412536352
     yield_g: 126.89518523216248
+    density: 5234567.0
 lane6:
   '1':
     cycles: 151
@@ -215,6 +220,7 @@ lane6:
     reads: 621211200
     reads_pf: 526910976
     yield_g: 161.90175032615662
+    density: 6234567.0
 lane7:
   '1':
     cycles: 151
@@ -251,6 +257,7 @@ lane7:
     reads: 621211200
     reads_pf: 519018976
     yield_g: 159.45637607574463
+    density: 7234567.0
 lane8:
   '1':
     cycles: 151
@@ -287,6 +294,7 @@ lane8:
     reads: 621211200
     reads_pf: 500369792
     yield_g: 153.74987292289734
+    density: 8234567.0
 overview:
   '1':
     cycles: 151

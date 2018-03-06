@@ -450,7 +450,7 @@ class T(unittest.TestCase):
         self.bm.last_calls['rt_runticket_manager.py'][1] = re.sub(
                                     r'@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][1] )
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
-                          ["-r 160606_K00166_0102_BHF22YBBXX --subject redo --comment" + \
+                          ["-r 160606_K00166_0102_BHF22YBBXX --subject redo lanes 1 2 --comment" + \
                            " Re-Demultiplexing of lanes 1 2 was requested.",
 
                            '-r 160606_K00166_0102_BHF22YBBXX --reply @???',
@@ -514,7 +514,7 @@ class T(unittest.TestCase):
 
         # And, in addition to the comment that re-demultiplexing started, a note about the failure should go to RT
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
-                          ["-r 160606_K00166_0102_BHF22YBBXX --subject redo --comment" + \
+                          ["-r 160606_K00166_0102_BHF22YBBXX --subject redo lanes 1 2 --comment" + \
                            " Re-Demultiplexing of lanes 1 2 was requested.",
 
                            "-r 160606_K00166_0102_BHF22YBBXX --subject failed --reply Cleanup_for_Re-demultiplexing failed." + \
