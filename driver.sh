@@ -27,7 +27,9 @@ if [ -e "$ENVIRON_SH" ] ; then
     popd >/dev/null
 fi
 
-ILLUMINATUS_VERSION=$(cat "$(dirname $BASH_SOURCE)"/version.txt || echo unknown)
+# Tools may reliably use this to report the version of Illuminatus being run right now.
+# They should look at pipeline/start_times to see which versions have touched a given run.
+export ILLUMINATUS_VERSION=$(cat "$(dirname $BASH_SOURCE)"/version.txt || echo unknown)
 
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
@@ -343,7 +345,7 @@ action_redo() {
     BREAK=1  # If we fail after this, don't try to process more runs on this cycle.
 
     # Clear the 'finished' subject on the ticket
-    ( rt_runticket_manager.py -r "$RUNID" --subject redo \
+    ( rt_runticket_manager.py -r "$RUNID" --subject "redo lanes ${redo_list[*]}" \
         --comment "Re-Demultiplexing of lanes ${redo_list[*]} was requested." || true ) |& plog
 
     # Clean out the actual data

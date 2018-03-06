@@ -369,7 +369,15 @@ def summarize_lane(lane_lines, column_mapping):
 def output_txt(rids, fh):
     p = lambda *a: print(*a, file=fh)
 
-    #Basic metadata, followed be a per-lane summary.
+    # Show the pipeline version
+    p( "Illuminatus {} [{}@{}:{}]".format(
+                    os.environ.get("ILLUMINATUS_VERSION", "[unknown version]"),
+                           os.environ.get("USER", "[unknown user]"),
+                              os.environ.get("HOSTNAME", "[unknown host]"),
+                                 os.path.dirname(os.path.abspath(__file__)) ) )
+    p( "" )
+
+    # Basic metadata, followed be a per-lane summary.
     p( "Run ID: {}".format(rids['RunId']) )
     p( "Instrument: {}".format(rids['Instrument']) )
     p( "Read length: {}".format(rids['Cycles']) )
@@ -379,7 +387,7 @@ def output_txt(rids, fh):
 
     p("Samplesheet report at {}:".format(rids['ReportDateTime']))
 
-    #Summarize each lane
+    # Summarize each lane
     prn = rids['ProjectInfo']
     for lane in rids['Lanes']:
         p( "Lane {}:".format(lane['LaneNumber']) )
