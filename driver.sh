@@ -125,7 +125,7 @@ fi
 # All actions can read LANES STATUS RUNID INSTRUMENT
 
 save_start_time(){
-    ( echo -n "$ILLUMINATUS_VERSION@" ; date ) >>pipeline/start_times
+    ( echo -n "$ILLUMINATUS_VERSION@" ; date +'%a %b %_d %H:%M:%S %Y' ) >>pipeline/start_times
 }
 
 action_new(){

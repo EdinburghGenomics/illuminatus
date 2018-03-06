@@ -420,8 +420,9 @@ rule unassigned_scan:
         shell("""{UNASS}/count -xmlwiki -noprogress -in {output}.tmp1 -addnumlanepercent {reads_in_lane} \
                    -reportfile {output}.tmp2""")
 
-        # Make it vaguely readable
-        shell("""cat {UNASS}/page_header.html {output}.tmp2 {UNASS}/page_footer.html > {output}""")
+        # Make it vaguely readable and add a title as requested by Matt A
+        shell("""sed 's/+TITLE+/Unassigned in {run} lane {wildcards.l}/' {UNASS}/page_header.html > {output}""")
+        shell("""cat {UNASS}/page_header.html {output}.tmp2 {UNASS}/page_footer.html >> {output}""")
 
         # Clean up.
         shell("""rm {output}.tmp{{1,2}}""")

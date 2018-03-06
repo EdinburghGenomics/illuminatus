@@ -188,9 +188,14 @@ def extract_info(summary):
             # where we mean groups-of-cycles!!
             # In the report I'm calling them "clusters" or "fragments"
             # Note that for patterned flowcells 'reads' is a constant property determined by the
-            # tile layout.
+            # tile layout, but for some reason InterOP rounds the value and reports something
+            # which is close but not quite. Meh.
             mylaneinfo['Totals']['reads'] = int(summary.at(0).at(lane).reads())
             mylaneinfo['Totals']['reads_pf'] = int(summary.at(0).at(lane).reads_pf())
+
+            # Add in the density and density_pf
+            mylaneinfo['Totals']['density'] = f(summary.at(0).at(lane).density())
+            mylaneinfo['Totals']['density_pf'] = f(summary.at(0).at(lane).density_pf())
 
             try:
                 # Loop over reads

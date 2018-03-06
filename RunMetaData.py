@@ -4,6 +4,7 @@ from collections import defaultdict
 from datetime import datetime
 
 import yaml
+from urllib.parse import quote as url_quote
 
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
 from illuminatus.RunParametersXMLParser import RunParametersXMLParser
@@ -37,6 +38,23 @@ class RunMetaData:
         except Exception:
             #we can usefully run without this
             self.run_params = defaultdict(lambda: 'unknown')
+
+        # Try to re-jig the date
+        try:
+            if 'Start Time' in self.run_params:
+                self.run_params['Start Time'] = datetime.strptime( self.run_params['Start Time'],
+                                                                   '%a %b %d %H:%M:%S %Z %Y' ).ctime()
+        except ValueError:
+            # Leave it
+            pass
+
+        # Hyperlink the expt name to BaseSpace. We can't do this directly since there is an unpredictable
+        # number in the URL but this will do.
+        if 'Experiment Name' in self.run_params:
+            self.run_params['Experiment Name'] = [
+                                self.run_params['Experiment Name'].strip(),
+                                "https://basespace.illumina.com/search/?type=run&query=" + \
+                                                url_quote(self.run_params['Experiment Name']) ]
 
         self.sample_sheet = [ os.path.basename(
                                 os.path.realpath(
@@ -89,7 +107,7 @@ class RunMetaData:
                 'Run ID': info['RunId'],
                 'Machine': info['Instrument'],
                 'Cycles':  info['Cycles'], # '251 [12] 251',
-                'Run Start': params['Start Time'],
+                't1//Run Start': params['Start Time'],
                 'Pipeline Script': get_pipeline_script(),
                 'Sample Sheet': self.sample_sheet # [ name, path ]
             }
@@ -97,8 +115,8 @@ class RunMetaData:
         if self.pipeline_info:
             idict['post_start_info'] = {
                 'Pipeline Version': self.pipeline_info['version'],
-                'Pipeline Start': self.pipeline_info['start'],
-                'Sequencer Finish': self.pipeline_info['Sequencer Finish']
+                't3//Pipeline Start': self.pipeline_info['start'],
+                't2//Sequencer Finish': self.pipeline_info['Sequencer Finish']
             }
 
         return yaml.safe_dump(idict, default_flow_style=False)

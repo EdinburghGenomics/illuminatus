@@ -128,6 +128,11 @@ def output_mqc(rids, fh):
        in MultiQC. The filename should end in _mqc.yaml (not .yml) in
        order to be picked up.
     """
+    # Decide if this is a MiSeq (non-patterned flowcell). This will determine
+    # exactly what is displayed.
+    is_patterned_flowcell = not ( rids['Instrument'].startswith('hiseq2500') or
+                                  rids['Instrument'].startswith('miseq') )
+
     mqc_out = dict(
         id           = 'lane_summary',
         section_name = 'Lane Summary',
@@ -151,15 +156,17 @@ def output_mqc(rids, fh):
                                                         "Number of samples, or 0 for a single unindexed sample.",
                                                                        None,            None ]
 
+    # We'll always add the density column but will hide it later for patterned flowcells
     if 'add_in_yield' in rids:
-        table_headers.extend(["Clusters PF", "PF (%)", "Q30 (%)", "Yield GB"])
-        table_formats.extend(["{:,}",        "{:.3f}", "{:.3f}",  "{:.3f}"  ])
-        table_desc.extend(   ["Count of clusters/wells passing filter",
-                                             "Percent of clusters/wells passing filter",
-                                                       "Percent of bases being Q30 or more",
-                                                                  "Yield in Gigabases"  ])
+        table_headers.extend(["Density", "Clusters PF", "PF (%)", "Q30 (%)", "Yield GB"])
+        table_formats.extend(["{:,}",    "{:,}",        "{:.3f}", "{:.3f}",  "{:.3f}"  ])
+        table_desc.extend(   ["Raw cluster density according to InterOp",
+                                         "Count of clusters/wells passing filter",
+                                                       "Percent of clusters/wells passing filter",
+                                                                  "Percent of bases being Q30 or more",
+                                                                             "Yield in Gigabases"  ])
 
-    # Also tack on a grand total to the description line of the table,
+    # Also tack on a grand total to the description line above the table,
     # unless we have the more accurate b2f values available.
     if 'add_in_yield' in rids and not 'add_in_b2f' in rids:
         yield_totals = [ rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals'] for lane in rids['Lanes'] ]
@@ -177,7 +184,8 @@ def output_mqc(rids, fh):
         table_formats.extend(["{:.4f}"       ])
         table_desc.extend(   ["Barcode balance expressed in terms of CV (from bcl2fastq)"])
 
-        # Tack on a grand total to the description line of the table
+        # Tack on a grand total to the description line of the table, using the
+        # more accurate values than we have from interop.
         yield_totals = [ rids['add_in_b2f'][int(lane['LaneNumber'])] for lane in rids['Lanes'] ]
         grand_total_raw = sum(t.get('Total Reads Raw') for t in yield_totals)
         grand_total_pf = sum(t.get('Assigned Reads',0) + t.get('Unassigned Reads PF',0) for t in yield_totals)
@@ -186,6 +194,7 @@ def output_mqc(rids, fh):
                                                   grand_total_raw,
                                                                     pct( grand_total_pf, grand_total_raw ))
 
+    # Here we tweak the settings for our table columns.
     # col1_header is actually col0_header!
     mqc_out['pconfig']['col1_header'] = table_headers[0]
     for colnum, col in list(enumerate(table_headers))[1:]:
@@ -194,6 +203,8 @@ def output_mqc(rids, fh):
         # accordingly. Also add the description.:
         if '%' in col: column_settings.update(min=0, max=100)
         if 'Barcode Balance' in col: column_settings.update(min=0, max=1)
+        if 'Density' in col and is_patterned_flowcell: column_settings.update(hidden=True)
+
         if table_desc[colnum]: column_settings.update(description=table_desc[colnum])
         mqc_out['headers']['col_{:02}'.format(colnum)] = column_settings
 
@@ -219,12 +230,13 @@ def output_mqc(rids, fh):
 
         if 'add_in_yield' in rids:
             # was: table_headers.extend(["Clusters PF", "Q30 (%)", "Yield"])
-            # now: table_headers.extend(["Clusters PF", "PF (%)", "Q30 (%)", "Yield"])
+            # now: table_headers.extend(["Clusters PF", "PF (%)", "Q30 (%)", "Yield GB"])
             lane_yield_info = rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals']
-            dd['col_06'] = lane_yield_info['reads_pf']
-            dd['col_07'] = pct(lane_yield_info['reads_pf'], lane_yield_info['reads'])
-            dd['col_08'] = lane_yield_info['percent_gt_q30']
-            dd['col_09'] = lane_yield_info['yield_g']
+            dd['col_06'] = lane_yield_info['density']
+            dd['col_07'] = lane_yield_info['reads_pf']
+            dd['col_08'] = pct(lane_yield_info['reads_pf'], lane_yield_info['reads'])
+            dd['col_09'] = lane_yield_info['percent_gt_q30']
+            dd['col_10'] = lane_yield_info['yield_g']
 
         if 'add_in_wd' in rids:
             #table_headers.extend(["Well Dups (%)"])
@@ -245,10 +257,10 @@ def output_mqc(rids, fh):
             if 'Barcode Balance' in lane_b2f_totals:
                 dd[dd_col] = lane_b2f_totals['Barcode Balance']
 
-            # If b2f data is provided, use the more accurate yield numbers, overwriting those from
-            # interop.
+            # If b2f data is provided, use the more accurate yield numbers for 'reads_pf', overwriting
+            # those from interop.
             if 'add_in_yield' in rids:
-                dd['col_06'] = lane_b2f_totals.get('Assigned Reads',0) + lane_b2f_totals.get('Unassigned Reads PF',0)
+                dd['col_07'] = lane_b2f_totals.get('Assigned Reads',0) + lane_b2f_totals.get('Unassigned Reads PF',0)
 
 
     print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
