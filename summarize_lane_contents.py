@@ -189,7 +189,7 @@ def output_mqc(rids, fh):
         yield_totals = [ rids['add_in_b2f'][int(lane['LaneNumber'])] for lane in rids['Lanes'] ]
         grand_total_raw = sum(t.get('Total Reads Raw') for t in yield_totals)
         grand_total_pf = sum(t.get('Assigned Reads',0) + t.get('Unassigned Reads PF',0) for t in yield_totals)
-        mqc_out['description'] += ", with {:,} of {:,} clusters passing filter, according to BCL2FASTQ ({:.3f}%)".format(
+        mqc_out['description'] += ", with {:,} of {:,} clusters passing filter, according to bcl2fastq ({:.3f}%)".format(
                                           grand_total_pf,
                                                   grand_total_raw,
                                                                     pct( grand_total_pf, grand_total_raw ))
