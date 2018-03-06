@@ -159,7 +159,7 @@ def output_mqc(rids, fh):
     # We'll always add the density column but will hide it later for patterned flowcells
     if 'add_in_yield' in rids:
         table_headers.extend(["Density", "Clusters PF", "PF (%)", "Q30 (%)", "Yield GB"])
-        table_formats.extend(["{:,}",    "{:,}",        "{:.3f}", "{:.3f}",  "{:.3f}"  ])
+        table_formats.extend(["{:,.1f}", "{:,}",        "{:.3f}", "{:.3f}",  "{:.3f}"  ])
         table_desc.extend(   ["Raw cluster density according to InterOp",
                                          "Count of clusters/wells passing filter",
                                                        "Percent of clusters/wells passing filter",
