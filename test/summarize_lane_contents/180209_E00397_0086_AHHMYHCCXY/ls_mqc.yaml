@@ -105,7 +105,7 @@ data:
     col_11: 3.175
     col_12: 0.11680115903892173
 description: Content of lanes in the run, with 3,837,992,146 of 4,969,688,832 clusters
-  passing filter, according to BCL2FASTQ (77.228%)
+  passing filter, according to bcl2fastq (77.228%)
 headers:
   col_01:
     format: '{:s}'
@@ -129,7 +129,7 @@ headers:
     title: Loaded PhiX (%)
   col_06:
     description: Raw cluster density according to InterOp
-    format: '{:,}'
+    format: '{:,.1f}'
     hidden: true
     title: Density
   col_07:
