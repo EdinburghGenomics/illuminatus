@@ -564,7 +564,7 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   INSTRUMENT=`grep ^Instrument: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
 
-  # FIXME - should probably check that [ "$RUNID" = `basename "$run")` ] or else BAD THINGS (TM)
+  # FIXME - should probably check that [ "$RUNID" = `basename "$run"` ] or else BAD THINGS (TM)
   # will happen when later bits of the pipeline just assume that it is!
 
   if [ "$STATUS" = complete ] || [ "$STATUS" = aborted ] ; then _log=debug ; else _log=log ; fi

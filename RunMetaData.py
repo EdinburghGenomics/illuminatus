@@ -39,7 +39,9 @@ class RunMetaData:
             #we can usefully run without this
             self.run_params = defaultdict(lambda: 'unknown')
 
-        # Try to re-jig the date
+        # Try to re-jig the date.
+        # Note that this is just the timestamp off the runParameters file so if you copy
+        # or touch the file it will change.
         try:
             if 'Start Time' in self.run_params:
                 self.run_params['Start Time'] = datetime.strptime( self.run_params['Start Time'],

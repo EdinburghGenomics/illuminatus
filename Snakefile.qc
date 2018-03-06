@@ -422,7 +422,7 @@ rule unassigned_scan:
 
         # Make it vaguely readable and add a title as requested by Matt A
         shell("""sed 's/+TITLE+/Unassigned in {run} lane {wildcards.l}/' {UNASS}/page_header.html > {output}""")
-        shell("""cat {UNASS}/page_header.html {output}.tmp2 {UNASS}/page_footer.html >> {output}""")
+        shell("""cat {output}.tmp2 {UNASS}/page_footer.html >> {output}""")
 
         # Clean up.
         shell("""rm {output}.tmp{{1,2}}""")
