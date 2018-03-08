@@ -116,13 +116,31 @@ class T(unittest.TestCase):
             run_info._exists_cache = dict()
             return dictify(run_info.get_yaml())['PipelineStatus:']
 
-        self.assertEqual(gs(), 'reads_finished')
+        def no_redo(status):
+            """ Check the status AND also check
+                that adding a lane1.redo file does not change the status
+            """
+            self.assertEqual(gs(), status)
+            self.touch('pipeline/lane1.redo')
+            self.assertEqual(gs(), status)
+            self.rm('pipeline/lane1.redo')
+
+        def yes_redo(status):
+            """ Check the status AND also check
+                that adding a lane1.redo file does change the status to redo
+            """
+            self.assertEqual(gs(), status)
+            self.touch('pipeline/lane1.redo')
+            self.assertEqual(gs(), 'redo')
+            self.rm('pipeline/lane1.redo')
+
+        no_redo('reads_finished')
 
         # Fail demultiplex...
         for l in '12345678':
             self.touch('pipeline/lane{}.started'.format(l))
         self.touch('pipeline/failed')
-        self.assertEqual(gs(), 'failed')
+        yes_redo('failed')
 
         # Just redo one lane... currently driver.sh will remove all the .started files
         # and re-demultiplex the selected lane.
@@ -144,6 +162,7 @@ class T(unittest.TestCase):
             self.touch('pipeline/lane{}.redo'.format(l))
         self.assertEqual(gs(), 'redo')
 
+        # Removing qc.done has no bearing
         self.rm('pipeline/qc.done')
         self.assertEqual(gs(), 'redo')
 
@@ -168,6 +187,25 @@ class T(unittest.TestCase):
             run_info._exists_cache = dict()
             return dictify(run_info.get_yaml())
 
+        def no_redo(status):
+            """ Check the status AND also check
+                that adding a lane1.redo file does not change the status
+            """
+            self.assertEqual(gy()['PipelineStatus:'], status)
+            self.touch('pipeline/lane1.redo')
+            self.assertEqual(gy()['PipelineStatus:'], status)
+            self.rm('pipeline/lane1.redo')
+
+        def yes_redo(status):
+            """ Check the status AND also check
+                that adding a lane1.redo file does change the status to redo
+            """
+            self.assertEqual(gy()['PipelineStatus:'], status)
+            self.touch('pipeline/lane1.redo')
+            self.assertEqual(gy()['PipelineStatus:'], 'redo')
+            self.rm('pipeline/lane1.redo')
+
+        # Check initial state
         self.assertEqual(gy(), expected)
 
         self.rm('pipeline')
@@ -185,39 +223,41 @@ class T(unittest.TestCase):
         self.assertEqual(gy()['PipelineStatus:'], 'new')
         self.assertEqual(gy()['MachineStatus:'], 'read1_complete')
         self.md('pipeline')
-        self.assertEqual(gy()['PipelineStatus:'], 'read1_finished')
+        no_redo('read1_finished')
 
-        # For this one, let's say that read processing completes before the run finishes.
+        # For this one, let's say that read1 processing completes before the run finishes (as
+        # in the normal case)
         self.touch('pipeline/read1.started')
-        self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc')
+        no_redo('in_read1_qc')
 
         # And the read1 processing finishes
         self.touch('pipeline/read1.done')
-        self.assertEqual(gy()['PipelineStatus:'], 'reads_unfinished')
+        no_redo('reads_unfinished')
 
         # Removing read1.started should not matter
         self.rm('pipeline/read1.started')
-        self.assertEqual(gy()['PipelineStatus:'], 'reads_unfinished')
+        no_redo('reads_unfinished')
 
         # Now we finish the reads
         self.touch('RTAComplete.txt')
-        self.assertEqual(gy()['PipelineStatus:'], 'reads_finished')
+        no_redo('reads_finished')
         self.assertEqual(gy()['MachineStatus:'], 'complete')
 
         # And we start the demultiplexing
         self.touch('pipeline/lane1.started')
-        self.assertEqual(gy()['PipelineStatus:'], 'in_demultiplexing')
+        no_redo('in_demultiplexing')
 
         # And finish it
         for l in '12345678':
             self.touch('pipeline/lane{}.done'.format(l))
-        self.assertEqual(gy()['PipelineStatus:'], 'in_demultiplexing')
+        no_redo('in_demultiplexing')
 
         # Finish it properly!
         self.rm('pipeline/lane1.started')
-        self.assertEqual(gy()['PipelineStatus:'], 'demultiplexed')
+        yes_redo('demultiplexed')
 
         # And if we try to redo a lane before QC starts...
+        # (actually I just checked this)
         self.touch('pipeline/lane2.redo')
         self.assertEqual(gy()['PipelineStatus:'], 'redo')
 
@@ -258,11 +298,29 @@ class T(unittest.TestCase):
             if VERBOSE: pprint(run_info._exists_cache)
             return res
 
+        def no_redo(status):
+            """ Check the status AND also check
+                that adding a lane1.redo file does not change the status
+            """
+            self.assertEqual(gy()['PipelineStatus:'], status)
+            self.touch('pipeline/lane1.redo')
+            self.assertEqual(gy()['PipelineStatus:'], status)
+            self.rm('pipeline/lane1.redo')
+
+        def yes_redo(status):
+            """ Check the status AND also check
+                that adding a lane1.redo file does change the status to redo
+            """
+            self.assertEqual(gy()['PipelineStatus:'], status)
+            self.touch('pipeline/lane1.redo')
+            self.assertEqual(gy()['PipelineStatus:'], 'redo')
+            self.rm('pipeline/lane1.redo')
+
         self.assertEqual(gy(), expected)
 
         # Add the pipeline dir
         self.md('pipeline')
-        self.assertEqual(gy()['PipelineStatus:'], 'reads_unfinished')
+        no_redo('reads_unfinished')
 
         # We're basing the read1 trigger on the appearance of data files for the second cycle,
         # (until we change our minds and use the first cycle after the last index read)
@@ -270,49 +328,51 @@ class T(unittest.TestCase):
         self.md('Data/Intensities/BaseCalls/L001/C27.1')
         self.touch('Data/Intensities/BaseCalls/L001/C27.1/foo.bcl')
 
-        self.assertEqual(gy()['PipelineStatus:'], 'read1_finished')
+        no_redo('read1_finished')
 
         # Adding an RTAComplete.txt file should not change this status
         self.touch('RTAComplete.txt')
-        self.assertEqual(gy()['PipelineStatus:'], 'read1_finished')
+        no_redo('read1_finished')
 
         # Adding read1.started should push us to the state where ops will trigger in parallel
         self.touch('pipeline/read1.started')
-        self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc_reads_finished')
+        no_redo('in_read1_qc_reads_finished')
 
         # A failure at this point should drop us back to 'in_read1_qc'
         self.touch('pipeline/failed')
-        self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc')
+        no_redo('in_read1_qc')
 
         # This should make no difference...
         self.touch('pipeline/lane1.started')
-        self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc')
+        no_redo('in_read1_qc')
 
         # Then only when the read1 finishes should we be failed
+        # And now redo is possible
         self.touch('pipeline/read1.done')
-        self.assertEqual(gy()['PipelineStatus:'], 'failed')
+        yes_redo('failed')
 
         # Clearing the failure and leaving read1.done should get us to reads_finished
         self.rm('pipeline/lane1.started')
         self.rm('pipeline/failed')
-        self.assertEqual(gy()['PipelineStatus:'], 'reads_finished')
+        no_redo('reads_finished')
 
         self.touch('pipeline/lane1.started')
-        self.assertEqual(gy()['PipelineStatus:'], 'in_demultiplexing')
+        no_redo('in_demultiplexing')
 
         self.rm('pipeline/lane1.started')
         self.touch('pipeline/lane1.done')
-        self.assertEqual(gy()['PipelineStatus:'], 'demultiplexed')
+        yes_redo('demultiplexed')
 
         # OK, but if the read1.done file never appeared we should still be in in_read1_qc
         self.rm('pipeline/read1.done')
-        self.assertEqual(gy()['PipelineStatus:'], 'in_read1_qc')
+        no_redo('in_read1_qc')
 
         # And if the read1.started file vanishes we go right back to read1_finished,
         # as QC should not start until both read1 and demultiplexing are done.
         # Though in practise this state should not happen.
+        # Redo at this point is not allowed
         self.rm('pipeline/read1.started')
-        self.assertEqual(gy()['PipelineStatus:'], 'read1_finished')
+        no_redo('read1_finished')
 
 
     @unittest.skip

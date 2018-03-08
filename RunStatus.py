@@ -193,7 +193,8 @@ class RunStatus:
 
         # RUN IS 'redo' if the run is marked for restarting and is ready for restarting (not running):
         if self._is_sequencing_finished() and self._was_restarted() and (
-            self._was_ended() or (self._read1_done() and self._was_demultiplexed() and not self._qc_started()) ):
+            (self._read1_done() and self._was_ended()) or
+            (self._read1_done() and self._was_demultiplexed() and not self._qc_started()) ):
             return "redo"
 
         # RUN is 'failed' or 'aborted' if flagged as such. This implies there no processing running, but
