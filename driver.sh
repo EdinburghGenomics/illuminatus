@@ -154,7 +154,7 @@ action_new(){
     # will be noted by the main loop.
     # If necessary, Snakefile.qc and upload_report.sh could be run manually
     # to get the skeleton report.
-    run_multiqc "Waiting for data" - new | plog && log DONE
+    run_multiqc "Waiting for data" "new" | plog && log DONE
 }
 
 action_reads_unfinished(){
@@ -180,7 +180,7 @@ action_reads_finished(){
 
     # Karim wanted an e-mail alert here, with a lane summary.
     # Make sure any printed output is plogged.
-    send_summary_to_rt demultiplexing "The run finished and demultiplexing will now start. Report is at" |& plog
+    send_summary_to_rt reply demultiplexing "The run finished and demultiplexing will now start. Report is at" |& plog
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
     # Note that the preprocessor and runner are not aware of the 'demultiplexing'
@@ -233,7 +233,7 @@ action_demultiplexed() {
         log "  Completed QC on $RUNID."
 
         if [ -s pipeline/report_upload_url.txt ] ; then
-            send_summary_to_rt "Finished pipeline" \
+            send_summary_to_rt reply "Finished pipeline" \
                 "Pipeline completed on $RUNID and QC report is available at"
             # Final success is contingent on the report upload AND that message going to RT.
             mv pipeline/qc.started pipeline/qc.done
@@ -266,6 +266,7 @@ action_read1_finished() {
 
     # Now is the time for WellDups scanning. Note that we press on despite failure,
     # since we don't want a problem here to hold up demultiplexing.
+    # A failure to contact RT is simply ignored
     # There will be a retry at the point of QC with stricter error handling.
     mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
     BREAK=1
@@ -275,13 +276,15 @@ action_read1_finished() {
         cd "$DEMUX_OUTPUT_FOLDER"
         Snakefile.welldups --config rundir="$rundir" -- wd_main || e="$e welldups"
         Snakefile.qc -- interop_main                            || e="$e interop"
-        cd "$rundir" ; run_multiqc "Waiting for RTAComplete" "$projlog1"  || e="$e multiqc"
+        cd "$rundir" ; run_multiqc "Waiting for RTAComplete" NONE "$projlog1" || e="$e multiqc"
 
         if [ -n "$e" ] ; then
-            log "  There were errors in read1 processing (${e# }) on $RUNID. See $projlog1"
+            _msg="There were errors in read1 processing (${e# }) on $RUNID. See $projlog1"
         else
-            log "  Completed read1 processing on $RUNID."
+            _msg="Completed read1 processing on $RUNID."
         fi
+        rt_runticket_manager.py -r "$RUNID" --comment "$_msg" || true
+        log "  $_msg"
     ) |& plog1
 
     # We're done. If the above block was interrupted by SIGINT we'll arrive here
@@ -344,23 +347,27 @@ action_redo() {
 
     BREAK=1  # If we fail after this, don't try to process more runs on this cycle.
 
-    # Clear the 'finished' subject on the ticket
-    ( rt_runticket_manager.py -r "$RUNID" --subject "redo lanes ${redo_list[*]}" \
-        --comment "Re-Demultiplexing of lanes ${redo_list[*]} was requested." || true ) |& plog
+    # Fetch and re-summarize the sample sheet, as it presumably changed, and I've deleted sample_summary.yml
+    # in any case.
+    # Calling run_multiqc will make the new summary but I suppress the RT comment as it will be redundant.
+    # I need to clean out the actual data before running multiqc so that the interim report will not contain
+    # the stale results.
+    # Then I can the 'redo lanes ...' subject on the ticket and send a new sample summary as a reply,
+    # not a comment.
+    # TODO - say what lanes are being demuxed in the final report, since we can't just now promise
+    # that all the lanes changed in the sample sheet are the actual ones being re-done. Or a better way
+    # might be to detect changes in the sample sheet automatically?
+    fetch_samplesheet
 
-    # Clean out the actual data
     set +e ; ( set -e
       if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
         BCL2FASTQCleanup.py "$DEMUX_OUTPUT_FOLDER" "${redo_list[@]}"
       fi
     ) |& plog ; [ $? = 0 ] || { pipeline_fail Cleanup_for_Re-demultiplexing ; return ; }
 
-    # Re-summarize the sample sheet, as it probably changed, and I've deleted sample_summary.yml
-    # in any case.
-    # TODO - say what lanes are being demuxed in the report, since we can't just now promise
-    # that all the lanes changed in the sample sheet are the actual ones being re-done.
-    fetch_samplesheet
-    run_multiqc "Re-demultiplexing lanes ${redo_list[*]}" | plog
+    run_multiqc "Re-demultiplexing lanes ${redo_list[*]}" NONE | plog
+    send_summary_to_rt reply "redo lanes ${redo_list[*]}" \
+        "Re-Demultiplexing of lanes ${redo_list[*]} was requested. Updated report will appear at" |& plog
 
     set +e ; ( set -e
       mkdir -vp "$DEMUX_OUTPUT_FOLDER"/demultiplexing
@@ -405,17 +412,20 @@ fetch_samplesheet(){
 
 run_multiqc() {
     # Runs multiqc. Will not exit on error.
-    # usage: run_multiqc [report_status] [plog_dest] [rt_comment]
+    # usage: run_multiqc [report_status] [rt_run_status] [plog_dest]
+    # A blank rt_run_status will leave the status unchanged. A value of "NONE" will
+    # suppress reporting to RT entirely.
     # Caller is responsible for log redirection, so this function just prints any
-    # progress messages.
+    # progress messages, but the [plog_dest] hint can be used to ensure the right
+    # file is referenced when logging error messages.
     set +o | grep '+o errexit' && _ereset='set +e' || _ereset='set -e'
     set +e
 
     _pstatus="${1:-}"
-    _rtcomment="${3:-}"
+    _rt_run_status="${2:-}"
 
-    if [ "${2:--}" != - ] ; then
-        _plog="$2" # Caller may hint where the log is going.
+    if [ "${3:--}" != - ] ; then
+        _plog="$3" # Caller may hint where the log is going.
     else
         plog </dev/null #Just to set $projlog
         _plog="${projlog}"
@@ -456,9 +466,11 @@ run_multiqc() {
               rm -f pipeline/report_upload_url.txt ; }
     fi
 
-    if [ "$send_summary" = 1 ] ; then
+    if [ "$send_summary" = 1 ] && [ "$_rt_run_status" != NONE ] ; then
         # A new summary was made so we need to send it.
-        send_summary_to_rt "$_rtcomment"
+        # This has now been demoted to a comment, but for a brand new ticket this will still
+        # trigger an e-mail with the summary which is what we want.
+        send_summary_to_rt comment "$_rt_run_status"
     fi
 
     # If this fails, the pipeline will continue, but we need to remove pipeline/sample_summary.yml
@@ -481,8 +493,9 @@ send_summary_to_rt() {
     # Sends a summary to RT. It is assumed that pipeline/report_upload_url.txt and pipeline/sample_summary.yml
     # are in place and can be read.
     # Other than that, supply run_status and premble if you want this.
-    _run_status="${1:-}"
-    _preamble="${2:-Run report is at}"
+    _reply_or_comment="${1:-}"
+    _run_status="${2:-}"
+    _preamble="${3:-Run report is at}"
 
     # Quoting of a subject with spaces requires use of arrays but beware this:
     # https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
@@ -495,7 +508,7 @@ send_summary_to_rt() {
     echo "Sending new summary of run contents to RT."
     # Subshell needed to capture STDERR from summarize_lane_contents.py
     last_upload_report="`cat pipeline/report_upload_url.txt 2>/dev/null || echo "Report was not generated or upload failed"`"
-    ( set +u ; rt_runticket_manager.py -r "$RUNID" "${_run_status[@]}" --reply \
+    ( set +u ; rt_runticket_manager.py -r "$RUNID" "${_run_status[@]}" --"${_reply_or_comment}" \
         @<(echo "$_preamble "$'\n'"$last_upload_report" ;
            echo ;
            summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt - \

@@ -187,7 +187,7 @@ class T(unittest.TestCase):
         expected_calls['samplesheet_fetch.sh'] = ['']
         expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml',
                                                         '--from_yml pipeline/sample_summary.yml --txt -']
-        expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --subject new --reply @???']
+        expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --subject new --comment @???']
         expected_calls['Snakefile.qc'] = ['-- metadata_main', '-F --config pstatus=Waiting for data -- multiqc_main']
         expected_calls['upload_report.sh'] = [self.temp_dir + '/fastqdata/160606_K00166_0102_BHF22YBBXX']
 
@@ -220,8 +220,8 @@ class T(unittest.TestCase):
         self.assertEqual( self.bm.last_calls['upload_report.sh'], [] )
         self.assertFalse( os.path.exists(test_data + '/pipeline/failed') )
 
-    def test_rt_failure(self):
-        """A failure to contact RT when finishing up with read1 processing should
+    def test_read1_multiqc_fail(self):
+        """A failure to run interop/multiqc when finishing up with read1 processing should
            not cause the pipeline to jam in eg. read1_processing state.
         """
         test_data = self.copy_run("160603_M01270_0196_000000000-AKGDE")
@@ -233,30 +233,31 @@ class T(unittest.TestCase):
         # Run the driver (first with everything OK)
         self.bm_rundriver()
 
-        # Test that rt_runticket_manager.py was called but read1.done still
-        # appeared.
+        # Test that rt_runticket_manager.py was called and read1.done appeared.
         self.assertEqual(len(self.bm.last_calls['rt_runticket_manager.py']), 1)
+        self.assertEqual(len(self.bm.last_calls['Snakefile.qc']), 3)
         self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
         self.assertTrue(os.path.isfile( test_data + "/pipeline/sample_summary.yml" ))
 
-        # Look for the failure note in the log
+        # Look for the success note in the log
         self.assertInStdout("Completed read1 processing")
 
-        # Make it so rt_runticket_manager fails, and remove the output files, and
-        # go once more.
+        # Make it so Snakefile.qc and rt_runticket_manager.py fails, and remove the output files, and go once more.
         self.bm.add_mock('rt_runticket_manager.py', fail=True)
+        self.bm.add_mock('Snakefile.qc', fail=True)
         os.system("rm " + test_data + "/pipeline/read1.done")
         os.system("rm " + test_data + "/pipeline/sample_summary.yml")
         self.bm_rundriver()
 
-        # Test (again) that rt_runticket_manager.py was called but read1.done still
-        # appeared.
+        # Test (again) that despite the failure read1.done still appeared
         self.assertEqual(len(self.bm.last_calls['rt_runticket_manager.py']), 1)
+        self.assertEqual(len(self.bm.last_calls['Snakefile.qc']), 3)
         self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
 
         # Possibly driver.sh should remove this if RT communication fails??
-        # Yes, I've now added this. Hopefully it doesn't cause unintended breakage.
-        self.assertFalse(os.path.isfile( test_data + "/pipeline/sample_summary.yml" ))
+        # No, since we are no longer worrying about sample sheet updates on read1
+        # processing because there will always be a summary sent with the final e-mail.
+        self.assertTrue(os.path.isfile( test_data + "/pipeline/sample_summary.yml" ))
 
         # Look for the failure note in the log
         self.assertInStdout("errors in read1 processing")
@@ -443,17 +444,12 @@ class T(unittest.TestCase):
                                 '--yml pipeline/sample_summary.yml',
                                 '--from_yml pipeline/sample_summary.yml --txt -' ] )
 
-        # And two notes should go to RT - one about the redo starting and one about the success.
-        # (We may want to reduce the frequency of these messages - not sure how useful they really are)
-        # We also get another lane summary since the old one was removed.
-        # The second call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
-        self.bm.last_calls['rt_runticket_manager.py'][1] = re.sub(
-                                    r'@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][1] )
+        # And two notes should go to RT - a reply about the redo starting and a comment about the success.
+        # The first call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
+        self.bm.last_calls['rt_runticket_manager.py'][0] = re.sub(
+                                    r'@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][0] )
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
-                          ["-r 160606_K00166_0102_BHF22YBBXX --subject redo lanes 1 2 --comment" + \
-                           " Re-Demultiplexing of lanes 1 2 was requested.",
-
-                           '-r 160606_K00166_0102_BHF22YBBXX --reply @???',
+                          ["-r 160606_K00166_0102_BHF22YBBXX --subject redo lanes 1 2 --reply @???",
 
                            "-r 160606_K00166_0102_BHF22YBBXX --subject re-demultiplexed" + \
                            " --comment Re-Demultiplexing of lanes 1 2 completed"] )
@@ -512,12 +508,10 @@ class T(unittest.TestCase):
         # Check that summarize_lane_contents.py really wasn't called
         self.assertEqual( self.bm.last_calls['summarize_lane_contents.py'], [] )
 
-        # And, in addition to the comment that re-demultiplexing started, a note about the failure should go to RT
+        # And a note about the failure should go to RT
+        # Since the cleanup runs before the call to run_multiqc we won't get the redo notification to RT at all.
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
-                          ["-r 160606_K00166_0102_BHF22YBBXX --subject redo lanes 1 2 --comment" + \
-                           " Re-Demultiplexing of lanes 1 2 was requested.",
-
-                           "-r 160606_K00166_0102_BHF22YBBXX --subject failed --reply Cleanup_for_Re-demultiplexing failed." + \
+                          ["-r 160606_K00166_0102_BHF22YBBXX --subject failed --reply Cleanup_for_Re-demultiplexing failed." + \
                            " See log in " + fastqdir + "/pipeline.log" ] )
 
 if __name__ == '__main__':

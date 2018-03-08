@@ -61,8 +61,9 @@ def main(args):
     with RT_manager( 'test-rt' if args.test else
                      os.environ.get('RT_SYSTEM', 'production-rt') ) as rtm:
 
-        # if the ticket does not exist, create it with the supplied message
-        ticket_id, created = rtm.find_or_create_run_ticket( run_id , subject, reply_message )
+        # if the ticket does not exist, create it with the supplied message, be
+        # that a commet or a reply
+        ticket_id, created = rtm.find_or_create_run_ticket( run_id , subject, (reply_message or comment_message) )
 
         print("{} ticket_id is {}".format('New' if created else 'Existing', ticket_id))
 
@@ -77,7 +78,9 @@ def main(args):
             rtm.reply_to_ticket( ticket_id , reply_message )
 
         # comment on the ticket
-        if comment_message:
+        # if the ticket was just created with only this comment then there is no
+        # need to add it again
+        if comment_message and not (created and not reply_message):
             rtm.comment_on_ticket( ticket_id , comment_message )
 
         # change status of a ticket
