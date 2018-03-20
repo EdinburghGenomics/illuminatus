@@ -61,7 +61,7 @@ class T(unittest.TestCase):
 
         # Also globally clear some environment variables that might have been set outside
         # of this script.
-        for e in 'RUN_NAME_PATTERN SEQDATA_LOCATION FASTQ_LOCATION'.split():
+        for e in 'RUN_NAME_REGEX SEQDATA_LOCATION FASTQ_LOCATION'.split():
             if e in os.environ: del(os.environ[e])
 
         # See the errors in all their glory
