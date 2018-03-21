@@ -44,7 +44,7 @@ dest="${REPORT_DESTINATION}"
 # and rsync run through monitor transparently. Really we should have direct access to the
 # DMZ machines.
 echo "Uploading report for $runname to $dest..." >&2
-rsync -drvlt multiqc_reports/ $dest/$runname/ >&2
+rsync -drvlOt multiqc_reports/ $dest/$runname/ >&2
 
 # Add the index. We now have to make this a PHP script but at least the content is totally fixed.
 ssh ${dest%%:*} "cat > ${dest#*:}/$runname/index.php" <<'END'
