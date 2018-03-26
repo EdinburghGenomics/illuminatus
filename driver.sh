@@ -57,7 +57,13 @@ done
 
 # 2) Ensure that the directory is there for the main log file and set up logging
 #    on file descriptor 5.
-mkdir -p `dirname "$MAINLOG"` ; exec 5>>"$MAINLOG"
+if [ "$MAINLOG" = '/dev/stdout' ] ; then
+    exec 5>&1
+elif [ "$MAINLOG" = '/dev/stderr' ] ; then
+    exec 5>&2
+else
+    mkdir -p "$(dirname "$MAINLOG")" ; exec 5>>"$MAINLOG"
+fi
 
 # Main log for general messages (STDERR still goes to the CRON).
 log(){ [ $# = 0 ] && cat >&5 || echo "$@" >&5 ; }
