@@ -285,7 +285,7 @@ class QuickInfo:
     """ Just get the instrument name out of the dir name.
         Involves a little copy/paste from RunInfoXMLParser
         We also need to know the number of lanes, in order to calculate "_was_finished",
-        which for now we'll just guess(!)
+        which I think (!) we can reliably do with some heuristics on the flowcell.
     """
     def __init__(self, run_dir):
 
@@ -312,7 +312,11 @@ class QuickInfo:
             lane_count = 2 if runid.split('_')[3][1] == 'H' else 8
         elif instr0 in 'A':
             # FIXME - this is a wild guess. Also what about the single-lane flowcell?
-            lane_count = 2 if runid.split('_')[3][-3] == 'M' else 4
+            # This was what I used to see the pattern:
+            #  for f in `find /lustre/seqdata -maxdepth 2 -type d -name '*_A00*'` ; do
+            #     echo -n "${f##*_}  " ; egrep -o 'LaneCount[^ ]+' "$f"/RunInfo.xml
+            #  done
+            lane_count = 2 if runid.split('_')[3][7] != 'S' else 4
 
         # Assuming that the run id is the directory name is a little risky but fine for quick mode
         self.run_info = dict( RunId=runid, LaneCount=lane_count, Instrument=instr, Flowcell='not_reported' )
