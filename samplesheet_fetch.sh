@@ -6,7 +6,8 @@
 set -e ; set -u
 
 # Support a SampleSheet postprocessor hook. This must take one argument,
-# the file to be read, and print to stdout.
+# the file to be read, and print to stdout. I'm not really using this in production
+# since the samplesheets are now specifically generated for this pipeline.
 SSPP_HOOK="${SSPP_HOOK:-}"
 
 if [ -z "${FLOWCELLID:-}" ] ; then
@@ -42,7 +43,7 @@ ln -s SampleSheet.csv.0 SampleSheet.csv 2>/dev/null || true
 # At this point we may expect that SampleSheet.csv is a symlink. Sanity check.
 if [ ! -L SampleSheet.csv ] ; then
     echo "Sanity check failed - SampleSheet.csv is not a symlink"
-    #If the link was changed into a file, try to undo the change
+    #If the link was changed into a file (rsync was doing this at one point), try to undo the change
     if [ -e SampleSheet.csv ] ; then
         for candidate_ss in SampleSheet.csv.* ; do
             if diff -q "$candidate_ss" SampleSheet.csv ; then
@@ -66,21 +67,34 @@ if [ -e SampleSheet.csv.OVERRIDE ] ; then
 fi
 
 # Find a candidate sample sheet, from the files on /ifs/clarity (or wherever)
+# New logic here is:
+# 1) If SAMPLESHEETS_ROOT is set use that
+# 2) Else if SAMPLESHEETS_ROOT is set by .genologicsrc use that
+# 3) Else complain and exit (but not with an error as before)
+# 4) If the directory is set but not found, exit with an error
 
-# Read the Genologics configuration with the same priorities as the LIMSQuery.py code.
-# This is a bit hacky, but it is effective.
-eval `grep -h '^FS_ROOT=' /etc/genologics.conf genologics.cfg genologics.conf ~/.genologicsrc ${GENOLOGICSRC:-/dev/null} 2>/dev/null`
-if ! [ -d "${FS_ROOT:-}" ] ; then
-    echo "No such directory FS_ROOT=${FS_ROOT:-}. Check your genologiscrc file." >&2
-    false "${FS_ROOT}" # triggers an unbound variable error message if appropriate, else exits the script
+if [ -z "${SAMPLESHEETS_ROOT:-}" ] ; then
+    # Read the Genologics configuration with the same priorities as the LIMSQuery.py code.
+    # This is a bit hacky, but it is effective.
+    eval `grep -h '^SAMPLESHEETS_ROOT=' /etc/genologics.conf genologics.cfg genologics.conf ~/.genologicsrc ${GENOLOGICSRC:-/dev/null} 2>/dev/null`
+fi
+# Is it set now?
+if [ -z "${SAMPLESHEETS_ROOT:-}" ] ; then
+    echo "Not attempting to replace SampleSheet.csv as no \$SAMPLESHEETS_ROOT was set."
+    exit 0
+else
+    if ! [ -d "${SAMPLESHEETS_ROOT}" ] ; then
+        echo "No such directory SAMPLESHEETS_ROOT=${SAMPLESHEETS_ROOT}. Check your .genologiscrc file." | tee >(cat >&2)
+        exit 1
+    fi
 fi
 
 # The latest one that matches the flowvell ID is the one we want.
 # Or do we want to sort on some other criterion?
-candidate_ss=`find "$FS_ROOT/samplesheets_bcl2fastq_format" -name "*_${FLOWCELLID}.csv" -print0 | xargs -r0 ls -tr | tail -n 1`
+candidate_ss=`find "$SAMPLESHEETS_ROOT" -name "*_${FLOWCELLID}.csv" -print0 | xargs -r0 ls -tr | tail -n 1`
 
 if [ ! -e "$candidate_ss" ] ; then
-    echo "No candidate replacement samplesheet for ${FLOWCELLID} under $FS_ROOT/samplesheets_bcl2fastq_format"
+    echo "No candidate replacement samplesheet for ${FLOWCELLID} under $SAMPLESHEETS_ROOT"
 elif [ -z "$SSPP_HOOK" ] && diff -q "$candidate_ss" SampleSheet.csv ; then
     #Nothing to do.
     echo "SampleSheet.csv for ${FLOWCELLID} is already up-to-date"

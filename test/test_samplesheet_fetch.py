@@ -42,7 +42,7 @@ class T(unittest.TestCase):
         #The script will find sample sheets in here...
         self.ss_dir = "fs_root/samplesheets_bcl2fastq_format"
         with open('genologics.conf', 'x') as cfh:
-            print("FS_ROOT=" + temp_dir + "/fs_root", file=cfh)
+            print("SAMPLESHEETS_ROOT=" + os.path.realpath(self.ss_dir), file=cfh)
         os.makedirs(self.ss_dir)
 
         #The flowcell ID will always be XXXX
