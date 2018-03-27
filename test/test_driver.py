@@ -47,16 +47,17 @@ class T(unittest.TestCase):
 
         # Set the driver to run in our test harness. Note I can set
         # $BIN_LOCATION to more than one path.
-        # Also we need to set VERBOSE to the driver even if it's not set for the test script.
+        # Also we need to set VERBOSE to the driver even if it's not set for this test script.
         self.environment = dict(
                 SEQDATA_LOCATION = os.path.join(self.temp_dir, 'seqdata'),
                 FASTQ_LOCATION = os.path.join(self.temp_dir, 'fastqdata'),
                 BIN_LOCATION = self.bm.mock_bin_dir + ':' + os.path.dirname(DRIVER),
                 LOG_DIR = os.path.join(self.temp_dir, 'log'), #this is redundant if...
                 MAINLOG = "/dev/stdout",
-                NO_HST_CHECK = '1',
+                NO_HOST_CHECK = '1',
                 ENVIRON_SH = '/dev/null',
-                VERBOSE = '1'
+                VERBOSE = '1',
+                PY3_VENV = 'none'
             )
 
         # Also globally clear some environment variables that might have been set outside
@@ -143,6 +144,19 @@ class T(unittest.TestCase):
         self.assertEqual(self.bm.last_calls, self.bm.empty_calls())
 
         self.assertTrue('no match' in self.bm.last_stderr)
+
+    def test_no_venv(self):
+        """With a missing virtualenv the script should fail and not even scan.
+           Normally there will be an active virtualenv in the test directory so
+           we need to explicitly break this.
+        """
+        self.environment['PY3_VENV'] = '/dev/null/NO_SUCH_PATH'
+        self.bm_rundriver(expected_retval=1)
+
+        self.assertEqual(self.bm.last_calls, self.bm.empty_calls())
+
+        self.assertTrue('/dev/null/NO_SUCH_PATH/bin/activate: Not a directory' in self.bm.last_stderr)
+        self.assertFalse('no match' in self.bm.last_stderr)
 
     def test_no_seqdata(self):
         """If no SEQDATA_LOCATION is set, expect a fast failure.

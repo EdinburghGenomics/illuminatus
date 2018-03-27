@@ -105,12 +105,12 @@ log "=== $intro ==="
 log "====`tr -c '' = <<<$intro`==="
 trap 'log "=== `date`. Finished run; PID=$$ ==="' EXIT
 
-# If there is a Python VEnv, use it.
-py_venv="${BIN_LOCATION%%:*}/_py3_venv"
-if [ -e "${py_venv}/bin/activate" ] ; then
-    log -n "Activating Python VEnv from ${py_venv}"
+# We always must activate a Python VEnv, unless explicitly set to 'none'
+py_venv="${PY3_VENV:-${BIN_LOCATION%%:*}/_py3_venv}"
+if [ "${py_venv}" != none ] ; then
+    log -n "Activating Python3 VEnv from ${py_venv}"
     reset=`set +o | grep -w nounset` ; set +o nounset
-    source "${py_venv}/bin/activate"
+    source "${py_venv}/bin/activate" || { log '...FAILED' ; exit 1 ; }
     log '...DONE'
     $reset
 fi
