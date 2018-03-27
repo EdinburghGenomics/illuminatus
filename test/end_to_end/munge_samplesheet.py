@@ -86,6 +86,9 @@ def munge_lines(lines):
         # index slot. This is a really dirty version
         lines[l] = re.sub(',NNNNNNNN,DummyIndex,', ',,DummyIndex,', lines[l])
 
+        # And with the column order fixed...
+        lines[l] = re.sub(',DummyIndex,NNNNNNNN,', ',DummyIndex,,', lines[l])
+
     # Note the processing
     desc_line = lines.index('Description')
     lines[desc_line] = 'Description,Munged for testing by munge_samplesheet.py'
