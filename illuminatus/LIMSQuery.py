@@ -48,7 +48,7 @@ def get_project_names(*proj_nums):
             if len(projects) > 1:
                 raise LookupError("More than one project found with prefix %s", pn)
             else:
-                res.append(projects[0] if projects else None)
+                res.append(projects.pop() if projects else None)
 
     return res
 
@@ -170,13 +170,14 @@ class MyLims:
 def filter_names(names_in):
     """Due to there being test guff in the LIMS database we need to disregard some
        names that come back.
+       Also apparently we can have two project with the exact same name??
     """
     regexes = [ '_test_' ]
 
-    res = []
+    res = set()
     for n in names_in:
         if not any(re.search(r, n) for r in regexes):
-            res.append(n)
+            res.add(n)
 
     return res
 
