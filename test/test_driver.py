@@ -55,9 +55,9 @@ class T(unittest.TestCase):
                 BIN_LOCATION = self.bm.mock_bin_dir + ':' + os.path.dirname(DRIVER),
                 LOG_DIR = os.path.join(self.temp_dir, 'log'), #this is redundant if...
                 MAINLOG = "/dev/stdout",
-                NO_HOST_CHECK = '1',
                 ENVIRON_SH = '/dev/null',
-                VERBOSE = '1',
+                VERBOSE = 'yes',
+                WRITE_TO_CLARITY = 'yes',
                 PY3_VENV = 'none'
             )
 

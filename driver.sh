@@ -38,16 +38,8 @@ BIN_LOCATION="${BIN_LOCATION:-$(dirname $0)}"
 PATH="$(readlink -m $BIN_LOCATION):$PATH"
 MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 
-# 1) Refuse to run on a machine other than headnode1
-# (do we really still need this??)
-if [[ "${NO_HOST_CHECK:-0}" = 0 && "${HOSTNAME%%.*}" != headnode1 && "${HOSTNAME%%.*}" != gseg-login0 ]] ; then
-    echo "This script should only be run on headnode1 or gseg-login0"
-    echo "To skip this check set NO_HOST_CHECK=1"
-    exit 1
-fi
-
-# 1a) Sanity check these directories exist and complain to STDERR (triggering CRON
-#     warning mail) if not.
+# 1) Sanity check these directories exist and complain to STDERR (triggering CRON
+#    warning mail) if not.
 for d in "${BIN_LOCATION%%:*}" "$SEQDATA_LOCATION" "$FASTQ_LOCATION" ; do
     if ! [ -d "$d" ] ; then
         echo "No such directory '$d'" >&2
@@ -488,8 +480,10 @@ run_multiqc() {
 
     # Tell Clarity the proper name for this run. Needs to be done at least before the second report
     # is uploaded so we may as well do it every time. But there is no need to hang around while it runs.
-    echo "Running: clarity_run_id_setter.py $RUNID (asynchronously)"
-    clarity_run_id_setter.py -- "$RUNID" 2>&1 &
+    if [ "${WRITE_TO_CLARITY:-no}" = yes ] ; then
+        echo "Running: clarity_run_id_setter.py $RUNID (asynchronously)"
+        clarity_run_id_setter.py -- "$RUNID" 2>&1 &
+    fi
 
     # Leaving this in due to unresolved unexpected behaviour after RT timeout.
     echo "driver.sh::run_multiqc() is returning with $_retval"
