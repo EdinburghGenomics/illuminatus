@@ -19,7 +19,7 @@ from psycopg2.extensions import adapt
 
 # This is needed to make any API access work, but for now I'm just reading the
 # database.
-#from genologics.lims import Lims
+#from pyclarity_lims.lims import Lims
 
 def main():
     """Basic test.

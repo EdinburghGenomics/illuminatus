@@ -23,6 +23,7 @@ PROGS_TO_MOCK = """
     BCL2FASTQPreprocessor.py BCL2FASTQPostprocessor.py BCL2FASTQCleanup.py
     Snakefile.qc Snakefile.demux Snakefile.welldups
     summarize_lane_contents.py rt_runticket_manager.py upload_report.sh
+    clarity_run_id_setter.py
 """.split()
 
 class T(unittest.TestCase):
@@ -204,6 +205,7 @@ class T(unittest.TestCase):
         expected_calls['rt_runticket_manager.py'] = ['-r 160606_K00166_0102_BHF22YBBXX --subject new --comment @???']
         expected_calls['Snakefile.qc'] = ['-- metadata_main', '-F --config pstatus=Waiting for data -- multiqc_main']
         expected_calls['upload_report.sh'] = [self.temp_dir + '/fastqdata/160606_K00166_0102_BHF22YBBXX']
+        expected_calls['clarity_run_id_setter.py'] = ['-- 160606_K00166_0102_BHF22YBBXX']
 
         #The call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
         self.bm.last_calls['rt_runticket_manager.py'][0] = re.sub(

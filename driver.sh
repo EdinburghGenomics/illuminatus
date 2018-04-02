@@ -486,6 +486,11 @@ run_multiqc() {
         rm -vf pipeline/sample_summary.yml
     fi
 
+    # Tell Clarity the proper name for this run. Needs to be done at least before the second report
+    # is uploaded so we may as well do it every time. But there is no need to hang around while it runs.
+    echo "Running: clarity_run_id_setter.py $RUNID (asynchronously)"
+    clarity_run_id_setter.py -- "$RUNID" 2>&1 &
+
     # Leaving this in due to unresolved unexpected behaviour after RT timeout.
     echo "driver.sh::run_multiqc() is returning with $_retval"
 
@@ -606,4 +611,4 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   # Negated test is needed to play nicely with 'set -e'
   ! [ "$BREAK" = 1 ] || break
 done
-
+wait
