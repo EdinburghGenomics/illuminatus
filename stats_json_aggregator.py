@@ -86,7 +86,8 @@ def main(args):
 
 def parse_args(*args):
 
-    parser = ArgumentParser( description = "Extract some info from multiple Stats.json" )
+    parser = ArgumentParser( description =
+        "Extract some info from multiple Stats.json. See also summarize_by_project.py" )
 
     parser.add_argument("json", type=str, nargs='+',
                         help="Stats to be digested.")

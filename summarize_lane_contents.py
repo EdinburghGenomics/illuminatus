@@ -19,7 +19,7 @@ except Exception:
                 PROJECT_PAGE_URL), file=sys.stderr)
     raise
 
-def parse_args():
+def parse_args(*args):
     description = """This script is part of the Illuminatus pipeline.
 It makes the Samplesheet report that was previously handled by
 wiki-communication/bin/upload_run_info_on_wiki.py, by parsing the SampleSheet.csv
@@ -57,7 +57,7 @@ Soon it will ask the LIMS for additional details (loading conc) too.
     a.add_argument("run_dir", nargs='?', default='.',
                    help="Supply a directory to scan, if not the current directory.")
 
-    return a.parse_args()
+    return a.parse_args(*args)
 
 def printable_date():
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')

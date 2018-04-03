@@ -176,7 +176,8 @@ rule interop_main:
 rule demux_stats_main:
     # Gather stats from the bcl2fastq logs etc. Calculate barcode balance, ...
     # We have the new Stats.json to compete with our old per-lane stats.yml derived
-    # from the CSV output. A little confusing - do we need both?
+    # from the CSV output. A little confusing - do we need both? See the note on
+    # get_bcl2fastq_stats_old.
     input:
         stats    = "QC/bcl2fastq_stats.yml",
         oldstats = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
@@ -484,8 +485,10 @@ rule get_lane_summary:
 
 localrules: get_bcl2fastq_stats_old, get_bcl2fastq_stats
 rule get_bcl2fastq_stats_old:
-    # This rule can hopefully be replaced by the direct examination of the .json
-    # file by the new module for MultiQC.
+    # FIXME - This rule should be replaced by get_bcl2fastq_stats which reads
+    # Stats.json, but just now some QC reports rely on having the file in the old
+    # format (this includes RapidQC). Once they are fixed and tested this can simply
+    # be removed.
     # The parameters passed to the script are a little weird as I copied the script
     # from the old pipeline where it scanned for the input file.
     output: "QC/lane{lane}/{runid}_{lane}.stats.yml"
