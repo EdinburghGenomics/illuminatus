@@ -111,7 +111,7 @@ if [ "${py_venv}" != none ] ; then
         source "${py_venv}/bin/activate" || { log 'FAILED' ; exit 1 ; }
         $reset
     fi
-    log 'DONE'
+    log 'VEnv ACTIVATED'
 fi
 
 # 3) Define an action for each possible status that a run can have:

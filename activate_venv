@@ -51,6 +51,7 @@ if [ -e ./_py3_venv/bin/activate ] ; then
 
     # MultiQc is under active development, so enable easy update
     if [ "${UPDATE_MULTIQC:-0}" != 0 ] ; then
+        pip3 install --upgrade pip
         install_multiqc upgrade
     fi
 
