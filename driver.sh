@@ -98,13 +98,20 @@ log "====`tr -c '' = <<<$intro`==="
 trap 'log "=== `date`. Finished run; PID=$$ ==="' EXIT
 
 # We always must activate a Python VEnv, unless explicitly set to 'none'
-py_venv="${PY3_VENV:-${BIN_LOCATION%%:*}/_py3_venv}"
+py_venv="${PY3_VENV:-default}"
 if [ "${py_venv}" != none ] ; then
-    log -n "Activating Python3 VEnv from ${py_venv}"
-    reset=`set +o | grep -w nounset` ; set +o nounset
-    source "${py_venv}/bin/activate" || { log '...FAILED' ; exit 1 ; }
-    log '...DONE'
-    $reset
+    if [ "${py_venv}" = default ] ; then
+        log -n "Running `dirname $BASH_SOURCE`/activate_venv ..."
+        pushd "`dirname $BASH_SOURCE`" >/dev/null
+        source ./activate_venv || { log 'FAILED' ; exit 1 ; }
+        popd >/dev/null
+    else
+        log -n "Activating Python3 VEnv from ${py_venv} ..."
+        reset=`set +o | grep -w nounset` ; set +o nounset
+        source "${py_venv}/bin/activate" || { log 'FAILED' ; exit 1 ; }
+        $reset
+    fi
+    log 'DONE'
 fi
 
 # 3) Define an action for each possible status that a run can have:
