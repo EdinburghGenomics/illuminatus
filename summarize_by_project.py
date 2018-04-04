@@ -48,8 +48,11 @@ for debugging.
                    help="Output for MultiQC to the specified file (- for stdout)." )
     a.add_argument("--tsv",
                    help="Output in TSV format to the specified file (- for stdout)." )
-    #a.add_argument("--include_cov",
-    #               help="Calculate and display the COV per-project")
+
+    a.add_argument("--metric",
+                   help="Output Fragments, Libraries, or Balance (ignored for --yml output)")
+    a.add_argument("--by_pool", action="store_true",
+                   help="Collate by pool rather than by project (ignored for --yml output)")
 
     a.add_argument("json", type=str, nargs='+',
                    help="Stats to be digested.")
@@ -85,6 +88,7 @@ def main(args):
     # by guessing (samples generally start with the project number!).
     # This gets us from {lane -> {pool_library -> fragments}} to {(lane/project) -> fragments}
     all_stats_by_project = aggregate_by_project(all_stats_from_json, sample_summary['Lanes'])
+    all_stats_by_pool = aggregate_by_pool(all_stats_from_json)
 
     #See where we want to put it (loop nicked from summarize_lane_contents)
     for dest, formatter in [ ( args.yml, output_yml ),
@@ -92,21 +96,27 @@ def main(args):
                              ( args.tsv, output_tsv ) ]:
         if dest:
             if dest == '-':
-                formatter(all_stats_by_project, project_to_name, sys.stdout)
+                formatter(all_stats_by_pool, all_stats_by_project, project_to_name, args, sys.stdout)
             else:
                 with open(dest, 'w') as ofh:
-                    formatter(all_stats_by_project, project_to_name, ofh)
+                    formatter(all_stats_by_pool, all_stats_by_project, project_to_name, args, ofh)
 
-def aggregate_by_project(all_stats_by_pool, lanes_summary):
-    """ Gets us from {lane -> {pool_library -> fragments}} to {(lane/project) -> fragments}
-        by using the info in lanes_summary or failing that inferring the project name from
-        the pool name (should be the first 5 characters)
+def cov(counts_list):
+    """ Standard CoV (barcode balance) calculation
+    """
+    return rat( stdev(counts_list), mean(counts_list) )
+
+def aggregate_by_project(all_stats_by_library, lanes_summary):
+    """ Gets us from {lane -> {pool_library -> fragments}} to three dicts
+        of {(lane/project) -> value} by using the info in lanes_summary.
     """
     # This will map {(lane/project) -> [list of counts]}
+    counts_by_lane_proj = dict()
+    counts_by_lane = dict()
     counts_by_proj = dict()
 
-    # Work one lane at a time, driven by the keys in all_stats_by_pool
-    for lane, reads_by_sample in all_stats_by_pool.items():
+    # Work one lane at a time, driven by the keys in all_stats_by_library
+    for lane, reads_by_library in all_stats_by_library.items():
         # Get the info regarding this lane from sample_summary.yml
         lane_contents = [ l['Contents'] for l in lanes_summary if l['LaneNumber'] == lane ]
         # lane_contents is now a list of (hopefully exactly one!) dicts.
@@ -114,59 +124,140 @@ def aggregate_by_project(all_stats_by_pool, lanes_summary):
         # Of course I'm reconstructing the name from the sample sheet here but I regard the data in the YAML
         # to be already internalised.
         # Since I'm no longer munging pool names ('NoPool' -> '') this mapping should be reliable.
-        sample_to_project = { "{}__{}".format(pool, lib): proj
-                              for lc in lane_contents
-                              for proj, pool_dict in lc.items()
-                              for pool, lib_list in pool_dict.items()
-                              for lib in lib_list }
+        library_to_project = { "{}__{}".format(pool, lib): proj
+                               for lc in lane_contents
+                               for proj, pool_dict in lc.items()
+                               for pool, lib_list in pool_dict.items()
+                               for lib in lib_list }
 
         # Now translate and sum
-        for sample, fragments in reads_by_sample.items():
+        for library, fragments in reads_by_library.items():
 
-            # If the lookup fails, use the first 5 chars of the sample name
+            # If the lookup fails, use the first 5 chars of the pool name
             # No, that's dangerous. I'll do this instead...
-            project = sample_to_project.get(sample, 'Unknown')
-            counts_by_proj.setdefault('{}/{}'.format(lane, project),[]).append(fragments)
+            project = library_to_project.get(library, 'Unknown')
+            counts_by_lane_proj.setdefault('{}/{}'.format(lane, project),[]).append(fragments)
+            counts_by_lane.setdefault(lane,[]).append(fragments)
+            counts_by_proj.setdefault(project,[]).append(fragments)
 
     # Now transform those lists to get the three values we want - fragments, libs, balance
-    # If there is only one sample the balance should be absent but where there are several samples
+    # If there is only one library the balance should be absent but where there are several library
     # and no reads it will be .nan
-    def cov(counts_list):
-        return rat( stdev(counts_list), mean(counts_list) )
+    # Add the balance for the whole lane and for the project over all lanes.
+    # as we can't calculate this from the aggregate figures.
+    res = dict( Fragments = {k: sum(v) for k, v in counts_by_lane_proj.items()},
+                Libraries = {k: len(v) for k, v in counts_by_lane_proj.items()},
+                Balance   = {k: cov(v) for k, v in counts_by_lane_proj.items() if len(v) > 1},
+                LBalance  = {k: cov(v) for k, v in counts_by_lane.items() if len(v) > 1},
+                PBalance  = {k: cov(v) for k, v in counts_by_proj.items() if len(v) > 1}  )
 
-    return dict( frags   = {k: sum(v) for k, v in counts_by_proj.items()},
-                 libs    = {k: len(v) for k, v in counts_by_proj.items()},
-                 balance = {k: cov(v) for k, v in counts_by_proj.items() if len(v) > 1} )
+    # For completenes poke in an overall barcode balance, though this is likely meaningless
+    # when aggregated across projects.
+    if sum( len(v) for v in counts_by_lane.values() ) > 1:
+        res['LBalance']['All'] = cov([v for l in counts_by_lane.values() for v in l])
 
+    return res
 
-def output_yml(all_stats_by_project, project_to_name, fh):
-    """ Super-simple YAML dumper.
+def aggregate_by_pool(all_stats_by_library):
+    """ Gets us from {lane -> {pool_library -> fragments}} to three dicts of
+        {(lane/project) -> value}. Like aggregate_by_project() but we have no need of
+        a library->project mapping in this case.
     """
-    struct = dict( reads_by_project = all_stats_by_project,
+    # This will map {(lane/project) -> [list of counts]}
+    counts_by_lane_pool = dict()
+    counts_by_lane = dict()
+    counts_by_pool = dict()
+
+    for lane, reads_by_library in all_stats_by_library.items():
+        for library, fragments in reads_by_library.items():
+            pool = library.split('__', 1)[0]
+            counts_by_lane_pool.setdefault('{}/{}'.format(lane, pool),[]).append(fragments)
+            counts_by_lane.setdefault(lane,[]).append(fragments)
+            counts_by_pool.setdefault(pool,[]).append(fragments)
+
+    # Now transform those lists to get the three values we want - fragments, libs, balance
+    # If there is only one library the balance should be absent but where there are several library
+    # and no reads it will be .nan
+    # Add the balance for the whole lane and for the pool over all lanes.
+    # as we can't calculate this from the aggregate figures.
+    res = dict( Fragments = {k: sum(v) for k, v in counts_by_lane_pool.items()},
+                Libraries = {k: len(v) for k, v in counts_by_lane_pool.items()},
+                Balance   = {k: cov(v) for k, v in counts_by_lane_pool.items() if len(v) > 1},
+                LBalance  = {k: cov(v) for k, v in counts_by_lane.items() if len(v) > 1},
+                PBalance  = {k: cov(v) for k, v in counts_by_pool.items() if len(v) > 1}  )
+
+    # For completenes poke in an overall barcode balance. This might be meaningful with, say
+    # the Hickey pools where we'd like a consistent number of reads across all samples.
+    if sum( len(v) for v in counts_by_lane.values() ) > 1:
+        res['LBalance']['All'] = cov([v for l in counts_by_lane.values() for v in l])
+
+    return res
+
+
+def output_yml(all_stats_by_pool, all_stats_by_project, project_to_name, args, fh):
+    """ Super-simple YAML dumper. Ignores args.
+    """
+    struct = dict( stats_by_pool = all_stats_by_pool,
+                   stats_by_project = all_stats_by_project,
                    project_to_name = project_to_name )
     print(yaml.safe_dump(struct, default_flow_style=False), file=fh, end='')
 
-def output_mqc(all_stats_by_project, project_to_name, fh):
-    print("TODO", file=fh)
-
-def output_tsv(all_stats_by_project, project_to_name, fh):
-    """ Output as TSV.
-        Projects in rows, lanes in columns.
-        Output tables for all three values we have.
+def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, fh):
+    """This also happens to be YAML but is specifically for display
+       in MultiQC. The filename should end in _mqc.yaml (not .yml) in
+       order to be picked up.
+       Here I'm trying to generate a table with radio buttons that switch views.
     """
+    mqc_out = dict(
+        id           = 'lane_summary',
+        section_name = 'Lane Summary',
+        description  = 'Content of lanes in the run',
+        plot_type    = 'table',
+        pconfig      = { 'title': '', 'sortRows': True, 'no_beeswarm': True },
+        data         = {},
+        headers      = {},
+    )
+
+def output_tsv(all_stats_by_pool, all_stats_by_project, project_to_name, args, fh):
+    """ Output as TSV.
+        Projects (or pools) in rows, lanes in columns.
+    """
+    if args.by_pool:
+        plabel = 'Pool'
+        all_stats = all_stats_by_pool
+        p_to_name = dict()
+    else:
+        plabel = 'Project'
+        all_stats = all_stats_by_project
+        p_to_name = project_to_name
+
     # We could have projects in project_to_name that are not in the Stats
     # and vice versa. Include them all and sort by ID.
-    projects = sorted(set( [k.split('/',1)[1] for k in all_stats_by_project['libs']] +
-                           [k for k in project_to_name] ))
-    lanes = sorted(set( [k.split('/',1)[0] for k in all_stats_by_project['libs']] ))
+    ps = sorted(set( [k.split('/',1)[1] for k in all_stats['Libraries']] +
+                     [k for k in p_to_name] ))
+    lanes = sorted(set( [k.split('/',1)[0] for k in all_stats['Libraries']] ))
 
+    def _str(x):
+        if type(x) is float:
+            return "{:,.3}".format(x)
+        elif type(x) is int:
+            return "{:,}".format(x)
+        else:
+            return str(x)
 
-    for tspec in [ dict(key='frags',   agg=sum, agg_label='Total'),
-                   dict(key='libs',    agg=sum, agg_label='Total'),
-                   dict(key='balance', agg=max, agg_label='Max'),
+    for tspec in [ dict(key='Fragments', agg=sum,  agg_label='Total'),
+                   dict(key='Libraries', agg=sum,  agg_label='Total'),
+                   dict(key='Balance',   agg=None, agg_label='Overall'),
                  ]:
+
+        if args.metric and args.metric != tspec['key']:
+            continue
+
+        if not args.metric:
+            print("===" + tspec['key'] + "===")
+
         # Header:
-        header = ['Project'] + ['Lane{}'.format(n) for n in lanes]
+        header = [plabel] + ['Lane{}'.format(n) for n in lanes]
         if len(lanes) > 1:
             header.append(tspec['agg_label'])
         print('\t'.join(header), file=fh)
@@ -176,24 +267,32 @@ def output_tsv(all_stats_by_project, project_to_name, fh):
         if len(lanes) > 1:
             p_by_l_totals.append(0)
 
-        for p in projects:
+        for p in ps:
             # Get the values for the row and tack on the sum
-            p_by_l = [ all_stats_by_project[tspec['key']].get('{}/{}'.format(l,p), 0) for l in lanes ]
+            p_by_l = [ all_stats[tspec['key']].get('{}/{}'.format(l,p), 0) for l in lanes ]
             if len(lanes) > 1:
-                p_by_l.append(tspec['agg'](p_by_l))
+                if tspec['agg']:
+                    p_by_l.append(tspec['agg'](p_by_l))
+                else:
+                    # Must be pre-calculated
+                    p_by_l.append(all_stats['P'+tspec['key']].get(p, 0))
 
-            row = [project_to_name.get(p, p)] + p_by_l
-            print('\t'.join(str(x) for x in row), file=fh)
+            row = [p_to_name.get(p, p)] + p_by_l
+            print('\t'.join(_str(x) for x in row), file=fh)
 
             # Add the row to the running sum - NumPy would do this more neatly.
-            p_by_l_totals = [tspec['agg'](x) for x in zip(p_by_l_totals, p_by_l)]
+            if tspec['agg']:
+                p_by_l_totals = [ tspec['agg'](x) for x in zip(p_by_l_totals, p_by_l) ]
+
+        if not tspec['agg']:
+            p_by_l_totals = [ all_stats['L'+tspec['key']].get(l, 0) for l in lanes ]
+            if len(p_by_l_totals) > 1:
+                p_by_l_totals.append( all_stats['L'+tspec['key']].get('All', 0) )
 
         # And now print the row of totals at the bottom, if there was >1 project
-        if len(projects) > 1:
+        if len(ps) > 1:
             last_row = [ tspec['agg_label'] ] + p_by_l_totals
-            print('\t'.join(str(x) for x in last_row), file=fh)
-
-        print("---")
+            print('\t'.join(_str(x) for x in last_row), file=fh)
 
 
 def extract_stats_from_json(json_files):
