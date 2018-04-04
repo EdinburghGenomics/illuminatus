@@ -19,6 +19,9 @@ except Exception:
                 PROJECT_PAGE_URL), file=sys.stderr)
     raise
 
+# Non-pools may either be called 'NoPool' or ''. Other names may be added here.
+NON_POOLS = ['NoPool', 'None', '']
+
 def parse_args(*args):
     description = """This script is part of the Illuminatus pipeline.
 It makes the Samplesheet report that was previously handled by
@@ -51,7 +54,7 @@ Soon it will ask the LIMS for additional details (loading conc) too.
     a.add_argument("--tsv",
                    help="Output in TSV format to the specified file (- for stdout)." )
     a.add_argument("--add_in_yaml", nargs="*",
-                   help="Add columns by sucking in etra bits of YAML. Items must be" +
+                   help="Add columns by sucking in extra bits of YAML. Items must be" +
                         " of the form key=file where key is [wd, yield, b2f]")
 
     a.add_argument("run_dir", nargs='?', default='.',
@@ -356,10 +359,7 @@ def summarize_lane(lane_lines, column_mapping):
         else:
             sample_pool, sample_lib = '', sample_id
 
-        # I think this is what we are calling samples without a pool in the SSG, and
-        # thus the subdirectory name that will be used for the output files.
-        # This definitely needs to be standardised.
-        if sample_pool == 'NoPool': sample_pool=''
+        # I used to set 'NoPool' to '' at this point but it turned out to be a bad idea.
 
         #Avoid use of defaultdict as it gums up YAML serialization. This is equivalent.
         res.setdefault(sample_project, dict()).setdefault(sample_pool, []).append(sample_lib)
@@ -396,15 +396,15 @@ def output_txt(rids, fh):
             # pools will be a dict of poolname : [ library, ... ]
 
             # Special case for PhiX
-            if project == 'ControlLane' and pools == {'': ['PhiX']}:
+            if project == 'ControlLane' and any(pools == {np: ['PhiX']} for np in NON_POOLS):
                 p( "    - PhiX")
 
             else:
 
                 contents_str = ' '.join(squish_project_content(pools))
 
-                contents_label = 'Libraries' if list(pools) == [''] else \
-                                 'Contents' if pools.get('') else \
+                contents_label = 'Libraries' if set(pools).issubset(NON_POOLS) else \
+                                 'Contents' if not set(pools).isdisjoint(NON_POOLS) else \
                                  'Pool' if len(pools) == 1 else 'Pools'
 
                 num_indexes = 0 if lane.get('Unindexed') else sum( len(p) for p in pools.values() )
@@ -443,8 +443,8 @@ def squish_project_content(dict_of_pools, maxlen=0):
     """Given a dict taken from rids['Lanes'][n]['Contents'] -- ie. a dict of pool: content_list
        returns a human-readable list of contents.
     """
-    all_pools = sorted([ p for p in dict_of_pools if p ])
-    non_pooled_libs = sorted(dict_of_pools.get('',[]))
+    all_pools = sorted([ p for p in dict_of_pools if p not in NON_POOLS ])
+    non_pooled_libs = sorted([ p for np in NON_POOLS for p in dict_of_pools.get(np,[]) ])
 
     #Prune those lists
     if maxlen and len(all_pools) > maxlen:
