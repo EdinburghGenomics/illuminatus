@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 import sys, os
 import datetime
-import yaml, json
+import json
 from argparse import ArgumentParser
 from itertools import chain
+from statistics import mean, stdev
+
+from illuminatus.YAMLOrdered import yaml
+from illuminatus.Formatters import rat
 
 """ This script builds the Project Summary table on the overview pages.
     See also summarize_lane_contents.py and summarize_yield.py
@@ -44,9 +48,11 @@ for debugging.
                    help="Output for MultiQC to the specified file (- for stdout)." )
     a.add_argument("--tsv",
                    help="Output in TSV format to the specified file (- for stdout)." )
+    #a.add_argument("--include_cov",
+    #               help="Calculate and display the COV per-project")
 
-    parser.add_argument("json", type=str, nargs='+',
-                        help="Stats to be digested.")
+    a.add_argument("json", type=str, nargs='+',
+                   help="Stats to be digested.")
 
     return a.parse_args()
 
@@ -54,16 +60,16 @@ def main(args):
 
     # First order of business is to digest all the Stats.json files
     # This gives me a dict {(sample_id, lane) -> fragments}
-    # but I can't directly aggregate these by project until I have the sample_summary.yml
+    # but I can't robustly aggregate these by project until I have the sample_summary.yml
     all_stats_from_json = extract_stats_from_json(args.json)
 
-    # A dummy sample summary
-    sample_summary = { 'ProjectInfo': dict(), 'Lanes', list() }
+    # A dummy sample summary, then try to load the real one.
+    sample_summary = { 'ProjectInfo': dict(), 'Lanes': list() }
     if args.sample_summary:
         with open(args.sample_summary) as yfh:
             sample_summary = yaml.safe_load(yfh)
 
-    # A list of names
+    # A list of names can be provided on the command line...
     project_name_list = (args.project_name_list or os.environ.get('PROJECT_NAME_LIST', '')).split(',')
 
     # Now a mapping of project_number->name, combining both. The name list takes precedence.
@@ -73,11 +79,11 @@ def main(args):
     #         name: 11200_Hickey_John
     #         url: https://www.wiki.ed.ac.uk/display/GenePool/11200_Hickey_John
     project_to_name = { k: v.get('name', k) for k, v in sample_summary['ProjectInfo'].items() }
-    project_to_name.update( [pn.split('_', 1) for pn in project_name_list if '_' in pn] )
+    project_to_name.update( [(pn.split('_')[0], pn) for pn in project_name_list if '_' in pn] )
 
     # Resolve the samples down to projects with the mapping in sample_summary, or else
     # by guessing (samples generally start with the project number!).
-    # This gets us from {lane -> {pool_library -> fragments}} to {(project, lane) -> fragments}
+    # This gets us from {lane -> {pool_library -> fragments}} to {(lane/project) -> fragments}
     all_stats_by_project = aggregate_by_project(all_stats_from_json, sample_summary['Lanes'])
 
     #See where we want to put it (loop nicked from summarize_lane_contents)
@@ -92,18 +98,22 @@ def main(args):
                     formatter(all_stats_by_project, project_to_name, ofh)
 
 def aggregate_by_project(all_stats_by_pool, lanes_summary):
-    """ Gets us from {lane -> {pool_library -> fragments}} to {(project, lane) -> fragments}
+    """ Gets us from {lane -> {pool_library -> fragments}} to {(lane/project) -> fragments}
         by using the info in lanes_summary or failing that inferring the project name from
         the pool name (should be the first 5 characters)
     """
-    res = dict()
+    # This will map {(lane/project) -> [list of counts]}
+    counts_by_proj = dict()
 
     # Work one lane at a time, driven by the keys in all_stats_by_pool
     for lane, reads_by_sample in all_stats_by_pool.items():
-        # Get the corresponding info from sample_summary.yml
+        # Get the info regarding this lane from sample_summary.yml
         lane_contents = [ l['Contents'] for l in lanes_summary if l['LaneNumber'] == lane ]
-        # lane_contents is now a list of (hopefully exactly one) dicts.
+        # lane_contents is now a list of (hopefully exactly one!) dicts.
         # Now take a deep breath and let's unpack it to get a lookup table!
+        # Of course I'm reconstructing the name from the sample sheet here but I regard the data in the YAML
+        # to be already internalised.
+        # Since I'm no longer munging pool names ('NoPool' -> '') this mapping should be reliable.
         sample_to_project = { "{}__{}".format(pool, lib): proj
                               for lc in lane_contents
                               for proj, pool_dict in lc.items()
@@ -113,10 +123,20 @@ def aggregate_by_project(all_stats_by_pool, lanes_summary):
         # Now translate and sum
         for sample, fragments in reads_by_sample.items():
 
-            project = sample_to_project.get(sample, sample[0:5])
-            res[(project, lane)] = fragments + res.get((project, lane), 0)
+            # If the lookup fails, use the first 5 chars of the sample name
+            # No, that's dangerous. I'll do this instead...
+            project = sample_to_project.get(sample, 'Unknown')
+            counts_by_proj.setdefault('{}/{}'.format(lane, project),[]).append(fragments)
 
-    return res
+    # Now transform those lists to get the three values we want - fragments, libs, balance
+    # If there is only one sample the balance should be absent but where there are several samples
+    # and no reads it will be .nan
+    def cov(counts_list):
+        return rat( stdev(counts_list), mean(counts_list) )
+
+    return dict( frags   = {k: sum(v) for k, v in counts_by_proj.items()},
+                 libs    = {k: len(v) for k, v in counts_by_proj.items()},
+                 balance = {k: cov(v) for k, v in counts_by_proj.items() if len(v) > 1} )
 
 
 def output_yml(all_stats_by_project, project_to_name, fh):
@@ -126,44 +146,63 @@ def output_yml(all_stats_by_project, project_to_name, fh):
                    project_to_name = project_to_name )
     print(yaml.safe_dump(struct, default_flow_style=False), file=fh, end='')
 
+def output_mqc(all_stats_by_project, project_to_name, fh):
+    print("TODO", file=fh)
+
 def output_tsv(all_stats_by_project, project_to_name, fh):
     """ Output as TSV.
         Projects in rows, lanes in columns.
+        Output tables for all three values we have.
     """
     # We could have projects in project_to_name that are not in the Stats
     # and vice versa. Include them all and sort by ID.
-    projects = sorted(set( k[0] for k in chain(
-                                    all_stats_by_project.keys(),
-                                    project_to_name.items() ))
-    lanes = sorted(set( k[1] for k in all_stats_by_project.keys() ))
-
-    # Header:
-    print('\t'.join(['Project'] + ['Lane {}'.format(n) for n in lanes] + ['Total']), file=fh)
-
-    # One row per project
-    p_by_l_totals = [ 0 for l in lanes ] + [0]
-    for p in projects:
-        # Get the vlaues for the row and tack on the sum
-        p_by_l = [ all_stats_by_project.get((p,l), 0) for l in lanes ]
-        p_by_l.append(sum(p_by_l))
-
-        row = [project_to_name.get(p, p)] + p_by_l
-        print('\t'.join(row), file=fh)
-
-        # Add the row to the running sum - NumPy would do this more neatly.
-        p_by_l_totals = [sum(x) for x in zip(p_by_l_totals, p_by_l)]
-
-    # And anow print the row of totals at the bottom
-    last_row = [ 'Total' ] + p_by_l_totals
+    projects = sorted(set( [k.split('/',1)[1] for k in all_stats_by_project['libs']] +
+                           [k for k in project_to_name] ))
+    lanes = sorted(set( [k.split('/',1)[0] for k in all_stats_by_project['libs']] ))
 
 
-def exract_stats_from_json(json_files):
+    for tspec in [ dict(key='frags',   agg=sum, agg_label='Total'),
+                   dict(key='libs',    agg=sum, agg_label='Total'),
+                   dict(key='balance', agg=max, agg_label='Max'),
+                 ]:
+        # Header:
+        header = ['Project'] + ['Lane{}'.format(n) for n in lanes]
+        if len(lanes) > 1:
+            header.append(tspec['agg_label'])
+        print('\t'.join(header), file=fh)
+
+        # One row per project
+        p_by_l_totals = [ 0 for l in lanes ]
+        if len(lanes) > 1:
+            p_by_l_totals.append(0)
+
+        for p in projects:
+            # Get the values for the row and tack on the sum
+            p_by_l = [ all_stats_by_project[tspec['key']].get('{}/{}'.format(l,p), 0) for l in lanes ]
+            if len(lanes) > 1:
+                p_by_l.append(tspec['agg'](p_by_l))
+
+            row = [project_to_name.get(p, p)] + p_by_l
+            print('\t'.join(str(x) for x in row), file=fh)
+
+            # Add the row to the running sum - NumPy would do this more neatly.
+            p_by_l_totals = [tspec['agg'](x) for x in zip(p_by_l_totals, p_by_l)]
+
+        # And now print the row of totals at the bottom, if there was >1 project
+        if len(projects) > 1:
+            last_row = [ tspec['agg_label'] ] + p_by_l_totals
+            print('\t'.join(str(x) for x in last_row), file=fh)
+
+        print("---")
+
+
+def extract_stats_from_json(json_files):
     """ Go through all the JSON files and make a dict { lane -> { pool_library -> fragments} }
         Somewhat similar to stats_json_aggregator.py.
     """
     all_stats = dict()
 
-    for stats_file in args.json:
+    for stats_file in json_files:
         with open(stats_file) as fh: stats_json = json.load(fh)
 
         # Add the conversion stats per lane
