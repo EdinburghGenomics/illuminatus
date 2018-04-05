@@ -206,17 +206,99 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, f
     """This also happens to be YAML but is specifically for display
        in MultiQC. The filename should end in _mqc.yaml (not .yml) in
        order to be picked up.
-       Here I'm trying to generate a table with radio buttons that switch views.
+       I was trying to generate a table with radio buttons that switch views, but
+       that doesn't work. Instead I patched MultiQC to put multiple Custom Content
+       tables into a section.
     """
     mqc_out = dict(
-        id           = 'lane_summary',
-        section_name = 'Lane Summary',
-        description  = 'Content of lanes in the run',
+        id           = 'matrix',
+        section_name = 'Project Summary',
+        description  = 'Summary of reads and barcode balance broken out by project and pool', # Will only be shown once.
         plot_type    = 'table',
         pconfig      = { 'title': '', 'sortRows': True, 'no_beeswarm': True },
         data         = {},
         headers      = {},
     )
+
+    if args.metric == 'Fragments':
+        mqc_out['id'] += '1_fragments_' + ('by_pool' if args.by_pool else 'by_project')
+        mqc_out['pconfig']['title'] = "Matrix of Fragments " + ('by Pool' if args.by_pool else 'by Project')
+        agg = sum
+        agg_label = 'Total'
+    if args.metric == 'Libraries':
+        mqc_out['id'] += '2_fragments_' + ('by_pool' if args.by_pool else 'by_project')
+        mqc_out['pconfig']['title'] = "Matrix of Library Counts " + ('by Pool' if args.by_pool else 'by Project')
+        agg = sum
+        agg_label = 'Total'
+    if args.metric == 'Balance':
+        mqc_out['id'] += '3_fragments_' + ('by_pool' if args.by_pool else 'by_project')
+        mqc_out['pconfig']['title'] = "Matrix of Barcode Balance (CoV) " + ('by Pool' if args.by_pool else 'by Project')
+        agg = None
+        agg_label = 'Overall'
+
+    # Load up the data dict - this bit is copied from output.tsv
+    if args.by_pool:
+        plabel = 'Pool'
+        # The behaviour is that if args.metric is invalid we get a failure here
+        all_stats = all_stats_by_pool
+        stats_for_metric = all_stats[args.metric]
+        p_to_name = dict()
+    else:
+        plabel = 'Project'
+        all_stats = all_stats_by_project
+        stats_for_metric = all_stats[args.metric]
+        p_to_name = project_to_name
+
+    ps = sorted(set( [k.split('/',1)[1] for k in stats_for_metric] +
+                     [k for k in p_to_name] ))
+    lanes = sorted(set( [k.split('/',1)[0] for k in stats_for_metric] ))
+
+    for p in ps:
+        p_label = p_to_name.get(p, p)
+        mqc_out['data'][p_label] = { 'lane{}'.format(l): stats_for_metric.get('{}/{}'.format(l,p), None)
+                                     for l in lanes }
+
+        # Add a total if there were >1 lanes
+        if len(lanes) > 1:
+            if agg:
+                p_total = agg(stats_for_metric.get('{}/{}'.format(l,p), 0) for l in lanes)
+            else:
+                # Must be pre-calculated
+                p_total = all_stats['P'+args.metric].get(p, 0)
+            mqc_out['data'][p_label]['total'] = p_total
+
+    # Add a summary row. Since all our projects and pools start with a number or 'N' this should
+    # stay at the bottom so long as the title is 'Total' or 'Overall'.
+    if agg:
+        # Add them up. This time there will be no blanks (maybe zeros)
+        l_totals = [ agg(stats_for_metric.get('{}/{}'.format(l,p), 0) for p in ps) for l in lanes ]
+        grand_total = agg(l_totals)
+    else:
+        # Get the pre-calculated values
+        l_totals = [ all_stats['L'+args.metric].get(l, 0) for l in lanes ]
+        grand_total = all_stats['L'+args.metric].get('All', 0)
+
+    # Only print the summary row if there was more than one project/pool.
+    if len(ps) > 1:
+        mqc_out['data'][agg_label] = { 'lane{}'.format(l): v for l, v in zip(lanes, l_totals) }
+        if len(lanes) > 1:
+            mqc_out['data'][agg_label]['total'] = grand_total
+
+    # That's the data loaded. Now to set up the headers.
+    mqc_out['pconfig']['col1_header'] = 'Pool' if args.by_pool else 'Project'
+
+    for l in lanes:
+        mqc_out['headers']['lane{}'.format(l)] = dict( min = 0,
+                                                       max = grand_total,
+                                                       format = "{:,.03}",
+                                                       title = "Lane {}".format(l) )
+    if len(lanes) > 1:
+        mqc_out['headers']['total'] = dict( format = "{:,.03}",
+                                            title = agg_label )
+
+    # That's all she wrote. Print it out...
+    print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
+
 
 def output_tsv(all_stats_by_pool, all_stats_by_project, project_to_name, args, fh):
     """ Output as TSV.
