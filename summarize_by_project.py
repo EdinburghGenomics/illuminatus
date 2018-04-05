@@ -59,6 +59,8 @@ for debugging.
                    help="Output Fragments, Libraries, or Balance (ignored for --yml output)")
     a.add_argument("--by_pool", action="store_true",
                    help="Collate by pool rather than by project (ignored for --yml output)")
+    a.add_argument("--print_even_if_empty",
+                   help="Disable the sanity check that stops us producing useless MQC tables.")
 
     a.add_argument("json", type=str, nargs='+',
                    help="Stats to be digested.")
@@ -96,16 +98,19 @@ def main(args):
     all_stats_by_project = aggregate_by_project(all_stats_from_json, sample_summary['Lanes'])
     all_stats_by_pool = aggregate_by_pool(all_stats_from_json)
 
+    # At this point it's also useful to be able to explicitly get the pools by project
+    pools_per_project = get_pools_per_project(project_to_name.keys(), sample_summary['Lanes'])
+
     #See where we want to put it (loop nicked from summarize_lane_contents)
     for dest, formatter in [ ( args.yml, output_yml ),
                              ( args.mqc, output_mqc ),
                              ( args.tsv, output_tsv ) ]:
         if dest:
             if dest == '-':
-                formatter(all_stats_by_pool, all_stats_by_project, project_to_name, args, sys.stdout)
+                formatter(all_stats_by_pool, all_stats_by_project, project_to_name, pools_per_project, args, sys.stdout)
             else:
                 with open(dest, 'w') as ofh:
-                    formatter(all_stats_by_pool, all_stats_by_project, project_to_name, args, ofh)
+                    formatter(all_stats_by_pool, all_stats_by_project, project_to_name, pools_per_project, args, ofh)
 
     #Also allow multiple MQC outputs
     for metric in "frag lib bal".split():
@@ -117,15 +122,28 @@ def main(args):
             args.metric = dict(frag='Fragments', lib='Libraries', bal="Balance")[metric]
 
             if dest == '-':
-                output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, sys.stdout)
+                output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_per_project, args, sys.stdout)
             elif dest:
                 with open(dest, 'w') as ofh:
-                    output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, ofh)
+                    output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_per_project, args, ofh)
 
 def cov(counts_list):
     """ Standard CoV (barcode balance) calculation
     """
     return rat( stdev(counts_list), mean(counts_list) )
+
+def get_pools_per_project(project_list, lanes_summary):
+    """ Counts up the pools for each project. When calculating barcode balance by pool
+        there may be a "NoPool" which has samples from multiple projects, so I can't reliably
+        infer this info later. This works it out explicitly.
+    """
+    return { p : [ pool
+             for lc in [ l['Contents'] for l in lanes_summary ]
+             for proj, pool_dict in lc.items()
+             for pool in pool_dict
+             if proj == p ]
+             for p in project_list }
+
 
 def aggregate_by_project(all_stats_by_library, lanes_summary):
     """ Gets us from {lane -> {pool_library -> fragments}} to three dicts
@@ -215,15 +233,16 @@ def aggregate_by_pool(all_stats_by_library):
     return res
 
 
-def output_yml(all_stats_by_pool, all_stats_by_project, project_to_name, args, fh):
+def output_yml(all_stats_by_pool, all_stats_by_project, project_to_name, pools_per_project, args, fh):
     """ Super-simple YAML dumper. Ignores args.
     """
     struct = dict( stats_by_pool = all_stats_by_pool,
                    stats_by_project = all_stats_by_project,
-                   project_to_name = project_to_name )
+                   project_to_name = project_to_name,
+                   pools_per_project = pools_per_project )
     print(yaml.safe_dump(struct, default_flow_style=False), file=fh, end='')
 
-def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, fh):
+def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_per_project, args, fh):
     """This also happens to be YAML but is specifically for display
        in MultiQC. The filename should end in _mqc.yaml (not .yml) in
        order to be picked up.
@@ -321,11 +340,27 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, f
         mqc_out['headers']['total'] = dict( format = fmt,
                                             title = agg_label )
 
-    # That's all she wrote. Print it out...
-    print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
+    # Now decide if we want to skip this. Useless tables are (I think):
+    #   Any balance if no lane has more than one sample
+    #   * by pool if no project has more than one pool
+    #   Library counts by project if there is only one project
+    reason_to_skip = None
+    if not args.print_even_if_empty:
+        if not stats_for_metric:
+            reason_to_skip = "No stats for {}".format(args.metric)
+        elif args.by_pool and not any(len(ppp) > 1 for ppp in pools_per_project.values()):
+            reason_to_skip = "No project here has more than one pool"
+        elif (not args.by_pool) and (args.metric == 'Libraries') and not len(pools_per_project) > 1:
+            reason_to_skip = "There is only one project"
+
+    if reason_to_skip:
+        print("# " + reason_to_skip, file=fh)
+    else:
+        # That's all she wrote. Print it out...
+        print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
 
 
-def output_tsv(all_stats_by_pool, all_stats_by_project, project_to_name, args, fh):
+def output_tsv(all_stats_by_pool, all_stats_by_project, project_to_name, pools_per_project, args, fh):
     """ Output as TSV.
         Projects (or pools) in rows, lanes in columns.
     """
