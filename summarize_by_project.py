@@ -49,6 +49,12 @@ for debugging.
     a.add_argument("--tsv",
                    help="Output in TSV format to the specified file (- for stdout)." )
 
+    # I want to be able to output multiple MQC files in one go...
+    for metric in "frag lib bal".split():
+        for pool in "pool proj".split():
+            a.add_argument("--mqc_{}_{}".format(metric, pool),
+                           help="Output specific stats for MultiQC to a file")
+
     a.add_argument("--metric",
                    help="Output Fragments, Libraries, or Balance (ignored for --yml output)")
     a.add_argument("--by_pool", action="store_true",
@@ -100,6 +106,21 @@ def main(args):
             else:
                 with open(dest, 'w') as ofh:
                     formatter(all_stats_by_pool, all_stats_by_project, project_to_name, args, ofh)
+
+    #Also allow multiple MQC outputs
+    for metric in "frag lib bal".split():
+        for pool in "pool proj".split():
+            dest = vars(args)["mqc_{}_{}".format(metric, pool)]
+
+            # Manipulate args because I'm lazy
+            args.by_pool = (pool == "pool")
+            args.metric = dict(frag='Fragments', lib='Libraries', bal="Balance")[metric]
+
+            if dest == '-':
+                output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, sys.stdout)
+            elif dest:
+                with open(dest, 'w') as ofh:
+                    output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, ofh)
 
 def cov(counts_list):
     """ Standard CoV (barcode balance) calculation
@@ -255,8 +276,9 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, f
 
     for p in ps:
         p_label = p_to_name.get(p, p)
-        mqc_out['data'][p_label] = { 'lane{}'.format(l): stats_for_metric.get('{}/{}'.format(l,p), None)
-                                     for l in lanes }
+        mqc_out['data'][p_label] = { 'lane{}'.format(l): stats_for_metric.get('{}/{}'.format(l,p))
+                                     for l in lanes
+                                     if '{}/{}'.format(l,p) in stats_for_metric }
 
         # Add a total if there were >1 lanes
         if len(lanes) > 1:
