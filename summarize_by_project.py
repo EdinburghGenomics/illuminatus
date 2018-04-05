@@ -133,9 +133,10 @@ def cov(counts_list):
     return rat( stdev(counts_list), mean(counts_list) )
 
 def get_pools_per_project(project_list, lanes_summary):
-    """ Counts up the pools for each project. When calculating barcode balance by pool
+    """ Tots up the pools for each project. When calculating barcode balance by pool
         there may be a "NoPool" which has samples from multiple projects, so I can't reliably
         infer this info later. This works it out explicitly.
+        Note that if a pool is loaded on multiple lanes it will appear multiple times.
     """
     return { p : [ pool
              for lc in [ l['Contents'] for l in lanes_summary ]
@@ -342,19 +343,30 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_p
 
     # Now decide if we want to skip this. Useless tables are (I think):
     #   Any balance if no lane has more than one sample
-    #   * by pool if no project has more than one pool
+    #   Libs/Frags by pool if no project has more than one pool
+    #   Balance by project if ditto
     #   Library counts by project if there is only one project
     reason_to_skip = None
     if not args.print_even_if_empty:
         if not stats_for_metric:
             reason_to_skip = "No stats for {}".format(args.metric)
-        elif args.by_pool and not any(len(ppp) > 1 for ppp in pools_per_project.values()):
-            reason_to_skip = "No project here has more than one pool"
+
+        elif args.by_pool and \
+             (args.metric != 'Balance') and \
+             not any(len(set(ppp)) > 1 for ppp in pools_per_project.values()):
+            reason_to_skip = "No project here has more than one pool, so skipping per-pool summary"
+
+        elif not args.by_pool and \
+             (args.metric == 'Balance') and \
+             not any(len(set(ppp)) > 1 for ppp in pools_per_project.values()):
+            reason_to_skip = "No project here has more than one pool, so skipping per-project summary"
+
         elif (not args.by_pool) and (args.metric == 'Libraries') and not len(pools_per_project) > 1:
             reason_to_skip = "There is only one project"
 
     if reason_to_skip:
-        print("# " + reason_to_skip, file=fh)
+        print("reason_to_skip: '{}'".format(reason_to_skip), file=fh)
+        print("data: []", file=fh)
     else:
         # That's all she wrote. Print it out...
         print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')

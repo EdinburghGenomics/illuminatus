@@ -442,6 +442,8 @@ rule get_lane_summary:
 
 # Edit this rule according to the outputs we actually want to see in the Overview report
 # If you want to re-order them you'll need to edit how the script generates the id
+# Note that these will be re-generated if sample_summary.yml is newer, so deleting
+# sample_summary.yml then re-running QC is a good way to force these to be recalculated.
 rule get_project_summary:
     output:
         frag_pool = "QC/overview/matrix_of_frag_by_pool_mqc.yaml",
