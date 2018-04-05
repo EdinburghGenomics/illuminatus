@@ -156,52 +156,9 @@ allreps = expand("lane{l}", l=lanes) + ['overview']
 pstatus = config.get('pstatus') or 'not specified'
 
 # === Driver rules ===
-rule md5_main:
-    input:
-        md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5',  fq=all_fq ),
-        counts   = expand( 'counts/{fq[fname]}.fastq.count', fq=all_fq )
+#...have migrated to the bottom so they can refer to the inputs/outputs of other rules
 
-# qc_main depends on other rules so it's now down below.
-
-# Interop files in eg. /lustre/seqdata/170627_D00261_0417_ACAU93ANXX/InterOp/
-# The location will be inferred from SEQDATA/InterOp
-rule interop_main:
-    input:
-        plots  = expand( "QC/overview/interop/{plot}.interop_plot",
-                         run = [run],
-                         plot = ['qscore_heatmap', 'by_cycle', 'by_lane', 'flowcell' ] ),
-        ytable = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps ),
-        yyaml  = "QC/yield.yml"
-
-rule demux_stats_main:
-    # Gather stats from the bcl2fastq logs etc. Calculate barcode balance, ...
-    # We have the new Stats.json to compete with our old per-lane stats.yml derived
-    # from the CSV output. A little confusing - do we need both? See the note on
-    # get_bcl2fastq_stats_old.
-    input:
-        stats    = "QC/bcl2fastq_stats.yml",
-        oldstats = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
-        json     = expand("QC/lane{l}/Stats.json",        l=lanes),
-        runinfo  = expand("QC/{rep}/run_info.{r}.2.yml",  rep=allreps, r=[run]),
-        matrices = lambda w: rules.get_project_summary.output
-
-rule metadata_main:
-    # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
-    input:
-        runinfo  = "QC/run_info.{r}.1.yml".format(r=run),
-        laneinfo = "QC/overview/lane_summary_{r}_mqc.yaml".format(r=run)
-
-rule qc_main:
-    # QC inspects the actual fastq.gz files but also depends on interop and
-    # demux stats which we probably already made earlier.
-    input:
-        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out',  fq=all_1_fq ),
-        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',    fq=all_fq ),
-        fqscreen = expand( 'QC/lane{fq[lane]}/{fq[fname]}_screen.txt',    fq=all_1_fq ),
-        unass    = expand( 'QC/lane{fq[lane]}/{fq[fname]}.unassigned',    fq=all_u1_fq ),
-        interop  = rules.interop_main.input,
-        demux    = rules.demux_stats_main.input,
-        meta     = rules.metadata_main.input
+# === Report-making rules ===
 
 # For now run this locally. Might want to shift it to the cluster if login-0 gets too
 # busy, but then the risk is arbitrary delay if the cluster is full up.
@@ -222,8 +179,7 @@ rule run_multiqc:
         data = "QC/multiqc_report_{l}_data"
     input:
         config   = "QC/multiqc_config.yml",
-        #laneinfo = rules.metadata_main.input.laneinfo,
-        runinfo  = rules.metadata_main.input.runinfo
+        runinfo  = "QC/run_info.{r}.1.yml".format(r=run),
     shell:
         """echo "multiqc is `which multiqc`" >&2
            rm -rf {output.data}
@@ -240,7 +196,7 @@ rule configure_multiqc:
     # so we can have provenance. Strictly, we should have a 'min_multiqc_version' since I'm
     # often adding new possible settings in MultiQC then adding them to this config and they
     # are not backwards-compatible.
-    output: "QC/multiqc_config.yml"
+    output: rules.run_multiqc.input.config
     run:
         conf = dict( title = 'placeholder',
                      intro_text = False,
@@ -499,7 +455,7 @@ rule get_project_summary:
         json         = expand("QC/lane{l}/Stats.json", l=lanes) or 'No FASTQ files found'
     shell:
         """summarize_by_project.py --sample_summary {input.samples_yaml} \
-                --mqc_frag_pool {output.frag_pool} --mqc_frag_proj {ouptut.frag_proj} \
+                --mqc_frag_pool {output.frag_pool} --mqc_frag_proj {output.frag_proj} \
                 --mqc_lib_pool  {output.lib_pool}  --mqc_lib_proj  {output.lib_proj} \
                 --mqc_bal_pool  {output.bal_pool}  --mqc_bal_proj  {output.bal_proj} \
                 -- {input.json}
@@ -535,3 +491,52 @@ rule get_bcl2fastq_json:
     output: "QC/lane{lane}/Stats.json"
     input: "demultiplexing/lane{lane}/Stats/Stats.json"
     shell: "cp {input} {output}"
+
+# === Driver rules ===
+rule md5_main:
+    input:
+        md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5',  fq=all_fq ),
+        counts   = expand( 'counts/{fq[fname]}.fastq.count', fq=all_fq )
+
+# qc_main depends on other rules so it's now down below.
+
+# Interop files in eg. /lustre/seqdata/170627_D00261_0417_ACAU93ANXX/InterOp/
+# The location will be inferred from SEQDATA/InterOp
+rule interop_main:
+    input:
+        plots  = expand( "QC/overview/interop/{plot}.interop_plot",
+                         run = [run],
+                         plot = ['qscore_heatmap', 'by_cycle', 'by_lane', 'flowcell' ] ),
+        ytable = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps ),
+        yyaml  = "QC/yield.yml"
+
+rule demux_stats_main:
+    # Gather stats from the bcl2fastq logs etc. Calculate barcode balance, ...
+    # We have the new Stats.json to compete with our old per-lane stats.yml derived
+    # from the CSV output. A little confusing - do we need both? See the note on
+    # get_bcl2fastq_stats_old.
+    input:
+        stats    = "QC/bcl2fastq_stats.yml",
+        oldstats = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
+        json     = expand("QC/lane{l}/Stats.json",        l=lanes),
+        runinfo  = expand("QC/{rep}/run_info.{r}.2.yml",  rep=allreps, r=[run]),
+        matrices = rules.get_project_summary.output
+
+rule metadata_main:
+    # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
+    input:
+        runinfo  = rules.run_multiqc.input.runinfo,
+        laneinfo = "QC/overview/lane_summary_{r}_mqc.yaml".format(r=run)
+
+rule qc_main:
+    # QC inspects the actual fastq.gz files but also depends on interop and
+    # demux stats which we probably already made earlier.
+    input:
+        cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out',  fq=all_1_fq ),
+        fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',    fq=all_fq ),
+        fqscreen = expand( 'QC/lane{fq[lane]}/{fq[fname]}_screen.txt',    fq=all_1_fq ),
+        unass    = expand( 'QC/lane{fq[lane]}/{fq[fname]}.unassigned',    fq=all_u1_fq ),
+        interop  = rules.interop_main.input,
+        demux    = rules.demux_stats_main.input,
+        meta     = rules.metadata_main.input
+
