@@ -243,19 +243,22 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, f
 
     if args.metric == 'Fragments':
         mqc_out['id'] += '1_fragments_' + ('by_pool' if args.by_pool else 'by_project')
-        mqc_out['pconfig']['title'] = "Matrix of Fragments " + ('by Pool' if args.by_pool else 'by Project')
+        mqc_out['pconfig']['title'] = "Fragments " + ('by Pool' if args.by_pool else 'by Project')
         agg = sum
         agg_label = 'Total'
+        fmt = "{:,}"
     if args.metric == 'Libraries':
         mqc_out['id'] += '2_fragments_' + ('by_pool' if args.by_pool else 'by_project')
-        mqc_out['pconfig']['title'] = "Matrix of Library Counts " + ('by Pool' if args.by_pool else 'by Project')
+        mqc_out['pconfig']['title'] = "Library Counts " + ('by Pool' if args.by_pool else 'by Project')
         agg = sum
         agg_label = 'Total'
+        fmt = "{:,}"
     if args.metric == 'Balance':
         mqc_out['id'] += '3_fragments_' + ('by_pool' if args.by_pool else 'by_project')
-        mqc_out['pconfig']['title'] = "Matrix of Barcode Balance (CoV) " + ('by Pool' if args.by_pool else 'by Project')
+        mqc_out['pconfig']['title'] = "Barcode Balance " + ('by Pool' if args.by_pool else 'by Project')
         agg = None
         agg_label = 'Overall'
+        fmt = "{:,.03}"
 
     # Load up the data dict - this bit is copied from output.tsv
     if args.by_pool:
@@ -312,10 +315,10 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, args, f
     for l in lanes:
         mqc_out['headers']['lane{}'.format(l)] = dict( min = 0,
                                                        max = grand_total,
-                                                       format = "{:,.03}",
+                                                       format = fmt,
                                                        title = "Lane {}".format(l) )
     if len(lanes) > 1:
-        mqc_out['headers']['total'] = dict( format = "{:,.03}",
+        mqc_out['headers']['total'] = dict( format = fmt,
                                             title = agg_label )
 
     # That's all she wrote. Print it out...

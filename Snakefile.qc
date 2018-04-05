@@ -182,7 +182,8 @@ rule demux_stats_main:
         stats    = "QC/bcl2fastq_stats.yml",
         oldstats = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
         json     = expand("QC/lane{l}/Stats.json",        l=lanes),
-        runinfo  = expand("QC/{rep}/run_info.{r}.2.yml",  rep=allreps, r=[run])
+        runinfo  = expand("QC/{rep}/run_info.{r}.2.yml",  rep=allreps, r=[run]),
+        matrices = lambda w: rules.get_project_summary.output
 
 rule metadata_main:
     # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
@@ -449,7 +450,7 @@ rule fastqc:
 # meta-data. this can change as the pipeline runs so make the rule depend on the pipeline
 # directory. Also there is only one metadata file per run, not per lane, but it will be
 # symlinked by multiqc_main to be picked up on all runs
-localrules: get_run_metadata, get_postrun_metadata, get_lane_summary
+localrules: get_run_metadata, get_postrun_metadata, get_lane_summary, get_project_summary
 rule get_run_metadata:
     output: "QC/run_info.{runid}.1.yml"
     input: SEQDATA + "/pipeline"
@@ -481,6 +482,27 @@ rule get_lane_summary:
         """summarize_lane_contents.py --from_yml {input.samples_yaml} --mqc {output} \
            --add_in_yaml wd={input.well_dups_yaml} yield={input.yield_yaml} \
                          b2f={input.b2f_yaml}
+        """
+
+# Edit this rule according to the outputs we actually want to see in the Overview report
+# If you want to re-order them you'll need to edit how the script generates the id
+rule get_project_summary:
+    output:
+        frag_pool = "QC/overview/matrix_of_frag_by_pool_mqc.yaml",
+        frag_proj = "QC/overview/matrix_of_frag_by_proj_mqc.yaml",
+        lib_pool  = "QC/overview/matrix_of_lib_by_pool_mqc.yaml",
+        lib_proj  = "QC/overview/matrix_of_lib_by_proj_mqc.yaml",
+        bal_pool  = "QC/overview/matrix_of_bal_by_pool_mqc.yaml",
+        bal_proj  = "QC/overview/matrix_of_bal_by_proj_mqc.yaml",
+    input:
+        samples_yaml = SEQDATA + "/pipeline/sample_summary.yml",
+        json         = expand("QC/lane{l}/Stats.json", l=lanes) or 'No FASTQ files found'
+    shell:
+        """summarize_by_project.py --sample_summary {input.samples_yaml} \
+                --mqc_frag_pool {output.frag_pool} --mqc_frag_proj {ouptut.frag_proj} \
+                --mqc_lib_pool  {output.lib_pool}  --mqc_lib_proj  {output.lib_proj} \
+                --mqc_bal_pool  {output.bal_pool}  --mqc_bal_proj  {output.bal_proj} \
+                -- {input.json}
         """
 
 localrules: get_bcl2fastq_stats_old, get_bcl2fastq_stats
