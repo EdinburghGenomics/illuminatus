@@ -1,0 +1,35 @@
+Preliminary work for how I plan to do this is here in ~/Pictures/apng on my own laptop.
+
+Currently (1.0.3) the pipeline calls:
+
+{TOOLBOX} interop_plot_flowcell {input}/.. > {output}
+
+I thought this gave the average intensity over all cycles but apparently no it just gives
+the cycle 1 intensity.
+
+The title of the image is always "<FCDI> Intensity" even if you apply the --filter-by-cycle=
+filter.
+
+The output file is set to '.._flowcell-Intensity.png' due to the way I call the script, and in
+multiqc_edgen/modules/edgen_interop/edgen_interop.py I just allow this file to be made and then
+snag it out of the temp dir. I'm going to need to do something more sophisticated.
+
+Also can I produce an averaged image? It's going to be do-able but hacky.
+
+So, this actually turned out to be even more complicated but what I did was:
+
+1) Got the snakefile to emit intensity for all cycles to a single file, flowcell_all.interop_plot
+
+2) Made the edgen_interop plugin in MultiQC_Edgen recognise this specific file and run gnuplot
+   so as to produce a stack of images (for some reason I had to run gnuplot multiple times but
+   Python POpen can handle this fine).
+
+3) Made a fudged version of apngasm called apngasm-noopt that disables inter-frame optimisations
+   (since this stops us playing the frams out-of-order and also has issues with triggering the
+   canvas security traps on Chrome)
+
+4) Made a fudged verion of apng-js-bundle.js that can display frames of these de-optimised apng
+   files out-of order
+
+5) Back in MultiQC_Edgen, applied various mungings to the gnuplot commands for example to force
+   the scale from 50 to 300 so the colours are comparable.

@@ -270,10 +270,26 @@ rule interop_by_lane:
     input: format("{SEQDATA}/InterOp")
     shell: "{TOOLBOX} interop_plot_by_lane {input}/.. > {output}"
 
+# I thought this was plotting for all cycles but in fact it simply plots for cycle 1
 rule interop_flowcell:
     output: "{foo}/flowcell.interop_plot"
     input: format("{SEQDATA}/InterOp")
     shell: "{TOOLBOX} interop_plot_flowcell {input}/.. > {output}"
+
+# This version plots for all cycles. If I want the overall I'll need to calculate it
+# myself.
+rule interop_flowcell_all:
+    output: "{foo}/flowcell_all.interop_plot"
+    input: format("{SEQDATA}/InterOp")
+    shell:
+        # Loop until we get the error: Cycle number exceeds total number of cycles
+        # Then assert that the loop ran at least once and the output is not empty.
+        """for i in `seq 1000` ; do
+             {TOOLBOX} interop_plot_flowcell --filter-by-cycle=$i {input}/.. >> {output} || break
+           done
+           [ $i -gt 1 ] && [ -s {output} ]
+        """
+
 
 # This makes use of the interop library that needs to be installed into the Python
 # VEnv - see the activate_venv script.
@@ -440,8 +456,10 @@ rule get_lane_summary:
                          b2f={input.b2f_yaml}
         """
 
-# Edit this rule according to the outputs we actually want to see in the Overview report
-# If you want to re-order them you'll need to edit how the script generates the id
+# You could edit this rule according to the outputs we actually want to see in the Overview
+# report. However the "eliminate boring plots" logic should negate the need for that.
+# If you want to re-order them you'll need to edit how the script generates the id since this
+# is used as the sort key.
 # Note that these will be re-generated if sample_summary.yml is newer, so deleting
 # sample_summary.yml then re-running QC is a good way to force these to be recalculated.
 rule get_project_summary:
@@ -508,7 +526,7 @@ rule interop_main:
     input:
         plots  = expand( "QC/overview/interop/{plot}.interop_plot",
                          run = [run],
-                         plot = ['qscore_heatmap', 'by_cycle', 'by_lane', 'flowcell' ] ),
+                         plot = ['qscore_heatmap', 'by_cycle', 'by_lane', 'flowcell_all' ] ),
         ytable = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps ),
         yyaml  = "QC/yield.yml"
 
