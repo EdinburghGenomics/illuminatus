@@ -1,0 +1,44 @@
+As expected, the viewing/setting of the usable vs. unusable flags is complicated.
+
+I originally had the idea to capture the flags when the report was made and then update
+them on-the-fly. But this is confusing and hard to do, so they will be fetched only from the LIMS.
+
+This feature also depends on the new fields in the LIMS (added by Dan) and the setting of the
+run names for all runs, which is now done by clarity_run_id_setter.py (which is pretty
+simple).
+
+Random note - I can't see a way to de-set a flag once it is set, so new runs come up
+in the LIMS as unflagged but once you set a flag you can't clear it. This seems to be a
+limitation of the LIMS API. But we can live with this.
+
+First we have the microservice (or whatever you would call it) which runs under Tornado
+and my tinkerings to make it live under XInetd (since Tornado in Apache does not sit well).
+
+The notes for that are under the microservices project, which also discusses how to integrate
+this service with the MultiQC UI. Essentially as most of the complex logic is in the Python we
+only really have to worry about the UI aspects in the JavaScript.
+
+All of this is captured in the MultiQC_EdGen project under the templates, as 'lui.js' (for lane
+usability indication).
+
+My first cut of the UI was to use a modal window.prompt() which allows a text string input
+and OK/Cancel options. I made it that an empty string implied usable and a non-empty string
+implied unusable. But maybe we want to put the sign-off comments in for all lanes? In which case
+we need a longer text string and an actual yes/no selector.
+
+I made a demo of this in (of all places) /home/tbooth2/Pictures/apng/test_dialog.html
+To make this work I had to:
+
+1) Re-build the jquery-ui.js to include the dialog (not a big deal as I already added the slider
+   for the APNG stuff)
+2) In-line the images in the jquery-ui.css, since we're inlining everything so these don't escape.
+   I was able to use env PATH="$HOME/build/node-v8.9.0-linux-x64/bin:$PATH" inliner for this
+   but I had to use a dummy html page to convince inliner to process the CSS correctly. Anyway
+   this only needs doing once.
+3) Work out how to get the resizing of the textarea in the dialog (a little fiddly but it now works
+   well).
+
+This could be plumbed into the existing reports with not-too-much effort.
+
+Addendum - this is done. There was effort, because there are some oddities, but I have managed to
+work around them and it's looking OK.

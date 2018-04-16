@@ -25,11 +25,14 @@ So, this actually turned out to be even more complicated but what I did was:
    Python POpen can handle this fine).
 
 3) Made a fudged version of apngasm called apngasm-noopt that disables inter-frame optimisations
-   (since this stops us playing the frams out-of-order and also has issues with triggering the
-   canvas security traps on Chrome)
+   (since this stops us playing the frames out-of-order and also has issues with triggering the
+   canvas security traps on Chrome). Note that we do still get a little bit of optimisation with
+   the common border being preserved.
 
 4) Made a fudged verion of apng-js-bundle.js that can display frames of these de-optimised apng
    files out-of order
 
 5) Back in MultiQC_Edgen, applied various mungings to the gnuplot commands for example to force
-   the scale from 50 to 300 so the colours are comparable.
+   the scale from 50 to 300 so the colours are comparable. I'm not sure if this is what is wanted or not?
+
+* Note on 10th April, Tony says no keep the variable scale
