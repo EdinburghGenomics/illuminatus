@@ -101,6 +101,7 @@ description: Content of lanes in the run, with 3,837,991,872 of 4,969,689,600 cl
 headers:
   col_01:
     format: '{:s}'
+    textcell: true
     title: Project
   col_02:
     description: Summary of lane contents. See per-lane pages for a full list.
