@@ -347,19 +347,23 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_p
     #   Balance by project if ditto
     #   Library counts by project if there is only one project
     reason_to_skip = None
+    pppv = pools_per_project.values()
     if not args.print_even_if_empty:
         if not stats_for_metric:
             reason_to_skip = "No stats for {}".format(args.metric)
 
         elif args.by_pool and \
              (args.metric != 'Balance') and \
-             not any(len(set(ppp)) > 1 for ppp in pools_per_project.values()):
+             not any(len(set(ppp)) > 1 for ppp in pppv):
             reason_to_skip = "No project here has more than one pool, so skipping per-pool summary"
 
+        # In run 180412_M01270_0454_000000000-D3R8F we see that a pool may span multiple projects,
+        # so be careful.
         elif not args.by_pool and \
              (args.metric == 'Balance') and \
-             not any(len(set(ppp)) > 1 for ppp in pools_per_project.values()):
-            reason_to_skip = "No project here has more than one pool, so skipping per-project summary"
+             not any(len(set(ppp)) > 1 for ppp in pppv) and \
+             not sum(len(set(l)) for l in pppv) > len(set(i for l in pppv for i in l)):
+            reason_to_skip = "No project here has more than one pool, and no pools span projects, so skipping per-project summary"
 
         elif (not args.by_pool) and (args.metric == 'Libraries') and not len(pools_per_project) > 1:
             reason_to_skip = "There is only one project"
