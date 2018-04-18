@@ -214,7 +214,9 @@ def output_mqc(rids, fh):
     # As a special case, force the Pool/Library column to be treated as text.
     # I might be asked to make the full list of libs appear in the popup, but let's
     # not second guess that.
-    mqc_out['headers']['col_02']['textcell'] = True
+    # Also the same for the Project column as ther may be many
+    mqc_out['headers']['col_01']['textcell'] = True # Project
+    mqc_out['headers']['col_02']['textcell'] = True # Pool/Library
 
     for lane in rids['Lanes']:
         # Logic here is just copied from output_tsv, but we also want the total num_indexes
