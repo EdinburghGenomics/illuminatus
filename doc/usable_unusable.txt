@@ -42,3 +42,19 @@ This could be plumbed into the existing reports with not-too-much effort.
 
 Addendum - this is done. There was effort, because there are some oddities, but I have managed to
 work around them and it's looking OK.
+
+
+--- On 19/4
+
+The next question is, if we are storing this info in the LIMS, do we want to be able to do away with
+the e-mails that notify us when the lanes are ready for delivery or QC?
+
+If so, how do we implement the logic? When a flag is set or changed, if usable/unusable flags for all rows
+are set, a notification should be sent.
+
+Probably this should go to the project QC tickets? Maybe with another microservice that wraps RT.
+
+It's tempting to just have the runflags microservice directly call the RT microservice to post the message,
+but this is not the microservice way. We want a general event/subscriber model which also allows us to
+tackle other events like re-doing lanes and logging deliveries. I will continue my thoughts on this in
+the microservices project.
