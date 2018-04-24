@@ -142,10 +142,10 @@ class BCL2FASTQPreprocessor:
         """Loads the [bcl2fastq] section from self._samplesheet into self.ini_settings,
            allowing things like --barcode-mismatches to be embedded in the SampleSheet.csv
         """
-        cp = configparser.ConfigParser()
+        cp = configparser.ConfigParser(empty_lines_in_values=False)
         try:
             with open(self._samplesheet) as sfh:
-                cp.read_file( takewhile(lambda x: x.strip(),
+                cp.read_file( takewhile(lambda x: not x.startswith('[Data]'),
                                         dropwhile(lambda x: not x.startswith('[bcl2fastq]'), sfh)),
                               self._samplesheet )
 
@@ -160,7 +160,7 @@ class BCL2FASTQPreprocessor:
         """ Read the options from config_file into self.ini_settings,
             overwriting anything already there.
         """
-        cp = configparser.ConfigParser()
+        cp = configparser.ConfigParser(empty_lines_in_values=False)
         try:
             cp.read(ini_file)
             for section in cp.sections():

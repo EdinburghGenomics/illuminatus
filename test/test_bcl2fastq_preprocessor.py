@@ -129,6 +129,7 @@ class T(unittest.TestCase):
             lines = list(fh)
         with open(os.path.join(shadow_dir, 'SampleSheet.csv'), "w") as fh:
             print("[bcl2fastq]", file=fh)
+            print("", file=fh)
             print("--foo: bar", file=fh)
             print("--barcode-mismatches-lane2: 2", file=fh)
             print("--barcode-mismatches-lane4: 4", file=fh)
