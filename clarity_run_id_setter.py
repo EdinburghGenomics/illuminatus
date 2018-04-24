@@ -15,7 +15,7 @@ import os, sys, re
 import configparser
 
 # Seems pointless to use my wrapper lib for this
-from pyclarity_lims.lims import Lims, Step
+from pyclarity_lims.lims import Lims
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
@@ -48,6 +48,12 @@ def main(args):
     # 4 - Find the first analyte and thus the step (see notes)
     # 5 - Load the step and set the values (if not set already or forced)
 
+    # Sanity check, since I accidentally set several run IDs to
+    # /lustre/fastqdata/180416_M05898_0001_000000000-D42P7 etc. by foolish use of
+    # a shell loop.
+    assert re.match(r"^[0-9]{6}_[A-Za-z0-9_-]+", args.runid), \
+        "Run ID does not look right - {}".format(args.runid)
+
     # 1
     existing_proc = lims.get_processes(type=QC_PROCESS, udf={'RunID': args.runid})
 
@@ -56,6 +62,14 @@ def main(args):
         # There should just be one!
         for ep in existing_proc:
             L.info("  " + ep.uri)
+
+            if args.close and not args.no_act:
+                try:
+                    L.info("  Closing the existing step...")
+                    ep.step.get() ; ep.step.advance()
+                    L.info("  DONE")
+                except Exception as e:
+                    L.info("  " + str(e))
 
             if args.debug:
                 # It's useful to be able to get the parent process because that's what gets fed
@@ -103,7 +117,7 @@ def main(args):
         exit(1)
 
     # 5 - it seems Clarity likes to set UDFs on a step not a process(?)
-    qc_step = Step(lims, id=qc_proc.id).details
+    qc_step = qc_proc.step.details
 
     L.info("Setting UDFs on {}".format(qc_step.uri))
     if qc_step.udf.get('RunID'):
@@ -122,6 +136,14 @@ def main(args):
         L.info("Nothing will be saved as no_act was set.")
     else:
         qc_step.put()
+
+    if args.close and not args.no_act:
+        try:
+            L.info("Closing the step...")
+            qc_proc.step.get() ; qc_proc.step.advance()
+            L.info("DONE")
+        except Exception as e:
+            L.info(str(e))
 
     L.info("DONE")
 
@@ -146,6 +168,8 @@ def parse_args(*args):
     parser.add_argument("--container_name",
                         help="Attach the name to a container with the specified name, as" + \
                              " opposed to extracting the flowcell name from the runid.")
+    parser.add_argument("-c",  "--close", action="store_true",
+                        help="Close/complete the QC step by calling advance().")
     parser.add_argument("-f",  "--force", action="store_true",
                         help="Overwrite existing value.")
     parser.add_argument("-n", "--no_act", action="store_true",
