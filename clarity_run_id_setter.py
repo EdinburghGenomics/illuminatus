@@ -65,9 +65,9 @@ def main(args):
 
             if args.close and not args.no_act:
                 try:
-                    L.info("  Closing the existing step...")
+                    L.info("  Completing the existing step...")
                     ep.step.get() ; ep.step.advance()
-                    L.info("  DONE")
+                    L.info("  completed")
                 except Exception as e:
                     L.info("  " + str(e))
 
@@ -90,17 +90,18 @@ def main(args):
         if mo:
             container_name = mo.group(1)
 
-    existing_container = lims.get_containers(name=container_name)
+    existing_containers = lims.get_containers(name=container_name)
 
     # 3
-    if len(existing_container) == 0:
+    if len(existing_containers) == 0:
         L.warning("No container found with name {}.".format(container_name))
         exit(1)
 
-    if len(existing_container) > 1:
-        L.warning("Multiple containers found with name {}. The latest will be used.".format(container_name))
+    existing_container = sorted(existing_containers, key=lambda c: c.uri)[-1]
+    if len(existing_containers) > 1:
+        L.warning("Multiple containers found with name {}. The latest ({}) will be used.".format(
+                                                       container_name, existing_container.id ))
 
-    existing_container = sorted(existing_container, key=lambda c: c.uri)[-1]
     L.info("Finding QC step for container {}.".format(existing_container.uri))
 
     # 4 - HiSeq lane 1 is 1:1 while MiSeq lane is 'A:1' for some reson. We should see on eor the other.
@@ -110,9 +111,12 @@ def main(args):
 
     # https://clarity.genomics.ed.ac.uk/api/v2/processes?type=Flow%20Cell%20Lane%20QC%20EG%201.0%20ST&inputartifactlimsid=2-126766
     # I need to handle the error if there is not one process - older runs lack the step, for example.
+    # In the development LIMS we also seem to have multiple QC processes per flowcell. As before I think we need to go for
+    # the latest one.
     try:
-        qc_proc, = lims.get_processes(type=QC_PROCESS, inputartifactlimsid=analyte1.id)
-    except ValueError:
+        qc_proc = sorted( lims.get_processes(type=QC_PROCESS, inputartifactlimsid=analyte1.id),
+                          key = lambda p: p.id )[-1]
+    except IndexError:
         L.error("Could not find a QC step for this container.")
         exit(1)
 
@@ -137,13 +141,13 @@ def main(args):
     else:
         qc_step.put()
 
-    if args.close and not args.no_act:
-        try:
-            L.info("Closing the step...")
-            qc_proc.step.get() ; qc_proc.step.advance()
-            L.info("DONE")
-        except Exception as e:
-            L.info(str(e))
+        if args.close:
+            try:
+                L.info("Completing the step...")
+                qc_proc.step.get(force=True) ; qc_proc.step.advance()
+                L.info("completed")
+            except Exception as e:
+                L.info(str(e))
 
     L.info("DONE")
 
@@ -168,9 +172,9 @@ def parse_args(*args):
     parser.add_argument("--container_name",
                         help="Attach the name to a container with the specified name, as" + \
                              " opposed to extracting the flowcell name from the runid.")
-    parser.add_argument("-c",  "--close", action="store_true",
+    parser.add_argument("-c", "--close", "--complete", action="store_true",
                         help="Close/complete the QC step by calling advance().")
-    parser.add_argument("-f",  "--force", action="store_true",
+    parser.add_argument("-f", "--force", action="store_true",
                         help="Overwrite existing value.")
     parser.add_argument("-n", "--no_act", action="store_true",
                         help="Don't write back to Clarity.")
