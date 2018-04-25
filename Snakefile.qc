@@ -307,6 +307,7 @@ rule interop_yield_table:
 
 # md5summer that keeps the file path out of the .md5 file
 rule md5sum_file:
+    priority: 50
     output: "md5sums/{foo}.md5"
     input: "{foo}"
     shell: "( cd `dirname {input}` && md5sum `basename {input}` ) > {output}"
@@ -316,6 +317,7 @@ rule md5sum_file:
 # original copy).
 localrules: base_count_file
 rule base_count_file:
+    priority: 100
     output: "counts/{fq}.count"
     input:
         fq = "{fq}.gz",
@@ -515,8 +517,8 @@ rule get_bcl2fastq_json:
 # === Driver rules ===
 rule md5_main:
     input:
-        md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5',  fq=all_fq ),
-        counts   = expand( 'counts/{fq[fname]}.fastq.count', fq=all_fq )
+        md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5', fq=all_fq ),
+        counts   = expand( 'counts/{fq[fname]}.fastq.count',   fq=all_fq )
 
 # qc_main depends on other rules so it's now down below.
 
