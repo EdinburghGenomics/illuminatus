@@ -68,13 +68,25 @@ LANES_TO_SAMPLE = range(1, int(LAST_LANE) + 1)
 
 # For most runs we want to start at read 20, after any internal barcodes,
 # but some runs only have 51 cycles in read1.
-num_cycles = int(run_info_root.find("Run/Reads/Read[@Number='1']").get('NumCycles'))
-if num_cycles <= (READ_LENGTH + START_POS):
+# And some 10x runs have a short read1 and a long read3, so we want to scan read3.
+# This will fail if there are missing BCL files but that's OK as the pipeline will
+# retry once the run is complete.
+num_cycles_1 = int(run_info_root.find("Run/Reads/Read[@Number='1']").get('NumCycles'))
+if num_cycles_1 <= (READ_LENGTH + START_POS):
     START_POS = 0
-    if not num_cycles > READ_LENGTH:
-        # We can't process this run
-        print("Cannot process run with {} cycles in read 1.".format(num_cycles), file=sys.stderr)
-        LANES_TO_SAMPLE = []
+    if not num_cycles_1 > READ_LENGTH:
+        # See if we can use read 3?
+        try:
+            num_cycles_3 = int(run_info_root.find("Run/Reads/Read[@Number='3']").get('NumCycles'))
+            if num_cycles_3 > READ_LENGTH:
+                num_cycles_2 = int(run_info_root.find("Run/Reads/Read[@Number='2']").get('NumCycles'))
+                START_POS = num_cycles_1 + num_cycles_2
+            else:
+                raise Exception("No dice")
+        except Exception:
+            # We can't process this run
+            print("Cannot process run with {} cycles in read 1.".format(num_cycles), file=sys.stderr)
+            LANES_TO_SAMPLE = []
 END_POS = READ_LENGTH + START_POS
 
 # If there are 4 swaths per side (NovaSeq) then only do the even tiles
