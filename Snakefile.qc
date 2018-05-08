@@ -328,12 +328,14 @@ rule base_count_file:
 # cutadapt used only for adapter dimer/short insert detection on read 1 only
 # I'm not making the list of adapters configurable since they are supposed to be generic for all
 # runs. More detailed analysis belongs in project QC.
+# Note the use of 20+ bases allows detection where the first two bases are missing, with the default
+# cutadapt tolerance of 10% mismatches.
 rule cutadapt_scan:
     output: "QC/lane{l,[0-9]+}/{fq}.cutadapt_out"
     input: "{fq}.fastq.gz"
     params:
-        # 3' adapters: truseq           nextera         illumina_smallrna
-        adapters =    ["AGATCGGAAGAGC", "CTGTCTCTTATA", "TGGAATTCTCGGGTGCCAAGG"]
+        # 3' adapters: truseq 21 bases          nextera         illumina_smallrna
+        adapters =    ["AGATCGGAAGAGCACACGTCT", "CTGTCTCTTATA", "TGGAATTCTCGGGTGCCAAGG"]
     shell:
         """{TOOLBOX} cutadapt -f fastq -O 9 -o /dev/null `for a in {params.adapters} ; do echo -a $a ; done` \
              {input} > {output}
