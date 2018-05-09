@@ -66,8 +66,8 @@ except ValueError:
 # RunInfo.xml...
 LANES_TO_SAMPLE = range(1, int(LAST_LANE) + 1)
 
-# For most runs we want to start at read 20, after any internal barcodes,
-# but some runs only have 51 cycles in read1.
+# For most runs we want to start at cycle 20, after any internal barcodes,
+# but some runs only have 51 cycles in read1 so start at cycle 0.
 # And some 10x runs have a short read1 and a long read3, so we want to scan read3.
 # This will fail if there are missing BCL files but that's OK as the pipeline will
 # retry once the run is complete.
@@ -82,6 +82,7 @@ if num_cycles_1 <= (READ_LENGTH + START_POS):
                 num_cycles_2 = int(run_info_root.find("Run/Reads/Read[@Number='2']").get('NumCycles'))
                 START_POS = num_cycles_1 + num_cycles_2
             else:
+                # Drop to exception handling
                 raise Exception("No dice")
         except Exception:
             # We can't process this run

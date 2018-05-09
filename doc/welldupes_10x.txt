@@ -1,6 +1,6 @@
 Some of the 10x runs only have 26 cycles in the first read. The plan is that we should be
 able to get a well dups number for these by going to the second read, but of course this means
-the scan triggered after read1 will have to fail.
+the scan triggered after read1 will have to fail, since read 2 is still in progress.
 
 * Runs that are affected so far:
 
@@ -27,3 +27,9 @@ Really what we want is to fake a NovaSeq run reaching READ1_FINISHED and then se
 
 So I can do this by copying run 180412_A00291_0020_BH2YTVDRXX. First I'm going to update
 slim-a-run.sh to deal with NovaSeq runs.
+
+---
+
+Done and done. slim_a_novaseq_run.sh is made and tested, and I tested the run as above and
+it worked. Now to deploy the new pipeline, and to re-get the well dups values for the
+old 10x runs.
