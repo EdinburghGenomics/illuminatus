@@ -108,11 +108,14 @@ def main(args):
     analyte1, = [ existing_container.placements.get(loc)
                   for loc in ['1:1', 'A:1']
                   if loc in existing_container.placements ]
+    L.debug("Examining analyte {}".format(analyte1.uri))
 
     # https://clarity.genomics.ed.ac.uk/api/v2/processes?type=Flow%20Cell%20Lane%20QC%20EG%201.0%20ST&inputartifactlimsid=2-126766
     # I need to handle the error if there is not one process - older runs lack the step, for example.
     # In the development LIMS we also seem to have multiple QC processes per flowcell. As before I think we need to go for
     # the latest one.
+    # Also I've seen a case where a stage was queued and removed (ie. not completed). This shows up on the artifact page but
+    # not in the list when I run the get_processes search below.
     try:
         qc_proc = sorted( lims.get_processes(type=QC_PROCESS, inputartifactlimsid=analyte1.id),
                           key = lambda p: p.id )[-1]
@@ -159,6 +162,7 @@ def get_config(section='genologics', parts=['BASEURI', 'USERNAME', 'PASSWORD']):
     conf_file = config.read(os.environ.get('GENOLOGICSRC',
                             [os.path.expanduser('~/.genologicsrc'),
                              'genologics.conf', 'genologics.cfg', '/etc/genologics.conf'] ))
+    L.debug("Read config from {}".format(conf_file))
 
     return { i.lower(): config[section][i] for i in parts}
 
