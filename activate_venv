@@ -64,7 +64,7 @@ else
     pip3 install --upgrade pip
     pip3 install Rt
     pip3 install pyclarity_lims
-    pip3 install psycopg2
+    pip3 install psycopg2-binary
     pip3 install pystache
 
     # InterOP is not on PyPI so no pre-build needed :-)
