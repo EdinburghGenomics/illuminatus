@@ -478,11 +478,11 @@ run_multiqc() {
         send_summary_to_rt comment "$_rt_run_status"
     fi
 
-    # If this fails, the pipeline will continue, but we need to remove pipeline/sample_summary.yml
-    # so that it will be re-generated and re-sent at the next opportunity.
+    # If this fails, the pipeline will continue, since only the final message to RT
+    # is seen as critical. We used to remove pipeline/sample_summary.yml to trigger a new
+    # report but since this is now sent with every message there's no need.
     if [ $? != 0 ] ; then
         _retval=$(( $_retval + 1 ))
-        rm -vf pipeline/sample_summary.yml
     fi
 
     # Tell Clarity the proper name for this run. Needs to be done at least before the second report
