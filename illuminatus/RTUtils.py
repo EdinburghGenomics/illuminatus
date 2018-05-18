@@ -81,7 +81,7 @@ class RT_manager():
                               default_queue=self.default_queue)
 
         if not self.tracker.login():
-            raise AuthorizationError('login() failed on {_config_name} ({tracker.url})'.format(self))
+            raise AuthorizationError('login() failed on {_config_name} ({tracker.url})'.format(**vars(self)))
 
         # Here comes the big monkey-patch-o-doom!
         # It will force a 60-second timeout on the Rt session, assuming the internal implementation
