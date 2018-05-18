@@ -261,25 +261,6 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_p
         headers      = {},
     )
 
-    if args.metric == 'Fragments':
-        mqc_out['id'] += '1_fragments_' + ('by_pool' if args.by_pool else 'by_project')
-        mqc_out['pconfig']['title'] = "Fragments " + ('by Pool' if args.by_pool else 'by Project')
-        agg = sum
-        agg_label = 'Total'
-        fmt = "{:,}"
-    if args.metric == 'Libraries':
-        mqc_out['id'] += '2_fragments_' + ('by_pool' if args.by_pool else 'by_project')
-        mqc_out['pconfig']['title'] = "Library Counts " + ('by Pool' if args.by_pool else 'by Project')
-        agg = sum
-        agg_label = 'Total'
-        fmt = "{:,}"
-    if args.metric == 'Balance':
-        mqc_out['id'] += '3_fragments_' + ('by_pool' if args.by_pool else 'by_project')
-        mqc_out['pconfig']['title'] = "Barcode Balance " + ('by Pool' if args.by_pool else 'by Project')
-        agg = None
-        agg_label = 'Overall'
-        fmt = "{:,.03}"
-
     # Load up the data dict - this bit is copied from output.tsv
     if args.by_pool:
         plabel = 'Pool'
@@ -293,15 +274,34 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_p
         stats_for_metric = all_stats[args.metric]
         p_to_name = project_to_name
 
+    if args.metric == 'Fragments':
+        mqc_out['id'] += '1_fragments_by' + plabel
+        mqc_out['pconfig']['title'] = "Fragments by " + plabel
+        agg = sum
+        agg_label = 'Total'
+        fmt = "{:,}"
+    if args.metric == 'Libraries':
+        mqc_out['id'] += '2_fragments_by' + plabel
+        mqc_out['pconfig']['title'] = "Library Counts by " + plabel
+        agg = sum
+        agg_label = 'Total'
+        fmt = "{:,}"
+    if args.metric == 'Balance':
+        mqc_out['id'] += '3_fragments_by' + plabel
+        mqc_out['pconfig']['title'] = "Barcode Balance by " + plabel
+        agg = None
+        agg_label = 'Overall'
+        fmt = "{:,.03}"
+
     ps = sorted(set( [k.split('/',1)[1] for k in stats_for_metric] +
                      [k for k in p_to_name] ))
     lanes = sorted(set( [k.split('/',1)[0] for k in stats_for_metric] ))
 
     for p in ps:
-        p_label = p_to_name.get(p, p)
-        mqc_out['data'][p_label] = { 'lane{}'.format(l): stats_for_metric.get('{}/{}'.format(l,p))
-                                     for l in lanes
-                                     if '{}/{}'.format(l,p) in stats_for_metric }
+        proj_label = p_to_name.get(p, p)
+        mqc_out['data'][proj_label] = { 'lane{}'.format(l): stats_for_metric.get('{}/{}'.format(l,p))
+                                        for l in lanes
+                                        if '{}/{}'.format(l,p) in stats_for_metric }
 
         # Add a total if there were >1 lanes
         if len(lanes) > 1:
@@ -310,7 +310,7 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_p
             else:
                 # Must be pre-calculated
                 p_total = all_stats['P'+args.metric].get(p, 0)
-            mqc_out['data'][p_label]['total'] = p_total
+            mqc_out['data'][proj_label]['total'] = p_total
 
     # Add a summary row. Since all our projects and pools start with a number or 'N' this should
     # stay at the bottom so long as the title is 'Total' or 'Overall'.
@@ -330,7 +330,7 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_p
             mqc_out['data'][agg_label]['total'] = grand_total
 
     # That's the data loaded. Now to set up the headers.
-    mqc_out['pconfig']['col1_header'] = 'Pool' if args.by_pool else 'Project'
+    mqc_out['pconfig']['col1_header'] = plabel
 
     for l in lanes:
         mqc_out['headers']['lane{}'.format(l)] = dict( min = 0,
