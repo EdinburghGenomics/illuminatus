@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 import sys, os
-import datetime
 import json
 from argparse import ArgumentParser
-from itertools import chain
 from statistics import mean, stdev
 
 from illuminatus.YAMLOrdered import yaml
