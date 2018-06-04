@@ -53,7 +53,7 @@ REPORT_VERBOSE = True
 # We need to examine the run info. OK to do this on every cluster job.
 run_info_root = ET.parse(RUNDIR + "/RunInfo.xml").getroot()
 
-LAST_LANE = 0 ; LAST_TILE = '0000'
+LAST_LANE = '0' ; LAST_TILE = '0000'
 try:
     LAST_LANE, LAST_TILE = max(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
 except ValueError:
@@ -91,11 +91,11 @@ if LANES_TO_SAMPLE:
                 LANES_TO_SAMPLE = []
     END_POS = READ_LENGTH + START_POS
 
-    # If there are 4 swaths per side (NovaSeq) then only do the even tiles
-    if LAST_TILE >= '2400':
-        TILE_MATCH = dict( T='1..[02468]', B='2..[02468]' )
-    else:
-        TILE_MATCH = dict( T='1...', B='2...' )
+# If there are 4 swaths per side (NovaSeq) then only do the even tiles
+if LAST_TILE >= '2400':
+    TILE_MATCH = dict( T='1..[02468]', B='2..[02468]' )
+else:
+    TILE_MATCH = dict( T='1...', B='2...' )
 
 # Unfortunately there's more - for slimmed-down runs we get a line in
 # pipeline_settings.ini like this, indicating that most tiles are missing:
