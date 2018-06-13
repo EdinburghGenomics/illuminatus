@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
 import os
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 from illuminatus.LIMSQuery import get_project_names
 
 def parse_args():
     description = """Simple client for the LIMS query code in illuminatus/LIMSQuery.py
     """
-    argparser = ArgumentParser(description=description)
+    argparser = ArgumentParser( description=description,
+                                formatter_class = ArgumentDefaultsHelpFormatter )
+
     argparser.add_argument("-l", nargs='+',
                             help="Look up one or more projects by ID.")
 

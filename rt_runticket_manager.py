@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys, os
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 from illuminatus.RTUtils import RT_manager
 
@@ -9,7 +9,8 @@ def parse_args():
     description = """This script allows you to manipulate a ticket for a particular run.
     You can reply, comment, open, stall, resolve tickets.
     """
-    argparser = ArgumentParser(description=description)
+    argparser = ArgumentParser( description=description,
+                                formatter_class = ArgumentDefaultsHelpFormatter )
     argparser.add_argument("-r", "--run_id", required=True,
                             help="The run id of the ticket.")
     argparser.add_argument("--reply",

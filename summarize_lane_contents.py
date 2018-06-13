@@ -2,7 +2,7 @@
 import sys, os
 import datetime
 import yaml
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 #from pprint import pprint, pformat
 
 from illuminatus.SampleSheetReader import SampleSheetReader
@@ -37,7 +37,8 @@ Soon it will ask the LIMS for additional details (loading conc) too.
 # be the only script that is querying the LIMS and looking at the details of the SampleSheet
 # lines.
 
-    a = ArgumentParser(description=description)
+    a = ArgumentParser( description=description,
+                        formatter_class = ArgumentDefaultsHelpFormatter )
     a.add_argument("--project_name_list",
                    help="Supply a comma-separated list of project names." +
                         " If you do this, the LIMS will not be queried." +

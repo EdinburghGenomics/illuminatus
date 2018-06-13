@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys, os
 import json
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from math import isnan
 from statistics import mean, stdev
 
@@ -31,7 +31,8 @@ for debugging.
 # be the only script that is querying the LIMS and looking at the details of the SampleSheet
 # lines.
 
-    a = ArgumentParser(description=description)
+    a = ArgumentParser( description = description,
+                        formatter_class = ArgumentDefaultsHelpFormatter)
     a.add_argument("--project_name_list",
                    help="Supply a comma-separated list of project names." +
                         " Normally they would be obtained from sample_summary.yml." +

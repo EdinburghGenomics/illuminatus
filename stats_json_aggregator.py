@@ -5,7 +5,7 @@
     This will combine stats from across all/multiple lanes for the overview report.
 """
 #import os, sys, re
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import json
 from statistics import mean, stdev
 from illuminatus.FixedOrderedDict import FixedOrderedDict
@@ -86,8 +86,10 @@ def main(args):
 
 def parse_args(*args):
 
-    parser = ArgumentParser( description =
-        "Extract some info from multiple Stats.json. See also summarize_by_project.py" )
+    desc = "Extract some info from multiple Stats.json. See also summarize_by_project.py"
+
+    parser = ArgumentParser( description = desc,
+                             formatter_class = ArgumentDefaultsHelpFormatter )
 
     parser.add_argument("json", type=str, nargs='+',
                         help="Stats to be digested.")
