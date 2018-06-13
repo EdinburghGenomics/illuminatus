@@ -2,6 +2,7 @@
 import sys, os
 import json
 from argparse import ArgumentParser
+from math import isnan
 from statistics import mean, stdev
 
 from illuminatus.YAMLOrdered import yaml
@@ -146,7 +147,8 @@ def get_pools_per_project(project_list, lanes_summary):
 
 def aggregate_by_project(all_stats_by_library, lanes_summary):
     """ Gets us from {lane -> {pool_library -> fragments}} to three dicts
-        of {(lane/project) -> value} by using the info in lanes_summary.
+        of {(lane/project) -> value} by using the info in lanes_summary, which
+        is the 'Lanes' section from the sample_summary.yml
     """
     # This will map {(lane/project) -> [list of counts]}
     counts_by_lane_proj = dict()
@@ -332,7 +334,7 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_p
 
     for l in lanes:
         mqc_out['headers']['lane{}'.format(l)] = dict( min = 0,
-                                                       max = grand_total,
+                                                       max = grand_total if not isnan(grand_total) else None,
                                                        format = fmt,
                                                        title = "Lane {}".format(l) )
     if len(lanes) > 1:
@@ -355,7 +357,7 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_p
              not any(len(set(ppp)) > 1 for ppp in pppv):
             reason_to_skip = "No project here has more than one pool, so skipping per-pool summary"
 
-        # In run 180412_M01270_0454_000000000-D3R8F we see that a pool may span multiple projects,
+        # In run 180412_M01270_0454_000000000-D3R8F we see that a pool may span multiple projects(!),
         # so be careful.
         elif not args.by_pool and \
              (args.metric == 'Balance') and \
