@@ -103,11 +103,12 @@ class RunMetaData:
         idict = dict()
 
         idict['pre_start_info'] = {
-                'Run Date': info['Run Date'],
+                'Run Date': info['RunDate'],
                 'LaneCount': int(info['LaneCount']),
                 'Experiment Name': params['Experiment Name'],
                 'Run ID': info['RunId'],
                 'Instrument': info['Instrument'],
+                'Flowcell Type' : info['FCType'],
                 'Cycles':  info['Cycles'], # '251 [12] 251',
                 't1//Run Start': params['Start Time'],
                 'Pipeline Script': get_pipeline_script(),

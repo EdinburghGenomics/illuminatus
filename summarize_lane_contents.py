@@ -276,11 +276,11 @@ def scan_for_info(run_dir, project_name_list=''):
        be serialized to YAML.
     """
     # Load both the RunInfo.xml and the SampleSheet.csv
-    ri_xml = RunInfoXMLParser(run_dir + "/RunInfo.xml")
+    ri_xml = RunInfoXMLParser(run_dir)
     ss_csv = SampleSheetReader(run_dir + "/SampleSheet.csv")
 
     # Build run info data structure (rids). First just inherit the info
-    # from ri_xml (RunId, Instrument, Flowcell)
+    # from ri_xml (RunId, Instrument, Flowcell, ...)
     rids = ri_xml.run_info.copy()
 
     # Reads are pairs (length, index?)
@@ -383,6 +383,7 @@ def output_txt(rids, fh):
     # Basic metadata, followed be a per-lane summary.
     p( "Run ID: {}".format(rids['RunId']) )
     p( "Instrument: {}".format(rids['Instrument']) )
+    p( "Flowcell Type: {}".format(rids.get('FCType', 'Unknown')) )  # May be missing if the YAML file is old.
     p( "Read length: {}".format(rids['Cycles']) )
     p( "Active SampleSheet: SampleSheet.csv -> {}".format(rids['SampleSheet']) )
     p( "" )

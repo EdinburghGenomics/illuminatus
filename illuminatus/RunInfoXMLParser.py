@@ -5,7 +5,19 @@ import xml.etree.ElementTree as ET
 
 from datetime import datetime
 
-instrument_types = "M:miseq D:hiseq2500 E:hiseqX K:hiseq4000 A:novaseq".split()
+instrument_types = "M:miseq D:hiseq2500 E:hiseqX K:hiseq4000 A:novaseq"
+
+flowcell_types = { # MiSeq types
+                   "1/1/1/2"  : "Nano",
+                   "1/2/1/4"  : "Micro",
+                   "1/2/1/14" : "Normal v2",
+                   "1/2/1/19" : "Normal v3",
+
+                   # NovaSeq types
+                   "2/2/2/78" : "S1",
+                   "2/2/4/88" : "S2",
+                   "4/2/6/78" : "S4",
+                }
 
 class RunInfoXMLParser:
     """Uses the python xml parser to extract some run information and store it in a dictionary
@@ -42,14 +54,15 @@ class RunInfoXMLParser:
         for read in root.iter('FlowcellLayout'):
             self.run_info[ 'LaneCount' ] = read.attrib['LaneCount']
 
+        itypes = dict( i.split(':') for i in (instrument_types).split())
         for read in root.iter('Instrument'):
 
             self.run_info[ 'Instrument' ] = read.text
 
-            for idmap in instrument_types:
-                if self.run_info['Instrument'].startswith(idmap[0]):
-                    self.run_info['Instrument'] = idmap[2:] + '_' + self.run_info['Instrument']
-                    break
+            try:
+                self.run_info['Instrument'] = itypes[self.run_info['Instrument'][:1]] + '_' + self.run_info['Instrument']
+            except KeyError:
+                pass
 
         for read in root.iter('Flowcell'):
             if '-' in read.text:
@@ -62,12 +75,27 @@ class RunInfoXMLParser:
             d = date_elem.text
             if d[2] == '/':
                 # Novaseq runs are being dated like '11/24/2017 4:52:13 AM'
-                self.run_info[ 'Run Date' ] = '{}-{}-{}'.format(d[6:10], d[0:2], d[3:5])
+                self.run_info[ 'RunDate' ] = '{}-{}-{}'.format(d[6:10], d[0:2], d[3:5])
             elif len(d) == 6:
                 # The date is in format YYMMDD but we want YYYY-MM-DD
-                self.run_info[ 'Run Date' ] = '20{}-{}-{}'.format(d[0:2], d[2:4], d[4:6])
+                self.run_info[ 'RunDate' ] = '20{}-{}-{}'.format(d[0:2], d[2:4], d[4:6])
             else:
                 # Dunno. Just use it unmodified.
-                self.run_info[ 'Run Date' ] = d
+                self.run_info[ 'RunDate' ] = d
 
+        self.run_info[ 'FCType' ] = self.get_flowcell_type(root)
+
+    def get_flowcell_type(self, root):
+        """See what type of flowcell this is by the geometry. If it is recognised, give it a name.
+           Looking for something like: <FlowcellLayout LaneCount="1" SurfaceCount="2" SwathCount="1" TileCount="14" />
+        """
+        try:
+            e, = root.iter('FlowcellLayout')
+            layout = e.attrib
+        except Exception:
+            return "Unknown"
+
+        # Simplify
+        slayout = '/'.join( layout.get(x + "Count", '?') for x in "Lane Surface Swath Tile".split() )
+        return flowcell_types.get(slayout, slayout)
 

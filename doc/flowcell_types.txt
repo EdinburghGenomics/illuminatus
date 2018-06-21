@@ -1,0 +1,37 @@
+From an e-mail trail in June 2018:
+
+Hi,
+
+Looking at the RunInfo.xml files I can see a line that gives the flowcell geometry:
+
+[tbooth2@gseg-login0 seqdata]$ grep -h 'FlowcellLayout Lane' *_M0*/RunInfo.xml | sort -u
+    <FlowcellLayout LaneCount="1" SurfaceCount="1" SwathCount="1" TileCount="2" />
+    <FlowcellLayout LaneCount="1" SurfaceCount="2" SwathCount="1" TileCount="14" />
+    <FlowcellLayout LaneCount="1" SurfaceCount="2" SwathCount="1" TileCount="19" />
+    <FlowcellLayout LaneCount="1" SurfaceCount="2" SwathCount="1" TileCount="4" />
+
+For the MiSeq there is only one lane and no lane has multiple swaths, so the possibilities are:
+
+TileCount  FCID_Letter  Type_Name
+ 2          D           Nano
+ 4          G           Micro
+ 14         B           Normal v2
+ 19         B           Normal v3 (according to Richard)
+
+Similarly for the NovaSeq:
+
+[tbooth2@gseg-login0 seqdata]$ grep -h 'FlowcellLayout.*TileCount=".."' *_A0*/RunInfo.xml | sort -u
+        <FlowcellLayout LaneCount="2" SurfaceCount="2" SwathCount="2" TileCount="78" FlowcellSide="1">
+        <FlowcellLayout LaneCount="2" SurfaceCount="2" SwathCount="2" TileCount="78" FlowcellSide="2">
+        <FlowcellLayout LaneCount="2" SurfaceCount="2" SwathCount="4" TileCount="88" FlowcellSide="1">
+        <FlowcellLayout LaneCount="2" SurfaceCount="2" SwathCount="4" TileCount="88" FlowcellSide="2">
+        <FlowcellLayout LaneCount="4" SurfaceCount="2" SwathCount="6" TileCount="78" FlowcellSide="1">
+        <FlowcellLayout LaneCount="4" SurfaceCount="2" SwathCount="6" TileCount="78" FlowcellSide="2">
+
+Lane/TileCount  FCID_Letter  Type_Name
+ 2/78            DRXX         S1
+ 2/88            DMXX         S2
+ 4/78            DSXX         S4
+
+
+We'd like to report the flowcell type in the basic metadata for the run.
