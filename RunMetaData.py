@@ -107,7 +107,7 @@ class RunMetaData:
                 'LaneCount': int(info['LaneCount']),
                 'Experiment Name': params['Experiment Name'],
                 'Run ID': info['RunId'],
-                'Machine': info['Instrument'],
+                'Instrument': info['Instrument'],
                 'Cycles':  info['Cycles'], # '251 [12] 251',
                 't1//Run Start': params['Start Time'],
                 'Pipeline Script': get_pipeline_script(),
