@@ -99,10 +99,12 @@ rule postprocess:
 rule bcl2fastq:
     output:
         summary = "lane{l}/Stats/DemuxSummaryF1L{l}.txt",
-        stats = "lane{l}/Stats/DemultiplexingStats.xml",
-        json = "lane{l}/Stats/Stats.json"
+        stats   = "lane{l}/Stats/DemultiplexingStats.xml",
+        json    = "lane{l}/Stats/Stats.json",
+        opts    = "lane{l}/bcl2fastq.opts"
+        version = "lane{l}/bcl2fastq.version"
     input:
-        script = "lane{l}/do_demultiplex{l}.sh"
+        script  = "lane{l}/do_demultiplex{l}.sh"
     threads: 12 # if you edit this number, also edit the cluster.yml
     shell:
         # The location for bcl2fastq and input/output should already be coded in the script

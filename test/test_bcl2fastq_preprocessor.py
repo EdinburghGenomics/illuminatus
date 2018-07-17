@@ -32,8 +32,9 @@ class T(unittest.TestCase):
     def test_miseq_1pool(self):
         """Run in 160603_M01270_0196_000000000-AKGDE is a MISEQ run with 1 pool
            and 10-base barcodes.
+           --barcode-mismatches is set to 1
         """
-        run_id = '160607_D00248_0174_AC9E4KANXX'
+        run_id = '160603_M01270_0196_000000000-AKGDE'
         self.run_preprocessor(run_id, 1)
 
         # This is how it currently looks
@@ -54,14 +55,13 @@ class T(unittest.TestCase):
 
         # This is how it probably should look
 
-        # FIXME - how do we override "barcode-mismatches"? Needs a design decision.
-        # Answer is we're putting it in the sample sheet. If the sequencer objects to the
-        # extra header we'll just keep generating alternate sheets, one for the sequencer
-        # and one for the pipeline.
+        # Note on setting --barcode-mismatches for any lanes within the sample sheet  -
+        # the extra header is not a problem but we need to do some quick-y filtering
+        # of the sample sheet to actually make this work. This is the "<(grep ...)" bit in
+        # the script below. Note the assumption that lane MUST
+        # be in the first column here (which it is for all the sheets that get made for Illuminatus).
 
-        # Addendum - the extra header is not a problem but we need to do some quick-y filtering
-        # of the sample sheet to actually make this work. Note the assumption that lane MUST
-        # be in the first column here (which it is).
+        # For behaviour when --barcode-mismatches is not set see test ...
 
         self.assertCountEqual(self.bcl2fastq_command_split[0], ["LANE=1"])
 
@@ -79,10 +79,13 @@ class T(unittest.TestCase):
                 '--sample-sheet <(grep -v "`tr -d $LANE <<<\'^[12345678],\'`" \'%s\')' % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
                 "--fastq-compression-level 6", # Do we still need this? Yes.
                 "--barcode-mismatches 1",  # If anything?
-                "--use-bases-mask '1:Y50n,I8,I8'",
+                "--use-bases-mask '1:Y300n,I10,Y300n'",
                 "--tiles=s_[$LANE]",
                 "-p ${PROCESSING_THREADS:-10}",
-                "2>'/mock/out'/lane${LANE}/bcl2fastq.log"
+                "2>'/mock/out'/lane${LANE}/bcl2fastq.log",
+                '&& echo',
+                "--barcode-mismatches '1'", '>',
+                "'/mock/out'/lane${LANE}/bcl2fastq.opts"
             ])
 
     def test_settings_file(self):
@@ -110,7 +113,10 @@ class T(unittest.TestCase):
             "--use-bases-mask '1:Y50n,I8,I8'",
             "--tiles=s_[$LANE]_1101", # Lanes will be substituted by the shell
             "-p ${PROCESSING_THREADS:-10}",
-            "2>'/mock/out'/lane${LANE}/bcl2fastq.log"
+            "2>'/mock/out'/lane${LANE}/bcl2fastq.log",
+            '&& echo',
+            "--barcode-mismatches '100'", '>',
+            "'/mock/out'/lane${LANE}/bcl2fastq.opts"
         ])
 
     def test_settings_override(self):
@@ -169,10 +175,46 @@ class T(unittest.TestCase):
                 self.run_preprocessor, '150602_M01270_0108_000000000-ADWKV', '5'
             )
 
-    def test_hiseq_lanes_5(self):
-        """This has all sorts of stuff. Lane 5 has no index.
+    def test_hiseq_lanes_5_retry(self):
+        """ This has all sorts of stuff. Lane 5 has no index.
+            The --barcode-mismatch will not be set so we need to try both options.
         """
         run_id = '160607_D00248_0174_AC9E4KANXX'
+        #Run on lane 5
+        self.run_preprocessor(run_id, 5)
+
+        self.assertCountEqual(self.bcl2fastq_command_split[0], ["LANE=5"])
+
+        # The second line should begin with "if ! ("
+        self.assertEqual(self.bcl2fastq_command_split[2][0], "if ! ( ")
+
+        # And contain "--barcode-mismatches 1"
+        self.assertTrue("--barcode-mismatches 1" in self.bcl2fastq_command_split[2])
+
+        # The next one should start "if grep ..."
+        self.assertEqual(self.bcl2fastq_command_split[3][0], "if grep -qF 'Barcode collision for barcodes:'")
+
+        # Then "mv ..."
+        self.assertEqual(self.bcl2fastq_command_split[4][0].lstrip(), "mv")
+
+        # Then a second try with contain "--barcode-mismatches 0"
+        self.assertTrue(self.bcl2fastq_path in self.bcl2fastq_command_split[5])
+        self.assertTrue("--barcode-mismatches 0" in self.bcl2fastq_command_split[5])
+
+        # The last two lines should be fi, fi
+        self.assertEqual(self.bcl2fastq_command_split[-2:], [['fi'], ['fi']])
+
+    def test_hiseq_lanes_5_simple(self):
+        """ This has all sorts of stuff. Lane 5 has no index.
+            The --barcode-mismatch will be explicitly set to 1.
+        """
+        run_id = '160607_D00248_0174_AC9E4KANXX'
+        shadow_dir = self.shadow_run(run_id)
+
+        ini_file = os.path.join(shadow_dir, "pipeline_settings.ini")
+        with open( ini_file , 'w') as f:
+            print("[bcl2fastq]", file=f)
+            print("--barcode-mismatches: 1", file=f)
 
         #Run on lane 5
         self.run_preprocessor(run_id, 5)
@@ -183,15 +225,18 @@ class T(unittest.TestCase):
 
         self.assertCountEqual(self.bcl2fastq_command_split[2],
             [   self.bcl2fastq_path,
-                "-R '%s/%s'" % (self.seqdata_dir, run_id),
+                "-R '%s'" % shadow_dir,
                 "-o '%s'/lane${LANE}" % self.out_dir ,
-                '--sample-sheet <(grep -v "`tr -d $LANE <<<\'^[12345678],\'`" \'%s\')' % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
+                '--sample-sheet <(grep -v "`tr -d $LANE <<<\'^[12345678],\'`" \'%s\')' % os.path.join(shadow_dir, "SampleSheet.csv"),
                 "--use-bases-mask '5:Y50n,n*,n*'",
                 "--tiles=s_[$LANE]",
                 "--barcode-mismatches 1",
                 "--fastq-compression-level 6",
                 "-p ${PROCESSING_THREADS:-10}",
-                "2>'/mock/out'/lane${LANE}/bcl2fastq.log"
+                "2>'/mock/out'/lane${LANE}/bcl2fastq.log",
+                '&& echo',
+                "--barcode-mismatches '1'", '>',
+                "'/mock/out'/lane${LANE}/bcl2fastq.opts"
             ])
 
         #Lane 1 has 8-base dual index
@@ -276,8 +321,8 @@ class T(unittest.TestCase):
 
         self.bcl2fastq_command_split = self.pp.get_bcl2fastq_commands()
 
-        #Given the override of check_output, I expect bcl2fastq to be 'found'
-        #in the current cwd
+        # Given the override of check_output, I expect bcl2fastq to be 'found'
+        # in the current cwd
         self.bcl2fastq_path = os.path.realpath('bcl2fastq')
 
 

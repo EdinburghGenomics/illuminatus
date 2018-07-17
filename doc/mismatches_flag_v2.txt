@@ -1,0 +1,64 @@
+So we currently have a feature where the SSG is responsible for setting barcode-mismatches
+for a lane or for the whole run. But this is problematic, as it doesn't always get set
+right. So, a better idea:
+
+1) If there is no explicit setting
+2) Try each lane first with 1, then with 0
+3) Report on the value that was used
+4) Profit!
+
+* What run can I try this on?
+
+180209_D00261_0449_ACC8FGANXX looks like a good bet.
+
+* Where should I put the info in the reports?
+
+I think I should put it in the metadata section at the top, alongside "bcl2fastq version",
+so "barcode mismatches" which will be "0" or "1" on the lane reports or on the overview:
+"regular (1)" or "exact (0)" or "see individual lanes".
+
+* Where should I squirrel the setting?
+
+bcl2fastq.opts
+"""
+--barcode-mismatch 0
+"""
+
+* What if the sample sheet or pipeline_settings.ini try to set this flag?
+
+Use the explicit setting. Only if that is not set, use the retry mechanism.
+
+
+So the jobs are:
+
+1) Modify BCL2FASTQPreprocessor.py to do the retry and write bcl2fastq.opts
+
+2) Modify PostRunMetaData.py to put this into the reports
+
+3) Test on the run as noted above
+
+4) Test that having the mismatches set explicitly is still OK
+
+5) Check all the unit tests are still happy
+
+Here's a script as it stands:
+
+#Run bcl2fastq on lane 1.
+LANE=1
+/lustre/software/bcl2fastq/bcl2fastq-v2.20.0.422/bin/bcl2fastq --version 2> '/lustre/fastqdata/180711_M01270_0010_000000000-D3T5N/demultiplexing'/lane${LANE}/bcl2fastq.version
+/lustre/software/bcl2fastq/bcl2fastq-v2.20.0.422/bin/bcl2fastq -R '/lustre/seqdata/180711_M01270_0010_000000000-D3T5N' -o '/lustre/fastqdata/180711_M01270_0010_000000000-D3T5N/demultiplexing'/lane${LANE} --fastq-compression-level 6 --use-bases-mask '1:Y25n,I8,I8,Y25n' --tiles=s_[$LANE] --sample-sheet <(grep -v "`tr -d $LANE <<<'^[12345678],'`" '/lustre/seqdata/180711_M01270_0010_000000000-D3T5N/SampleSheet.csv') -p ${PROCESSING_THREADS:-10} --barcode-mismatches 1 2>'/lustre/fastqdata/180711_M01270_0010_000000000-D3T5N/demultiplexing'/lane${LANE}/bcl2fastq.log
+
+Here's what I really need:
+
+
+#Run bcl2fastq on lane 1.
+LANE=1
+/lustre/software/bcl2fastq/bcl2fastq-v2.20.0.422/bin/bcl2fastq --version 2> '/lustre/fastqdata/180711_M01270_0010_000000000-D3T5N/demultiplexing'/lane${LANE}/bcl2fastq.version
+if ! ( /lustre/software/bcl2fastq/bcl2fastq-v2.20.0.422/bin/bcl2fastq -R '/lustre/seqdata/180711_M01270_0010_000000000-D3T5N' -o '/lustre/fastqdata/180711_M01270_0010_000000000-D3T5N/demultiplexing'/lane${LANE} --fastq-compression-level 6 --use-bases-mask '1:Y25n,I8,I8,Y25n' --tiles=s_[$LANE] --sample-sheet <(grep -v "`tr -d $LANE <<<'^[12345678],'`" '/lustre/seqdata/180711_M01270_0010_000000000-D3T5N/SampleSheet.csv') -p ${PROCESSING_THREADS:-10} --barcode-mismatches 1 2>'/lustre/fastqdata/180711_M01270_0010_000000000-D3T5N/demultiplexing'/lane${LANE}/bcl2fastq.log && echo "--barcode-mismatches 1" > '/lustre/fastqdata/180711_M01270_0010_000000000-D3T5N/demultiplexing'/lane${LANE}/bcl2fastq.opts ) ; then
+if grep -qF 'Barcode collision for barcodes:' /lustre/fastqdata/180711_M01270_0010_000000000-D3T5N/demultiplexing'/lane${LANE}/bcl2fastq.log ; then
+  mv bcl2fastq.log bcl2fastq_mismatch1.log
+  [same command with --barcode-mismatches 0 ] && echo "--barcode-mismatches 0" > '/lustre/fastqdata/180711_M01270_0010_000000000-D3T5N/demultiplexing'/lane${LANE}/bcl2fastq.opts
+else
+  false
+fi
+fi
