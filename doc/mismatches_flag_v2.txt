@@ -15,7 +15,7 @@ right. So, a better idea:
 
 I think I should put it in the metadata section at the top, alongside "bcl2fastq version",
 so "barcode mismatches" which will be "0" or "1" on the lane reports or on the overview:
-"regular (1)" or "exact (0)" or "see individual lanes".
+"standard (1)" or "exact (0)" or "see individual lanes".
 
 * Where should I squirrel the setting?
 

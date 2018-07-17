@@ -101,7 +101,7 @@ rule bcl2fastq:
         summary = "lane{l}/Stats/DemuxSummaryF1L{l}.txt",
         stats   = "lane{l}/Stats/DemultiplexingStats.xml",
         json    = "lane{l}/Stats/Stats.json",
-        opts    = "lane{l}/bcl2fastq.opts"
+        opts    = "lane{l}/bcl2fastq.opts",
         version = "lane{l}/bcl2fastq.version"
     input:
         script  = "lane{l}/do_demultiplex{l}.sh"
