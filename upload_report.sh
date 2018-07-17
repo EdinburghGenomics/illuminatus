@@ -1,6 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
+# If you just want to push existing reports to the server, see the RSYNC line below.
+# Eg:
+#  rsync -drvlOt multiqc_reports/ web1.genepool.private:/var/runinfo/illuminatus_reports/test/$(basename $(pwd))/
+
 # See doc/how_to_display.txt for thoughts on how this should really work.
 # Normal report destination is web1.genepool.private:/var/runinfo/illuminatus_reports
 
