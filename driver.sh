@@ -341,6 +341,7 @@ action_redo() {
     # system will think these are really running. (Nothing should be running just now!)
     ( rm -f pipeline/lane?.started ) 2>/dev/null || true
     for redo in pipeline/lane?.redo ; do
+        stat -c '%n had owner %U' $redo | plog
         touch ${redo%.redo}.started
         rm -f ${redo%.redo}.done ; rm $redo
 
