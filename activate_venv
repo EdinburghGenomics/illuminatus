@@ -67,7 +67,7 @@ else
     pip3 install psycopg2-binary
     pip3 install pystache
 
-    # InterOP is not on PyPI so no pre-build needed :-)
+    # InterOP is now on PyPI so no pre-build needed :-)
     pip3 install interop
 
     # Needed if well_dups runs in the local VEnv, which it currently does.

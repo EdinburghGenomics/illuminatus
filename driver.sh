@@ -63,14 +63,13 @@ log(){ [ $# = 0 ] && cat >&5 || echo "$@" >&5 ; }
 # Debug means log only if VERBOSE is set
 debug(){ if [ "${VERBOSE:-0}" != 0 ] ; then log "$@" ; else [ $# = 0 ] && cat >/dev/null || true ; fi ; }
 
-# Per-project log for project progress messages, goes into the output
-# directory.
-# Unfortunately this can get scrambled if we try to run read1 processing and demux
-# at the same time, so have a plog1 for that.
+# Per-run log for run progress messages, goes into the output # directory.
+# Unfortunately this could get scrambled if we try to run read1 processing and demux
+# at the same time (which we want to be able to do!), so have a plog1 for that.
 plog() {
-    projlog="$DEMUX_OUTPUT_FOLDER/pipeline.log"
-    if ! { [ $# = 0 ] && cat >> "$projlog" || echo "$*" >> "$projlog" ; } ; then
-       log '!!'" Failed to write to $projlog"
+    per_run_log="$DEMUX_OUTPUT_FOLDER/pipeline.log"
+    if ! { [ $# = 0 ] && cat >> "$per_run_log" || echo "$*" >> "$per_run_log" ; } ; then
+       log '!!'" Failed to write to $per_run_log"
        log "$@"
     fi
 }
@@ -78,9 +77,9 @@ plog() {
 # Have a special log for the read1 processing, as this can happen in parellel
 # with other actions.
 plog1() {
-    projlog1="$DEMUX_OUTPUT_FOLDER/pipeline_read1.log"
-    if ! { [ $# = 0 ] && cat >> "$projlog1" || echo "$*" >> "$projlog1" ; } ; then
-       log '!!'" Failed to write to $projlog1"
+    per_run_log1="$DEMUX_OUTPUT_FOLDER/pipeline_read1.log"
+    if ! { [ $# = 0 ] && cat >> "$per_run_log1" || echo "$*" >> "$per_run_log1" ; } ; then
+       log '!!'" Failed to write to $per_run_log1"
        log "$@"
     fi
 }
@@ -281,10 +280,10 @@ action_read1_finished() {
         cd "$DEMUX_OUTPUT_FOLDER"
         Snakefile.welldups --config rundir="$rundir" -- wd_main || e="$e welldups"
         Snakefile.qc -- interop_main                            || e="$e interop"
-        cd "$rundir" ; run_multiqc "Waiting for RTAComplete" NONE "$projlog1" || e="$e multiqc"
+        cd "$rundir" ; run_multiqc "Waiting for RTAComplete" NONE "$per_run_log1" || e="$e multiqc"
 
         if [ -n "$e" ] ; then
-            _msg="There were errors in read1 processing (${e# }) on $RUNID. See $projlog1"
+            _msg="There were errors in read1 processing (${e# }) on $RUNID. See $per_run_log1"
         else
             _msg="Completed read1 processing on $RUNID."
         fi
@@ -433,8 +432,8 @@ run_multiqc() {
     if [ "${3:--}" != - ] ; then
         _plog="$3" # Caller may hint where the log is going.
     else
-        plog </dev/null #Just to set $projlog
-        _plog="${projlog}"
+        plog </dev/null #Just to set $per_run_log
+        _plog="${per_run_log}"
     fi
 
     # So this will summarize the samples into RT, but at this point there is no
@@ -557,13 +556,13 @@ pipeline_fail() {
     echo "$stage on `date`" > pipeline/failed
 
     # Send an alert when demultiplexing fails. This always requires attention!
-    # Note that after calling 'plog' we can query '$projlog' since all shell vars are global.
+    # Note that after calling 'plog' we can query '$per_run_log' since all shell vars are global.
     plog "Attempting to notify error to RT"
-    if rt_runticket_manager.py -r "$RUNID" --subject failed --reply "$stage failed. See log in $projlog" |& plog ; then
-        log "FAIL $stage $RUNID. See $projlog"
+    if rt_runticket_manager.py -r "$RUNID" --subject failed --reply "$stage failed. See log in $per_run_log" |& plog ; then
+        log "FAIL $stage $RUNID. See $per_run_log"
     else
         # RT failure. Complain to STDERR in the hope this will generate an alert mail via CRON
-        msg="FAIL $stage $RUNID, and also failed to report the error via RT. See $projlog"
+        msg="FAIL $stage $RUNID, and also failed to report the error via RT. See $per_run_log"
         echo "$msg" >&2
         log "$msg"
     fi
