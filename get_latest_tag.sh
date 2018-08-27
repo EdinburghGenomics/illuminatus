@@ -7,7 +7,7 @@
 
 # To prep for first release:
 #  git init --bare --shared git_repo
-#  git --git-dir=git_repo remote add origin git@gitlab.genepool.private:production-team/pacbio_scripts.git
+#  git --git-dir=git_repo remote add origin git@gitlab.genepool.private:production-team/illuminatus.git
 #  git --git-dir=git_repo fetch --all
 
 die(){ echo $@ ; exit 1 ; }

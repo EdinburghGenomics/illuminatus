@@ -30,11 +30,12 @@ snakerun_drmaa "$0" "$@"
 import yaml, json
 from snakemake.utils import format
 
-# /lustre/software/illuminatus_toolbox is the default place for all external deps.
+# $(dirname "$0")/toolbox is the default place for all external deps.
 # It should mostly be links (maybe a little wrapper script or two) so if you want to
 # test with a new version of anything you can copy the whole directory and set $TOOLBOX in
-# your test environment (maybe in environ.sh). Or for tinkering you can just edit the code
-# in this file to temporarily ignore $TOOLBOX.
+# your test environment (maybe in environ.sh). Or for tinkering with the code
+# in this file you could just temporarily ignore $TOOLBOX, but for deployment this is not
+# a good idea.
 #
 # Tools included within the Illuminatus code or within the active Python3 VEnv
 # will already be in the PATH, but they may call out to tools in the TOOLBOX -
