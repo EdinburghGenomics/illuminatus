@@ -2,9 +2,10 @@
 import unittest
 from unittest.mock import Mock, patch
 import sys, os
+from io import StringIO
 
 sys.path.insert(0,'.')
-from rt_runticket_manager import RTManager, AuthorizationError
+from rt_runticket_manager import RTManager, AuthorizationError, main
 
 RT_SETTINGS = os.path.abspath(os.path.dirname(__file__) + '/rt_settings.ini')
 
@@ -12,6 +13,10 @@ class T(unittest.TestCase):
 
     def setUp(self):
         os.environ['RT_SETTINGS'] = RT_SETTINGS
+        try:
+            del os.environ['RT_SYSTEM']
+        except Exception:
+            pass
 
     @patch('rt_runticket_manager.Rt')
     def mock_connect(self, queue, mock_rt):
@@ -100,20 +105,40 @@ class T(unittest.TestCase):
         # Ticket should now be opened after creation
         rtman.tracker.edit_ticket.assert_called_with( 4044, Status='open' )
 
-    '''
-    # Not adding test coverage to these for now as they are pretty simple.
-    def test_reply_to_ticket(self):
-        self.assertTrue(True)
+    ### Not adding test coverage to these for now as they are pretty simple.
+    # def test_reply_to_ticket(self):
+    #    self.assertTrue(True)
+    #
+    # def test_comment_on_ticket(self):
+    #     self.assertTrue(True)
+    #
+    # def test_change_ticket_status(self):
+    #     self.assertTrue(True)
+    #
+    # def test_change_ticket_subject(self):
+    #     self.assertTrue(True)
 
-    def test_comment_on_ticket(self):
-        self.assertTrue(True)
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('sys.stderr', new_callable=StringIO)
+    def test_dummy_ticket_query(self, dummy_stdout, dummy_stderr):
+        """ This test calls the main function, so it serves as a test of that.
+            When in dummy mode, the program should print a warning and it should tell
+            us that whatever ticket we look for is actually 999.
+        """
+        args = Mock()
+        args.run_id = "SOME_RUN"
+        args.queue = "default"
+        args.reply = args.comment = args.subject = args.status = None
+        args.no_create = False
+        args.test = False
 
-    def test_change_ticket_status(self):
-        self.assertTrue(True)
+        # Make the library not connect (but not by Mocking it)
+        os.environ['RT_SYSTEM'] = 'none'
 
-    def test_change_ticket_subject(self):
-        self.assertTrue(True)
-    '''
+        self.assertRaisesRegex(SystemExit, "Ticket #999 for 'SOME_RUN' has subject: None", main, args)
+
+        self.assertEqual(dummy_stderr.getvalue(), '')
+        self.assertEqual(dummy_stdout.getvalue()[:23], 'Making dummy connection')
 
 if __name__ == '__main__':
     unittest.main()

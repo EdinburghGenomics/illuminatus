@@ -147,17 +147,17 @@ class RTManager():
 
         return self
 
-    #Allow us to use this in a 'with' clause.
+    # Allow us to use this in a 'with' clause.
     def __enter__(self):
         return self.connect()
     def __exit__(self, *exc):
-        #Can you logout of RT? Do you want to?
+        # Can you logout of RT? Do you want to?
         pass
 
     def _get_config_from_ini(self, section_name):
 
-        #Either read the confif pointed to by RT_SETTINGS or else the default.
-        #Don't attempt to read both, even though ConfigParser supports it.
+        # Either read the config pointed to by RT_SETTINGS or else the default.
+        # Don't attempt to read both, even though ConfigParser supports it.
         file_name = os.environ.get('RT_SETTINGS')
         file_name = file_name or os.path.join(os.path.expanduser('~'), '.rt_settings')
 
@@ -165,13 +165,13 @@ class RTManager():
         if not cp.read(file_name):
             raise AuthorizationError('unable to read configuration file {file_name}'.format(**locals()))
 
-        #A little validation
+        # A little validation
         if section_name not in cp:
             raise AuthorizationError('file {file_name} contains no configuration section {section_name}'.format(**locals()))
 
         conf_section = cp[section_name]
 
-        #A little more validation
+        # A little more validation
         if not all([conf_section.get(x) for x in ['server', 'user', 'pass', self._queue_setting]]):
             raise AuthorizationError('file {file_name} did not contain all settings needed for RT authentication'.format(**locals()))
 
@@ -218,7 +218,7 @@ class RTManager():
         c = self._config
         if not c:
             #In dummy mode, all tickets are 999
-            return 999
+            return (999, dict())
 
         # Note - if the tickets aren't opened then 'new' tickets will just pile up in RT,
         # but I don't think that should happen.
@@ -247,8 +247,8 @@ class RTManager():
         """Sends a reply to the ticket.
         """
         if subject:
-            #The rest API does not support supplying a subject, but I can maybe
-            #hack around this? No, not easily.
+            # The rest API does not support supplying a subject, but I can maybe
+            # hack around this? No, not easily.
             raise NotImplementedError("RT REST API does not support setting subjects on replies.")
 
         # Dummy connection mode...
@@ -295,7 +295,7 @@ class RTManager():
             pass # if the subject is the same getting this exception
 
 def parse_args(*args):
-    description = """This script allows you to manipulate a ticket for a PacBio run.
+    description = """This script allows you to manipulate a ticket for a PacBio or Illumina run.
                      You can reply, comment, open, stall, resolve tickets.
                   """
     argparser = ArgumentParser( description=description,
@@ -303,7 +303,7 @@ def parse_args(*args):
     argparser.add_argument("-r", "--run_id", required=True,
                             help="The run id of the ticket.")
     argparser.add_argument("-Q", "--queue", required=True,
-                            help="The queue to use. A name defined in rt_settings.ini as FOO_queue"
+                            help="The queue to use. A name defined in rt_settings.ini as FOO_queue,"
                                  " not a literal queue name.")
     argparser.add_argument("--reply",
                             help="Post reply message to the ticket. " +
