@@ -4,9 +4,7 @@ from unittest.mock import Mock, patch
 import sys, os
 
 sys.path.insert(0,'.')
-from illuminatus.RTUtils import RT_manager
-
-from rt import AuthorizationError
+from rt_runticket_manager import RTManager, AuthorizationError
 
 RT_SETTINGS = os.path.abspath(os.path.dirname(__file__) + '/rt_settings.ini')
 
@@ -15,14 +13,16 @@ class T(unittest.TestCase):
     def setUp(self):
         os.environ['RT_SETTINGS'] = RT_SETTINGS
 
-    @patch('rt.Rt')
-    def mock_connect(self, mock_rt):
+    @patch('rt_runticket_manager.Rt')
+    def mock_connect(self, queue, mock_rt):
         """Mock connection with test-rt settings from the sample .ini file.
 
-           Returns an RT_manager instance where rtman.tracker is a MagicMock.
+           Returns an RTManager instance where rtman.tracker is a MagicMock.
         """
-        rtman = RT_manager('test-rt')
+        rtman = RTManager('test-rt', queue_setting=queue)
         rtman.connect()
+
+        # Not sure if I need to do this but it does work.
         rtman.tracker.mock_parent = mock_rt
         return rtman
 
@@ -30,7 +30,7 @@ class T(unittest.TestCase):
         """Test that the class attempts to make an RT connection as expected..
         """
 
-        mc = self.mock_connect()
+        mc = self.mock_connect('default')
 
         #Look at mock_parent to see how the class was instantiated.
         mc.tracker.mock_parent.assert_called_with(
@@ -45,7 +45,7 @@ class T(unittest.TestCase):
     def test_get_config_from_ini(self):
         """Test that the configuration looks as expected.
         """
-        rtman = RT_manager('test-rt')
+        rtman = RTManager('test-rt', queue_setting='default')
         c = rtman._config
 
         self.assertEqual( c.get('run_cc'), '' )
@@ -53,32 +53,34 @@ class T(unittest.TestCase):
         self.assertEqual( c.get('user'), 'pipeline' )
         self.assertEqual( c.get('pass'), 'test' )
 
-        c2 = RT_manager('production-rt')._config
+        c2 = RTManager('production-rt', queue_setting='run')._config
         self.assertEqual( c2.get('user'), 'UNSET' )
         self.assertEqual( len(c2.get('qc_cc').split(",")), 5 )
 
         # And if the section is invalid?
-        self.assertRaises(AuthorizationError, RT_manager, 'no-such-rt')
+        self.assertRaises(AuthorizationError, RTManager, 'no-such-rt', queue_setting='run')
+        self.assertRaises(AuthorizationError, RTManager, 'production-rt', queue_setting='no-such-queue')
 
         # And if the config file was not found?
         os.environ['RT_SETTINGS'] = '/no/such/file'
-        self.assertRaises(AuthorizationError, RT_manager, 'test-rt')
+        self.assertRaises(AuthorizationError, RTManager, 'test-rt', queue_setting='run')
 
     def test_search_run_ticket(self):
 
-        rtman = self.mock_connect()
+        rtman = self.mock_connect('default')
 
         #Poke a result into the mock object.
         rtman.tracker.search.return_value = [ dict( Subject = "Run 9999_8888 foo",
                                                     id = "ticket/1234" ) ]
         res = rtman.search_run_ticket("9999_8888")
         #We now open the tickets.
-        rtman.tracker.search.assert_called_with(Queue = "bfx-run", Subject__like='%9999_8888%', Status='open')
-        self.assertEqual(res, 1234)
+        rtman.tracker.search.assert_called_with(Queue = "bfx-general", Subject__like='%9999_8888%', Status='open')
+        self.assertEqual( res,
+                          (1234, {'id': 'ticket/1234', 'Subject': 'Run 9999_8888 foo'}) )
 
     def test_find_or_create_run_ticket(self):
 
-        rtman = self.mock_connect()
+        rtman = self.mock_connect('run')
         rtman.tracker.create_ticket.return_value = 4044
 
         rtman.find_or_create_run_ticket("blah_run", "my subject", text = "1\n2\n3\n")

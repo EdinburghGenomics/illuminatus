@@ -205,7 +205,7 @@ action_reads_finished(){
           mv $f ${f%.started}.done
       done
       #' I'm pretty sure RT errors could/should be non-fatal here.
-      rt_runticket_manager.py -r "$RUNID" --subject demultiplexed \
+      rt_runticket_manager.py -Q run -r "$RUNID" --subject demultiplexed \
         --comment 'Demultiplexing completed. QC will trigger on next CRON cycle' || true
       log "  Completed bcl2fastq on $RUNID."
 
@@ -287,7 +287,7 @@ action_read1_finished() {
         else
             _msg="Completed read1 processing on $RUNID."
         fi
-        rt_runticket_manager.py -r "$RUNID" --comment "$_msg" || true
+        rt_runticket_manager.py -Q run -r "$RUNID" --comment "$_msg" || true
         log "  $_msg"
     ) |& plog1
 
@@ -386,7 +386,7 @@ action_redo() {
       for f in pipeline/lane?.started ; do
           mv $f ${f%.started}.done
       done
-      rt_runticket_manager.py -r "$RUNID" --subject re-demultiplexed \
+      rt_runticket_manager.py -Q run -r "$RUNID" --subject re-demultiplexed \
         --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed" || true
       log "  Completed demultiplexing on $RUNID lanes ${redo_list[*]}."
 
@@ -520,7 +520,7 @@ send_summary_to_rt() {
     echo "Sending new summary of run contents to RT."
     # Subshell needed to capture STDERR from summarize_lane_contents.py
     last_upload_report="`cat pipeline/report_upload_url.txt 2>/dev/null || echo "Report was not generated or upload failed"`"
-    ( set +u ; rt_runticket_manager.py -r "$RUNID" "${_run_status[@]}" --"${_reply_or_comment}" \
+    ( set +u ; rt_runticket_manager.py -Q run -r "$RUNID" "${_run_status[@]}" --"${_reply_or_comment}" \
         @<(echo "$_preamble "$'\n'"$last_upload_report" ;
            echo ;
            summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt - \
@@ -530,7 +530,7 @@ send_summary_to_rt() {
 run_qc() {
     # At present, this is only ever called by action_demultiplexed.
     # If qc failed, the ticket subject will be 'failed' so reset it (but an RT error should not be fatal).
-    rt_runticket_manager.py -r "$RUNID" --subject in_qc || true
+    rt_runticket_manager.py -Q run -r "$RUNID" --subject in_qc || true
 
     # Hand over to Snakefile.qc for report generation
     # First a quick report. Continue to QC even if MultiQC fails here.
@@ -558,7 +558,7 @@ pipeline_fail() {
     # Send an alert when demultiplexing fails. This always requires attention!
     # Note that after calling 'plog' we can query '$per_run_log' since all shell vars are global.
     plog "Attempting to notify error to RT"
-    if rt_runticket_manager.py -r "$RUNID" --subject failed --reply "$stage failed. See log in $per_run_log" |& plog ; then
+    if rt_runticket_manager.py -Q run -r "$RUNID" --subject failed --reply "$stage failed. See log in $per_run_log" |& plog ; then
         log "FAIL $stage $RUNID. See $per_run_log"
     else
         # RT failure. Complain to STDERR in the hope this will generate an alert mail via CRON
