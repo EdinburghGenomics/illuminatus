@@ -15,6 +15,11 @@ if [[ ! "$RUN_PATH" =~ / ]] ; then
 fi
 RUN_ID="`basename $RUN_PATH`"
 
+if [[ "$RUN_ID" =~ _A00 ]] ; then
+    echo 'Looks like a NovaSeq run. Use slim_a_novaseq_run.sh instead!'
+    exit 1
+fi
+
 # Now DEST...
 DEST="$DEST/$RUN_ID"
 
