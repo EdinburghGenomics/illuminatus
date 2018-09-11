@@ -27,7 +27,7 @@ fi
 
 # Firstly, SampleSheet.csv.0 needs to contain the original file from the
 # sequencer. It is technically possible to run the machine with no sample
-# sheet. In this case, the script will make an empty file.
+# sheet. In this case, this script will make an empty file.
 if [ ! -e SampleSheet.csv.0 ] && [ ! -L SampleSheet.csv ] ; then
     if mv SampleSheet.csv SampleSheet.csv.0 ; then
         echo "SampleSheet.csv renamed as SampleSheet.csv.0"

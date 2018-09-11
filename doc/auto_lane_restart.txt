@@ -1,0 +1,60 @@
+My little ZMQ broker (see async_messaging) is rather good, I think, and could be put into production.
+
+But going back to the problem of restarting lanes, I think the current idea that you would
+tick a specific box to trigger this and specify which of the lanes is to be re-done.
+
+Actually, if you generate a new sample sheet in prod, then surely it follows you want to trigger
+re-demultiplexing? And since the files are diff-comparable we can quickly infer which
+lanes to re-do.
+
+So, I say:
+
+Forget messaging events.
+
+Every time the pipeline is run, beofre the driver we look for new sample sheets.
+
+The check script looks for a run matching the flowcel ID and verifies it is in state Complete or Failed.
+If so, it does a comparison to see which lanes have changed between the current SS and the new one.
+Then if the state was 'Failed' and anything changes, it re-does all lanes (as per the SOP).
+If the state is complete, it will trigger a redo of all changed lanes.
+If there is no run or the state is anything else, take no action.
+
+So that's:
+
+Scan all new sample sheets.
+
+$ find /ifs/clarity/live/samplesheets_bcl2fastq_format/`date +'%Y/%-m'` -name '*.csv' -mmin -$(( 12 * 60 ))
+
+See if there is a matching run.
+
+$ [[ $f =~ .*_(.+).csv ]] && fcid=${BASH_REMATCH[1]}
+$ seqdir="`ls -d /lustre/seqdata/*_[AB]$fcid  /lustre/seqdata/*-$fcid 2>/dev/null`"
+$ test -d "$seqdir"
+
+Check the run status
+
+$ RunStatus.py "$seqdir" | grep STATUS=
+
+Check for changes. Diff then distil down to just the lane(s), making the same assumption
+as the pre-bcl2fastq filter.
+
+$ diff -Z --old-line-format='%L' --new-line-format='%L' --unchanged-line-format='' \
+    "$seqdir"/SampleSheet.csv "$f" | sed -n 's/^\([0-9]\)\+,.*/\1/p' | uniq
+
+Proceed as before.
+
+if lanes_changed:
+    if state_failed:
+        redo all lanes (get count from RunStatus.py)
+    else:
+        redo lanes_changed
+
+Now we don't need a broker we can just do it by CRON. We have to compare sample sheets anyway,
+and we don't care if it takes 5 minutes to trigger. In fact we can run this immediately prior
+to the driver and then effectively no time will be lost. The only problem is we have to compare
+all the sample sheets every time, but since we are only generating a few (say 5 max) in a day
+that's all we need to do.
+
+So, yeah, maybe that's the better option. Let's do that?!
+
+Tis a plan.
