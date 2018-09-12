@@ -1,0 +1,55 @@
+The lab have started adding libraries from control projects into pools for customer projects.
+
+See 180911_M05898_0021_000000000-D4BP7
+
+I'm not sure if this was a one-off or is to become a regular thing?
+
+Our current logic is that if a library starts 12345 then it belongs to project 12345 and the
+pool name is treated as opaque. We generally assume that pools start with the project number
+but we never check. And in particular, pools are regarded as part of projects, so if we see
+two pools with the same name in multiple projects then we regard them as two separate pools -
+ie. 12345AA->pool1 and 12999XX->pool1.
+
+So from the data model point of view it makes no sense to say "report by pool" because the
+data model sees two distinct pools. Of course if you mix libraries from multiple projects
+into one pool then the data model clearly does not correspond to physical reality.
+
+So, what if we now add two assumptions:
+
+1) Any two pools on the same lane with the same name (aside from NoPool) are the same regardless
+of the project to which the library belongs.
+
+2) Any pools that begin NNNNN are associated with project NNNNN
+
+We could tinker with this slightly to get:
+
+1+2) Any pool that begins NNNNN belongs to project NNNNN regardless of the libraries found inside,
+     and all such pool names are assumed unique.
+
+Now when making the text summary, instead of looping by library-project we loop by pool-project. Then
+for each project, if any pools contain libraries from other projects we list them in brackets and also
+add the projects to list of links.
+
+12345: 12345AApool01 12345AA0007L01
+
+12999 (10000, 11111): 12999CCpool02
+
+OK, let's give this a try out. Should only take a few minutes to code up. Of course, actually releasing this
+will imply that processing these mixed pools is no problem (but it is - see below) so I don't think we should
+allow this code into the wild until a very firm decision has been made.
+
+The more complicated bit is combined QC reports. Here's my thought on how to do it properly (with qc_tools_python):
+
+** Note Donald says this is definitely not going to become a common thing but Ton'y message implies it might
+
+When a 'foreign' library is seen in a pool, get_project_from_lims could add it to run_.yml but flagged as 'control: True'
+or 'not_in_project: True' or 'borrowed_from_project: 19999'. Then get_fastq_for_project should be able to fetch these and the pipelines should be able to
+add them to QC reports, but disseminate_results should never deliver them (or rather flags.py should refuse to flag them
+for delivery).
+
+There is an integrity-check implication here, as we need a record in project.yml->samples for each library but we fetch the
+samples by project so if we suddenly saw libraries borrowed from another project where do we get the names from? I try not to
+re-write project.yml unless explicitly requested. Maybe I have project_19999.yml. Logically that works, but then YAMLReader gets
+more complex as it now needs to slurp up these files and make a combined sample list.
+
+So, yeah, do-able but not simple. Lots of changes. Lots of testing needed.
