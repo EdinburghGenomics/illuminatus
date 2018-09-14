@@ -1,0 +1,55 @@
+FastQC gives you a graph called "Per base sequence content", that shows the portion of each base
+at each position in the read. There are four lines for A/T/C/G (N's aren't plotted here).
+
+For other graphs where there is a single line to plot, MultiQc simply plots every line at once.
+(I tweaked a couple of graphs to differentiate read 1 vs read 2). For this graph, because plotting all
+the lines would be silly and unintelligible, we instead make a heatmap. But when there are 100 samples in
+a lane, the heatmap just looks like a grey blob.
+
+Some options...
+
+1) Restore the heatmap and ignore the fact it looks like a blob when there are too many samples
+
+2) Restore the heatmap but make it get bigger if there are many samples.
+
+3) Restore the heatmap but decline to plot it if there are many samples.
+
+4) Make a new graph, where instead of plotting A+T+C+G lines we plot a single line, that being the
+distance between the top and bottom lines (or the top and second/third place or the average of all 3).
+Taking the average or the lowest makes it hard to see if we're, say AT enriched with A just more than
+T or if we're A enriched with all the others way down.
+I'm thinking ( c[max] - mean(c[second]) ) / c[max]
+Then adapters and such would show as a plateau at the start of the read, but you wouldn't be able
+to eyeball the sequence like you can now. So either:
+
+a) You link back to the original plot, which we do have.
+
+or.
+
+b) We could infer a sequence and add it to the pop-up tip, using a rule like:
+
+If the Y value is over 20%, call the most common base. Otherwise add a '-' or 'N'.
+
+Some examples...
+
+all ATG is 100
+C is 150
+Y-val = 50 / 150 = 33%  -- called as C
+
+G is 120, AT both 100
+C is 150
+Y-val = 30/150 = 20% -- called as C (just!)
+
+Extremes:
+
+all ATG is 100
+C is 100
+Y-val = 0 / 100 = 0%
+
+all ATG is 0
+C is 400
+Y-val = 400 / 400 = 100%
+
+What would I call this? "Over-represented bases by read position"
+
+All this could be done fairly easily (a day or two).
