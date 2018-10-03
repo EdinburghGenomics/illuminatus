@@ -78,3 +78,19 @@ myrun=170221_K00166_0183_AHHT3HBBXX
     rm -f failed qc.started
   fi
 )
+
+--
+
+In Oct 2018.
+
+I've only just realised that the sample sheet reported in the run reports is always the very latest sample sheet, so if I
+redo lane 1 then the report for lane 2 will link to the updated sample sheet. This shouldn't be a problem as you shouldn't edit
+any of the entries for the lane you're not re-demultiplexing. However, it's an inaccuracy.
+
+What we should do is to re-jig the logic where the sample sheet is filtered on-the-fly and actually make a filtered sample sheet
+file prior to demultiplexing. Then the overview page would report the latest whole sheet as before, but the individual pages would show,
+say, SampleSheet.csv.1.lane1 or SampleSheet.cvs.OVERRIDE.lane2 and this would not change when the report is re-made. We should also show
+the time when bcl2fastq ran alongside all the other timestamps.
+
+I'll leave this for now, as we may need to fold it in with other changes like reporting the barcodes found in non-barcoded libraries
+and (ick) splitting the sample sheet to handle multiple-length barcodes.

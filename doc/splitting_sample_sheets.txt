@@ -1,0 +1,33 @@
+Steps to "run bcl2fastq twice" - ie. the thing we definitely didn't need to support in this pipeline,
+to support multiple barcode lengths in one lane.
+
+Firstly, the whole Snakefile.demux would have to be re-written. Arguably the way it's designed is not ideal but it does work, and works well. Currently a Python script emits a small shell script then runs it, the idea being that this script captures all the settings and can be re-run outside the pipeline if we ever needed to.
+In place of this we'd need a wrapper system that runs bcl2fastq, splitting the sample sheet if necessary and re-combining the results befofre they go to the next step in the pipeline.
+
+Bcl2fastq runs on each lane and produces:
+
+1) A set of assigned fastq files
+
+These can be merged fairly easily. Just a few file renames.
+
+2) A pair of unassigned files
+
+These need to be merged, getting just the intersection of the two (or three). This is reasonably simple to code in Python but it's going to add many hours to the processing of a lane. If it's done as part of demultiplexing then QC won't start until this completes. Doing it as part of QC will mean we now have to re-jig the QC logic as well as the demultiplexing logic.
+
+3) A JSON report
+
+MultiQC uses this extensively to get meta-data to go in the report.
+It may be possible to programatically make a combined report which MultiQC will be able to use just as before. Or it may not, in which case there will need to be re-writing of the MultiQC module. Or we could try making separate reports per lane per barcode length but this breaks other things and means even more re-writing.
+
+4) CSV reports
+
+We still parse and use these (for example in RapidQC and I think for the dashboard stats), though arguably we shouldn't, since all the info is in the JSON report. So rather than trying to synthetically make combined reports these dependencies can be removed. Still it's more work.
+
+5) A log
+
+The log is partially parsed in order to determine the right setting for barcode-mismatches. This again needs re-working, as we could have a situation where some lengths run with mismatches=1 and others fail. Or indeed everything could work with mismatches=1 but there could be a clash between barcodes of different lengths. In this case we would end up delivering the same read to two customers! So we could:
+
+a) Demultiplex with whatever works and not bother that there might be cross talk.
+b) Always demultiplex with --barcode-mismatches=0 to be safe.
+c) Go back to having to specify it explicitly in the LIMS, and have the pipeline fall over when the setting is wrong.
+d) Implement extra checking to verify that no short barcode clashes with a substring of a longer barcode.
