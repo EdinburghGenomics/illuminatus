@@ -91,9 +91,9 @@ plog_start() {
 
 # Print a message at the top of the log, and trigger one to print at the end.
 intro="`date`. Running $(readlink -f "$0"); PID=$$"
-log "====`tr -c '' = <<<$intro`==="
+log "====`tr -c '' = <<<"$intro"`==="
 log "=== $intro ==="
-log "====`tr -c '' = <<<$intro`==="
+log "====`tr -c '' = <<<"$intro"`==="
 trap 'log "=== `date`. Finished run; PID=$$ ==="' EXIT
 
 # We always must activate a Python VEnv, unless explicitly set to 'none'
