@@ -46,7 +46,7 @@ class SampleSheetReader:
             # we have to return the max values, I think...
             lane_number_index_length[ lane ] = [ max(i) for i in zip_longest(
                                     lane_number_index_length.get(lane, []),
-                                    [ len(i.rstrip('N')) for i in index_sequences ],
+                                    [ len(i) for i in index_sequences ],
                                     fillvalue = 0 ) ]
 
         return lane_number_index_length
