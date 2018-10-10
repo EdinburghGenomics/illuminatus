@@ -18,5 +18,5 @@ export PERL5LIB=/lustre/software/fastq_screen/perl_libs/share/perl5/
 
 exec /lustre/software/fastq_screen/fastq_screen_v0.11.3_debug/fastq_screen \
     --aligner bowtie \
-    --conf /lustre/references/fastqscreen/fastq_screen.conf_bowtie1_20171122 \
+    --conf /lustre/references/fastqscreen/fastq_screen.conf_bowtie1_20181010 \
     "$@"
