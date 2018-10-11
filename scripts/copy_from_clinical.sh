@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ue
 
 ## Script to help you copy a run over from Clinical when they ran it on a HiSeq X.
 ## This can be done in one shot, but the advantage of this method is that you will
@@ -7,7 +8,7 @@
 # We'll need this in a bit.
 yesno(){
     while true ; do
-        read -p "$1 [y/n] " -n1 answer
+        read -p "${1:-?} [y/n] " -n1 answer
         if [ "$answer" = 'y' -o "$answer" = 'Y' ] ; then
             echo es >&2 ; return 0
         elif [ "$answer" = 'n' -o "$answer" = 'N' ] ; then
@@ -17,9 +18,10 @@ yesno(){
     done
 }
 
-echo "Clinical->GS run copy helper"
+echo "--> Clinical->GS run copy helper <--"
+echo
 
-sdir=/lustre/seqdata/import_staging
+sdir=import_staging
 spath="${1%/}"
 runid="${spath##*/}"
 
@@ -34,9 +36,10 @@ fi
 # See if $runid is already here
 if [ -e "$runid" ] || [ -e ../"$runid" ] ; then
     echo "Run $runid is already here. Refusing to overwrite it."
+    exit 1
 fi
 
-if [ "`pwd -P`" != "$sdir" ] ; then
+if [ "$(basename "$(pwd -P)")" != "$sdir" ] ; then
     echo "This script normally expects to run in $sdir."
     echo "Are you really sure you want to run it in `pwd -P`?"
 
@@ -47,16 +50,19 @@ if [ "`pwd -P`" != "$sdir" ] ; then
 fi
 
 # Copy the run - round 1
-ascp -E '*/Thumbnail_Images/**' "$spath" .
+# For some reason I can't get -N to work, so exclude instead.
+echo "Copying the skeleton run..."
+ascp -E 'Data' -E '*Logs' -E 'PeriodicSaveRates' -E '*Images' -E 'Recipe' -E 'RTA*' -E '*.txt' "$spath" .
 
 echo "Moving initial directory to parent."
 mv -v "$runid" ..
 
-# Copy the run - round 2
-ascp -E '*/Thumbnail_Images/**' "$spath" .
+# Copy the run - round 2. It's important I don't copy any directories twice or the move will fail.
+echo "Copying the full run..."
+ascp -E '*/Thumbnail_Images/**' -E '*/PeriodicSaveRates/**' -E '*.csv' -E 'Config' -E 'InterOp' "$spath" .
 
 echo "Full run copied. Moving all files to parent."
-mv -v -t ../"$runid" "$runid"/*
+mv -v -t ../"$runid"/ "$runid"/*
 rmdir -v "$runid"
 
-echo "DONE - the pipeline shoud now start"
+echo "DONE - the pipeline should now start read1 processing and demultiplexing"
