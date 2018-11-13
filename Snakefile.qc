@@ -354,7 +354,7 @@ rule fqscreen:
     params:
         maxlen = 50,
         subset = 1000000,
-    threads: 2  # Has to be 1 until the bug in Bowtie is fixed!
+    threads: 2  # Can be >1 now the bug in Bowtie is fixed!
     shell:
         """set +o pipefail
            _slen=`zcat {input} | head -n 2 | awk 'NR==2{{print length($1)}}'`
