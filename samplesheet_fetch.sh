@@ -57,6 +57,9 @@ if [ ! -L SampleSheet.csv ] ; then
     [ -L SampleSheet.csv ] || exit 1
 fi
 
+# Whatever happens, update the timestamp on the symlink. auto_redo.sh depends on this.
+touch -h SampleSheet.csv
+
 # Support OVERRIDE with local SampleSheet
 if [ -e SampleSheet.csv.OVERRIDE ] ; then
     echo "Giving priority to ./SampleSheet.csv.OVERRIDE"

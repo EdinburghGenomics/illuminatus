@@ -11,9 +11,9 @@ So, I say:
 
 Forget messaging events.
 
-Every time the pipeline is run, beofre the driver we look for new sample sheets.
+Every time the pipeline is run, before the driver we look for new sample sheets.
 
-The check script looks for a run matching the flowcel ID and verifies it is in state Complete or Failed.
+The check script looks for a run matching the flowcell ID and verifies it is in state Complete or Failed.
 If so, it does a comparison to see which lanes have changed between the current SS and the new one.
 Then if the state was 'Failed' and anything changes, it re-does all lanes (as per the SOP).
 If the state is complete, it will trigger a redo of all changed lanes.
@@ -58,3 +58,6 @@ that's all we need to do.
 So, yeah, maybe that's the better option. Let's do that?!
 
 Tis a plan.
+
+Note - as well as the above we need to ensure that the pipeline runs to completion even when there
+are no reads assigned to any projects. We can test this easily on a faked-up slimmed-down MiSeq run.

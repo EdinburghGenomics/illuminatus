@@ -8,8 +8,8 @@ set -eu
 # so that people can trigger re-runs direct from the LIMS (or the dashboard
 # or wherever).
 
-if [ "${DRYRUN:-0}" != 0 ] ; then
-    echorun() { echo DRYRUN: "$*" ; }
+if [ "${DRY_RUN:-0}" != 0 ] ; then
+    echorun() { echo DRY_RUN: "$*" ; }
 else
     echorun() { echo "$*" ; "$@" ; }
 fi
@@ -155,10 +155,11 @@ elif compgen -G "lane?.started" >/dev/null || compgen -G "qc.started" >/dev/null
     echo "But seriously, if you are sure the pipeline crashed you can restart it from the top."
     echo "This action will forcibly remove the .snakemake lock directories, so if the pipeline really was"
     echo "running it will get in a massive mess."
-    echo "   1. Re-do demultiplexing of all lanes and romove locks"
+    echo "   1. Re-do demultiplexing of all lanes and remove locks"
     echo "   2. Don't do that"
     echo "   3. No action"
-    echo "   2. Abort"
+    echo "   4. Abort"
+    echo "   5. This is not even an option"
     answer=`chooser 1 2 3 4`
 
     if [ $answer = 1 ] ; then
