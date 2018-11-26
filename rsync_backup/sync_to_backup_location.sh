@@ -33,8 +33,8 @@ RUN_NAME_REGEX="${BACKUP_NAME_REGEX:-$RUN_NAME_REGEX}"
 debug "RUN_NAME_REGEX=$RUN_NAME_REGEX"
 echo ===
 
-# Now loop through all the project in a similar way to the driver and the state reporter.
-# But note we loop through $FASTQDATA_LOCATION
+# Now loop through all the projects in a similar manner to the driver and the state reporter.
+# But note we loop through $FASTQDATA_LOCATION not $SEQDATA_LOCATION.
 for run in "$FASTQ_LOCATION"/*/ ; do
 
   # This also lops the trailing /, but we rely on $run still having one.
@@ -55,9 +55,9 @@ for run in "$FASTQ_LOCATION"/*/ ; do
     continue
   fi
 
-  # If the pipeline dir is missing, sync this run it on suspicion, but otherwise
-  # wait for qc.done.
-  # Maybe I should RSYNC anyway here and not wait for final QC?
+  # Wait for qc.done before running the sync.
+  # Maybe I should RSYNC anyway here and not wait for final QC? But that gets messy.
+  # If the pipeline dir is missing this check will be skipped, but we do need the log - see the next check.
   if [ -e "$run/seqdata/pipeline" ] && [ ! -e "$run/seqdata/pipeline/qc.done" ] ; then
     echo "Ignoring incomplete $run_name"
     continue
@@ -71,7 +71,7 @@ for run in "$FASTQ_LOCATION"/*/ ; do
 
   # Comparing times on pipeline.log is probably the simplest way to see if the copy
   # is up-to-date and saves my sync-ing everything again and again
-  # Note this will also trigger if the directory itself has changed (perms or mtime)
+  # Note this will also trigger if the run directory itself has changed (perms or mtime)
   if rsync -nsa --itemize-changes --include='pipeline.log' --exclude='*' "$run" "$BACKUP_LOCATION/$run_name" | grep -q . ; then
     log_size=`stat -c %s "$run/pipeline.log"`
     echo "Detected activity for $run_name with log size $log_size"
@@ -88,14 +88,21 @@ for run in "$FASTQ_LOCATION"/*/ ; do
     continue
   fi
 
-  rsync -sav --exclude='**/.snakemake' --exclude='**/slurm_output' --exclude=seqdata --exclude=pipeline.log \
+  # Note there is no --delete flag so if the sample list changes the old files will remain on the backup.
+  # This should not be a problem. If --delete is added below then the --backup flag should prevent cascading data
+  # loss in the case where files are accidentally removed from the master copy.
+  # Since --backup implies --omit-dir-times we have to do a special fix for that, or else the test for activity gets
+  # triggered again and again.
+  rsync -sbav --exclude='**/.snakemake' --exclude='**/slurm_output' --exclude={seqdata,projects_deleted.txt,pipeline.log} \
+    "$run" "$BACKUP_LOCATION/$run_name"
+  rsync -svrt --exclude='**' \
     "$run" "$BACKUP_LOCATION/$run_name"
 
   # Just to test the log catcher below we can...
   # echo BUMP >> "$run/pipeline.log"
 
-  # Now add the pipeline directory and the SampleSheets
-  rsync -sav --include='pipeline**' --include='SampleSheet*' --include='*.xml' --exclude='*' \
+  # Now add the pipeline directory and the SampleSheets from the seqdata dir
+  rsync -sbav --del --include='pipeline**' --include='SampleSheet*' --include='*.xml' --exclude='*' \
     "$run"seqdata/ "$BACKUP_LOCATION/$run_name/seqdata"
 
   # And finally the log. Do this last so if copying was interrupted/incomplete it will be obvious.
