@@ -10,11 +10,11 @@ Description
 
 [Data]
 Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description
-1,PhiX,,HF724BBXX,,DummyIndex,NNNNNN,ControlLane,
-2,PhiX,,HF724BBXX,,DummyIndex,NNNNNN,ControlLane,
-3,PhiX,,HF724BBXX,,DummyIndex,NNNNNN,ControlLane,
-4,PhiX,,HF724BBXX,,DummyIndex,NNNNNN,ControlLane,
-5,PhiX,,HF724BBXX,,DummyIndex,NNNNNN,ControlLane,
-6,PhiX,,HF724BBXX,,DummyIndex,NNNNNN,ControlLane,
-7,PhiX,,HF724BBXX,,DummyIndex,NNNNNN,ControlLane,
-8,PhiX,,HF724BBXX,,DummyIndex,NNNNNN,ControlLane,
+1,PhiX,,HF724BBXX,,DummyIndex,,ControlLane,
+2,PhiX,,HF724BBXX,,DummyIndex,,ControlLane,
+3,PhiX,,HF724BBXX,,DummyIndex,,ControlLane,
+4,PhiX,,HF724BBXX,,DummyIndex,,ControlLane,
+5,PhiX,,HF724BBXX,,DummyIndex,,ControlLane,
+6,PhiX,,HF724BBXX,,DummyIndex,,ControlLane,
+7,PhiX,,HF724BBXX,,DummyIndex,,ControlLane,
+8,PhiX,,HF724BBXX,,DummyIndex,,ControlLane,
