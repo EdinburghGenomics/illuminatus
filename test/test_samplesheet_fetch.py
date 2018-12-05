@@ -6,6 +6,7 @@ import sys, os
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
 import subprocess
+import time
 
 """This Python tool grabs updated sample sheets from the LIMS. It does this simply
    by looking for matching files in the SMB share.
@@ -201,6 +202,26 @@ class T(unittest.TestCase):
         expected_calls = self.bm.empty_calls()
         expected_calls['RunStatus.py'] = ['']
         self.assertEqual(self.bm.last_calls, expected_calls)
+
+    def test_always_touch(self):
+        """Check that the SampleSheet.csv symlink is touch'd, even if everything else
+           is a no-op.
+        """
+        touch('SampleSheet.csv')
+        touch(self.ss_dir + '/bar_XXXX.csv', 'this one')
+
+        first_stdout = self.bm_run_fetch()
+
+        utimestamp = time.time()
+
+        # Assumes we have millisecond timestamps on the files.
+        self.assertTrue(os.lstat('SampleSheet.csv').st_mtime < utimestamp)
+
+        # Run the thingy again
+        second_stdout = self.bm_run_fetch()
+        self.assertEqual(second_stdout[0], "SampleSheet.csv for XXXX is already up-to-date")
+        self.assertTrue(os.lstat('SampleSheet.csv').st_mtime > utimestamp)
+
 
 def touch(filename, contents="touch"):
     with open(filename, 'x') as fh:
