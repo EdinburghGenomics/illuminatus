@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+"""BinMocker - a hack for testing shell scripts in Python"""
+
 import sys, os
 
 import subprocess
