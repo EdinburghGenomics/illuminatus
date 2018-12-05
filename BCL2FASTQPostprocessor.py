@@ -11,6 +11,7 @@
 
 import os, sys, re, time
 from glob import glob
+from yaml_ordered import yaml
 
 # Global error collector
 ERRORS = set()
@@ -93,9 +94,25 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         check_project_name(proj_name)
         proj_seen.add(proj_name)
 
-    # No attempt to define what directories are 'project' directories by naming pattern.
-    # If it contains fastq.gz files it must be a project dir.
-    # There will be a little sanity checking applied by check_project_name()
+    # Previously we scanned for *.fastq.gz files, but it's more sensible to look for an explicit
+    # list of projects. The projects don't get listed in Stats.json, so go back to sample_summary.yml
+    # directly. This allows us to proceed even when no files were produced (ie. all the barcodes are wrong)
+    try:
+        with open( os.path.join( output_dir, "seqdata/pipeline" , "sample_summary.yml" ) ) as sfh:
+            summary = yaml.safe_load(sfh)
+            for proj in summary['ProjectInfo']:
+                add_project(proj)
+
+        # Now we can't add any new projects.
+        def add_project(proj_name):
+            assert proj_name in proj_seen
+    except FileNotFoundError:
+        log("Failed to read seqdata/pipeline/sample_summary.yml. Proceeding anyway.")
+
+    # Notwithstanding the list of projects obtained by the summary, look for fastq.gz files in all
+    # locations.
+    # Either we have a list of projects and will find corresponding fastq, or else we have no list and
+    # will make it up as we go along.
     for fastq_file in glob(os.path.join( output_dir, "demultiplexing/lane*" , "*/*/*.fastq.gz" )):
 
         #os.path.split is unhelpful here. Just do it the obvious way.

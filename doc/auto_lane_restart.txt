@@ -61,3 +61,4 @@ Tis a plan.
 
 Note - as well as the above we need to ensure that the pipeline runs to completion even when there
 are no reads assigned to any projects. We can test this easily on a faked-up slimmed-down MiSeq run.
+/lustre/home/tbooth2/test_seqdata/180815_M05898_0016_000000000-BTR5T
