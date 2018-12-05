@@ -36,11 +36,11 @@ add the projects to list of links.
 
 OK, let's give this a try out. Should only take a few minutes to code up. Of course, actually releasing this
 will imply that processing these mixed pools is no problem (but it is - see below) so I don't think we should
-allow this code into the wild until a very firm decision has been made.
+allow this code into the wild until a very firm decision has been made. (see the pools_cross_projects branch)
 
 The more complicated bit is combined QC reports. Here's my thought on how to do it properly (with qc_tools_python):
 
-** Note Donald says this is definitely not going to become a common thing but Ton'y message implies it might
+** Note Donald says this is definitely not going to become a common thing but Tony's message implies it might
 
 When a 'foreign' library is seen in a pool, get_project_from_lims could add it to run_.yml but flagged as 'control: True'
 or 'not_in_project: True' or 'borrowed_from_project: 19999'. Then get_fastq_for_project should be able to fetch these and the pipelines should be able to
