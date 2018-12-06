@@ -58,7 +58,7 @@ redo_run(){
 candidate_ss=(`find $SAMPLESHEETS_ROOT/$(date +'%Y/%-m') -name '*_*.csv' -mmin -$(( $htlb * 60 ))`)
 echo "Checking ${#candidate_ss[@]} files."
 
-for ss in "${candidate_ss[@]}" ; do
+set +u ; for ss in "${candidate_ss[@]}" ; do set -u
     # For each of these we need the FCID and also the timestamp.
     # This pattern is guaranteed to match
     [[ `basename "$ss"` =~ _([^_]+)\.csv$ ]]
@@ -92,6 +92,7 @@ for ss in "${candidate_ss[@]}" ; do
         echo "Sanity check failed - $seqdir/SampleSheet.csv is not a symlink"
         continue
     fi
+    # Remember stat on the command line is actually lstat (as opposed to stat -L)
     old_ts=`stat -c %Z "$seqdir/SampleSheet.csv"`
     if [ "$ts" -le "$old_ts" ] ; then
         echo "The candidate sheet is not newer than $seqdir/SampleSheet.csv"

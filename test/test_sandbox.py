@@ -39,9 +39,9 @@ class T(unittest.TestCase):
 
     ### THE TESTS ###
     def test_basic(self):
-        """The sandbox dir has two files
+        """The sandbox dir has two files and a symlink
         """
-        self.assertEqual(self.sb.lsdir('.'), ['foo1', 'foo2'])
+        self.assertEqual(self.sb.lsdir('.'), ['alink1', 'foo1', 'foo2'])
 
     def test_empty(self):
         """Make a new empty sandbox (ignoring the default)
@@ -54,6 +54,22 @@ class T(unittest.TestCase):
         self.assertTrue(os.path.isdir(sb2_dir + '/foo777'))
         sb2.cleanup()
         self.assertFalse(os.path.isdir(sb2_dir))
+
+    def test_touch_link(self):
+        """If I touch the link it should touch the link not the file.
+        """
+        unixtime = time.time()
+        sb_dir = self.sb.sandbox + '/'
+
+        self.assertTrue( os.lstat(sb_dir + 'foo1').st_mtime < unixtime )
+        self.assertTrue( os.lstat(sb_dir + 'foo2').st_mtime < unixtime )
+        self.assertTrue( os.lstat(sb_dir + 'alink1').st_mtime < unixtime )
+
+        # Touch it!
+        self.sb.touch('alink1')
+        self.assertTrue( os.lstat(sb_dir + 'foo1').st_mtime < unixtime )
+        self.assertTrue( os.lstat(sb_dir + 'foo2').st_mtime < unixtime )
+        self.assertFalse( os.lstat(sb_dir + 'alink1').st_mtime < unixtime )
 
     def test_make_touch(self):
         """Do some stuff in the default sandbox
@@ -95,7 +111,6 @@ class T(unittest.TestCase):
         self.assertFalse( os.stat(sb_dir + 'd1/d2/d3').st_mtime < unixtime )
         self.assertFalse( os.stat(sb_dir + 'd1/d2/d3/afile').st_mtime < unixtime )
         self.assertTrue( os.stat(sb_dir + 'd1/d2/d3/bfile').st_mtime < unixtime )
-
 
     def test_errors(self):
         """I can't make a file twice, or touch a file that doesn't exsist.

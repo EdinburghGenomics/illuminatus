@@ -18,6 +18,9 @@ class TestSandbox:
         # Make a temporary directory.
         self.sandbox = self._sandbox = mkdtemp()
 
+        # Just to be sure, this should be an absolute path
+        assert self._sandbox.startswith("/")
+
         # Fill it with stuff
         if copydir:
             self.sandbox = copytree(copydir, os.path.join( self._sandbox, os.path.basename(copydir) ))

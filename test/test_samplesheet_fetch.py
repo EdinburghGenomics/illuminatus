@@ -14,8 +14,7 @@ import time
    sequencer.
 """
 #We're testing a shell script here.
-sys.path.insert(0,'.')
-from test.binmocker import BinMocker
+from binmocker import BinMocker
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 FETCH = os.path.abspath(os.path.dirname(__file__) + '/../samplesheet_fetch.sh')
 
