@@ -11,7 +11,7 @@
 
 import os, sys, re, time
 from glob import glob
-from yaml_ordered import yaml
+from illuminatus.YAMLOrdered import yaml
 
 # Global error collector
 ERRORS = set()
