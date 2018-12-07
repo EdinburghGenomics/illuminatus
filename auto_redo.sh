@@ -59,16 +59,16 @@ candidate_ss=(`find $SAMPLESHEETS_ROOT/$(date +'%Y/%-m') -name '*_*.csv' -mmin -
 echo "Checking ${#candidate_ss[@]} files."
 
 set +u ; for ss in "${candidate_ss[@]}" ; do set -u
-    # For each of these we need the FCID and also the timestamp.
+    # For each of these we need the FCID and also the timestamp (%Y not %Z!).
     # This pattern is guaranteed to match
     [[ `basename "$ss"` =~ _([^_]+)\.csv$ ]]
     fcid="${BASH_REMATCH[1]}"
-    ts=`stat -c %Z "$ss"`
+    ts=`stat -c %Y "$ss"`
 
     echo "Checking $ss ($fcid@$ts)"
 
     # See if there is a matching run, accounting for the naming differences between MiSeq and HiSeq/NovaSeq
-    seqdir="`ls -d $SEQDATA_LOCATION/*_?$fcid  /lustre/seqdata/*-$fcid 2>/dev/null || true`"
+    seqdir="`ls -d "$SEQDATA_LOCATION"/*_?$fcid  "$SEQDATA_LOCATION"/*-$fcid 2>/dev/null || true`"
     if [ ! -d "$seqdir" ] ; then
         echo "No directory found in $SEQDATA_LOCATION for FCID $fcid"
         continue
@@ -92,10 +92,16 @@ set +u ; for ss in "${candidate_ss[@]}" ; do set -u
         echo "Sanity check failed - $seqdir/SampleSheet.csv is not a symlink"
         continue
     fi
+    # No restart override is in effect.
+    if [ "$(basename $(readlink "$seqdir/SampleSheet.csv"))" = SampleSheet.csv.OVERRIDE ] ; then
+        echo "OVERRIDE is in effect ($seqdir/SampleSheet.csv -> SampleSheet.csv.OVERRIDE)"
+        continue
+    fi
+
     # Remember stat on the command line is actually lstat (as opposed to stat -L)
-    old_ts=`stat -c %Z "$seqdir/SampleSheet.csv"`
+    old_ts=`stat -c %Y "$seqdir/SampleSheet.csv"`
     if [ "$ts" -le "$old_ts" ] ; then
-        echo "The candidate sheet is not newer than $seqdir/SampleSheet.csv"
+        echo "The candidate sheet is not newer than $seqdir/SampleSheet.csv (@$old_ts)"
         continue
     fi
 

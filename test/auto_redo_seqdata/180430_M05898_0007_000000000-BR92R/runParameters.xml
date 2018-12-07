@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<RunParameters xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <EnableCloud>true</EnableCloud>
+  <RunParametersVersion>MiSeq_1_1</RunParametersVersion>
+  <CopyManifests>true</CopyManifests>
+  <FlowcellRFIDTag>
+    <SerialNumber>000000000-BR92R</SerialNumber>
+    <PartNumber>15028382</PartNumber>
+    <ExpirationDate>2019-01-24T00:00:00</ExpirationDate>
+  </FlowcellRFIDTag>
+  <PR2BottleRFIDTag>
+    <SerialNumber>MS6371389-00PR2</SerialNumber>
+    <PartNumber>15041807</PartNumber>
+    <ExpirationDate>2019-01-17T00:00:00</ExpirationDate>
+  </PR2BottleRFIDTag>
+  <ReagentKitRFIDTag>
+    <SerialNumber>MS6367965-050V2</SerialNumber>
+    <PartNumber>15033571</PartNumber>
+    <ExpirationDate>2018-10-02T00:00:00</ExpirationDate>
+  </ReagentKitRFIDTag>
+  <Resumable>true</Resumable>
+  <ManifestFiles />
+  <AfterRunWashMethod>Post-Run Wash</AfterRunWashMethod>
+  <Setup>
+    <SupportMultipleSurfacesInUI>true</SupportMultipleSurfacesInUI>
+    <ApplicationVersion>2.6.2.1</ApplicationVersion>
+    <NumTilesPerSwath>14</NumTilesPerSwath>
+    <NumSwaths>1</NumSwaths>
+    <NumLanes>1</NumLanes>
+    <ApplicationName>MiSeq Control Software</ApplicationName>
+  </Setup>
+  <RunID>180430_M05898_0007_000000000-BR92R</RunID>
+  <ScannerID>M05898</ScannerID>
+  <RunNumber>7</RunNumber>
+  <FPGAVersion>9.5.12</FPGAVersion>
+  <MCSVersion>2.6.2.1</MCSVersion>
+  <RTAVersion>1.18.54</RTAVersion>
+  <Barcode>000000000-BR92R</Barcode>
+  <PR2BottleBarcode>MS6371389-00PR2</PR2BottleBarcode>
+  <ReagentKitPartNumberEntered>15033571</ReagentKitPartNumberEntered>
+  <ReagentKitVersion>Version2</ReagentKitVersion>
+  <ReagentKitBarcode>MS6367965-050V2</ReagentKitBarcode>
+  <PreviousPR2BottleBarcode />
+  <PreviousReagentKitBarcode>MS6367965-050V2</PreviousReagentKitBarcode>
+  <ExperimentName>180430_M05898_7_BR92R_K1486</ExperimentName>
+  <Chemistry>Amplicon</Chemistry>
+  <Username>sbsuser</Username>
+  <Workflow>
+    <Analysis>GenerateFASTQ</Analysis>
+  </Workflow>
+  <EnableAnalysis>false</EnableAnalysis>
+  <Reads>
+    <RunInfoRead Number="1" NumCycles="26" IsIndexedRead="N" />
+    <RunInfoRead Number="2" NumCycles="8" IsIndexedRead="Y" />
+    <RunInfoRead Number="3" NumCycles="8" IsIndexedRead="Y" />
+    <RunInfoRead Number="4" NumCycles="26" IsIndexedRead="N" />
+  </Reads>
+  <TempFolder>D:\Illumina\MiSeqTemp\180430_M05898_0007_000000000-BR92R</TempFolder>
+  <AnalysisFolder>D:\Illumina\MiSeqAnalysis\180430_M05898_0007_000000000-BR92R</AnalysisFolder>
+  <RunStartDate>180430</RunStartDate>
+  <MostRecentWashType>Maintenance</MostRecentWashType>
+  <RecipeFolder>D:\Illumina\MiSeq Control Software\CustomRecipe</RecipeFolder>
+  <ILMNOnlyRecipeFolder>C:\Illumina\MiSeq Control Software\Recipe</ILMNOnlyRecipeFolder>
+  <SampleSheetName>92-162296_180430_M05898_7_BR92R_K1486_BR92R</SampleSheetName>
+  <SampleSheetFolder>W:\2018\4</SampleSheetFolder>
+  <ManifestFolder>D:\Illumina\MiSeq Control Software\Manifests</ManifestFolder>
+  <OutputFolder>L:\180430_M05898_0007_000000000-BR92R</OutputFolder>
+  <FocusMethod>AutoFocus</FocusMethod>
+  <SurfaceToScan>Both</SurfaceToScan>
+  <SaveFocusImages>false</SaveFocusImages>
+  <SaveScanImages>true</SaveScanImages>
+  <CloudUsername>genepool-solexa@ed.ac.uk</CloudUsername>
+  <RunManagementType>BaseSpaceCloud</RunManagementType>
+  <CloudRunId>83965882</CloudRunId>
+  <SendInstrumentHealthToILMN>true</SendInstrumentHealthToILMN>
+</RunParameters>
