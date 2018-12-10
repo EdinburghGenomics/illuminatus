@@ -1,49 +1,51 @@
 # Configuration for Illuminatus. This file will be source'd in BASH
-# so you can include arbitrary shell logic. All settings should be exported as
-# environment variables.
+# so you can include arbitrary shell logic as well as settiing variables.
 
 # These are the locations for GSEG production mode.
 # Sequencers need to write to SEQDATA_LOCATION and results will be placed in
 # FASTQ_LOCATION.
 # LOG_DIR will collect daily logs, or you can set MAINLOG directly. For testing,
 # set MAINLOG=/dev/stdout to see progress in the terminal.
-export SEQDATA_LOCATION=/lustre/seqdata
-export FASTQ_LOCATION=/lustre/fastqdata
-export LOG_DIR=~pipeline/illuminatus/logs
+SEQDATA_LOCATION=/lustre/seqdata
+FASTQ_LOCATION=/lustre/fastqdata
+LOG_DIR=~pipeline/illuminatus/logs
 
 # Slurm queue to use. This will be passed to Snakemake, as all cluster jobs are
 # controlled by Snakemake.
-export CLUSTER_QUEUE=casava
+CLUSTER_QUEUE=casava
 
 # Where to SCP the reports and how to make the links. (Neither should end with
 # a slash)
-export REPORT_DESTINATION=web1.genepool.private:/var/runinfo/illuminatus_reports
-export REPORT_LINK=http://web1.genepool.private/runinfo/illuminatus_reports
+REPORT_DESTINATION=web1.genepool.private:/var/runinfo/illuminatus_reports
+REPORT_LINK=http://web1.genepool.private/runinfo/illuminatus_reports
 
 # RT systems as defined in ~/.rt_settings. Set RT_SYSTEM=none to disable RT.
-export RT_SYSTEM=production-rt
-export WRITE_TO_CLARITY=yes
+RT_SYSTEM=production-rt
+WRITE_TO_CLARITY=yes
 
 # Link to project pages for use in summary e-mails and (at some point) reports.
 # This can either include a {} placeholder or else the project name will just be
 # appended, so you do need to include the slash on the end here.
-export PROJECT_PAGE_URL=https://www.wiki.ed.ac.uk/display/GenePool/
+PROJECT_PAGE_URL=https://www.wiki.ed.ac.uk/display/GenePool/
 
 # GENOLOGICSRC can be set if needed but it's normally easier to just edit ~/.genologicsrc
-# export GENOLOGICSRC=my_custom_genologicsrc
+# GENOLOGICSRC=my_custom_genologicsrc
+
+# Auto-redo if a new sample sheet is made in Clarity
+REDO_HOURS_TO_LOOK_BACK=12
 
 # Things you'll probably only need for testing...
-# export MAINLOG=/dev/stdout                         ## log stright to terminal
-# export RUN_NAME_REGEX='[0-9]{6}_K00166_.*_[^_.]*'  ## restrict the runs examined (BASH regex syntax)
-# export PROJECT_NAME_LIST=10676_Watson_Mick,10645_Hickey_John,10680_Hickey_John,10749_Dunlop_Malcolm
-#                                                    ## bypasses attempts to connect to the LIMS for project name
-#                                                    ## lookups - this list will be scanned instead
-# export VERBOSE=1                                   ## verbose log messages form driver.sh
+# MAINLOG=/dev/stdout                         ## log stright to terminal
+# VERBOSE=1                                   ## verbose log messages form driver.sh
+# RUN_NAME_REGEX='[0-9]{6}_K00166_.*_[^_.]*'  ## restrict the runs examined (BASH regex syntax)
+# PROJECT_NAME_LIST=10676_Watson_Mick,10645_Hickey_John,10680_Hickey_John,10749_Dunlop_Malcolm
+#                                             ## bypasses attempts to connect to the LIMS for project name
+#                                             ## lookups - this list will be scanned instead
 
 ## You could end reports to localhost rather than web1. There won't be a valid http:// link.
-# export REPORT_DESTINATION='gseg-login0:test_fastqdata/uploaded_reports'
-# export REPORT_LINK=
+# REPORT_DESTINATION='gseg-login0:test_fastqdata/uploaded_reports'
+# REPORT_LINK=
 
 # Settings for rsync_backup can now be set from here too...
-#export BACKUP_NAME_REGEX='(1[89]|[^1].).._.*_.*_[^._]*'
-export BACKUP_LOCATION=/fluidfs/f1/fastqdata_copy
+#BACKUP_NAME_REGEX='(1[89]|[^1].).._.*_.*_[^._]*'
+BACKUP_LOCATION=/fluidfs/f1/fastqdata_copy

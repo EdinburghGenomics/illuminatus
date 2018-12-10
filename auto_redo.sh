@@ -33,7 +33,7 @@ echo "Looking for new samplesheets in ${SAMPLESHEETS_ROOT} that relate to comple
 which RunStatus.py >/dev/null
 
 # Number of Hours To Look Back
-htlb=12
+htlb="${REDO_HOURS_TO_LOOK_BACK:-12}"
 
 redo_run(){
     # Re-do a run we are sure needs restarting

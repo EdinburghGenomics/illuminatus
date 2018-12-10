@@ -12,6 +12,9 @@ if [ -e "$ENVIRON_SH" ] ; then
     pushd "`dirname $ENVIRON_SH`" >/dev/null
     source "`basename $ENVIRON_SH`"
     popd >/dev/null
+
+    export FASTQ_LOCATION RT_SYSTEM RUN_NAME_REGEX \
+        SEQDATA_LOCATION VERBOSE BACKUP_LOCATION BACKUP_NAME_REGEX
 fi
 
 # Add the PATH

@@ -93,6 +93,11 @@ class T(unittest.TestCase):
         for pd in glob(self.seqdata.sandbox + '/*_*_*_*/pipeline'):
             self.assertTrue( os.lstat(pd).st_mtime < self.unixtime )
 
+        # Finally set HTLB to not pick up anything
+        self.environment['REDO_HOURS_TO_LOOK_BACK'] = '1'
+        res3 = self.bm_run_redo()
+        self.assertEqual(res3[1], "Checking 0 files.")
+
     def test_restarts(self):
         """Test various runs that want to be restarted, or not.
            We can run these in parallel.

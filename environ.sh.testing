@@ -1,26 +1,29 @@
 # Environment settings for testing. Use this if you are developing the code.
 
 # Log to the screen
-export MAINLOG=/dev/stdout
+MAINLOG=/dev/stdout
 
 # Where find runs to process and where to put results
-export SEQDATA_LOCATION=~/test_seqdata FASTQ_LOCATION=~/test_fastqdata
+SEQDATA_LOCATION=~/test_seqdata FASTQ_LOCATION=~/test_fastqdata
 
 # Bypass RT and use the global partition on SLURM
-export RT_SYSTEM=none CLUSTER_QUEUE=global
+RT_SYSTEM=none CLUSTER_QUEUE=global
 
 # Process all runs
-export RUN_NAME_REGEX='......_.*_.*_[^._]*'
+RUN_NAME_REGEX='......_.*_.*_[^._]*'
 
 # Edit and uncomment this to bypass getting project names from the LIMS.
-#export PROJECT_NAME_LIST=10676_Watson_Mick,10645_Hickey_John,10677_Watson_Mick,10680_Hickey_John,10749Dunlop_Malcolm,10503_Burt_Dave
+#PROJECT_NAME_LIST=10676_Watson_Mick,10645_Hickey_John,10677_Watson_Mick,10680_Hickey_John,10749Dunlop_Malcolm,10503_Burt_Dave
+
+# Unlikely you want this in testing
+# REDO_HOURS_TO_LOOK_BACK=12
 
 # Allow caller to set VERBOSE=0 but otherwise force it to 1
-export VERBOSE=${VERBOSE:-1}
+VERBOSE=${VERBOSE:-1}
 
 # Send reports to ~/test_fastqdata. There won't be a valid http:// link obviously.
-export REPORT_DESTINATION='localhost:test_fastqdata/uploaded_reports'
+REPORT_DESTINATION='localhost:test_fastqdata/uploaded_reports'
 
 # For testing the backup of run data...
-#export BACKUP_NAME_REGEX='......_.*_.*_[^._]*'
-#export BACKUP_LOCATION=~/test_fastqbackup
+#BACKUP_NAME_REGEX='......_.*_.*_[^._]*'
+#BACKUP_LOCATION=~/test_fastqbackup

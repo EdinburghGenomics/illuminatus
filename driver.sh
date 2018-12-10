@@ -25,6 +25,11 @@ if [ -e "$ENVIRON_SH" ] ; then
     pushd "`dirname $ENVIRON_SH`" >/dev/null
     source "`basename $ENVIRON_SH`"
     popd >/dev/null
+
+    # Saves having to put 'export' on every line in the config.
+    export CLUSTER_QUEUE FASTQ_LOCATION GENOLOGICSRC PROJECT_NAME_LIST PROJECT_PAGE_URL \
+        REDO_HOURS_TO_LOOK_BACK REPORT_DESTINATION REPORT_LINK RT_SYSTEM RUN_NAME_REGEX \
+        SEQDATA_LOCATION SSPP_HOOK VERBOSE WRITE_TO_CLARITY
 fi
 
 # Tools may reliably use this to report the version of Illuminatus being run right now.
@@ -311,16 +316,17 @@ action_in_qc() {
 }
 
 action_failed() {
-    # failed runs need attention, but for now just log the situatuion
+    # failed runs need attention, but for now just log the situation
     log "\_FAILED $RUNID (`cat pipeline/failed`)"
 }
 
 action_aborted() {
+    # aborted runs are always ignored
     true
 }
 
 action_complete() {
-    # the pipeline already fully completed for this run ... nothing to be done ...
+    # the pipeline already fully completed for this run ... nothing to be done
     true
 }
 
@@ -567,6 +573,11 @@ pipeline_fail() {
         log "$msg"
     fi
 }
+
+if [ -n "${REDO_HOURS_TO_LOOK_BACK:-}" ] ; then
+    echo "Looking for new replacement sample sheets from the last $REDO_HOURS_TO_LOOK_BACK hours."
+    auto_redo.sh
+fi
 
 log "Looking for run directories matching regex $SEQDATA_LOCATION/$RUN_NAME_REGEX/"
 
