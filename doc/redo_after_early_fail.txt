@@ -1,0 +1,26 @@
+Recently, the sample sheet fetcher failed and left a run in a state
+where it had to be purged and restarted from scratch. The standard redo mechanism
+should function here.
+
+Let's test:
+
+1) Slim a MiSeq run, break she sample sheet fetcher, run
+
+env SAMPLESHEETS_ROOT=broken ./driver.sh
+
+2) See what messages come back
+
+Looks good - fails on scan-new-run
+
+3) Try to redo the run
+
+State persists as failed. Why?
+
+Because a run can't be slated to redo until read1 is complete.
+I added a condition where a run can redo if nothing started at all.
+
+4) Make that work
+5) Repeat for the fetcher failing after a redo.
+6) What happens? Can we now re-redo?
+
+

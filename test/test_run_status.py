@@ -46,6 +46,14 @@ class T(unittest.TestCase):
         if make_run_info:
             return RunStatus(os.path.join(self.run_dir, self.current_run))
 
+    def gs(self):
+        """ Clear the cache and get the status
+        """
+        run_info = RunStatus(os.path.join(self.run_dir, self.current_run))
+        res = dictify(run_info.get_yaml())['PipelineStatus:']
+        if VERBOSE: pprint(run_info._exists_cache)
+        return res
+
     def cleanup_run(self):
         """If self.tmp_dir has been set, delete the temporary
            folder. Either way, clear the currently set run.
@@ -101,37 +109,93 @@ class T(unittest.TestCase):
         run_info = self.use_run('160606_K00166_0102_BHF22YBBXX')
         self.assertFalse( run_info._was_finished() )
 
+    def test_redo_on_early_fail( self ):
+        """ Normally we want to redo after demultiplexing has run, but we can
+            also fail on the initial run of samplesheet_fetch.sh which prevents
+            read1 processing at all.
+        """
+        run_info = self.use_run('160726_K00166_0120_BHCVH2BBXX', copy=True)
+
+        # So the run is failed but still waiting for data
+        self.touch('pipeline/failed')
+        self.assertEqual(self.gs(), 'reads_unfinished')
+
+        self.touch('pipeline/lane1.redo')
+        self.assertEqual(self.gs(), 'reads_unfinished')
+
+        self.touch('RTAComplete.txt')
+        self.assertEqual(self.gs(), 'failed')
+
+        # Having the pipeline link finally allows this to redo
+        self.md('pipeline/output/seqdata/pipeline')
+        self.assertEqual(self.gs(), 'redo')
+
+        # Don't worry about read1 processing. We'll mop this up later.
+        self.touch('pipeline/read1.started')
+        self.assertEqual(self.gs(), 'redo')
+        self.touch('pipeline/read1.done')
+        self.assertEqual(self.gs(), 'redo')
+        self.rm('pipeline/read1.started')
+        self.rm('pipeline/read1.done')
+
+        # If the run was not complete we can't redo
+        self.rm('RTAComplete.txt')
+        self.assertEqual(self.gs(), 'reads_unfinished')
+        self.touch('RTAComplete.txt')
+
+        # If processing is started the failed flag overrides the state but we
+        # can't redo as we got in a tizz.
+        self.touch('pipeline/lane1.started')
+        self.assertEqual(self.gs(), 'failed')
+
+        # If read1 processing had finished we'd be back to redo
+        self.touch('pipeline/read1.done')
+        self.assertEqual(self.gs(), 'redo')
+        self.rm('pipeline/read1.done')
+
+        # But without that or a failure we coonclude we're demultiplexing, except that read1 is not
+        # done so we trigger that right away.
+        self.rm('pipeline/failed')
+        self.assertEqual(self.gs(), 'read1_finished')
+        self.touch('pipeline/failed')
+
+        # And after redo flag is cleared and lanes are demultiplexed, we could also be failed
+        self.rm('pipeline/lane1.redo')
+        self.rm('pipeline/lane1.started')
+        self.touch('pipeline/lane1.done')
+        self.assertEqual(self.gs(), 'failed')
+
+        # But normally the fail would be cleared, and we still need to trigger
+        # read1 processing before we get to QC. Aye?
+        self.rm('pipeline/failed')
+        self.assertEqual(self.gs(), 'read1_finished')
+
+
     def test_messy_redo( self ):
         """ If some lanes fail, then you redo just one and it works, then you redo
             everything. I spotted this as a bug while tinkering with run
             180209_D00261_0449_ACC8FGANXX
         """
-        run_info = self.use_run('160726_K00166_0120_BHCVH2BBXX', copy=True)
+        self.use_run('160726_K00166_0120_BHCVH2BBXX', copy=True, make_run_info=False)
         self.touch('pipeline/read1.done')
         self.touch('RTAComplete.txt')
-
-        def gs():
-            """ Clear the cache and get the status
-            """
-            run_info._exists_cache = dict()
-            return dictify(run_info.get_yaml())['PipelineStatus:']
 
         def no_redo(status):
             """ Check the status AND also check
                 that adding a lane1.redo file does not change the status
             """
-            self.assertEqual(gs(), status)
+            self.assertEqual(self.gs(), status)
             self.touch('pipeline/lane1.redo')
-            self.assertEqual(gs(), status)
+            self.assertEqual(self.gs(), status)
             self.rm('pipeline/lane1.redo')
 
         def yes_redo(status):
             """ Check the status AND also check
                 that adding a lane1.redo file does change the status to redo
             """
-            self.assertEqual(gs(), status)
+            self.assertEqual(self.gs(), status)
             self.touch('pipeline/lane1.redo')
-            self.assertEqual(gs(), 'redo')
+            self.assertEqual(self.gs(), 'redo')
             self.rm('pipeline/lane1.redo')
 
         no_redo('reads_finished')
@@ -151,20 +215,20 @@ class T(unittest.TestCase):
         # Now this is not a happy state because you should have restarted ALL the failed
         # lanes. However the design says that we should proceed to QC and thus get to
         # partially_complete:
-        self.assertEqual(gs(), 'demultiplexed')
+        self.assertEqual(self.gs(), 'demultiplexed')
 
         self.touch('pipeline/qc.done')
-        self.assertEqual(gs(), 'partially_complete')
+        self.assertEqual(self.gs(), 'partially_complete')
 
         # But what is for sure is that a redo of all lanes should get us into state=redo,
         # whether or not the qc.done file is present...
         for l in '12345678':
             self.touch('pipeline/lane{}.redo'.format(l))
-        self.assertEqual(gs(), 'redo')
+        self.assertEqual(self.gs(), 'redo')
 
         # Removing qc.done has no bearing
         self.rm('pipeline/qc.done')
-        self.assertEqual(gs(), 'redo')
+        self.assertEqual(self.gs(), 'redo')
 
     def test_read_states_4000(self):
         """Ensure that the YAML output is what we expect.
@@ -268,6 +332,7 @@ class T(unittest.TestCase):
         """
         run_info = self.use_run('160726_K00166_0120_BHCVH2BBXX', copy=True)
 
+        self.touch('RTAComplete.txt')
         self.touch('pipeline/read1.done')
         self.touch('pipeline/qc.done')
 

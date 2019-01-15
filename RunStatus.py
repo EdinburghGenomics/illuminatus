@@ -154,6 +154,11 @@ class RunStatus:
         # of this flag is that any 'started' lane is reallY a 'failed' lane.
         return self._exists( 'pipeline/failed' )
 
+    def _output_linked( self ):
+        """ Tests that the symlinks to fastqdata and back are in place
+        """
+        return self._exists( 'pipeline/output/seqdata/pipeline' )
+
     def _was_ended( self ):
         """ processing finished due to successful exit, or a failure, or was aborted
             note that failed runs always need operator intervention, if only to say that
@@ -191,18 +196,23 @@ class RunStatus:
         if self._is_new_run():
             return "new"
 
+        # RUN is 'aborted' if flagged as such. This implies there no processing running, but
+        # we can't check this directly. Maybe could add some indirect checks?
+        # Anyway, aborted trumps 'redo' and everything else.
+        if self._was_aborted():
+            # Aborted is a valid end state and takes precedence over 'failed'
+            return "aborted"
+
         # RUN IS 'redo' if the run is marked for restarting and is ready for restarting (not running):
         if self._is_sequencing_finished() and self._was_restarted() and (
+            (not self._was_started() and self._output_linked() and self._was_failed()) or
             (self._read1_done() and self._was_ended()) or
             (self._read1_done() and self._was_demultiplexed() and not self._qc_started()) ):
             return "redo"
 
-        # RUN is 'failed' or 'aborted' if flagged as such. This implies there no processing running, but
-        # we can't check this directly. Maybe could add some indirect checks?
-        if self._was_aborted():
-            # Aborted is a valid end state and takes precedence over 'failed'
-            return "aborted"
-        if self._was_failed():
+        # We can't be failed until sequencing finishes, even though there could be
+        # failed flag present.
+        if self._is_sequencing_finished() and self._was_failed():
             # But we might still be busy processing read 1
             if self._read1_triggered() and not self._read1_done():
                 return "in_read1_qc"
@@ -212,7 +222,7 @@ class RunStatus:
         # If the run is ended without error we're done, but because of the way the
         # redo mechanism works it's possible for a run to fail then be partially
         # re-done. But that doesn't make it complete.
-        if self._was_ended():
+        if self._is_sequencing_finished() and self._was_ended():
             if self._was_finished():
                 return "complete"
             else:
