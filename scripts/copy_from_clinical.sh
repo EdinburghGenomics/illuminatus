@@ -24,6 +24,7 @@ echo
 sdir=import_staging
 spath="${1:-}"
 spath="${spath%/}"
+bpath="${spath%%:*}"
 runid="${spath##*/}"
 
 if [ -z "$runid" ] ; then
@@ -49,6 +50,29 @@ if [ "$(basename "$(pwd -P)")" != "$sdir" ] ; then
         exit 0
     fi
 fi
+
+# Now we want to get the password and hold on to it, otherwise the user gets prompted
+# to type the password again half way through the transfer.
+while true ; do
+    read -p 'Password for $bpath: ' -s apass ; echo
+
+    # See if aspera likes it.
+    export ASPERA_SCP_PASS="$apass"
+    foo=`ascp $bpath:__PING__ /tmp 2>&1`
+
+    if [[ "$foo" =~ No.such.file.or.directory ]] ; then
+        # This is good!
+        break
+    elif [[ "$foo" =~ failed.to.authenticate ]] ; then
+        # Try again
+        echo "$foo. Please try again."
+        continue
+    else
+        echo "Unexpected response trying to ping server $bpath:"
+        echo "$foo"
+        exit 1
+    fi
+done
 
 # Copy the run - round 1
 # For some reason I can't get -N to work, so exclude instead.
