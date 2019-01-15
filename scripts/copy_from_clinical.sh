@@ -2,8 +2,8 @@
 set -ue
 
 ## Script to help you copy a run over from Clinical when they ran it on a HiSeq X.
-## This can be done in one shot, but the advantage of this method is that you will
-## get a preliminary Illuminatus report and a run ticket right away.
+## This can be done in one shot, but the advantage of the method used by this script
+## is that you will get a preliminary Illuminatus report and a run ticket right away.
 
 # We'll need this in a bit.
 yesno(){
@@ -22,7 +22,8 @@ echo "--> Clinical->GS run copy helper <--"
 echo
 
 sdir=import_staging
-spath="${1%/}"
+spath="${1:-}"
+spath="${spath%/}"
 runid="${spath##*/}"
 
 if [ -z "$runid" ] ; then
