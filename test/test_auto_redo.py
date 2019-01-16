@@ -100,7 +100,7 @@ class T(unittest.TestCase):
 
     def test_restarts(self):
         """Test various runs that want to be restarted, or not.
-           We can run these in parallel.
+           We can run these in one sweep.
         """
         # 1 - a run with a new sheet but bad status
         # 160726_K00166_0120_BHCVH2BBXX (reads_unfinished)
@@ -121,7 +121,7 @@ class T(unittest.TestCase):
         #     so we redo the whole thing anyway
         # 160606_K00166_0102_BHF22YBBXX
 
-        # 7 - a run with a new sheet but SampleSheet.csv.OVERRIDE is present
+        # 7 - a failed run with a new sheet but SampleSheet.csv.OVERRIDE is present
         # 180430_M05898_0007_000000000-BR92R (not overridden)
         # 180430_M05898_0007_000000000-OVRID (identical with OVERRIDE)
 

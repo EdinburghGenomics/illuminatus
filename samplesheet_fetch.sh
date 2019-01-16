@@ -82,7 +82,7 @@ if [ -z "${SAMPLESHEETS_ROOT:-}" ] ; then
     eval `grep -h '^SAMPLESHEETS_ROOT=' /etc/genologics.conf genologics.cfg genologics.conf ~/.genologicsrc ${GENOLOGICSRC:-/dev/null} 2>/dev/null`
 fi
 # Is it set now?
-if [ -z "${SAMPLESHEETS_ROOT:-}" ] ; then
+if [ -z "${SAMPLESHEETS_ROOT:-}" ] || [ "${SAMPLESHEETS_ROOT}" = none  ] ; then
     echo "Not attempting to replace SampleSheet.csv as no \$SAMPLESHEETS_ROOT was set."
     exit 0
 else

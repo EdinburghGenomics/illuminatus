@@ -219,10 +219,10 @@ class RunStatus:
             else:
                 return "failed"
 
-        # If the run is ended without error we're done, but because of the way the
-        # redo mechanism works it's possible for a run to fail then be partially
-        # re-done. But that doesn't make it complete.
-        if self._is_sequencing_finished() and self._was_ended():
+        # If the run completed QC and was not aborted or restarted we're done, but because
+        # of the way the redo mechanism works it's possible for a run to fail then be partially
+        # re-done. That gives us the weird "partially_complete" state.
+        if self._qc_done():
             if self._was_finished():
                 return "complete"
             else:
@@ -236,7 +236,7 @@ class RunStatus:
         # could change to the last index read, as controlled by the constructor above.
         if self._is_read_finished(self.last_read1_read) or self._is_sequencing_finished():
             if (not self._read1_triggered()):
-                # Triggering read1 processign takes precedence
+                # Triggering read1 processing takes precedence
                 return "read1_finished"
             elif (not self._read1_done()) and (self._is_sequencing_finished()):
                 # Decide if demultiplexing needs to start, or is running, or has finished
@@ -251,10 +251,9 @@ class RunStatus:
                 return "in_read1_qc"
 
         # That should be all the Read1 states out of the way.
-
         if self._was_demultiplexed():
             return "demultiplexed"
-        elif self._was_started():
+        elif self._was_started() and self._is_sequencing_finished():
             return "in_demultiplexing"
 
         # So that leaves us with a run that's either waiting for reads or is ready

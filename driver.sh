@@ -367,8 +367,10 @@ action_redo() {
     # not a comment.
     # TODO - say what lanes are being demuxed in the final report, since we can't just now promise
     # that all the lanes changed in the sample sheet are the actual ones being re-done. Or a better way
-    # might be to detect changes in the sample sheet automatically?
-    fetch_samplesheet
+    # might be to detect changes in the sample sheet automatically? This is now in auto_redo.sh!
+    set +e ; ( set -e
+        fetch_samplesheet
+    ) ; [ $? = 0 ] || { pipeline_fail Fetch_Sample_Sheet ; return ; }
 
     set +e ; ( set -e
       if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then

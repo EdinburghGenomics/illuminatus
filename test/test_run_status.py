@@ -170,7 +170,6 @@ class T(unittest.TestCase):
         self.rm('pipeline/failed')
         self.assertEqual(self.gs(), 'read1_finished')
 
-
     def test_messy_redo( self ):
         """ If some lanes fail, then you redo just one and it works, then you redo
             everything. I spotted this as a bug while tinkering with run
@@ -229,6 +228,22 @@ class T(unittest.TestCase):
         # Removing qc.done has no bearing
         self.rm('pipeline/qc.done')
         self.assertEqual(self.gs(), 'redo')
+
+    def test_weird(self):
+        """This shouldn't happen, but what if a run seems to be in both demultiplexing
+           and also still awaiting data? The former concern should take precedence.
+           This is more a concern for testing that in the real world.
+        """
+        run_info = self.use_run('180430_M05898_0007_000000000-BR92R', copy=False, make_run_info=False)
+
+        # So the run allegedly started demultiplexing and failed but (!) is still waiting for data
+        self.assertEqual(self.gs(), 'reads_unfinished')
+
+        run_info = self.use_run('160607_D00248_0174_AC9E4KANXX_weird', copy=False, make_run_info=False)
+
+        # This one appears unfinished but also has qc.done. We need to be careful not to send it in an
+        # infinite processing loop.
+        self.assertEqual(self.gs(), 'complete')
 
     def test_read_states_4000(self):
         """Ensure that the YAML output is what we expect.
