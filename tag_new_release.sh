@@ -44,6 +44,8 @@ yesno(){
     done
 }
 
+git push
+
 #1 The file .git/HEAD should contain "ref: refs/heads/master"
 # However, this is subsumed into the next test.
 #[ "`cat .git/HEAD`" = "ref: refs/heads/master" ] || \
