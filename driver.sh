@@ -27,9 +27,10 @@ if [ -e "$ENVIRON_SH" ] ; then
     popd >/dev/null
 
     # Saves having to put 'export' on every line in the config.
-    export CLUSTER_QUEUE FASTQ_LOCATION GENOLOGICSRC PROJECT_NAME_LIST PROJECT_PAGE_URL \
-        REDO_HOURS_TO_LOOK_BACK REPORT_DESTINATION REPORT_LINK RT_SYSTEM RUN_NAME_REGEX \
-        SEQDATA_LOCATION SSPP_HOOK VERBOSE WRITE_TO_CLARITY
+    export CLUSTER_QUEUE      FASTQ_LOCATION   GENOLOGICSRC  SAMPLESHEETS_ROOT \
+           PROJECT_NAME_LIST  PROJECT_PAGE_URL REDO_HOURS_TO_LOOK_BACK \
+           REPORT_DESTINATION REPORT_LINK      RT_SYSTEM     RUN_NAME_REGEX \
+           SEQDATA_LOCATION   SSPP_HOOK        VERBOSE       WRITE_TO_CLARITY
 fi
 
 # Tools may reliably use this to report the version of Illuminatus being run right now.

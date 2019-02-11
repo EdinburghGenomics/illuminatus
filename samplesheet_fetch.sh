@@ -105,7 +105,7 @@ else
     #Using noclobber to attempt writing to files until we find an unused name
     set -o noclobber
     counter=1
-    while ! true > "SampleSheet.csv.$counter" ; do
+    while ( ! true > "SampleSheet.csv.$counter" ) 2>/dev/null ; do
         counter=$(( $counter + 1 ))
 
         #Just in case there was some other write error
