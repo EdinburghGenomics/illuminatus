@@ -15,5 +15,4 @@ doc/*.pdf
 reports/*.pdf
 
 # This is volatile and used for tinkering/testing
-environ.sh
-environ.*.sh
+environ.sh*
