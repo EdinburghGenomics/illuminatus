@@ -34,11 +34,14 @@ environ = dict( ENVIRON_SH = os.environ.get("ENVIRON_SH", "./environ.sh"),
 # I need to load environ.sh into my environment, which is a little tricky if
 # I want to keep allowing general shell syntax in these files (which I do).
 def load_environ():
+    exports="SEQDATA_LOCATION RUN_NAME_REGEX DEBUG FASTQ_LOCATION"
+
     #PATH="$(readlink -f "$(dirname $BASH_SOURCE)"/../..):$PATH"
     if os.path.exists(environ['ENVIRON_SH']):
-        cpi = run(r'''cd "{}" && source ./"{}" && printenv'''.format(
+        cpi = run(r'''cd "{}" && source ./"{}" && export {} && printenv'''.format(
                          os.path.dirname(environ['ENVIRON_SH']),
-                                          os.path.basename(environ['ENVIRON_SH']) ),
+                                          os.path.basename(environ['ENVIRON_SH']),
+                                                         exports ),
                 shell = True,
                 stdout = PIPE,
                 universal_newlines = True)
