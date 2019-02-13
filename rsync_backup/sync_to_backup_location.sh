@@ -91,6 +91,8 @@ for run in "$FASTQ_LOCATION"/*/ ; do
     continue
   fi
 
+  if [ "${VERBOSE:-0}" != 0 ] ; then set -x ; fi
+
   # Note there is no --delete flag so if the sample list changes the old files will remain on the backup.
   # This should not be a problem. If --delete is added below then the --backup flag should prevent cascading data
   # loss in the case where files are accidentally removed from the master copy.
@@ -104,7 +106,8 @@ for run in "$FASTQ_LOCATION"/*/ ; do
   # Just to test the log catcher below we can...
   # echo BUMP >> "$run/pipeline.log"
 
-  # Now add the pipeline directory and the SampleSheets from the seqdata dir
+  # Now add the pipeline directory and the SampleSheets from the seqdata dir (if it still exists)
+  [ ! -e "$run"/seqdata/ ] || \
   rsync -sbav --del --include='pipeline**' --include='SampleSheet*' --include='*.xml' --exclude='*' \
     "$run"seqdata/ "$BACKUP_LOCATION/$run_name/seqdata"
 
@@ -113,6 +116,7 @@ for run in "$FASTQ_LOCATION"/*/ ; do
   # step will alter the mtime of the directory and trigger a second sync.
   # (I actually discovered this as a bug, but it turns out to be a handy feature!)
   rsync -sa --itemize-changes "$run/pipeline.log" "$BACKUP_LOCATION/$run_name/pipeline.log"
+  set +x
   if [ `stat -c %s "$run/pipeline.log"` != $log_size ] ; then
     echo "Log file size has changed during sync. However this should not be a problem as a second"
     echo "sync is going to be triggered."
