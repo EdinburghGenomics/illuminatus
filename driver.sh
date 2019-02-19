@@ -578,7 +578,7 @@ pipeline_fail() {
 }
 
 if [ -n "${REDO_HOURS_TO_LOOK_BACK:-}" ] ; then
-    echo "Looking for new replacement sample sheets from the last $REDO_HOURS_TO_LOOK_BACK hours."
+    log "Looking for new replacement sample sheets from the last $REDO_HOURS_TO_LOOK_BACK hours."
     auto_redo.sh |& log
 fi
 
