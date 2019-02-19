@@ -28,7 +28,7 @@ bpath="${spath%%:*}"
 runid="${spath##*/}"
 
 if [ -z "$runid" ] ; then
-    echo "Please give a source to be copied - eg."
+    echo "You must specify a source to be copied - eg."
     echo " tbooth@transfer.epcc.ed.ac.uk:KB_flowcells/181005_E00306_0379_AHMW7XXXXY"
     echo ""
     echo "See the book of truth for the correct shared account name (if not tbooth) and the password."
@@ -54,11 +54,11 @@ fi
 # Now we want to get the password and hold on to it, otherwise the user gets prompted
 # to type the password again half way through the transfer.
 while true ; do
-    read -p 'Password for $bpath: ' -s apass ; echo
+    read -p "Password for $bpath: " -s apass ; echo
 
     # See if aspera likes it.
     export ASPERA_SCP_PASS="$apass"
-    foo=`ascp $bpath:__PING__ /tmp 2>&1`
+    foo=`ascp $bpath:__PING__ /tmp 2>&1 || true`
 
     if [[ "$foo" =~ No.such.file.or.directory ]] ; then
         # This is good!

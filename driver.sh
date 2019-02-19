@@ -579,7 +579,7 @@ pipeline_fail() {
 
 if [ -n "${REDO_HOURS_TO_LOOK_BACK:-}" ] ; then
     echo "Looking for new replacement sample sheets from the last $REDO_HOURS_TO_LOOK_BACK hours."
-    auto_redo.sh
+    auto_redo.sh |& log
 fi
 
 log "Looking for run directories matching regex $SEQDATA_LOCATION/$RUN_NAME_REGEX/"
