@@ -23,9 +23,11 @@ class RunParametersXMLParser:
 
         self.run_parameters = {}
 
-
         for e in root.iter('ExperimentName'):
             self.run_parameters[ 'Experiment Name' ] = e.text
+
+        for e in root.iter('FlowCellMode'):
+            self.run_parameters[ 'Flowcell Type' ] = e.text
 
         #The start time is the timestamp of the file, or else the oldest file in the Recipe dir
         started_times = sorted( os.stat(f).st_mtime for f in

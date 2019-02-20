@@ -1,0 +1,6 @@
+From initial investigation, if looks like the new SP flowcells are actually just
+S1 flowcells (same tile layout) but with restricted capacity. In which case I can no longer
+rely in reading RunInfo.xml to get the flowcell Type. I need to read RunParameters.xml
+and let FlowCellMode override the value. Yep I can do that.
+
+Needs to be done in both RunMetaData.py and summarize_lane_contents.py

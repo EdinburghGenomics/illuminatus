@@ -7,6 +7,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 from illuminatus.SampleSheetReader import SampleSheetReader
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
+from illuminatus.RunParametersXMLParser import RunParametersXMLParser
 from illuminatus.Formatters import pct
 
 # Project links can be set by an environment var, presumably in environ.sh
@@ -282,6 +283,15 @@ def scan_for_info(run_dir, project_name_list=''):
     # Build run info data structure (rids). First just inherit the info
     # from ri_xml (RunId, Instrument, Flowcell, ...)
     rids = ri_xml.run_info.copy()
+
+    # We need this to reliably get the NovoSeq flowcell type (same logic as RunMetaData.py)
+    try:
+        run_params = RunParametersXMLParser( self.run_path_folder ).run_parameters
+        if 'Flowcell Type' in run_params:
+            rids['FCType'] = run_params.get['Flowcell Type']
+    except Exception:
+        # Not to worry we can do without this.
+        pass
 
     # Reads are pairs (length, index?)
     rids['CyclesAsList'] = [ (ri_xml.read_and_length[i], ri_xml.read_and_indexed[i] is 'Y')

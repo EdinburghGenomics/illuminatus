@@ -33,8 +33,7 @@ class RunMetaData:
             raise
 
         try:
-            runparams_xml = RunParametersXMLParser( self.run_path_folder )
-            self.run_params = runparams_xml.run_parameters
+            self.run_params = RunParametersXMLParser( self.run_path_folder ).run_parameters
         except Exception:
             #we can usefully run without this
             self.run_params = defaultdict(lambda: 'unknown')
@@ -100,6 +99,10 @@ class RunMetaData:
 
         info = self.runinfo_xml
         params = self.run_params
+
+        # Note that we can sometimes get the flowcell type from the params (Novoseq) and
+        # otherwise from the info (everything else).
+
         idict = dict()
 
         idict['pre_start_info'] = {
@@ -108,7 +111,7 @@ class RunMetaData:
                 'Experiment Name': params['Experiment Name'],
                 'Run ID': info['RunId'],
                 'Instrument': info['Instrument'],
-                'Flowcell Type' : info['FCType'],
+                'Flowcell Type' : params.get('Flowcell Type', info['FCType']),
                 'Cycles':  info['Cycles'], # '251 [12] 251',
                 't1//Run Start': params['Start Time'],
                 'Pipeline Script': get_pipeline_script(),
