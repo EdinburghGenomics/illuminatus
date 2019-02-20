@@ -416,7 +416,7 @@ fetch_samplesheet(){
 
     #Currently if samplesheet_fetch.sh returns an error the pipeline aborts, as
     #this indicates a fundamental problem.
-    samplesheet_fetch.sh | plog
+    samplesheet_fetch.sh |& plog
     new_ss_link="`readlink -q SampleSheet.csv || true`"
 
     if [ "$old_ss_link" != "$new_ss_link" ] ; then

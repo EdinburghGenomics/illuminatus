@@ -29,7 +29,7 @@ fi
 # sequencer. It is technically possible to run the machine with no sample
 # sheet. In this case, this script will make an empty file.
 if [ ! -e SampleSheet.csv.0 ] && [ ! -L SampleSheet.csv ] ; then
-    if mv SampleSheet.csv SampleSheet.csv.0 2>/dev/null ; then
+    if mv SampleSheet.csv SampleSheet.csv.0 ; then
         echo "SampleSheet.csv renamed as SampleSheet.csv.0"
     else
         touch SampleSheet.csv.0
@@ -92,7 +92,7 @@ else
     fi
 fi
 
-# The latest one that matches the flowvell ID is the one we want.
+# The latest one that matches the flowcell ID is the one we want.
 # Or do we want to sort on some other criterion?
 candidate_ss=`find "$SAMPLESHEETS_ROOT" -name "*_${FLOWCELLID}.csv" -print0 | xargs -r0 ls -tr | tail -n 1`
 
