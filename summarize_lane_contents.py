@@ -286,9 +286,9 @@ def scan_for_info(run_dir, project_name_list=''):
 
     # We need this to reliably get the NovoSeq flowcell type (same logic as RunMetaData.py)
     try:
-        run_params = RunParametersXMLParser( self.run_path_folder ).run_parameters
+        run_params = RunParametersXMLParser( run_dir ).run_parameters
         if 'Flowcell Type' in run_params:
-            rids['FCType'] = run_params.get['Flowcell Type']
+            rids['FCType'] = run_params['Flowcell Type']
     except Exception:
         # Not to worry we can do without this.
         pass

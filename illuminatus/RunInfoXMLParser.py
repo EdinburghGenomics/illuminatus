@@ -29,11 +29,8 @@ class RunInfoXMLParser:
 
         # If given a directory, look for the file inside
         # Currently there is only one possible name
-        for f in "RunInfo.xml".split():
-            ri = os.path.join( runinfo_file, f )
-            if os.path.exists(ri):
-                runinfo_file = ri
-                break
+        if os.path.isdir(runinfo_file):
+            runinfo_file = os.path.join( runinfo_file, "RunInfo.xml" )
 
         tree = ET.parse(runinfo_file)
         root = tree.getroot()

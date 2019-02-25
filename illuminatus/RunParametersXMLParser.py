@@ -26,6 +26,9 @@ class RunParametersXMLParser:
         for e in root.iter('ExperimentName'):
             self.run_parameters[ 'Experiment Name' ] = e.text
 
+        # On the HiSeq we can read Flowcell and on NovaSeq we can read FlowCellMode
+        for e in root.iter('Flowcell'):
+            self.run_parameters[ 'Flowcell Type' ] = e.text
         for e in root.iter('FlowCellMode'):
             self.run_parameters[ 'Flowcell Type' ] = e.text
 
