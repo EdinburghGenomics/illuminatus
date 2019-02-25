@@ -7,6 +7,8 @@ from datetime import datetime
 
 instrument_types = "M:miseq D:hiseq2500 E:hiseqX K:hiseq4000 A:novaseq"
 
+# Note that for NovoSeq the type is explicitly given in RunParameters.xml
+# so this is a little redundant.
 flowcell_types = { # MiSeq types
                    "1/1/1/2"  : "Nano",
                    "1/2/1/4"  : "Micro",
