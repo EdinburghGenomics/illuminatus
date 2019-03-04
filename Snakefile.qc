@@ -274,7 +274,7 @@ rule interop_by_lane:
     output: "{foo}/by_lane.interop_plot"
     input:
         idir = format("{SEQDATA}/InterOp"),
-        qmetrics = glob(format("{SEQDATA}/InterOp/CorrectedIntMetricsOut.bin"))
+        qmetrics = glob(format("{SEQDATA}/InterOp/TileMetricsOut.bin"))
     shell: "{TOOLBOX} interop_plot_by_lane {input.idir}/.. > {output}"
 
 # I thought this was plotting for all cycles but in fact it simply plots for cycle 1
