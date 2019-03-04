@@ -258,35 +258,45 @@ if not os.path.isdir(SEQDATA) or ('seqdata' in config):
 
 rule interop_qscore_heatmap:
     output: "{foo}/qscore_heatmap.interop_plot"
-    input: format("{SEQDATA}/InterOp")
-    shell: "{TOOLBOX} interop_plot_qscore_heatmap {input}/.. > {output}"
+    input:
+        idir = format("{SEQDATA}/InterOp"),
+        qmetrics = glob(format("{SEQDATA}/InterOp/QMetricsOut.bin"))
+    shell: "{TOOLBOX} interop_plot_qscore_heatmap {input.idir}/.. > {output}"
 
 rule interop_by_cycle:
     output: "{foo}/by_cycle.interop_plot"
-    input: format("{SEQDATA}/InterOp")
-    shell: "{TOOLBOX} interop_plot_by_cycle {input}/.. > {output}"
+    input:
+        idir = format("{SEQDATA}/InterOp"),
+        qmetrics = glob(format("{SEQDATA}/InterOp/CorrectedIntMetricsOut.bin"))
+    shell: "{TOOLBOX} interop_plot_by_cycle {input.idir}/.. > {output}"
 
 rule interop_by_lane:
     output: "{foo}/by_lane.interop_plot"
-    input: format("{SEQDATA}/InterOp")
-    shell: "{TOOLBOX} interop_plot_by_lane {input}/.. > {output}"
+    input:
+        idir = format("{SEQDATA}/InterOp"),
+        qmetrics = glob(format("{SEQDATA}/InterOp/CorrectedIntMetricsOut.bin"))
+    shell: "{TOOLBOX} interop_plot_by_lane {input.idir}/.. > {output}"
 
 # I thought this was plotting for all cycles but in fact it simply plots for cycle 1
 rule interop_flowcell:
     output: "{foo}/flowcell.interop_plot"
-    input: format("{SEQDATA}/InterOp")
-    shell: "{TOOLBOX} interop_plot_flowcell {input}/.. > {output}"
+    input:
+        idir = format("{SEQDATA}/InterOp"),
+        tmetrics = glob(format("{SEQDATA}/InterOp/CorrectedIntMetricsOut.bin"))
+    shell: "{TOOLBOX} interop_plot_flowcell {input.idir}/.. > {output}"
 
 # This version plots for all cycles. If I want the overall I'll need to calculate it
 # myself.
 rule interop_flowcell_all:
     output: "{foo}/flowcell_all.interop_plot"
-    input: format("{SEQDATA}/InterOp")
+    input:
+        idir = format("{SEQDATA}/InterOp"),
+        tmetrics = glob(format("{SEQDATA}/InterOp/CorrectedIntMetricsOut.bin"))
     shell:
         # Loop until we get the error: Cycle number exceeds total number of cycles
         # Then assert that the loop ran at least once and the output is not empty.
         """for i in `seq 1000` ; do
-             {TOOLBOX} interop_plot_flowcell --filter-by-cycle=$i {input}/.. >> {output} || break
+             {TOOLBOX} interop_plot_flowcell --filter-by-cycle=$i {input.idir}/.. >> {output} || break
            done
            [ $i -gt 1 ] && [ -s {output} ]
         """
@@ -299,12 +309,16 @@ rule interop_flowcell_all:
 # Arguments it takes are: <run_dir> [out_dir] [always_dump]
 # Make the rule depend on the InterOp dir to spot changes, even though the script
 # takes the parent dir as the input.
+# Added on 9019-03-04 - we need a further input dependency as run 190228_M05898_0062_000000000-C9H28
+# revealed a race condition, but we can only depend on the QMetricsOut.bin file if it exists.
 rule interop_yield_table:
     output:
         tables = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps ),
         yaml   = "QC/yield.yml"
-    input: format("{SEQDATA}/InterOp")
-    shell: "summarize_yield.py {input}/.. QC 1 > {output.yaml}"
+    input:
+        idir = format("{SEQDATA}/InterOp"),
+        qmetrics = glob(format("{SEQDATA}/InterOp/QMetricsOut.bin"))
+    shell: "summarize_yield.py {input.idir}/.. QC 1 > {output.yaml}"
 
 # md5summer that keeps the file path out of the .md5 file
 rule md5sum_file:
