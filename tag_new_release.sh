@@ -97,5 +97,5 @@ git tag "v$actual_new_version"
 git push --tags
 git push
 
-echo "All done.  Now do:"
-echo "  cd ~pipeline/illuminatus && `pwd`/get_latest_tag.sh"
+echo "All done.  Now log in as the pipeline user and do:"
+echo "  cd ~/illuminatus && `pwd`/get_latest_tag.sh"
