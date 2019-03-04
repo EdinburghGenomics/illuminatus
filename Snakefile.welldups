@@ -53,9 +53,10 @@ REPORT_VERBOSE = True
 # We need to examine the run info. OK to do this on every cluster job.
 run_info_root = ET.parse(RUNDIR + "/RunInfo.xml").getroot()
 
-LAST_LANE = '0' ; LAST_TILE = '0000'
+LAST_LANE = '0' ; LAST_TILE = FIRST_TILE = '0000'
 try:
     LAST_LANE, LAST_TILE = max(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
+    _, FIRST_TILE = min(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
 except ValueError:
     # If there are no tiles we can reasonably assume we're on a non-patterned
     # Flowell (MiSeq or 2500). In this case, do nothing., which we can achieve by
@@ -96,6 +97,12 @@ if LAST_TILE >= '2400':
     TILE_MATCH = dict( T='1..[02468]', B='2..[02468]' )
 else:
     TILE_MATCH = dict( T='1...', B='2...' )
+
+# On the new NovaSeq SP flowcells they seem to be disabling one surface, so:
+if LAST_TILE[0] == '1':
+    del TILE_MATCH['B']
+elif FIRST_TILE[0] == '2':
+    del TILE_MATCH['T']
 
 # Unfortunately there's more - for slimmed-down runs we get a line in
 # pipeline_settings.ini like this, indicating that most tiles are missing:
