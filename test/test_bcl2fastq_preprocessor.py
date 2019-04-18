@@ -82,10 +82,9 @@ class T(unittest.TestCase):
                 "--use-bases-mask '1:Y300n,I10,Y300n'",
                 "--tiles=s_[$LANE]",
                 "-p ${PROCESSING_THREADS:-10}",
-                "2>'/mock/out'/lane${LANE}/bcl2fastq.log",
-                '&& echo',
-                "--barcode-mismatches '1'", '>',
-                "'/mock/out'/lane${LANE}/bcl2fastq.opts"
+                "2>", "'/mock/out'/lane${LANE}/bcl2fastq.log",
+                "&& echo --barcode-mismatches '1'",
+                ">", "'/mock/out'/lane${LANE}/bcl2fastq.opts"
             ])
 
     def test_settings_file(self):
@@ -113,10 +112,9 @@ class T(unittest.TestCase):
             "--use-bases-mask '1:Y50n,I8,I8'",
             "--tiles=s_[$LANE]_1101", # Lanes will be substituted by the shell
             "-p ${PROCESSING_THREADS:-10}",
-            "2>'/mock/out'/lane${LANE}/bcl2fastq.log",
-            '&& echo',
-            "--barcode-mismatches '100'", '>',
-            "'/mock/out'/lane${LANE}/bcl2fastq.opts"
+            "2>", "'/mock/out'/lane${LANE}/bcl2fastq.log",
+            "&& echo --barcode-mismatches '100'",
+            ">", "'/mock/out'/lane${LANE}/bcl2fastq.opts"
         ])
 
     def test_settings_override(self):
@@ -233,10 +231,9 @@ class T(unittest.TestCase):
                 "--barcode-mismatches 1",
                 "--fastq-compression-level 6",
                 "-p ${PROCESSING_THREADS:-10}",
-                "2>'/mock/out'/lane${LANE}/bcl2fastq.log",
-                '&& echo',
-                "--barcode-mismatches '1'", '>',
-                "'/mock/out'/lane${LANE}/bcl2fastq.opts"
+                "2>", "'/mock/out'/lane${LANE}/bcl2fastq.log",
+                "&& echo --barcode-mismatches '1'",
+                ">", "'/mock/out'/lane${LANE}/bcl2fastq.opts"
             ])
 
         #Lane 1 has 8-base dual index
