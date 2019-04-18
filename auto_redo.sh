@@ -55,7 +55,14 @@ redo_run(){
 
 # Find all the samplesheets that were created in the last 12 hours (assuming nobody makes one at
 # midnight on the last day of the month!)
-candidate_ss=(`find $SAMPLESHEETS_ROOT/$(date +'%Y/%-m') -name '*_*.csv' -mmin -$(( $htlb * 60 ))`)
+samplesheets_this_month="$SAMPLESHEETS_ROOT/$(date +'%Y/%-m')"
+if [ ! -e "$samplesheets_this_month" ] ; then
+    # Not an error, we just have no new stuff yet
+    echo "No such directory $samplesheets_this_month"
+    exit 0
+fi
+
+candidate_ss=(`find "$samplesheets_this_month" -name '*_*.csv' -mmin -$(( $htlb * 60 ))`)
 echo "Checking ${#candidate_ss[@]} files."
 
 set +u ; for ss in "${candidate_ss[@]}" ; do set -u
