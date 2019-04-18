@@ -42,7 +42,8 @@ class BCL2FASTQPreprocessor:
         # Options embedded in the Sample Sheet override the default.
         # pipeline_settings.ini override both.
         for i in [ lambda: self.load_samplesheet_ini(),
-                   lambda: self.load_ini_file( os.path.join(self._rundir, "pipeline_settings.ini") ) ]:
+                   lambda: self.load_ini_file( os.path.join(self._rundir, "pipeline_settings.ini") ),
+                   lambda: self.load_ini_file( os.path.join(self._rundir, "pipeline_settings-lane{}.ini" % self.lane ) ) ]:
             i()
 
             # Special case for barcode-mismatches, even though we'll normally do this by retry.
@@ -210,7 +211,7 @@ class BCL2FASTQPreprocessor:
             raise
 
 def main(run_dir, dest, lane):
-    """ Usage BCL2FASTQPreprocessor.py <run_dir> <dest_dir> [<lane> ...]
+    """ Usage BCL2FASTQPreprocessor.py <run_dir> <dest_dir> <lane>
     """
     run_dir = os.path.abspath(run_dir)
     pp = BCL2FASTQPreprocessor(run_dir, dest=dest, lane=lane)
