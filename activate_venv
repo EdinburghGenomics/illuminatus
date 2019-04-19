@@ -62,7 +62,7 @@ else
     activate_venv
 
     pip3 install --upgrade pip
-    pip3 install 'yaml==3.13'
+    pip3 install 'pyyaml==3.13'
     pip3 install Rt
     pip3 install pyclarity_lims
     pip3 install psycopg2-binary
