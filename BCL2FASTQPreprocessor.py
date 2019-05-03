@@ -14,8 +14,11 @@ from collections import defaultdict
 from itertools import dropwhile, takewhile
 from subprocess import check_output, DEVNULL
 
-from illuminatus.BaseMaskExtractor import BaseMaskExtractor
+import pystache
+from shlex import quote as shell_quote
 
+from illuminatus.BaseMaskExtractor import BaseMaskExtractor
+from illuminatus.RunInfoXMLParser import RunInfoXMLParser
 
 class BCL2FASTQPreprocessor:
 
@@ -29,6 +32,9 @@ class BCL2FASTQPreprocessor:
         self._runinfo = os.path.join(self._rundir, "RunInfo.xml")
 
         self._bme = BaseMaskExtractor(self._samplesheet, self._runinfo)
+
+        # Get the run name from the RunInfo.xml
+        self._runinfo = RunInfoXMLParser( self._rundir ).run_info
 
         #Check the lane is valid
         self.lane = str(lane)
@@ -58,65 +64,53 @@ class BCL2FASTQPreprocessor:
                     del self.ini_settings['bcl2fastq'][k]
 
     def get_bcl2fastq_commands(self):
-        """Return the full command strings for BCL2FASTQ, as a list of lists.  The caller should
-           have set PATH so that the right version of the software gets picked up.
+        """Returns a dict used to populate the template that will produce the script to be run.
+           The caller should have set PATH so that the right version of the software gets picked up and
+           baked into the file.
         """
-        lane = self.lane
+        #{'runid': 'bar', 'lane': '3', 'bcl2fastq': '/path/tp/bcl2fastq',
+        # 'rundir': 'rundir', 'samplesheet': 'samplesheet' , 'destdir': 'destdir',
+        # 'barcode_mismatches' : None , 'bcl2fastq_opts' : ['--foo']}
+        res = dict( lane = self.lane,
+                    rundir = self._rundir,
+                    runid = self._runinfo['RunId'],
+                    samplesheet = self._rundir + '/SampleSheet.csv',
+                    destdir = self._destdir,
+                    barcode_mismatches = None,
+                    bcl2fastq_opts = [] )
+
         # If the command isn't found this is an immediate error.
-        bcl2fastq = check_output("which bcl2fastq".split(), stderr=DEVNULL, universal_newlines=True).rstrip()
+        res['bcl2fastq'] = os.path.realpath(
+                            check_output( "which bcl2fastq".split(),
+                                            stderr = DEVNULL,
+                                            universal_newlines=True ).rstrip() )
 
-        # If the result is a symlink, resolve it
-        bcl2fastq = os.path.realpath(bcl2fastq)
-
-        cmds = [ ["LANE={}".format(lane)] ]
-
-        # Print out the version each time the script is run
-        if self._destdir:
-            cmds.append([bcl2fastq, '--version', '2>', "'{}'/lane${{LANE}}/bcl2fastq.version".format(self._destdir)])
-
-        # Build the main bcl2fastq command
-        cmd = [bcl2fastq]
-
-        # Add the abspath for the data folder
-        cmd.append("-R '{}'".format(self._rundir))
-        if self._destdir:
-            cmd.append("-o '{}'/lane${{LANE}}".format(self._destdir))
+        # Work out all the options plus --barcode-mismatches which is special.
+        cmd = res['bcl2fastq_opts']
         cmd.append("--fastq-compression-level 6")
 
         # Add base mask for this lane
-        bm = self._bme.get_base_mask_for_lane(lane)
-        cmd.append("--use-bases-mask '{}:{}'".format( lane, bm ) )
+        bm = self._bme.get_base_mask_for_lane(self.lane)
+        cmd.append("--use-bases-mask '{}:{}'".format( self.lane, bm ) )
 
         # Specify the lane to process, which is controlled by --tiles
         # Slimmed-down runs override this setting but will still include $LANE to pick up the lane number
         cmd.append("--tiles=s_[$LANE]")
 
-        # And we actually need to strip the other lanes out of the SampleSheet.csv, due to the bug that bcl2fastq
-        # will do an index collision check for ALL lanes even if you are only trying to process one,
-        # which breaks the per-lane-base-mask feature.
-        # We can do this munging on the fly (assuming we never see more than 8 lanes)...
-        cmd.append('''--sample-sheet <(grep -v "`tr -d $LANE <<<'^[12345678],'`" '{}')'''.format(
-                                os.path.join(self._rundir, "SampleSheet.csv") ))
-
-        # Number of threads to use should be set by the caller (ie. Snakemake)
-        cmd.append("-p ${PROCESSING_THREADS:-10}")
-
         # now that the cmd array is complete will evaluate the pipeline_settings.ini file
         # every setting must be either replaced or appended to the cmd array
         # this won't work with options that appear multiple times like --use-base-mask (don't think we need this though)
-        barcode_mismatches_set = None
         for ini_option, val in self.ini_settings['bcl2fastq'].items(): # section in the ini file is bcl2fastq
             ## special case for option --tiles
-            delimiter = "=" if ini_option in ["--tiles"] else " "
 
             if ini_option == '--barcode-mismatches':
-                barcode_mismatches_set = val
+                res['barcode_mismatches'] = val
 
+            delimiter = "=" if ini_option in ["--tiles"] else " "
             replace_index = [ i for i, c in enumerate(cmd)
                               if c.split(delimiter)[0] == ini_option ]
-            replace_value = '{}{}{}'.format( ini_option,
-                                             delimiter,
-                                             val )
+            replace_value = '{}{}{}'.format( ini_option, delimiter, val )
+
             if replace_index:
                 #print ("replacing from pipeline_settings.ini option "+ ini_option)
                 cmd[replace_index[0]] = replace_value
@@ -124,60 +118,7 @@ class BCL2FASTQPreprocessor:
                 #print ("appending from pipeline_settings.ini " + ini_option)
                 cmd.append(replace_value)
 
-
-        if self._destdir:
-            logfile = "'{}'/lane${{LANE}}/bcl2fastq.log".format(self._destdir)
-            optsfile = "'{}'/lane${{LANE}}/bcl2fastq.opts".format(self._destdir)
-
-            # In this, the normal case, we try barcode-mismatches set to 1 and then to 0.
-            # So here we have a Python script writing a shell script. See doc/mismatches_flag_v2.txt
-            # for an explanation. Proabably if I wrote this again I'd just have a wrapper script, or
-            # at least a template.
-            if barcode_mismatches_set is None:
-                barcode_mismatches = '--barcode-mismatches 1'
-                old_logfile = "'{}'/lane${{LANE}}/bcl2fastq_mismatch1.log".format(self._destdir)
-
-                m1_cmd = cmd + [ barcode_mismatches, "2>", logfile ]
-                m1_cmd.extend(['&& echo', barcode_mismatches, '>', optsfile])
-
-                cmds.append(["if ! ( "] + m1_cmd + [") ; then"])
-
-                cmds.append(["if grep -qF 'Barcode collision for barcodes:'", logfile, "; then"])
-                # If the log says there was a collision, retry with mismatch 0
-
-                barcode_mismatches = '--barcode-mismatches 0'
-                cmds.append(["  mv", logfile, old_logfile])
-                m0_cmd = ["  "] + cmd + [ barcode_mismatches, "2>", logfile ]
-                m0_cmd.extend(['&& echo', barcode_mismatches, '>', optsfile])
-                cmds.append(m0_cmd)
-
-                # If the log didn't mention a collision, just fail.
-                # Also close the if statements.
-                cmds.extend([ ["else"], ["  false"], ["fi"], ["fi"] ])
-
-            else:
-                # Simpler case - barcode-mismatches was set explicitly
-                cmds.append( cmd + [ "2>", logfile, "&& echo --barcode-mismatches '{}'".format(barcode_mismatches_set), '>', optsfile ] )
-
-            ''' Here's a hack that ensures we get empty FASTQ files for missing samples (but not missing
-                unassigned, apparently)
-                Actually we may not need this, if the samples still show up in Stats.json and therefore
-                in the reports???
-                It seems they do (see run 171115_M01145_0050_000000000-BHCPV) so I've disabled this. The
-                empty files upset FastQC and probably other things too.
-            '''
-
-            # cmds.append(['#Hack to force creation of empty files'])
-            # cmds.append([
-            #      (r'''sed -ne '/INFO: Created FASTQ file /s/.*"\(.*\)"/\1/p' '%s'/lane${LANE}/bcl2fastq.log''' % self._destdir),
-            #      (r''' | ( while read -r l; do [ -e "$l" ] || true | gzip -c > "$l" ; done )''') ])
-
-        else:
-            # self._destdir is not set
-            # Even simpler case, no barcode-mismatches setting or log redirection
-            cmds.append( cmd )
-
-        return cmds
+        return res
 
     def load_samplesheet_ini(self):
         """Loads the [bcl2fastq] section from self._samplesheet into self.ini_settings,
@@ -211,6 +152,21 @@ class BCL2FASTQPreprocessor:
         except Exception:
             raise
 
+def format_template(adict):
+    """Load the Pystache template from tfile and render it with the values in adict,
+       applying shell quote escaping by default.
+    """
+    template_file = os.environ.get("BCL2FASTQ_TEMPLATE",
+                                   os.path.dirname(__file__) + '/templates/do_demultiplex.sh.ms')
+
+    myrenderer = pystache.Renderer( escape = shell_quote,
+                                    search_dirs = None,
+                                    missing_tags = pystache.common.MissingTags.strict )
+    with open(template_file) as fh:
+        mytemplate = pystache.parse(fh.read())
+
+    return myrenderer.render(mytemplate, adict)
+
 def main(run_dir, dest, lane):
     """ Usage BCL2FASTQPreprocessor.py <run_dir> <dest_dir> <lane>
     """
@@ -219,14 +175,13 @@ def main(run_dir, dest, lane):
 
     script_name = os.path.join( dest , "do_demultiplex{}.sh".format(lane) )
 
-    lines = [ "#Run bcl2fastq on lane {}.".format(lane) ] + \
-            [ ' '.join(c) for c in pp.get_bcl2fastq_commands() ]
+    script = format_template( pp.get_bcl2fastq_commands() )
 
     print("\n>>> Script being written...\ncat >{} <<END".format(script_name))
     with open( script_name, 'w' ) as fh:
-        for l in lines:
-            print(l)
-            print(l, file=fh)
+        print(script, end='')
+        print(script, file=fh, end='')
+    os.chmod(script_name, 0o775)
     print("END\n")
 
 if __name__ == '__main__':
