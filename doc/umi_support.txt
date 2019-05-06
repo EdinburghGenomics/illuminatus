@@ -1,2 +1,23 @@
 Here's the PLN for this. Before we even get any data I'm going to pretend that a test run has UMI's and
 see what happens.
+
+I did this with 180815_M05898_0016_000000000-BTR5T, pretending that the last 4 bases of the i7 were a
+UMI. I added a pipeline_settings.ini as follows:
+
+[bcl2fastq]
+--tiles: s_[$LANE]_1101
+--barcode-mismatches: 1
+--use-bases-mask: Y250n,I4Y4,I8,Y250n
+--mask-short-adapter-reads: 1
+
+The last line is needed or else all the bases just come out as N, but with this it works as we hoped
+and we get these extra short FASTQ files.
+
+Illuminatus QC will fail to make a MultiQC report because read 2 is the UMI and read 3 is the actual
+read2. Failure here is expected. I think this can be easily addressed by changing the logic in
+Snakefile.qc, especially if the read 2 is renamed to U or whatever.
+
+Note that the .count and .md5sum files are being made already which is good.
+
+I've had to modify BCL2FASTQCleanup.py to remove the extra files properly (just made the regex more
+liberal). Change this again if we decide to use something other than 'u' ('U', 'I', ???)
