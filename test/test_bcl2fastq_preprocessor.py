@@ -29,6 +29,8 @@ class T(unittest.TestCase):
         self.tmp_dir = None
         self.shadow_runs = dict()
 
+    # TODO - use binmocker to test the actual script that is produced.
+
     def test_miseq_1pool(self):
         """Run in 160603_M01270_0196_000000000-AKGDE is a MISEQ run with 1 pool
            and 10-base barcodes.
@@ -37,55 +39,18 @@ class T(unittest.TestCase):
         run_id = '160603_M01270_0196_000000000-AKGDE'
         self.run_preprocessor(run_id, 1)
 
-        # This is how it currently looks
-        #self.assertEqual(self.bcl2fastq_command_string, "-R '/ifs/seqdata/160603_M01270_0196_000000000-AKGDE' -o '/ifs/runqc/160603_M01270_0196_000000000-AKGDE/Unaligned_SampleSheet_in_HiSeq_format_lanes1_readlen301_index10' --sample-sheet 'SampleSheet_in_HiSeq_format_forCasava2_17.csv'   --use-bases-mask Y300n,I10,Y300n  --tiles=s_[1]  --barcode-mismatches 1  --fastq-compression-level 6")
-
-        # This is how it looks, having been split
-        '''
-        self.assertEqual(self.bcl2fastq_command_split, [
-                "-R '/ifs/seqdata/160603_M01270_0196_000000000-AKGDE'",
-                "-o '/ifs/runqc/160603_M01270_0196_000000000-AKGDE/Unaligned_SampleSheet_in_HiSeq_format_lanes1_readlen301_index10'",
-                "--sample-sheet 'SampleSheet_in_HiSeq_format_forCasava2_17.csv'",
-                "--use-bases-mask Y300n,I10,Y300n",
-                "--tiles=s_[1]",
-                "--barcode-mismatches 1",
-                "--fastq-compression-level 6",
-            ])
-        '''
-
-        # This is how it probably should look
-
-        # Note on setting --barcode-mismatches for any lanes within the sample sheet  -
-        # the extra header is not a problem but we need to do some quick-y filtering
-        # of the sample sheet to actually make this work. This is the "<(grep ...)" bit in
-        # the script below. Note the assumption that lane MUST
-        # be in the first column here (which it is for all the sheets that get made for Illuminatus).
-
-        # For behaviour when --barcode-mismatches is not set see test ...
-
-        self.assertCountEqual(self.bcl2fastq_command_split[0], ["LANE=1"])
-
-        self.assertCountEqual(self.bcl2fastq_command_split[1],
-            [   self.bcl2fastq_path,
-                '--version',
-                '2>',
-                "'/mock/out'/lane${LANE}/bcl2fastq.version"
-            ])
-
-        self.assertCountEqual(self.bcl2fastq_command_split[2],
-            [   self.bcl2fastq_path,
-                "-R '%s/%s'" % (self.seqdata_dir, run_id),
-                "-o '%s'/lane${LANE}" % self.out_dir ,
-                '--sample-sheet <(grep -v "`tr -d $LANE <<<\'^[12345678],\'`" \'%s\')' % os.path.join(self.seqdata_dir, run_id, "SampleSheet.csv"),
-                "--fastq-compression-level 6", # Do we still need this? Yes.
-                "--barcode-mismatches 1",  # If anything?
-                "--use-bases-mask '1:Y300n,I10,Y300n'",
-                "--tiles=s_[$LANE]",
-                "-p ${PROCESSING_THREADS:-10}",
-                "2>", "'/mock/out'/lane${LANE}/bcl2fastq.log",
-                "&& echo --barcode-mismatches '1'",
-                ">", "'/mock/out'/lane${LANE}/bcl2fastq.opts"
-            ])
+        self.assertEqual(self.template_args, dict(
+                                    lane = "1",
+                                    bcl2fastq = self.bcl2fastq_path,
+                                    samplesheet = os.path.join(self.run_dir, "SampleSheet.csv"),
+                                    barcode_mismatches = "1",
+                                    destdir = self.out_dir,
+                                    rundir = self.run_dir,
+                                    runid = run_id,
+                                    bcl2fastq_opts = [ "--fastq-compression-level 6",
+                                                       "--use-bases-mask '1:Y300n,I10,Y300n'",
+                                                       "--tiles=s_[$LANE]",
+                                                       "--barcode-mismatches 1" ] ))
 
     def test_settings_file(self):
         """settings file test: should override the defaults
@@ -102,20 +67,19 @@ class T(unittest.TestCase):
             print("--tiles: s_[$LANE]_1101", file=f)
 
         self.run_preprocessor(run_id, 1)
-        self.assertCountEqual(self.bcl2fastq_command_split[2], [
-            self.bcl2fastq_path,
-            "-R '%s'" % shadow_dir,
-            "-o '%s'/lane${LANE}" % self.out_dir ,
-            '--sample-sheet <(grep -v "`tr -d $LANE <<<\'^[12345678],\'`" \'%s\')' % os.path.join(shadow_dir, "SampleSheet.csv"),
-            "--fastq-compression-level 6",
-            "--barcode-mismatches 100",  # Should be set by .ini
-            "--use-bases-mask '1:Y50n,I8,I8'",
-            "--tiles=s_[$LANE]_1101", # Lanes will be substituted by the shell
-            "-p ${PROCESSING_THREADS:-10}",
-            "2>", "'/mock/out'/lane${LANE}/bcl2fastq.log",
-            "&& echo --barcode-mismatches '100'",
-            ">", "'/mock/out'/lane${LANE}/bcl2fastq.opts"
-        ])
+
+        self.assertEqual(self.template_args, dict(
+                                    lane = "1",
+                                    bcl2fastq = self.bcl2fastq_path,
+                                    samplesheet = os.path.join(self.run_dir, "SampleSheet.csv"),
+                                    barcode_mismatches = "100",
+                                    destdir = self.out_dir,
+                                    rundir = self.run_dir,
+                                    runid = run_id,
+                                    bcl2fastq_opts = [ "--fastq-compression-level 6",
+                                                       "--use-bases-mask '1:Y50n,I8,I8'",
+                                                       "--tiles=s_[$LANE]_1101",
+                                                       "--barcode-mismatches 100", ] ))
 
     def test_settings_override(self):
         """SampleSheet.csv should be allowed to override barcode-mismatches.
@@ -181,26 +145,17 @@ class T(unittest.TestCase):
         #Run on lane 5
         self.run_preprocessor(run_id, 5)
 
-        self.assertCountEqual(self.bcl2fastq_command_split[0], ["LANE=5"])
-
-        # The second line should begin with "if ! ("
-        self.assertEqual(self.bcl2fastq_command_split[2][0], "if ! ( ")
-
-        # And contain "--barcode-mismatches 1"
-        self.assertTrue("--barcode-mismatches 1" in self.bcl2fastq_command_split[2])
-
-        # The next one should start "if grep ..."
-        self.assertEqual(self.bcl2fastq_command_split[3][0], "if grep -qF 'Barcode collision for barcodes:'")
-
-        # Then "mv ..."
-        self.assertEqual(self.bcl2fastq_command_split[4][0].lstrip(), "mv")
-
-        # Then a second try with contain "--barcode-mismatches 0"
-        self.assertTrue(self.bcl2fastq_path in self.bcl2fastq_command_split[5])
-        self.assertTrue("--barcode-mismatches 0" in self.bcl2fastq_command_split[5])
-
-        # The last two lines should be fi, fi
-        self.assertEqual(self.bcl2fastq_command_split[-2:], [['fi'], ['fi']])
+        self.assertEqual(self.template_args, dict(
+                                    lane = "5",
+                                    bcl2fastq = self.bcl2fastq_path,
+                                    samplesheet = os.path.join(self.run_dir, "SampleSheet.csv"),
+                                    barcode_mismatches = None,
+                                    destdir = self.out_dir,
+                                    rundir = self.run_dir,
+                                    runid = run_id,
+                                    bcl2fastq_opts = [ "--fastq-compression-level 6",
+                                                       "--use-bases-mask '5:Y50n,n*,n*'",
+                                                       "--tiles=s_[$LANE]" ] ))
 
     def test_hiseq_lanes_5_simple(self):
         """ This has all sorts of stuff. Lane 5 has no index.
@@ -217,39 +172,30 @@ class T(unittest.TestCase):
         #Run on lane 5
         self.run_preprocessor(run_id, 5)
 
-        self.assertEqual(self.pp.lane, '5')
-
-        self.assertCountEqual(self.bcl2fastq_command_split[0], ["LANE=5"])
-
-        self.assertCountEqual(self.bcl2fastq_command_split[2],
-            [   self.bcl2fastq_path,
-                "-R '%s'" % shadow_dir,
-                "-o '%s'/lane${LANE}" % self.out_dir ,
-                '--sample-sheet <(grep -v "`tr -d $LANE <<<\'^[12345678],\'`" \'%s\')' % os.path.join(shadow_dir, "SampleSheet.csv"),
-                "--use-bases-mask '5:Y50n,n*,n*'",
-                "--tiles=s_[$LANE]",
-                "--barcode-mismatches 1",
-                "--fastq-compression-level 6",
-                "-p ${PROCESSING_THREADS:-10}",
-                "2>", "'/mock/out'/lane${LANE}/bcl2fastq.log",
-                "&& echo --barcode-mismatches '1'",
-                ">", "'/mock/out'/lane${LANE}/bcl2fastq.opts"
-            ])
+        self.assertEqual(self.template_args, dict(
+                                    lane = "5",
+                                    bcl2fastq = self.bcl2fastq_path,
+                                    samplesheet = os.path.join(self.run_dir, "SampleSheet.csv"),
+                                    barcode_mismatches = "1",
+                                    destdir = self.out_dir,
+                                    rundir = self.run_dir,
+                                    runid = run_id,
+                                    bcl2fastq_opts = [ "--fastq-compression-level 6",
+                                                       "--use-bases-mask '5:Y50n,n*,n*'",
+                                                       "--tiles=s_[$LANE]",
+                                                       "--barcode-mismatches 1" ] ))
 
         #Lane 1 has 8-base dual index
         self.run_preprocessor(run_id, 1)
-        bm, = [ a.split()[1] for a in self.bcl2fastq_command_split[2] if a.startswith('--use-bases') ]
-        self.assertEqual(bm, "'1:Y50n,I8,I8'")
+        self.assertEqual(self.template_args['bcl2fastq_opts'][1], "--use-bases-mask '1:Y50n,I8,I8'")
 
         #Lane 3 has 6-base single index
         self.run_preprocessor(run_id, 3)
-        bm, = [ a.split()[1] for a in self.bcl2fastq_command_split[2] if a.startswith('--use-bases') ]
-        self.assertEqual(bm, "'3:Y50n,I6n*,n*'")
+        self.assertEqual(self.template_args['bcl2fastq_opts'][1], "--use-bases-mask '3:Y50n,I6n*,n*'")
 
         #Lane 4 has 8-base single index
         self.run_preprocessor(run_id, 4)
-        bm, = [ a.split()[1] for a in self.bcl2fastq_command_split[2] if a.startswith('--use-bases') ]
-        self.assertEqual(bm, "'4:Y50n,I8,n*'")
+        self.assertEqual(self.template_args['bcl2fastq_opts'][1], "--use-bases-mask '4:Y50n,I8,n*'")
 
 
     @patch('sys.stdout', new_callable=StringIO)
@@ -276,12 +222,12 @@ class T(unittest.TestCase):
         with open(script) as fh:
             script_lines = [l.rstrip() for l in list(fh)]
 
-        self.assertEqual(script_lines[0], '#Run bcl2fastq on lane 8.')
+        self.assertEqual(script_lines[0], '#!/bin/bash')
 
-        #The preprocessor should also output the script plus a preable
+        #The preprocessor should also output the script plus a preamble
         stdout_lines = [ l for l in
-                         mock_stdout.getvalue().rstrip('\n').split('\n')
-                         if ( l and not 'END' in l and not '>>>' in l) ]
+                         mock_stdout.getvalue().strip('\n').split('\n')
+                         if ( not 'END' in l and not '>>>' in l) ]
 
         self.assertEqual(stdout_lines, script_lines)
 
@@ -302,25 +248,25 @@ class T(unittest.TestCase):
                          symlinks = True )
 
 
-    @patch('BCL2FASTQPreprocessor.check_output', side_effect=['bcl2fastq'])
+    @patch('BCL2FASTQPreprocessor.check_output', side_effect=['dummy_bcl2fastq'])
     def run_preprocessor(self, run_name, lane, mock_check_output):
-        """Invoke the preprocessor, capturing the output in bcl2fastq_command_split
-           This will be a list of lists.
+        """Invoke the preprocessor, capturing the output in self.template_args
+           This will be a dict suitable for use in the template.
         """
         if run_name in self.shadow_runs:
-            run_dir = self.shadow_runs[run_name]
+            self.run_dir = self.shadow_runs[run_name]
         else:
-            run_dir = os.path.join(self.seqdata_dir, run_name)
+            self.run_dir = os.path.join(self.seqdata_dir, run_name)
 
-        self.pp = BCL2FASTQPreprocessor( run_dir = run_dir,
+        self.pp = BCL2FASTQPreprocessor( run_dir = self.run_dir,
                                          lane = lane,
                                          dest = self.out_dir )
 
-        self.bcl2fastq_command_split = self.pp.get_bcl2fastq_commands()
+        self.template_args = self.pp.get_bcl2fastq_commands()
 
         # Given the override of check_output, I expect bcl2fastq to be 'found'
-        # in the current cwd
-        self.bcl2fastq_path = os.path.realpath('bcl2fastq')
+        # in the cwd
+        self.bcl2fastq_path = os.path.realpath('dummy_bcl2fastq')
 
 
 
