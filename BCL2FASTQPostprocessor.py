@@ -13,6 +13,8 @@ import os, sys, re, time
 from glob import glob
 from illuminatus.YAMLOrdered import yaml
 
+from collections import namedtuple
+
 # Global error collector
 ERRORS = set()
 
@@ -109,6 +111,22 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
     except FileNotFoundError:
         log("Failed to read seqdata/pipeline/sample_summary.yml. Proceeding anyway.")
 
+    # Some funny-business with UMI reads. These come out as read 2 but we actually want to rename them
+    # to _UMI and rename the _3 read as _2. For this reason, gather up the file list first.
+    afile = namedtuple("afile", "samplename lane readnumber lane_dir project pool_and_library".split())
+    all_fastq = set()
+    afile_to_filename = dict()
+
+    def translate_read_number(f, set_of_f):
+        if f.readnumber == "2":
+            # If we are dealing with UMI's we'll see a corresponding read3
+            if afile(**{ **f._asdict(), "readnumber" : "3" }) in set_of_f:
+                return "UMI"
+        elif f.readnumber == "3":
+            assert afile(**{ **f._asdict(), "readnumber" : "2" }) in set_of_f
+            return "2"
+        return f.readnumber
+
     # Notwithstanding the list of projects obtained by the summary, look for fastq.gz files in all
     # locations.
     # Either we have a list of projects and will find corresponding fastq, or else we have no list and
@@ -137,34 +155,15 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
             log("# skipping (lane mismatch) %s" % fastq_file)
             continue
 
-        # split out library and pool
-        try:
-            pool, library = pool_and_library.split('__')
-        except ValueError:
-            #log("# skipping (no pool__library) %s" % fastq_file)
-            #continue
-            # Decided be a little less strict here. This is also needed for PhiX
-            pool = 'NoPool'
-            library = pool_and_library
-
-        new_filename = "{runid}_{lane}_{library}_{readnumber}.fastq.gz".format(**locals())
-        new_filename_relative = os.path.join ( project, pool, new_filename )
-        new_filename_absolute = os.path.join ( output_dir, project, pool, new_filename )
-
-        #Make the directory to put it in
-        os.makedirs(os.path.dirname(new_filename_absolute), exist_ok=True)
-
-        #Paranoia. Rather than checking if the file exists, create it exclusively.
-        #That way, no possible race condition that can cause one file to be renamed over
-        #another file (ignoring remote NFS race conditions).
-        try:
-            log( "mv %s %s" % ('/'.join(fastq_file.split('/')[-4:]), new_filename_relative) )
-
-            with open(new_filename_absolute, 'x') as tmp_fd:
-                os.replace(fastq_file, new_filename_absolute)
-        except FileExistsError:
-            log("# FileExistsError renaming %s" % new_filename_relative)
-            raise
+        # Add this to the collection
+        thisfile = afile( samplename = samplename,
+                          lane = lane,
+                          readnumber = readnumber,
+                          lane_dir = lane_dir,
+                          project = project,
+                          pool_and_library = pool_and_library )
+        all_fastq.add(thisfile)
+        afile_to_filename[thisfile] = fastq_file
 
     # Now go again for files not in a subdirectory (if Sample_Name was blank)
     # (apologies for the copy-paste)
@@ -193,9 +192,24 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
             log("# skipping (lane mismatch) %s" % fastq_file)
             continue
 
+        # Add this to the collection
+        thisfile = afile( samplename = '',
+                          lane = lane,
+                          readnumber = readnumber,
+                          lane_dir = lane_dir,
+                          project = project,
+                          pool_and_library = pool_and_library )
+        all_fastq.add(thisfile)
+        afile_to_filename[thisfile] = fastq_file
+
+
+    for f in all_fastq:
+        fastq_file = afile_to_filename[f]
+        readnumber = translate_read_number(f, all_fastq)
+
         # split out library and pool
         try:
-            pool, library = pool_and_library.split('__')
+            pool, library = f.pool_and_library.split('__')
         except ValueError:
             #log("# skipping (no pool__library) %s" % fastq_file)
             #continue
@@ -203,18 +217,19 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
             pool = 'NoPool'
             library = pool_and_library
 
-        new_filename = "{runid}_{lane}_{library}_{readnumber}.fastq.gz".format(**locals())
-        new_filename_relative = os.path.join ( project, pool, new_filename )
-        new_filename_absolute = os.path.join ( output_dir, project, pool, new_filename )
+
+        new_filename = "{runid}_{f.lane}_{library}_{readnumber}.fastq.gz".format(**locals())
+        new_filename_relative = os.path.join ( f.project, pool, new_filename )
+        new_filename_absolute = os.path.join ( output_dir, new_filename_relative )
 
         #Make the directory to put it in
         os.makedirs(os.path.dirname(new_filename_absolute), exist_ok=True)
 
-        #Paranoia? Rather than checking if the file exists, create it exclusively.
+        #Paranoia. Rather than checking if the file exists, create it exclusively.
         #That way, no possible race condition that can cause one file to be renamed over
-        #another file.
+        #another file (ignoring remote NFS race conditions).
         try:
-            log( "mv %s %s" % ('/'.join(fastq_file.split('/')[-3:]), new_filename_relative) )
+            log( "mv %s %s" % ('/'.join(fastq_file.split('/')[-4:]), new_filename_relative) )
 
             with open(new_filename_absolute, 'x') as tmp_fd:
                 os.replace(fastq_file, new_filename_absolute)
@@ -222,7 +237,9 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
             log("# FileExistsError renaming %s" % new_filename_relative)
             raise
 
+
     # Now deal with the undetermined files.
+    undet_fastq = set()
     for undet_file_absolute in glob(os.path.join( output_dir, "demultiplexing/lane*", "[Uu]ndetermined_*" )):
         lane_dir, filename = undet_file_absolute.split('/')[-2:]
 
@@ -241,8 +258,23 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
             log("# skipping (lane mismatch) %s" % fastq_file)
             continue
 
+        # Add this to the collection
+        thisfile = afile( samplename = 'undetermined',
+                          lane = lane,
+                          readnumber = readnumber,
+                          lane_dir = lane_dir,
+                          project = '',
+                          pool_and_library = '' )
+        undet_fastq.add(thisfile)
+        afile_to_filename[thisfile] = undet_file_absolute
+
+    # And process the set we just collected
+    for f in undet_fastq:
+        fastq_file = afile_to_filename[f]
+        readnumber = translate_read_number(f, undet_fastq)
+
         # eg. 160811_D00261_0355_BC9DA7ANXX_4_unassigned_1.fastq.gz
-        new_filename = "{runid}_{lane}_unassigned_{readnumber}.fastq.gz".format(**locals())
+        new_filename = "{runid}_{f.lane}_unassigned_{readnumber}.fastq.gz".format(**locals())
 
         new_filename_absolute = os.path.join ( output_dir, new_filename )
 
@@ -251,7 +283,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
             log( "mv %s %s" % ( os.path.join("demultiplexing", filename), new_filename) )
 
             with open(new_filename_absolute, 'x') as tmp_fd:
-                os.rename(undet_file_absolute, new_filename_absolute)
+                os.rename(fastq_file, new_filename_absolute)
         except FileExistsError:
             log("# FileExistsError renaming %s" % new_filename)
             raise

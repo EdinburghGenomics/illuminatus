@@ -21,3 +21,12 @@ Note that the .count and .md5sum files are being made already which is good.
 
 I've had to modify BCL2FASTQCleanup.py to remove the extra files properly (just made the regex more
 liberal). Change this again if we decide to use something other than 'u' ('U', 'I', ???)
+
+Richard remarked we probably want add UMI's on the start of read2 rather than the end of index1. I
+had a tinker and if you fudge the RunInfo.xml you can split read2 and end up with two separate FASTQ
+files for the two parts. This is something we could do, and then all the downstream logic would
+be as for the index1 UMI's. Note it may actually be possible to define the two cycles on the machine?
+In that case we wouldn't need to munge RunInfo.xml and in fact we could infer that the extra read was
+a UMI.
+
+I'll check with Tony when the time comes.

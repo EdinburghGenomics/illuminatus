@@ -20,6 +20,9 @@ from shlex import quote as shell_quote
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
 
+# Capture this before any possible change of directory.
+SCRIPTDIR = os.path.dirname(os.path.abspath(__file__))
+
 class BCL2FASTQPreprocessor:
 
     def __init__(self, run_dir, lane, dest=None):
@@ -157,7 +160,7 @@ def format_template(adict):
        applying shell quote escaping by default.
     """
     template_file = os.environ.get("BCL2FASTQ_TEMPLATE",
-                                   os.path.dirname(__file__) + '/templates/do_demultiplex.sh.ms')
+                                   SCRIPTDIR + '/templates/do_demultiplex.sh.ms')
 
     myrenderer = pystache.Renderer( escape = shell_quote,
                                     search_dirs = None,

@@ -57,11 +57,9 @@ class T(unittest.TestCase):
             os.system("tree " + in_dir)
             os.system("tree " + out_dir)
 
-        # And I should still have five .fastq.gz files after processing
-        # One rename should have failed.
-        fqgz = find_by_pattern(out_dir, "*.fastq.gz")
-
-        self.assertEqual(fqgz, [
+        # All remanes should work
+        fqgz_renamed = find_by_pattern(out_dir, "*.fastq.gz")
+        self.assertEqual(fqgz_renamed, [
             '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0017L01_1.fastq.gz',
             '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0017L01_2.fastq.gz',
             '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0018L01_1.fastq.gz',
@@ -74,8 +72,31 @@ class T(unittest.TestCase):
         self.assertRaises(FileNotFoundError, slurp, os.path.join(out_dir, 'projects_pending.txt'))
 
         #Also, the empty project dir should have been removed from demultiplexing
-        self.assertTrue(os.path.exists(out_dir + '/demultiplexing'))
-        self.assertFalse(os.path.exists(out_dir + '/demultiplexing/10510'))
+        self.assertTrue(os.path.exists(out_dir + '/demultiplexing/lane1'))
+        self.assertFalse(os.path.exists(out_dir + '/demultiplexing/lane1/10510'))
+
+    def test_umi(self):
+        """For one sample there are reads3 so we treat read 2 as the UMI read.
+           In reality if one sample in a lane has read3 then all must have read3.
+        """
+        out_dir = self.run_postprocessor('160811_D00261_0355_BC9DA7ANXX', '.umi')
+
+        # Now to look at the actual output
+        if VERBOSE:
+            os.system("tree " + os.path.join(self.demuxed_dir, '160811_D00261_0355_BC9DA7ANXX.umi'))
+            os.system("tree " + out_dir)
+
+        fqgz_renamed = find_by_pattern(out_dir, "*.fastq.gz")
+        self.assertEqual(fqgz_renamed, [
+            '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0017L01_1.fastq.gz',
+            '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0017L01_2.fastq.gz',
+            '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0017L01_UMI.fastq.gz',
+            '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0018L01_1.fastq.gz',
+            '10510/10510GCpool05/160811_D00261_0355_BC9DA7ANXX_1_10510GC0018L01_2.fastq.gz',
+            '160811_D00261_0355_BC9DA7ANXX_1_unassigned_1.fastq.gz',
+            '160811_D00261_0355_BC9DA7ANXX_1_unassigned_2.fastq.gz',
+            '160811_D00261_0355_BC9DA7ANXX_1_unassigned_UMI.fastq.gz',
+            ])
 
     def test_undetermined(self):
         """Test that undetermined files are renamed correctly. We'll keep the current
