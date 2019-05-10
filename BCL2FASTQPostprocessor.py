@@ -120,10 +120,10 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
     def translate_read_number(f, set_of_f):
         if f.readnumber == "2":
             # If we are dealing with UMI's we'll see a corresponding read3
-            if afile(**{ **f._asdict(), "readnumber" : "3" }) in set_of_f:
+            if f._replace(readnumber="3") in set_of_f:
                 return "UMI"
         elif f.readnumber == "3":
-            assert afile(**{ **f._asdict(), "readnumber" : "2" }) in set_of_f
+            assert f._replace(readnumber="2") in set_of_f
             return "2"
         return f.readnumber
 
