@@ -113,7 +113,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
     # Some funny-business with UMI reads. These come out as read 2 but we actually want to rename them
     # to _UMI and rename the _3 read as _2. For this reason, gather up the file list first.
-    afile = namedtuple("afile", "samplename lane readnumber lane_dir project pool_and_library".split())
+    afile = namedtuple("afile", "samplename lane readnumber project pool_and_library".split())
     all_fastq = set()
     afile_to_filename = dict()
 
@@ -159,7 +159,6 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         thisfile = afile( samplename = samplename,
                           lane = lane,
                           readnumber = readnumber,
-                          lane_dir = lane_dir,
                           project = project,
                           pool_and_library = pool_and_library )
         all_fastq.add(thisfile)
@@ -196,7 +195,6 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         thisfile = afile( samplename = '',
                           lane = lane,
                           readnumber = readnumber,
-                          lane_dir = lane_dir,
                           project = project,
                           pool_and_library = pool_and_library )
         all_fastq.add(thisfile)
@@ -262,7 +260,6 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         thisfile = afile( samplename = 'undetermined',
                           lane = lane,
                           readnumber = readnumber,
-                          lane_dir = lane_dir,
                           project = '',
                           pool_and_library = '' )
         undet_fastq.add(thisfile)

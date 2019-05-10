@@ -30,3 +30,6 @@ In that case we wouldn't need to munge RunInfo.xml and in fact we could infer th
 a UMI.
 
 I'll check with Tony when the time comes.
+
+I've gone ahead and added support for renaming read2 to 'UMI' when a UMI is detected. Let's see if this
+is what we actually need. Fixing the QC should be simple.
