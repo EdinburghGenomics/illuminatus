@@ -73,7 +73,7 @@ def delete_p_fastq(path, lanes, **kwargs):
        where $1 is the lane number.
     """
     return delete_fastq( path, lanes,
-                         re.compile(r'^[0-9]{6}_[^_]+_[0-9]+_[^_]+_(.)_[^_]+_(?:[12]|UMI)\.fastq\.gz'),
+                         re.compile(r'^[0-9]{6}_[^_]+_[0-9]+_[^_]+_(.)_[^_]+_(?:[0-9]|UMI)\.fastq\.gz'),
                          otherdirs=('md5sums', 'counts'),
                          **kwargs )
 
