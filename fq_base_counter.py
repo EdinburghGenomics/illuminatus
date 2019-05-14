@@ -105,9 +105,20 @@ def json_to_info(filename, json_info):
     lane = fn_bits[-3]
     runid = "_".join(fn_bits[0:4])
 
+    # Here UMI's get annoying again, because if read == 'UMI' then I need to look at
+    # read 2, which is simple enough. But if read == '2' then I actually need to look at
+    # read 3. But I think we can always say that read 2 is the last non-index read.
+    if read == 'UMI':
+        real_read = 1
+    elif read == '2':
+        real_read = -1
+    else:
+        real_read = int(read) - 1
+
     # Check the run id matches
     assert json_info['RunId'] == runid, \
-        "The JSON file is for run {} but the input file is for run {}.".format(json_info['RunId'], runid)
+        "The JSON file is for run {} but the input file is for run {}.".format(
+                                  json_info['RunId'],              runid)
 
     # Find the info for this lib
     try:
@@ -125,15 +136,21 @@ def json_to_info(filename, json_info):
             raise Exception("The JSON file does not contain info about library {}.".format(lib))
 
     try:
-        rmet, = [ r for r in dres['ReadMetrics'] if str(r['ReadNumber']) == read ]
-    except ValueError:
-        raise Exception("No ReadMetrics for read {}.".format(read))
+        #rmet, = [ r for r in dres['ReadMetrics'] if str(r['ReadNumber']) == read ]
+        rmet = sorted(dres['ReadMetrics'], key=lambda r: r['ReadNumber'])[real_read]
+    except IndexError:
+        raise Exception("No ReadMetrics for read '{}' (index {}).".format(read, real_read))
 
+    # We found the metrics. Now find the read info.
     try:
-        ri, = [ ri for ril in json_info["ReadInfosForLanes"] if str(ril["LaneNumber"]) == lane
-                   for ri in ril["ReadInfos"] if str(ri["Number"]) == read and not ri["IsIndexedRead"] ]
-    except ValueError:
-        raise Exception("The JSON file does not contain read info for read {}, lane {}.".format(read, lane))
+        #ri, = [ ri for ril in json_info["ReadInfosForLanes"] if str(ril["LaneNumber"]) == lane
+        #           for ri in ril["ReadInfos"] if str(ri["Number"]) == read and not ri["IsIndexedRead"] ]
+        ri = sorted([ ri for ril in json_info["ReadInfosForLanes"] if str(ril["LaneNumber"]) == lane
+                         for ri in ril["ReadInfos"] if not ri["IsIndexedRead"] ],
+                    key = lambda r: r["Number"])[real_read]
+    except IndexError:
+        raise Exception("The JSON file does not contain read info for read '{}' (index {}), lane {}.".format(
+                                                                            read,      real_read,lane))
 
     # Now we can start building the info...
     res = dict()

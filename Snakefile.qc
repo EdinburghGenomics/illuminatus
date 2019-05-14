@@ -119,22 +119,30 @@ def get_assigned_fq():
 # See what input sequences we are dealing with (if any, yet)
 # I wanted to use a hack to stop this being re-run on every cluster job,
 # but it didn't work as Snakemake somethimes re-runs itself even for local jobs.
-all_unassigned_fq = [ split_fq_name(f) for f in glob('*_unassigned_?.fastq.gz') ]
-all_assigned_fq   = [ split_fq_name(f) for f in get_assigned_fq() ]
-all_fq = (all_assigned_fq + all_unassigned_fq)
-all_1_fq  = [ fq for fq in all_fq if fq['read'] == '1' ]
-all_u1_fq = [ fq for fq in all_unassigned_fq if fq['read'] == '1' ]
+all_unassigned_fq  = [ split_fq_name(f) for f in glob('*_unassigned_?.fastq.gz') ]
+all_unassigned_umi = [ split_fq_name(f) for f in glob('*_unassigned_UMI.fastq.gz') ]
+all_unassigned     = ( all_unassigned_fq + all_unassigned_umi )
 
-if all_fq:
+all_assigned       = [ split_fq_name(f) for f in get_assigned_fq() ]
+all_assigned_fq    = [ fq for fq in all_assigned if fq['read'] != 'UMI' ]
+all_assigned_umi   = [ fq for fq in all_assigned if fq['read'] == 'UMI' ]
+
+all_fq             = ( all_assigned_fq + all_unassigned_fq )
+all_1_fq           = [ fq for fq in all_fq if fq['read'] == '1' ]
+all_u1_fq          = [ fq for fq in all_unassigned_fq if fq['read'] == '1' ]
+
+all_all            = ( all_fq + all_unassigned_umi + all_assigned_umi )
+
+if all_all:
     # If there are any fastq files there must be some from read 1.
     assert all_1_fq, "No read1 files found in {}, but there were {} fastq files in total.".format(
-                                              os.getcwd(),       len(all_fq) )
+                                              os.getcwd(),       len(all_all) )
 
 # There should only be one run. But what is it called?
-# If config['runid'] is set we use that, otherwise infer from all_fq, otherwise
+# If config['runid'] is set we use that, otherwise infer from all_all, otherwise
 # the current directory name will do.
 try:
-    runs = set( sf['run'] for sf in all_fq )
+    runs = set( sf['run'] for sf in all_all )
     if 'runid' in config: runs.add(config['runid'])
     assert len(runs) <= 1, "Expected to find only one run in {} but saw: {}".format(os.getcwd(), runs)
     run, = runs
@@ -145,7 +153,7 @@ finally:
     assert '_' in run
     del(runs)
 
-lanes = sorted( set( sf['lane'] for sf in all_fq ) )
+lanes = sorted( set( sf['lane'] for sf in all_all ) )
 # All report names - lane1, lane2, ..., overview
 # This will not generate the per-lane reports until the demultiplexing has been done.
 # FIXME - stop the dangling links on the overview that will result from this. Or else
@@ -534,8 +542,8 @@ rule get_bcl2fastq_json:
 # === Driver rules ===
 rule md5_main:
     input:
-        md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5', fq=all_fq ),
-        counts   = expand( 'counts/{fq[fname]}.fastq.count',   fq=all_fq )
+        md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5', fq=all_all ),
+        counts   = expand( 'counts/{fq[fname]}.fastq.count',   fq=all_all )
 
 # qc_main depends on other rules so it's now down below.
 
