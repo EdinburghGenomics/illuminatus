@@ -1,0 +1,17 @@
+So we have a problem with 10x. If the runs are not processed immediately they get deleted.
+
+The obvious answer is to always process 10x immediately.
+
+Automating this is not easy - we'd need more metadata and it's not supposed to happen until
+the run is signed off.
+
+The easiest technical fix is to '.keep' anything that looks like it has 10X data. There may
+be some false positives but this is far less a problem than accidental deletion.
+
+Detevting the kept runs and removing them (or removing the .keep files) is simple with a grep.
+
+So, a script that:
+
+1) Loads the 10x barcode list.
+2) Load the Stats.json for each lane
+3) Reports the number of 10x barcodes found
