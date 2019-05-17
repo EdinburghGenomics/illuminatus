@@ -69,7 +69,7 @@ def main(output_dir, *lanes):
 def delete_p_fastq(path, lanes, **kwargs):
     """Delete FASTQ from the top-level dir and return a list of the projects
        impacted.
-       Files in here match [0-9]{6}_[^_]+_[0-9]+_[^_]+_(.)_[^_]+_[1234u]\.fastq\.gz
+       Files in here match [0-9]{6}_[^_]+_[0-9]+_[^_]+_(.)_[^_]+_(?:[0-9]|UMI)\.fastq\.gz
        where $1 is the lane number.
     """
     return delete_fastq( path, lanes,
