@@ -185,7 +185,7 @@ rule multiqc_main:
 rule run_multiqc:
     output:
         report = "QC/multiqc_report_{l}.html",
-        data = "QC/multiqc_report_{l}_data"
+        data = "QC/multiqc_report_{l}_data"    # A directory! Later Snakemake needs this explicit.
     input:
         config   = "QC/multiqc_config.yml",
         runinfo  = "QC/run_info.{r}.1.yml".format(r=run),
@@ -235,6 +235,12 @@ rule configure_multiqc:
                      plots_flat_numseries = 1000,
                      # Custom content
                      top_modules = [ 'custom_content', 'edgen_interop' ],
+                     module_order = [ 'unassigned_barcodes',
+                                      'edgen_cutadapt',
+                                      'fastqc',
+                                      'edgen_fastqc_original',
+                                      'fastq_screen',
+                                      'bcl2fastq' ],
                      fastqc_config = dict(
                         plots_enabled = [ "sequence_quality_plot",
                                           "per_seq_quality_plot",

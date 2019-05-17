@@ -238,6 +238,10 @@ action_demultiplexed() {
     # log a failure.
     touch pipeline/qc.started
     BREAK=1
+
+    # First this...
+    detect_and_keep_10x
+
     set +e ; ( set -e
         run_qc
         log "  Completed QC on $RUNID."
@@ -536,6 +540,15 @@ send_summary_to_rt() {
            || echo "Error while summarizing lane contents." ) ) 2>&1
 }
 
+detect_and_keep_10x() {
+    # Attempt to avoid accidental deletion of 10x runs following the incident where
+    # they were left unprocessed and the run was deleted.
+    if count_10x_barcodes.py "$DEMUX_OUTPUT_FOLDER"/demultiplexing/lane*/Stats/Stats.json ; then
+        ( set -o noclobber ;
+          echo "10X barcodes detected by Illuminatus" > .keep ) 2>/dev/null
+    fi
+}
+
 run_qc() {
     # At present, this is only ever called by action_demultiplexed.
     # If qc failed, the ticket subject will be 'failed' so reset it (but an RT error should not be fatal).
@@ -595,7 +608,7 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
 
   # invoke runinfo and collect some meta-information about the run. We're passing info
   # to the state functions via global variables.
-  RUNINFO_OUTPUT="$(RunStatus.py "$run")" || RunStatus.py $run | log 2>&1
+  RUNINFO_OUTPUT="$(RunStatus.py "$run")" || RunStatus.py "$run" | log 2>&1
 
   LANES=`grep ^LaneCount: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
   STATUS=`grep ^PipelineStatus: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' ' || echo unknown`
