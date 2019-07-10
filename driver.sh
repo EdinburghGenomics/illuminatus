@@ -175,7 +175,7 @@ action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     # Note this action must not attempt to run any QC ops - an interim report will be triggered
     # by action_demultiplexed before it fires off all the QC jobs.
-    eval touch pipeline/"lane{1..$LANES}.started"
+    eval touch_atomic pipeline/"lane{1..$LANES}.started"
 
     log "\_READS_FINISHED $RUNID. Checking for new SampleSheet.csv and preparing to demultiplex."
     plog_start
@@ -236,7 +236,7 @@ action_demultiplexed() {
     # This touch file puts the run into status in_qc.
     # Upload of report is regarded as the final QC step, so if this fails wen need to
     # log a failure.
-    touch pipeline/qc.started
+    touch_atomic pipeline/qc.started
     BREAK=1
 
     # First this...
@@ -273,7 +273,7 @@ action_read1_finished() {
     debug "\_READ1_FINISHED $RUNID"
     log "  Now commencing read1 processing on $RUNID."
 
-    touch pipeline/read1.started
+    touch_atomic pipeline/read1.started
     plog_start
     plog ">>> See pipeline_read1.log for details on read1 processing."
     plog1 </dev/null  #Log1 must be primed before entering subshell!
@@ -352,7 +352,7 @@ action_redo() {
     ( rm -f pipeline/lane?.started ) 2>/dev/null || true
     for redo in pipeline/lane?.redo ; do
         stat -c '%n had owner %U' $redo | plog
-        touch ${redo%.redo}.started
+        touch_atomic ${redo%.redo}.started
         rm -f ${redo%.redo}.done ; rm $redo
 
         [[ "$redo" =~ .*(.)\.redo ]]
@@ -413,6 +413,13 @@ action_unknown() {
 }
 
 ### Other utility functions used by the actions.
+touch_atomic(){
+    # Create a file or files but it's an error if the file already existed.
+    for f in "$@" ; do
+        (set -o noclobber ; >"$f")
+    done
+}
+
 fetch_samplesheet(){
     # Tries to fetch an updated samplesheet. If this is the first run, or if
     # a new one was found, delete the stale sample_summary.yml.
