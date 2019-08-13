@@ -41,7 +41,6 @@ LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
 
 BIN_LOCATION="${BIN_LOCATION:-$(dirname $0)}"
-PATH="$(readlink -m $BIN_LOCATION):$PATH"
 MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 
 # 1) Sanity check these directories exist and complain to STDERR (triggering CRON
@@ -103,6 +102,7 @@ log "====`tr -c '' = <<<"$intro"`==="
 trap 'log "=== `date`. Finished run; PID=$$ ==="' EXIT
 
 # We always must activate a Python VEnv, unless explicitly set to 'none'
+# Do this before other PATH manipulations.
 py_venv="${PY3_VENV:-default}"
 if [ "${py_venv}" != none ] ; then
     if [ "${py_venv}" = default ] ; then
@@ -118,6 +118,8 @@ if [ "${py_venv}" != none ] ; then
     fi
     log 'VEnv ACTIVATED'
 fi
+
+PATH="$(readlink -m $BIN_LOCATION):$PATH"
 
 # 3) Define an action for each possible status that a run can have:
 # new)            - this run is seen for the first time (sequencing might be done or is still in progress)

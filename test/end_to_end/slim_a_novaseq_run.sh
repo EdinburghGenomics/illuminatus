@@ -43,13 +43,13 @@ done
 
 # Now make some links
 for lane in $LANES ; do
-  ln -v "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/s_*_1101.filter "$DEST"/Data/Intensities/BaseCalls/$lane/
+  ln -v "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/s_*_2101.filter "$DEST"/Data/Intensities/BaseCalls/$lane/
 
   CYCLES="`ls "$RUN_PATH"/Data/Intensities/BaseCalls/$lane | grep -x 'C[0-9]\+.1'`"
-  echo "Linking `wc -w <<<$CYCLES` cyles of bcl[.gz] files for side 1 of $lane..."
+  echo "Linking `wc -w <<<$CYCLES` cyles of bcl[.gz] files for side 2 of $lane..."
   for cycle in $CYCLES ; do
     mkdir "$DEST"/Data/Intensities/BaseCalls/$lane/$cycle
-    ln -v "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/$cycle/*_1.cbcl "$DEST"/Data/Intensities/BaseCalls/$lane/$cycle/
+    ln -v "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/$cycle/*_2.cbcl "$DEST"/Data/Intensities/BaseCalls/$lane/$cycle/
   done
 done
 
@@ -70,7 +70,7 @@ done
 if [ ! -e "$DEST"/pipeline_settings.ini ] ; then
     echo "[bcl2fastq]" > "$DEST"/pipeline_settings.ini
 fi
-echo '--tiles: s_[$LANE]_1101' >> "$DEST"/pipeline_settings.ini
+echo '--tiles: s_[$LANE]_2101' >> "$DEST"/pipeline_settings.ini
 
 # Finally, if it's already a link, copy the SampleSheet.csv to SampleSheet.csv.OVERRIDE
 # so it can be edited and Illuminatus won't try to replace it.
