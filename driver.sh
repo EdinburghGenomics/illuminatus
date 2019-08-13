@@ -30,7 +30,8 @@ if [ -e "$ENVIRON_SH" ] ; then
     export CLUSTER_QUEUE      FASTQ_LOCATION   GENOLOGICSRC  SAMPLESHEETS_ROOT \
            PROJECT_NAME_LIST  PROJECT_PAGE_URL REDO_HOURS_TO_LOOK_BACK \
            REPORT_DESTINATION REPORT_LINK      RT_SYSTEM     RUN_NAME_REGEX \
-           SEQDATA_LOCATION   SSPP_HOOK        VERBOSE       WRITE_TO_CLARITY
+           SEQDATA_LOCATION   SSPP_HOOK        TOOLBOX       VERBOSE       \
+           WRITE_TO_CLARITY
 fi
 
 # Tools may reliably use this to report the version of Illuminatus being run right now.
