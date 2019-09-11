@@ -233,6 +233,8 @@ rule configure_multiqc:
                      fn_ignore_paths = [ '*__*/1*' ],
                      # Interactive plots please
                      plots_flat_numseries = 1000,
+                     # No beeswarms
+                     max_table_rows = 2000,
                      # Custom content
                      top_modules = [ 'custom_content', 'edgen_interop' ],
                      module_order = [ 'unassigned_barcodes',

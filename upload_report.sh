@@ -51,7 +51,7 @@ echo "Uploading report for $runname to $dest..." >&2
 rsync -drvlOt multiqc_reports/ $dest/$runname/ >&2
 
 # Add the index. We now have to make this a PHP script but at least the content is totally fixed.
-ssh ${dest%%:*} "cat > ${dest#*:}/$runname/index.php" <<'END'
+ssh -T ${dest%%:*} "cat > ${dest#*:}/$runname/index.php" <<'END'
 <?php
     # Script added by upload_report.sh in Illuminatus.
     # First resolve symlink. The subtlety here is that anyone saving the link will get a permalink,
@@ -82,7 +82,7 @@ END
 
 # For stuff already uploaded we have an index.html symlink which must be (cautiously) removed.
 # TODO - remove this in a month or so when there's no danger of a clash.
-ssh ${dest%%:*} "[ ! -L ${dest#*:}/$runname/index.html ] || rm ${dest#*:}/$runname/index.html"
+ssh -T ${dest%%:*} "[ ! -L ${dest#*:}/$runname/index.html ] || rm ${dest#*:}/$runname/index.html"
 
 echo "...done. Report uploaded and index.php written to ${dest#*:}/$runname/." >&2
 

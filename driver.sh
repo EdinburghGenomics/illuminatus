@@ -30,7 +30,8 @@ if [ -e "$ENVIRON_SH" ] ; then
     export CLUSTER_QUEUE      FASTQ_LOCATION   GENOLOGICSRC  SAMPLESHEETS_ROOT \
            PROJECT_NAME_LIST  PROJECT_PAGE_URL REDO_HOURS_TO_LOOK_BACK \
            REPORT_DESTINATION REPORT_LINK      RT_SYSTEM     RUN_NAME_REGEX \
-           SEQDATA_LOCATION   SSPP_HOOK        VERBOSE       WRITE_TO_CLARITY
+           SEQDATA_LOCATION   SSPP_HOOK        TOOLBOX       VERBOSE       \
+           WRITE_TO_CLARITY
 fi
 
 # Tools may reliably use this to report the version of Illuminatus being run right now.
@@ -41,7 +42,6 @@ LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
 
 BIN_LOCATION="${BIN_LOCATION:-$(dirname $0)}"
-PATH="$(readlink -m $BIN_LOCATION):$PATH"
 MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 
 # 1) Sanity check these directories exist and complain to STDERR (triggering CRON
@@ -103,6 +103,7 @@ log "====`tr -c '' = <<<"$intro"`==="
 trap 'log "=== `date`. Finished run; PID=$$ ==="' EXIT
 
 # We always must activate a Python VEnv, unless explicitly set to 'none'
+# Do this before other PATH manipulations.
 py_venv="${PY3_VENV:-default}"
 if [ "${py_venv}" != none ] ; then
     if [ "${py_venv}" = default ] ; then
@@ -118,6 +119,8 @@ if [ "${py_venv}" != none ] ; then
     fi
     log 'VEnv ACTIVATED'
 fi
+
+PATH="$(readlink -m $BIN_LOCATION):$PATH"
 
 # 3) Define an action for each possible status that a run can have:
 # new)            - this run is seen for the first time (sequencing might be done or is still in progress)
@@ -175,7 +178,7 @@ action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     # Note this action must not attempt to run any QC ops - an interim report will be triggered
     # by action_demultiplexed before it fires off all the QC jobs.
-    eval touch pipeline/"lane{1..$LANES}.started"
+    eval touch_atomic pipeline/"lane{1..$LANES}.started"
 
     log "\_READS_FINISHED $RUNID. Checking for new SampleSheet.csv and preparing to demultiplex."
     plog_start
@@ -236,7 +239,7 @@ action_demultiplexed() {
     # This touch file puts the run into status in_qc.
     # Upload of report is regarded as the final QC step, so if this fails wen need to
     # log a failure.
-    touch pipeline/qc.started
+    touch_atomic pipeline/qc.started
     BREAK=1
 
     # First this...
@@ -273,7 +276,7 @@ action_read1_finished() {
     debug "\_READ1_FINISHED $RUNID"
     log "  Now commencing read1 processing on $RUNID."
 
-    touch pipeline/read1.started
+    touch_atomic pipeline/read1.started
     plog_start
     plog ">>> See pipeline_read1.log for details on read1 processing."
     plog1 </dev/null  #Log1 must be primed before entering subshell!
@@ -352,7 +355,7 @@ action_redo() {
     ( rm -f pipeline/lane?.started ) 2>/dev/null || true
     for redo in pipeline/lane?.redo ; do
         stat -c '%n had owner %U' $redo | plog
-        touch ${redo%.redo}.started
+        touch_atomic ${redo%.redo}.started
         rm -f ${redo%.redo}.done ; rm $redo
 
         [[ "$redo" =~ .*(.)\.redo ]]
@@ -413,6 +416,13 @@ action_unknown() {
 }
 
 ### Other utility functions used by the actions.
+touch_atomic(){
+    # Create a file or files but it's an error if the file already existed.
+    for f in "$@" ; do
+        (set -o noclobber ; >"$f")
+    done
+}
+
 fetch_samplesheet(){
     # Tries to fetch an updated samplesheet. If this is the first run, or if
     # a new one was found, delete the stale sample_summary.yml.
