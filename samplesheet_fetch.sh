@@ -60,12 +60,19 @@ fi
 # Whatever happens, update the timestamp on the symlink. auto_redo.sh depends on this.
 touch -h SampleSheet.csv
 
-# Support OVERRIDE with local SampleSheet
+# Detect old and maybe ambiguous cases
 if [ -e SampleSheet.csv.OVERRIDE ] ; then
-    echo "Giving priority to ./SampleSheet.csv.OVERRIDE"
+    echo "Sample sheet overrides now need to go in the pipeline directory."
+    echo "Please move SampleSheet.csv.OVERRIDE to ./pipeline and retry."
+    exit 1
+fi
 
-    ln -sf SampleSheet.csv.OVERRIDE SampleSheet.csv
-    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to new SampleSheet.csv.OVERRIDE"
+# Support OVERRIDE with local SampleSheet
+if [ -e pipeline/SampleSheet.csv.OVERRIDE ] ; then
+    echo "Giving priority to pipeline/SampleSheet.csv.OVERRIDE"
+
+    ln -sf pipeline/SampleSheet.csv.OVERRIDE SampleSheet.csv
+    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to pipeline/SampleSheet.csv.OVERRIDE"
     exit 0
 fi
 

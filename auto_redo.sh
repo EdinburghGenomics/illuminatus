@@ -99,7 +99,7 @@ set +u ; for ss in "${candidate_ss[@]}" ; do set -u
         echo "Sanity check failed - $seqdir/SampleSheet.csv is not a symlink"
         continue
     fi
-    # No restart override is in effect.
+    # No restart, as override is in effect.
     if [ "$(basename $(readlink "$seqdir/SampleSheet.csv"))" = SampleSheet.csv.OVERRIDE ] ; then
         echo "OVERRIDE is in effect ($seqdir/SampleSheet.csv -> SampleSheet.csv.OVERRIDE)"
         continue
