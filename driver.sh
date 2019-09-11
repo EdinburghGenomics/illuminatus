@@ -144,20 +144,24 @@ save_start_time(){
 }
 
 action_new(){
-    # Create a pipeline/ folder and make a sample sheet summary
+    # Create a pipeline/ directory and make a sample sheet summary
     # For now the sample sheet summary will just be a copy of the sample sheet
     # If this works we can BREAK, but if not go on to process more runs
 
     # In order to run the initial round of MultiQC we'll also end up making the
     # $DEMUX_OUTPUT_FOLDER/QC/ directory. The symlink ./pipeline/output will
     # serve as a shortcut to this, and we'll also have a link in the other direction.
-    # We're now sending the logs to the output folder too.
+    # We're now sending the logs to the output dir too.
+
+    # And as of version 1.4, we set the group ownership on the pipeline dir to
+    # be the same as the output dir.
     log "\_NEW $RUNID. Creating ./pipeline folder and making skeleton report."
     set +e ; ( set -e
       mkdir -v ./pipeline |& debug
       mkdir -vp "$DEMUX_OUTPUT_FOLDER" |&debug
       ln -nsv "$DEMUX_OUTPUT_FOLDER" ./pipeline/output |& debug
       ln -nsv "`pwd -P`" ./pipeline/output/seqdata |& debug
+      chgrp -c --reference="$DEMUX_OUTPUT_FOLDER" ./pipeline |& debug
 
       plog_start
       fetch_samplesheet
