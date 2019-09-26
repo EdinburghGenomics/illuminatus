@@ -169,12 +169,30 @@ class T(unittest.TestCase):
         with open("SampleSheet.csv") as fh:
             self.assertEqual(fh.read().rstrip(), 'mismatch2')
 
-    def test_override(self):
+    def test_override_old(self):
         """For testing, or if for some reason we need to amend the samplesheet outside
            of the LIMS, we want to ensure that SampleSheet.csv.OVERRIDE gets priority.
+           But the file now needs to be under the pipeline directory.
         """
         touch('SampleSheet.csv', 'original')
         touch('SampleSheet.csv.OVERRIDE', 'override')
+        touch(self.ss_dir + '/foo_XXXX.csv', 'ignore this')
+
+        last_stdout = self.bm_run_fetch(expected_retval=1)
+
+        # At this point we should be left with SampleSheet.csv renamed to
+        # SampleSheet.csv.0 and symlinked.
+        self.assertTrue(os.path.isfile('SampleSheet.csv.0'))
+        self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
+        self.assertEqual(last_stdout[2], "Please move SampleSheet.csv.OVERRIDE to ./pipeline and retry.")
+
+    def test_override(self):
+        """For testing, or if for some reason we need to amend the samplesheet outside
+           of the LIMS, we want to ensure that pipeline/SampleSheet.csv.OVERRIDE gets priority.
+        """
+        touch('SampleSheet.csv', 'original')
+        os.mkdir('pipeline')
+        touch('pipeline/SampleSheet.csv.OVERRIDE', 'override')
         touch(self.ss_dir + '/foo_XXXX.csv', 'ignore this')
 
         last_stdout = self.bm_run_fetch()
@@ -183,8 +201,8 @@ class T(unittest.TestCase):
         # override and the alternative in ss_dir is ignored.
         self.assertTrue(os.path.isfile('SampleSheet.csv.0'))
         self.assertFalse(os.path.isfile('SampleSheet.csv.1'))
-        self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.OVERRIDE')
-        self.assertEqual(last_stdout[1][:45], "Giving priority to ./SampleSheet.csv.OVERRIDE")
+        self.assertEqual(os.readlink('SampleSheet.csv'), 'pipeline/SampleSheet.csv.OVERRIDE')
+        self.assertEqual(last_stdout[1], "Giving priority to pipeline/SampleSheet.csv.OVERRIDE.")
 
     def test_no_flowcellid(self):
         """If no flowcell ID is provided, the script should attempt to get one by running

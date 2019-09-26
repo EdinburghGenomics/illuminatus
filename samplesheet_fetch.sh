@@ -69,10 +69,10 @@ fi
 
 # Support OVERRIDE with local SampleSheet
 if [ -e pipeline/SampleSheet.csv.OVERRIDE ] ; then
-    echo "Giving priority to pipeline/SampleSheet.csv.OVERRIDE"
+    echo "Giving priority to pipeline/SampleSheet.csv.OVERRIDE."
 
     ln -sf pipeline/SampleSheet.csv.OVERRIDE SampleSheet.csv
-    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to pipeline/SampleSheet.csv.OVERRIDE"
+    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to pipeline/SampleSheet.csv.OVERRIDE."
     exit 0
 fi
 
