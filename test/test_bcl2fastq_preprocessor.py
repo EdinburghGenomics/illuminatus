@@ -9,9 +9,9 @@ from io import StringIO
 from os import remove
 
 # Adding this to sys.path makes the test work if you just run it directly.
-sys.path.insert(0,'.')
-from BCL2FASTQPreprocessor import BCL2FASTQPreprocessor
-from BCL2FASTQPreprocessor import main as pp_main
+with patch('sys.path', new=['.'] + sys.path):
+    from BCL2FASTQPreprocessor import BCL2FASTQPreprocessor
+    from BCL2FASTQPreprocessor import main as pp_main
 
 class T(unittest.TestCase):
 

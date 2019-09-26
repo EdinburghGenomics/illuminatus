@@ -13,19 +13,6 @@ from sandbox import TestSandbox
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/asandbox')
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
-try:
-    sys.path.insert(0, '.')
-    # from lib_or_script import functions
-except:
-    #If this fails, you is probably running the tests wrongly
-    print("****",
-          "To test your working copy of the code you should use the helper script:",
-          "  ./run_tests.sh <name_of_test>",
-          "or to run all tests, just",
-          "  ./run_tests.sh",
-          "****",
-          sep="\n")
-    raise
 
 class T(unittest.TestCase):
 

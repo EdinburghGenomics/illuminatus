@@ -2,9 +2,10 @@
 
 import sys, os
 import unittest
+from unittest.mock import patch
 
-sys.path.insert(0,'.')
-from test.binmocker import BinMocker
+with patch('sys.path', new=['.'] + sys.path):
+    from test.binmocker import BinMocker
 
 class T(unittest.TestCase):
     """Internal testing for BinMocker helper

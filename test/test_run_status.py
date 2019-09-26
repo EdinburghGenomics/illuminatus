@@ -6,10 +6,11 @@ import glob
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
 from pprint import pprint
+from unittest.mock import patch
 
 # Adding this to sys.path makes the test work if you just run it directly.
-sys.path.insert(0,'.')
-from RunStatus import RunStatus
+with patch('sys.path', new=['.'] + sys.path):
+    from RunStatus import RunStatus
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'

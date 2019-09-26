@@ -8,10 +8,10 @@ from glob import glob
 from fnmatch import fnmatch
 
 # Adding this to sys.path makes the test work if you just run it directly.
-sys.path.insert(0,'.')
-#from BCL2FASTQPostprocessor import BCL2FASTQPostprocessor
-from BCL2FASTQPostprocessor import main as pp_main
-from BCL2FASTQPostprocessor import do_renames, save_projects_ready, ERRORS
+with patch('sys.path', new=['.'] + sys.path):
+    #from BCL2FASTQPostprocessor import BCL2FASTQPostprocessor
+    from BCL2FASTQPostprocessor import main as pp_main
+    from BCL2FASTQPostprocessor import do_renames, save_projects_ready, ERRORS
 
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 

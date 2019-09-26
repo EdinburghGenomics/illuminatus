@@ -6,6 +6,7 @@ import sys, os, re
 import subprocess
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
+from unittest.mock import patch
 from glob import glob
 
 """Here we're using a Python script to test a shell script.  The shell script calls
@@ -13,8 +14,8 @@ from glob import glob
    the calls to those programs, similar to the way that Test::Mock works.
    To this end, see the BinMocker class. I've broken this out for general use.
 """
-sys.path.insert(0,'.')
-from test.binmocker import BinMocker
+with patch('sys.path', new=['.'] + sys.path):
+    from test.binmocker import BinMocker
 
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')

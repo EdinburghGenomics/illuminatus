@@ -2,10 +2,10 @@
 
 import sys, os
 import unittest
+from unittest.mock import patch
 
-sys.path.insert(0, '.')
-
-from grab_bcl2fastq_stats import gather_fastq_stats
+with patch('sys.path', new=['.'] + sys.path):
+    from grab_bcl2fastq_stats import gather_fastq_stats
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 

@@ -3,11 +3,11 @@
 import unittest
 import sys, os
 from glob import glob
+from unittest.mock import patch
 
 # Adding this to sys.path makes the test work if you just run it directly.
-sys.path.insert(0,'.')
-
-from illuminatus.BaseMaskExtractor import BaseMaskExtractor
+with patch('sys.path', new=['.'] + sys.path):
+    from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/base_mask_examples')
 

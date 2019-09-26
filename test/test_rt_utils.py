@@ -4,8 +4,8 @@ from unittest.mock import Mock, patch
 import sys, os
 from io import StringIO
 
-sys.path.insert(0,'.')
-from rt_runticket_manager import RTManager, AuthorizationError, main
+with patch('sys.path', new=['.'] + sys.path):
+    from rt_runticket_manager import RTManager, AuthorizationError, main
 
 RT_SETTINGS = os.path.abspath(os.path.dirname(__file__) + '/rt_settings.ini')
 
