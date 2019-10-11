@@ -1,0 +1,106 @@
+## Tighter permissions for /lustre/seqdata
+
+On Friday (6th Sep 2019), Frances went to abort a failed MiSeq run, as per SOP004.
+This asks the operator to remove the stale files from /lustre/fastqdata (ie. the output directory) but due
+to a typo Frances instead removed the run from /lustre/seqdata (ie. the input directory). While this in itself
+was not a major issue, a slightly different variation of the typo could have removed multiple runs. It also
+goes against our standard procedure and would have to be an NC under our new quality assurance regime.
+
+I propose 2 changes:
+
+1) In the SOP, state that removal of the old directory should always be done by moving the directory to trash
+
+  $ mv -vt trash <rundir>
+
+rather than by
+
+  $ rm -r <rundir>
+
+This affords an opportunity to undo mistakes and is generally a good habit.
+
+2) Review the permissions on /lustre/seqdata. Currently all the files written by the sequencer are in group
+eg-bioinfo and thus writeable by all bioinformaticians. I think the group ownership should be "eg-pipeline" and
+that all bioinformaticians should be removed from this group (this change has to be made by the EPCC team).
+Anyone needing this permission can still use the gsegadmin or root or pipeline accounts.
+
+Problems (and non-issues) with this:
+
+* Hard-linking to files is affected by permissions. Files on fastqdata will need to have their
+  group changed so that linking is still permitted. Files on seqdata do not need to be linked
+  so this is not an issue.
+
+* The pipeline directory needs to be writeable as several situations require this. We can ensure
+  that Illuminatus creates this directory to be owned by eg-bioinfo.
+
+* We will no longer be able to write .keep files to the run directories. I'd suggest instead using
+  pipeline/keep as the file, since the pipeline dir will be writeable.
+
+* We will no longer be able to make SampleSheet.csv.OVERRIDE. Obviously we could log in as 'pipeline' to do
+  this, but then we can't see who made the file. Instead I suggest that the OVERRIDE should be in the pipeline
+  dir, which as noted above is writeable.
+
+* Logs are kept in fastqdata so that's fine.
+
+* pipeline_settings.ini is not used in any normal situation. I'd suggest that any run needing this treatment
+  should have the group ownership changed to eg-bioinfo.
+
+Tasks:
+
+1) Request EPCC to remove all our regular accounts from the eg-pipeline group (actually this needs to happen
+   last but they will need to co-ordinate the change)
+
+EPCC say we can do this ourselves - see below.
+
+2) Alter Illuminatus to fix the group ownership on the "pipeline" directories that it creates to eg-bioinfo
+   (or rather, to avoid hard-coding, to the same group as the output dir). Also to look for
+   pipeline/SampleSheet.csv.OVERRIDE. DONE in the 1.4 (UMI) branch
+
+   Once the group ownership on /lustre/fastqdata (just the top level) is fixed and the documentation is
+   done this can be released.
+
+   Actually no it also depends on the new auto-deletion code (3) since we'll be adding keep files to the
+   pipeline dir for auto-keep.
+
+3) Alter the auto-deletion system to respect pipeline/keep files instead of the old .keep files, and move
+   the existing files. DONE in GIT.
+
+   The altered code looks for both so we can release it now, then move the files and change the docs.
+
+4) Recursively change the group ownership on /lustre/seqdata to eg-pipeline (aside from import_staging)
+   and the ownership of /lustre/fastqdata to eg-bioinfo. Also clean up cron_logs which is redundant.
+
+   We should be able to do /lustre/fastqdata right now. Then all the new runs should just end up
+   being owned by eg-bioinfo. After this we can update Illuminatus, then fix the perms on seqdata,
+   then fix the group perms.
+
+5) Review and test the standard procedure for importing runs from clinical (probably this will need to
+   be done under the pipeline account from now on, but arguably it should be done via this account on
+   gseg-dt in any case?)
+
+   I think this just has to be done as 'pipeline'. We need a new work instruction for this in any case.
+   Once Mark has signed off 11 and 13 I'll hit him with this one.
+
+6) Review the procedures for fiddling with the sample sheet, noting that SampleSheet.csv.OVERRIDE
+   should be in the pipeline dir now.
+
+7) Review the procedure for aborting runs, noting the correct way to trash an aborted run. - DONE in new BW-11
+
+## Changing groups on GSEG
+
+So I'm going to remove Hywel from the eg-pipeline group as a first test.
+
+[tbooth2@gseg-login0 ~]$ id hdunnda
+uid=40021(hdunnda) gid=40023(hdunnda) groups=272531(genepool),318871(eg-bioinfo),318882(eg-pipeline),40023(hdunnda)
+[tbooth2@gseg-login0 ~]$ groups hdunnda
+hdunnda : hdunnda genepool eg-bioinfo eg-pipeline
+
+[tbooth2@gseg-login0 ~]$ sudo usermod -G genepool,eg-bioinfo hdunnda
+[sudo] password for tbooth2: ****
+[tbooth2@gseg-login0 ~]$ groups hdunnda
+hdunnda : hdunnda genepool eg-bioinfo
+
+Now in about 5 minutes this should filter down to the nodes. I'm keeping an eye on r2i1n7.
+
+[tbooth2@r2i1n7 ~]$ watch -n 30 groups hdunnda
+...
+
