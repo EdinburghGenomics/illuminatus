@@ -566,7 +566,7 @@ detect_and_keep_10x() {
     # they were left unprocessed and the run was deleted.
     if count_10x_barcodes.py "$DEMUX_OUTPUT_FOLDER"/demultiplexing/lane*/Stats/Stats.json ; then
         ( set -o noclobber ;
-          echo "10X barcodes detected by Illuminatus" > .keep ) 2>/dev/null
+          echo "10X barcodes detected by Illuminatus" > pipeline/keep ) 2>/dev/null
     fi
 }
 

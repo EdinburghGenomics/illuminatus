@@ -5,19 +5,24 @@ from glob import glob
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
-TX_CODES = os.path.dirname(__file__) + '/10x_barcodes/*.txt'
+# These files come direct from 10x:
+# https://support.10xgenomics.com/single-cell-gene-expression/sequencing/doc/specifications-sample-index-sets-for-single-cell-3
+TX_CODES = os.path.dirname(__file__) + '/10x_barcodes/*.csv'
 
 """ Given a demultiplexed run, how many 10x barcodes were present.
 """
 
 def main(args):
 
-    all_10x = set( c['Sequence'] for c in load_10x_codes() )
-    all_found = list()
+    # Two dicts indexed by filename. One has sets of  10x barcodes. The other has sets to collect
+    # barcodes seen in each Stats.json (ie. a dict of dicts of sets).
+    all_10x = { f : set(seq for l in lines for seq in l['Sequence'])
+                for f, lines in load_10x_codes().items() }
+    all_found = { f: dict() for f in all_10x }
 
     for stats_file in args.json:
 
-        codes_found = set()
+        codes_found = { f: set() for f in all_10x }
 
         with open(stats_file) as fh: stats_json = json.load(fh)
 
@@ -26,30 +31,40 @@ def main(args):
                 for im in dr.get('IndexMetrics',[]):
                     idx = im['IndexSequence']
 
-                    if idx in all_10x:
-                        codes_found.add(idx)
+                    for f in all_10x:
+                        if idx in all_10x[f]:
+                            codes_found[f].add(idx)
 
-        all_found.append(codes_found)
+        for f in all_10x:
+            all_found[f][stats_file] = codes_found[f]
 
     if args.verbose:
-        for jf, cf in zip(args.json, all_found):
-            print("Codes found in {} ({}):".format(jf, len(cf)))
-            print(" {!r}".format(sorted(cf)))
-        print("Max found: {}".format(max(len(cf) for cf in all_found)))
+        for stats_file in args.json:
+            print("Codes found in {} ({}):".format(stats_file, sum( len(afset[stats_file]) for afset in all_found.values() )))
+            for f in all_10x:
+                print(" {!r}".format(sorted(all_found[f][stats_file])))
+        print("Max found: {}".format(max(len(cf) for af in all_found.values() for cf in af.values())))
 
-    # For scripting, return true if this is a 10x run.
-    exit(1 if max(len(cf) for cf in all_found) < 4 else 0)
+    # For scripting, return true if this is (apparently) a 10x run, with at least one
+    # JSON file having at least 4 barocdes from a single barcode set.
+    return max(len(cf) for af in all_found.values() for cf in af.values()) >= 4
 
 def load_10x_codes():
-    """Return a list of dicts
+    """Return a dict of list of dicts
+       { 'filename' : [ { Name: '...', Sequence: [...] },
+                        { ...line2... },
+                        { ...line3... } ],
+         ...
+       }
     """
-    res = []
+    res = dict()
 
     for cf in glob(TX_CODES):
         with open(cf) as cfh:
-            head = next(cfh).split()
+            cflines = res[os.path.basename(cf)] = list()
             for l in cfh:
-                res.append(dict(zip(head, l.split())))
+                lparts = l.strip().split(',')
+                cflines.append(dict( Name=lparts[0], Sequence=lparts[1:] ))
 
     return res
 
@@ -69,4 +84,4 @@ def parse_args(*args):
     return parser.parse_args(*args)
 
 if __name__=="__main__":
-    main(parse_args())
+    exit(0 if main(parse_args()) else 1)

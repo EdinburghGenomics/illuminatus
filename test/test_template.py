@@ -38,7 +38,8 @@ class T(unittest.TestCase):
             logging.getLogger().setLevel(logging.CRITICAL)
 
     def setUp(self):
-        pass
+        # See the errors in all their glory
+        self.maxDiff = None
 
     def tearDown(self):
         pass

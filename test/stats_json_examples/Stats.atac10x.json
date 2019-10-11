@@ -1,0 +1,3048 @@
+{
+ "Flowcell" : "HM5YHDMXX",
+ "RunNumber" : 217,
+ "RunId" : "191007_A00291_0217_BHM5YHDMXX",
+ "ReadInfosForLanes" : [
+  {
+   "LaneNumber" : 2,
+   "ReadInfos" : [
+    {
+     "Number" : 1,
+     "NumCycles" : 27,
+     "IsIndexedRead" : false
+    },
+    {
+     "Number" : 1,
+     "NumCycles" : 8,
+     "IsIndexedRead" : true
+    },
+    {
+     "Number" : 2,
+     "NumCycles" : 90,
+     "IsIndexedRead" : false
+    }
+   ]
+  }
+ ],
+ "ConversionResults" : [
+  {
+   "LaneNumber" : 2,
+   "TotalClustersRaw" : 2880700416,
+   "TotalClustersPF" : 2369670954,
+   "Yield" : 277251501618,
+   "DemuxResults" : [
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0001L01",
+     "SampleName" : "11912SCPool01-N__11912SC0001L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "AAAGCATA",
+       "MismatchCounts" : {
+        "0" : 14183244,
+        "1" : 274220
+       }
+      }
+     ],
+     "NumberReads" : 14457464,
+     "Yield" : 1691523288,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 390351528,
+       "YieldQ30" : 370134648,
+       "QualityScoreSum" : 14108583863,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1301171760,
+       "YieldQ30" : 1207862535,
+       "QualityScoreSum" : 46459966972,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0001L02",
+     "SampleName" : "11912SCPool01-N__11912SC0001L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CTGCAGCC",
+       "MismatchCounts" : {
+        "0" : 15712845,
+        "1" : 195860
+       }
+      }
+     ],
+     "NumberReads" : 15908705,
+     "Yield" : 1861318485,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 429535035,
+       "YieldQ30" : 405411781,
+       "QualityScoreSum" : 15494714408,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1431783450,
+       "YieldQ30" : 1335395880,
+       "QualityScoreSum" : 51257847270,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0001L03",
+     "SampleName" : "11912SCPool01-N__11912SC0001L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GCCTTTAT",
+       "MismatchCounts" : {
+        "0" : 14702380,
+        "1" : 231531
+       }
+      }
+     ],
+     "NumberReads" : 14933911,
+     "Yield" : 1747267587,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 403215597,
+       "YieldQ30" : 383958667,
+       "QualityScoreSum" : 14603265798,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1344051990,
+       "YieldQ30" : 1258406049,
+       "QualityScoreSum" : 48205834076,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0001L04",
+     "SampleName" : "11912SCPool01-N__11912SC0001L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TGTAGCGG",
+       "MismatchCounts" : {
+        "0" : 16174754,
+        "1" : 177779
+       }
+      }
+     ],
+     "NumberReads" : 16352533,
+     "Yield" : 1913246361,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 441518391,
+       "YieldQ30" : 416722077,
+       "QualityScoreSum" : 15927777330,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1471727970,
+       "YieldQ30" : 1378796243,
+       "QualityScoreSum" : 52805125085,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0002L01",
+     "SampleName" : "11912SCPool01-N__11912SC0002L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "AGAACGCC",
+       "MismatchCounts" : {
+        "0" : 14318239,
+        "1" : 235069
+       }
+      }
+     ],
+     "NumberReads" : 14553308,
+     "Yield" : 1702737036,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 392939316,
+       "YieldQ30" : 376121660,
+       "QualityScoreSum" : 14264807982,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1309797720,
+       "YieldQ30" : 1227401902,
+       "QualityScoreSum" : 46996677553,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0002L02",
+     "SampleName" : "11912SCPool01-N__11912SC0002L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CATGGCAG",
+       "MismatchCounts" : {
+        "0" : 12119921,
+        "1" : 160826
+       }
+      }
+     ],
+     "NumberReads" : 12280747,
+     "Yield" : 1436847399,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 331580169,
+       "YieldQ30" : 315823391,
+       "QualityScoreSum" : 12011323342,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1105267230,
+       "YieldQ30" : 1034967438,
+       "QualityScoreSum" : 39651739831,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0002L03",
+     "SampleName" : "11912SCPool01-N__11912SC0002L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GTCTTTGA",
+       "MismatchCounts" : {
+        "0" : 13511695,
+        "1" : 199543
+       }
+      }
+     ],
+     "NumberReads" : 13711238,
+     "Yield" : 1604214846,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 370203426,
+       "YieldQ30" : 352915576,
+       "QualityScoreSum" : 13414397249,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1234011420,
+       "YieldQ30" : 1155128098,
+       "QualityScoreSum" : 44257748097,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0002L04",
+     "SampleName" : "11912SCPool01-N__11912SC0002L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TCGCAATT",
+       "MismatchCounts" : {
+        "0" : 15802081,
+        "1" : 357492
+       }
+      }
+     ],
+     "NumberReads" : 16159573,
+     "Yield" : 1890670041,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 436308471,
+       "YieldQ30" : 414142470,
+       "QualityScoreSum" : 15779382680,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1454361570,
+       "YieldQ30" : 1359647273,
+       "QualityScoreSum" : 52128948889,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0003L01",
+     "SampleName" : "11912SCPool01-N__11912SC0003L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "ATTGGGAA",
+       "MismatchCounts" : {
+        "0" : 23131550,
+        "1" : 604235
+       }
+      }
+     ],
+     "NumberReads" : 23735785,
+     "Yield" : 2777086845,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 640866195,
+       "YieldQ30" : 610080813,
+       "QualityScoreSum" : 23209606303,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 2136220650,
+       "YieldQ30" : 1985589269,
+       "QualityScoreSum" : 76360348638,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0003L02",
+     "SampleName" : "11912SCPool01-N__11912SC0003L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CAGTCTGG",
+       "MismatchCounts" : {
+        "0" : 17730588,
+        "1" : 275482
+       }
+      }
+     ],
+     "NumberReads" : 18006070,
+     "Yield" : 2106710190,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 486163890,
+       "YieldQ30" : 466463824,
+       "QualityScoreSum" : 17667802716,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1620546300,
+       "YieldQ30" : 1523688914,
+       "QualityScoreSum" : 58243204954,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0003L03",
+     "SampleName" : "11912SCPool01-N__11912SC0003L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GGCATACT",
+       "MismatchCounts" : {
+        "0" : 11414166,
+        "1" : 195320
+       }
+      }
+     ],
+     "NumberReads" : 11609486,
+     "Yield" : 1358309862,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 313456122,
+       "YieldQ30" : 302763459,
+       "QualityScoreSum" : 11424275420,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1044853740,
+       "YieldQ30" : 917189181,
+       "QualityScoreSum" : 36314476664,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0003L04",
+     "SampleName" : "11912SCPool01-N__11912SC0003L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TCACACTC",
+       "MismatchCounts" : {
+        "0" : 20955535,
+        "1" : 319049
+       }
+      }
+     ],
+     "NumberReads" : 21274584,
+     "Yield" : 2489126328,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 574413768,
+       "YieldQ30" : 541116365,
+       "QualityScoreSum" : 20703229226,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1914712560,
+       "YieldQ30" : 1790602521,
+       "QualityScoreSum" : 68625921712,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0004L01",
+     "SampleName" : "11912SCPool01-N__11912SC0004L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "ACGGGACT",
+       "MismatchCounts" : {
+        "0" : 12709627,
+        "1" : 180877
+       }
+      }
+     ],
+     "NumberReads" : 12890504,
+     "Yield" : 1508188968,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 348043608,
+       "YieldQ30" : 330931961,
+       "QualityScoreSum" : 12597405611,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1160145360,
+       "YieldQ30" : 1086076606,
+       "QualityScoreSum" : 41612695566,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0004L02",
+     "SampleName" : "11912SCPool01-N__11912SC0004L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CTTTCGAC",
+       "MismatchCounts" : {
+        "0" : 11507453,
+        "1" : 189803
+       }
+      }
+     ],
+     "NumberReads" : 11697256,
+     "Yield" : 1368578952,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 315825912,
+       "YieldQ30" : 298028859,
+       "QualityScoreSum" : 11391927400,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1052753040,
+       "YieldQ30" : 988629965,
+       "QualityScoreSum" : 37818560826,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0004L03",
+     "SampleName" : "11912SCPool01-N__11912SC0004L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GAACATGA",
+       "MismatchCounts" : {
+        "0" : 12448022,
+        "1" : 184492
+       }
+      }
+     ],
+     "NumberReads" : 12632514,
+     "Yield" : 1478004138,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 341077878,
+       "YieldQ30" : 323315708,
+       "QualityScoreSum" : 12327876095,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1136926260,
+       "YieldQ30" : 1064055077,
+       "QualityScoreSum" : 40772313108,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0004L04",
+     "SampleName" : "11912SCPool01-N__11912SC0004L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TGCATCTG",
+       "MismatchCounts" : {
+        "0" : 10089804,
+        "1" : 161267
+       }
+      }
+     ],
+     "NumberReads" : 10251071,
+     "Yield" : 1199375307,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 276778917,
+       "YieldQ30" : 263730072,
+       "QualityScoreSum" : 10027202509,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 922596390,
+       "YieldQ30" : 864400621,
+       "QualityScoreSum" : 33104425533,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0005L01",
+     "SampleName" : "11912SCPool01-N__11912SC0005L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "AGGTCATA",
+       "MismatchCounts" : {
+        "0" : 15247388,
+        "1" : 263849
+       }
+      }
+     ],
+     "NumberReads" : 15511237,
+     "Yield" : 1814814729,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 418803399,
+       "YieldQ30" : 402295158,
+       "QualityScoreSum" : 15227222529,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1396011330,
+       "YieldQ30" : 1290243417,
+       "QualityScoreSum" : 49753062649,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0005L02",
+     "SampleName" : "11912SCPool01-N__11912SC0005L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CTCATCAT",
+       "MismatchCounts" : {
+        "0" : 14033500,
+        "1" : 200533
+       }
+      }
+     ],
+     "NumberReads" : 14234033,
+     "Yield" : 1665381861,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 384318891,
+       "YieldQ30" : 362790626,
+       "QualityScoreSum" : 13864499831,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1281062970,
+       "YieldQ30" : 1198571236,
+       "QualityScoreSum" : 45935967140,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0005L03",
+     "SampleName" : "11912SCPool01-N__11912SC0005L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GCTGAGGG",
+       "MismatchCounts" : {
+        "0" : 15016936,
+        "1" : 417043
+       }
+      }
+     ],
+     "NumberReads" : 15433979,
+     "Yield" : 1805775543,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 416717433,
+       "YieldQ30" : 396464693,
+       "QualityScoreSum" : 15087239660,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1389058110,
+       "YieldQ30" : 1299364205,
+       "QualityScoreSum" : 49804300651,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0005L04",
+     "SampleName" : "11912SCPool01-N__11912SC0005L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TAACGTCC",
+       "MismatchCounts" : {
+        "0" : 14117601,
+        "1" : 166489
+       }
+      }
+     ],
+     "NumberReads" : 14284090,
+     "Yield" : 1671238530,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 385670430,
+       "YieldQ30" : 369503839,
+       "QualityScoreSum" : 14006475459,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1285568100,
+       "YieldQ30" : 1206628106,
+       "QualityScoreSum" : 46163482565,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0006L01",
+     "SampleName" : "11912SCPool01-N__11912SC0006L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "ATGATACG",
+       "MismatchCounts" : {
+        "0" : 14142482,
+        "1" : 206873
+       }
+      }
+     ],
+     "NumberReads" : 14349355,
+     "Yield" : 1678874535,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 387432585,
+       "YieldQ30" : 367648535,
+       "QualityScoreSum" : 14011269725,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1291441950,
+       "YieldQ30" : 1201860419,
+       "QualityScoreSum" : 46188297995,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0006L02",
+     "SampleName" : "11912SCPool01-N__11912SC0006L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CCACAGAA",
+       "MismatchCounts" : {
+        "0" : 13804720,
+        "1" : 207379
+       }
+      }
+     ],
+     "NumberReads" : 14012099,
+     "Yield" : 1639415583,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 378326673,
+       "YieldQ30" : 356213775,
+       "QualityScoreSum" : 13632328797,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1261088910,
+       "YieldQ30" : 1168492145,
+       "QualityScoreSum" : 45005015687,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0006L03",
+     "SampleName" : "11912SCPool01-N__11912SC0006L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GACTGTTC",
+       "MismatchCounts" : {
+        "0" : 12118348,
+        "1" : 210770
+       }
+      }
+     ],
+     "NumberReads" : 12329118,
+     "Yield" : 1442506806,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 332886186,
+       "YieldQ30" : 316648376,
+       "QualityScoreSum" : 12051307709,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1109620620,
+       "YieldQ30" : 1037135967,
+       "QualityScoreSum" : 39770697757,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0006L04",
+     "SampleName" : "11912SCPool01-N__11912SC0006L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TGTGCCGT",
+       "MismatchCounts" : {
+        "0" : 17809418,
+        "1" : 201832
+       }
+      }
+     ],
+     "NumberReads" : 18011250,
+     "Yield" : 2107316250,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 486303750,
+       "YieldQ30" : 460044972,
+       "QualityScoreSum" : 17562702863,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1621012500,
+       "YieldQ30" : 1507939433,
+       "QualityScoreSum" : 57966243673,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0007L01",
+     "SampleName" : "11912SCPool01-N__11912SC0007L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "ACAACTTG",
+       "MismatchCounts" : {
+        "0" : 11638066,
+        "1" : 225379
+       }
+      }
+     ],
+     "NumberReads" : 11863445,
+     "Yield" : 1388023065,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 320313015,
+       "YieldQ30" : 303964146,
+       "QualityScoreSum" : 11583574849,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1067710050,
+       "YieldQ30" : 1001330709,
+       "QualityScoreSum" : 38326047426,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0007L02",
+     "SampleName" : "11912SCPool01-N__11912SC0007L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CTCCAACA",
+       "MismatchCounts" : {
+        "0" : 10552606,
+        "1" : 195231
+       }
+      }
+     ],
+     "NumberReads" : 10747837,
+     "Yield" : 1257496929,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 290191599,
+       "YieldQ30" : 273218056,
+       "QualityScoreSum" : 10456608425,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 967305330,
+       "YieldQ30" : 892645065,
+       "QualityScoreSum" : 34452474120,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0007L03",
+     "SampleName" : "11912SCPool01-N__11912SC0007L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GAGTGCGT",
+       "MismatchCounts" : {
+        "0" : 11920113,
+        "1" : 1535493
+       }
+      }
+     ],
+     "NumberReads" : 13455606,
+     "Yield" : 1574305902,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 363301362,
+       "YieldQ30" : 344885410,
+       "QualityScoreSum" : 13140624939,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1211004540,
+       "YieldQ30" : 1117617557,
+       "QualityScoreSum" : 43136347740,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0007L04",
+     "SampleName" : "11912SCPool01-N__11912SC0007L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TGTGTGAC",
+       "MismatchCounts" : {
+        "0" : 11843354,
+        "1" : 137243
+       }
+      }
+     ],
+     "NumberReads" : 11980597,
+     "Yield" : 1401729849,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 323476119,
+       "YieldQ30" : 309329120,
+       "QualityScoreSum" : 11738135570,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1078253730,
+       "YieldQ30" : 999676797,
+       "QualityScoreSum" : 38489580767,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0008L01",
+     "SampleName" : "11912SCPool01-N__11912SC0008L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "ACAGCAAC",
+       "MismatchCounts" : {
+        "0" : 322222631,
+        "1" : 5331720
+       }
+      }
+     ],
+     "NumberReads" : 327554351,
+     "Yield" : 38323859067,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 8843967477,
+       "YieldQ30" : 8398767082,
+       "QualityScoreSum" : 319907291830,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 29479891590,
+       "YieldQ30" : 27430668583,
+       "QualityScoreSum" : 1054138703597,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0008L02",
+     "SampleName" : "11912SCPool01-N__11912SC0008L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CGCAATTT",
+       "MismatchCounts" : {
+        "0" : 398683419,
+        "1" : 5481127
+       }
+      }
+     ],
+     "NumberReads" : 404164546,
+     "Yield" : 47287251882,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 10912442742,
+       "YieldQ30" : 10325452836,
+       "QualityScoreSum" : 394086172455,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 36374809140,
+       "YieldQ30" : 34035953266,
+       "QualityScoreSum" : 1304292691848,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0008L03",
+     "SampleName" : "11912SCPool01-N__11912SC0008L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GAGTTGCG",
+       "MismatchCounts" : {
+        "0" : 313019145,
+        "1" : 3767480
+       }
+      }
+     ],
+     "NumberReads" : 316786625,
+     "Yield" : 37064035125,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 8553238875,
+       "YieldQ30" : 8095691215,
+       "QualityScoreSum" : 308960336789,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 28510796250,
+       "YieldQ30" : 26411481223,
+       "QualityScoreSum" : 1017431676258,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0008L04",
+     "SampleName" : "11912SCPool01-N__11912SC0008L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TTTCGCGA",
+       "MismatchCounts" : {
+        "0" : 369390713,
+        "1" : 3180724
+       }
+      }
+     ],
+     "NumberReads" : 372571437,
+     "Yield" : 43590858129,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 10059428799,
+       "YieldQ30" : 9535808844,
+       "QualityScoreSum" : 363587610441,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 33531429330,
+       "YieldQ30" : 31161248294,
+       "QualityScoreSum" : 1198470378868,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0009L01",
+     "SampleName" : "11912SCPool01-N__11912SC0009L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "AGGCTACC",
+       "MismatchCounts" : {
+        "0" : 13922162,
+        "1" : 219726
+       }
+      }
+     ],
+     "NumberReads" : 14141888,
+     "Yield" : 1654600896,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 381830976,
+       "YieldQ30" : 366320209,
+       "QualityScoreSum" : 13874592569,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1272769920,
+       "YieldQ30" : 1182350883,
+       "QualityScoreSum" : 45472973845,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0009L02",
+     "SampleName" : "11912SCPool01-N__11912SC0009L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CTAGCTGT",
+       "MismatchCounts" : {
+        "0" : 16876463,
+        "1" : 177915
+       }
+      }
+     ],
+     "NumberReads" : 17054378,
+     "Yield" : 1995362226,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 460468206,
+       "YieldQ30" : 435398235,
+       "QualityScoreSum" : 16624326556,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1534894020,
+       "YieldQ30" : 1435831384,
+       "QualityScoreSum" : 55031721167,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0009L03",
+     "SampleName" : "11912SCPool01-N__11912SC0009L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GCCAACAA",
+       "MismatchCounts" : {
+        "0" : 14868993,
+        "1" : 222323
+       }
+      }
+     ],
+     "NumberReads" : 15091316,
+     "Yield" : 1765683972,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 407465532,
+       "YieldQ30" : 391038413,
+       "QualityScoreSum" : 14806033649,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1358218440,
+       "YieldQ30" : 1263479666,
+       "QualityScoreSum" : 48551642799,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0009L04",
+     "SampleName" : "11912SCPool01-N__11912SC0009L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TATTGGTG",
+       "MismatchCounts" : {
+        "0" : 10159193,
+        "1" : 148460
+       }
+      }
+     ],
+     "NumberReads" : 10307653,
+     "Yield" : 1205995401,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 278306631,
+       "YieldQ30" : 263183036,
+       "QualityScoreSum" : 10048434205,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 927688770,
+       "YieldQ30" : 864843223,
+       "QualityScoreSum" : 33206645192,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0010L01",
+     "SampleName" : "11912SCPool01-N__11912SC0010L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "AAGTTGAT",
+       "MismatchCounts" : {
+        "0" : 19315983,
+        "1" : 422646
+       }
+      }
+     ],
+     "NumberReads" : 19738629,
+     "Yield" : 2309419593,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 532942983,
+       "YieldQ30" : 507289123,
+       "QualityScoreSum" : 19299734134,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1776476610,
+       "YieldQ30" : 1655316774,
+       "QualityScoreSum" : 63568960436,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0010L02",
+     "SampleName" : "11912SCPool01-N__11912SC0010L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CCCACCCA",
+       "MismatchCounts" : {
+        "0" : 15013984,
+        "1" : 319089
+       }
+      }
+     ],
+     "NumberReads" : 15333073,
+     "Yield" : 1793969541,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 413992971,
+       "YieldQ30" : 388468225,
+       "QualityScoreSum" : 14894780402,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1379976570,
+       "YieldQ30" : 1280739155,
+       "QualityScoreSum" : 49283365212,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0010L03",
+     "SampleName" : "11912SCPool01-N__11912SC0010L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GGTCGAGC",
+       "MismatchCounts" : {
+        "0" : 15031977,
+        "1" : 175499
+       }
+      }
+     ],
+     "NumberReads" : 15207476,
+     "Yield" : 1779274692,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 410601852,
+       "YieldQ30" : 391608153,
+       "QualityScoreSum" : 14881577528,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1368672840,
+       "YieldQ30" : 1268300654,
+       "QualityScoreSum" : 48845816125,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0010L04",
+     "SampleName" : "11912SCPool01-N__11912SC0010L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TTAGATTG",
+       "MismatchCounts" : {
+        "0" : 15452889,
+        "1" : 498370
+       }
+      }
+     ],
+     "NumberReads" : 15951259,
+     "Yield" : 1866297303,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 430683993,
+       "YieldQ30" : 407643405,
+       "QualityScoreSum" : 15556777401,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1435613310,
+       "YieldQ30" : 1349299070,
+       "QualityScoreSum" : 51587859570,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0011L01",
+     "SampleName" : "11912SCPool01-N__11912SC0011L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "ATTGGACG",
+       "MismatchCounts" : {
+        "0" : 13445609,
+        "1" : 190294
+       }
+      }
+     ],
+     "NumberReads" : 13635903,
+     "Yield" : 1595400651,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 368169381,
+       "YieldQ30" : 348817260,
+       "QualityScoreSum" : 13304839450,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1227231270,
+       "YieldQ30" : 1144910952,
+       "QualityScoreSum" : 43947723474,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0011L02",
+     "SampleName" : "11912SCPool01-N__11912SC0011L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CAGCTTAC",
+       "MismatchCounts" : {
+        "0" : 16552577,
+        "1" : 196612
+       }
+      }
+     ],
+     "NumberReads" : 16749189,
+     "Yield" : 1959655113,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 452228103,
+       "YieldQ30" : 428175321,
+       "QualityScoreSum" : 16336573155,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1507427010,
+       "YieldQ30" : 1413090034,
+       "QualityScoreSum" : 54099888112,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0011L03",
+     "SampleName" : "11912SCPool01-N__11912SC0011L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GGCAAGGA",
+       "MismatchCounts" : {
+        "0" : 13117243,
+        "1" : 140438
+       }
+      }
+     ],
+     "NumberReads" : 13257681,
+     "Yield" : 1551148677,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 357957387,
+       "YieldQ30" : 345678250,
+       "QualityScoreSum" : 13044537103,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1193191290,
+       "YieldQ30" : 1097607022,
+       "QualityScoreSum" : 42427955914,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0011L04",
+     "SampleName" : "11912SCPool01-N__11912SC0011L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TCATCCTT",
+       "MismatchCounts" : {
+        "0" : 17015904,
+        "1" : 301710
+       }
+      }
+     ],
+     "NumberReads" : 17317614,
+     "Yield" : 2026160838,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 467575578,
+       "YieldQ30" : 442840159,
+       "QualityScoreSum" : 16893602306,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1558585260,
+       "YieldQ30" : 1462183625,
+       "QualityScoreSum" : 55959405188,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0012L01",
+     "SampleName" : "11912SCPool01-N__11912SC0012L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "AGGGACTG",
+       "MismatchCounts" : {
+        "0" : 12558508,
+        "1" : 307760
+       }
+      }
+     ],
+     "NumberReads" : 12866268,
+     "Yield" : 1505353356,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 347389236,
+       "YieldQ30" : 333597392,
+       "QualityScoreSum" : 12629133756,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1157964120,
+       "YieldQ30" : 1083907921,
+       "QualityScoreSum" : 41528585695,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0012L02",
+     "SampleName" : "11912SCPool01-N__11912SC0012L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CCTCTAAC",
+       "MismatchCounts" : {
+        "0" : 12278898,
+        "1" : 185653
+       }
+      }
+     ],
+     "NumberReads" : 12464551,
+     "Yield" : 1458352467,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 336542877,
+       "YieldQ30" : 317065879,
+       "QualityScoreSum" : 12130127835,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1121809590,
+       "YieldQ30" : 1049657850,
+       "QualityScoreSum" : 40230912122,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0012L03",
+     "SampleName" : "11912SCPool01-N__11912SC0012L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GACAGGCT",
+       "MismatchCounts" : {
+        "0" : 11686611,
+        "1" : 138937
+       }
+      }
+     ],
+     "NumberReads" : 11825548,
+     "Yield" : 1383589116,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 319289796,
+       "YieldQ30" : 304811417,
+       "QualityScoreSum" : 11576718691,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1064299320,
+       "YieldQ30" : 988387341,
+       "QualityScoreSum" : 38024717483,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0012L04",
+     "SampleName" : "11912SCPool01-N__11912SC0012L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TTATCTGA",
+       "MismatchCounts" : {
+        "0" : 13424277,
+        "1" : 158440
+       }
+      }
+     ],
+     "NumberReads" : 13582717,
+     "Yield" : 1589177889,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 366733359,
+       "YieldQ30" : 347736072,
+       "QualityScoreSum" : 13256404289,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1222444530,
+       "YieldQ30" : 1143972250,
+       "QualityScoreSum" : 43839709499,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0013L01",
+     "SampleName" : "11912SCPool01-N__11912SC0013L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "ATCGTACT",
+       "MismatchCounts" : {
+        "0" : 17666690,
+        "1" : 341186
+       }
+      }
+     ],
+     "NumberReads" : 18007876,
+     "Yield" : 2106921492,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 486212652,
+       "YieldQ30" : 463052467,
+       "QualityScoreSum" : 17610921759,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1620708840,
+       "YieldQ30" : 1506630513,
+       "QualityScoreSum" : 57934388744,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0013L02",
+     "SampleName" : "11912SCPool01-N__11912SC0013L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CATCAGTG",
+       "MismatchCounts" : {
+        "0" : 6821963,
+        "1" : 121252
+       }
+      }
+     ],
+     "NumberReads" : 6943215,
+     "Yield" : 812356155,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 187466805,
+       "YieldQ30" : 178824924,
+       "QualityScoreSum" : 6795071872,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 624889350,
+       "YieldQ30" : 581518882,
+       "QualityScoreSum" : 22349065553,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0013L03",
+     "SampleName" : "11912SCPool01-N__11912SC0013L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GGGACTAC",
+       "MismatchCounts" : {
+        "0" : 15102620,
+        "1" : 175306
+       }
+      }
+     ],
+     "NumberReads" : 15277926,
+     "Yield" : 1787517342,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 412504002,
+       "YieldQ30" : 394295325,
+       "QualityScoreSum" : 14964956771,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1375013340,
+       "YieldQ30" : 1284089409,
+       "QualityScoreSum" : 49253532480,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0013L04",
+     "SampleName" : "11912SCPool01-N__11912SC0013L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TCATGCGA",
+       "MismatchCounts" : {
+        "0" : 13126399,
+        "1" : 176291
+       }
+      }
+     ],
+     "NumberReads" : 13302690,
+     "Yield" : 1556414730,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 359172630,
+       "YieldQ30" : 344664121,
+       "QualityScoreSum" : 13052361555,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1197242100,
+       "YieldQ30" : 1110527562,
+       "QualityScoreSum" : 42747403430,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0014L01",
+     "SampleName" : "11912SCPool01-N__11912SC0014L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "AACGCGAA",
+       "MismatchCounts" : {
+        "0" : 15797203,
+        "1" : 237090
+       }
+      }
+     ],
+     "NumberReads" : 16034293,
+     "Yield" : 1876012281,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 432925911,
+       "YieldQ30" : 409523939,
+       "QualityScoreSum" : 15632806662,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1443086370,
+       "YieldQ30" : 1337925046,
+       "QualityScoreSum" : 51517408506,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0014L02",
+     "SampleName" : "11912SCPool01-N__11912SC0014L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CTATTTGG",
+       "MismatchCounts" : {
+        "0" : 13327139,
+        "1" : 290156
+       }
+      }
+     ],
+     "NumberReads" : 13617295,
+     "Yield" : 1593223515,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 367666965,
+       "YieldQ30" : 351529432,
+       "QualityScoreSum" : 13341577228,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1225556550,
+       "YieldQ30" : 1157967153,
+       "QualityScoreSum" : 44158647131,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0014L03",
+     "SampleName" : "11912SCPool01-N__11912SC0014L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GCGCACCT",
+       "MismatchCounts" : {
+        "0" : 14935670,
+        "1" : 199017
+       }
+      }
+     ],
+     "NumberReads" : 15134687,
+     "Yield" : 1770758379,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 408636549,
+       "YieldQ30" : 389620487,
+       "QualityScoreSum" : 14807729512,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1362121830,
+       "YieldQ30" : 1266542408,
+       "QualityScoreSum" : 48699422294,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0014L04",
+     "SampleName" : "11912SCPool01-N__11912SC0014L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TGTAGATC",
+       "MismatchCounts" : {
+        "0" : 15459557,
+        "1" : 190959
+       }
+      }
+     ],
+     "NumberReads" : 15650516,
+     "Yield" : 1831110372,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 422563932,
+       "YieldQ30" : 402069707,
+       "QualityScoreSum" : 15300617617,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1408546440,
+       "YieldQ30" : 1325087298,
+       "QualityScoreSum" : 50644973107,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0015L01",
+     "SampleName" : "11912SCPool01-N__11912SC0015L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "AGGGATGA",
+       "MismatchCounts" : {
+        "0" : 14526927,
+        "1" : 350976
+       }
+      }
+     ],
+     "NumberReads" : 14877903,
+     "Yield" : 1740714651,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 401703381,
+       "YieldQ30" : 385062628,
+       "QualityScoreSum" : 14592396685,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1339011270,
+       "YieldQ30" : 1248593156,
+       "QualityScoreSum" : 47930329394,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0015L02",
+     "SampleName" : "11912SCPool01-N__11912SC0015L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CTTCTGTT",
+       "MismatchCounts" : {
+        "0" : 13824539,
+        "1" : 314209
+       }
+      }
+     ],
+     "NumberReads" : 14138748,
+     "Yield" : 1654233516,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 381746196,
+       "YieldQ30" : 361235860,
+       "QualityScoreSum" : 13787513810,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1272487320,
+       "YieldQ30" : 1187341313,
+       "QualityScoreSum" : 45575913251,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0015L03",
+     "SampleName" : "11912SCPool01-N__11912SC0015L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GAATGCAC",
+       "MismatchCounts" : {
+        "0" : 13833970,
+        "1" : 188965
+       }
+      }
+     ],
+     "NumberReads" : 14022935,
+     "Yield" : 1640683395,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 378619245,
+       "YieldQ30" : 360827536,
+       "QualityScoreSum" : 13717463564,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1262064150,
+       "YieldQ30" : 1181283603,
+       "QualityScoreSum" : 45260043585,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0015L04",
+     "SampleName" : "11912SCPool01-N__11912SC0015L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TCCACACG",
+       "MismatchCounts" : {
+        "0" : 14174382,
+        "1" : 224912
+       }
+      }
+     ],
+     "NumberReads" : 14399294,
+     "Yield" : 1684717398,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 388780938,
+       "YieldQ30" : 367772308,
+       "QualityScoreSum" : 14039698424,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1295936460,
+       "YieldQ30" : 1196328112,
+       "QualityScoreSum" : 46168189696,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0016L01",
+     "SampleName" : "11912SCPool01-N__11912SC0016L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "ACGTTCAC",
+       "MismatchCounts" : {
+        "0" : 15888752,
+        "1" : 246741
+       }
+      }
+     ],
+     "NumberReads" : 16135493,
+     "Yield" : 1887852681,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 435658311,
+       "YieldQ30" : 413356475,
+       "QualityScoreSum" : 15753055279,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1452194370,
+       "YieldQ30" : 1365152866,
+       "QualityScoreSum" : 52192146270,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0016L02",
+     "SampleName" : "11912SCPool01-N__11912SC0016L02",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CAAGGTCT",
+       "MismatchCounts" : {
+        "0" : 16699667,
+        "1" : 195456
+       }
+      }
+     ],
+     "NumberReads" : 16895123,
+     "Yield" : 1976729391,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 456168321,
+       "YieldQ30" : 436944270,
+       "QualityScoreSum" : 16565326403,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1520561070,
+       "YieldQ30" : 1425701214,
+       "QualityScoreSum" : 54580945597,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0016L03",
+     "SampleName" : "11912SCPool01-N__11912SC0016L03",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GTTAAGTG",
+       "MismatchCounts" : {
+        "0" : 9811003,
+        "1" : 150305
+       }
+      }
+     ],
+     "NumberReads" : 9961308,
+     "Yield" : 1165473036,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 268955316,
+       "YieldQ30" : 255594951,
+       "QualityScoreSum" : 9732569925,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 896517720,
+       "YieldQ30" : 840186100,
+       "QualityScoreSum" : 32173708904,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "11912SCPool01-N__11912SC0016L04",
+     "SampleName" : "11912SCPool01-N__11912SC0016L04",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "TGCCCAGA",
+       "MismatchCounts" : {
+        "0" : 15374250,
+        "1" : 182415
+       }
+      }
+     ],
+     "NumberReads" : 15556665,
+     "Yield" : 1820129805,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 420029955,
+       "YieldQ30" : 397167419,
+       "QualityScoreSum" : 15163945840,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 1400099850,
+       "YieldQ30" : 1287300841,
+       "QualityScoreSum" : 49792012101,
+       "TrimmedBases" : 0
+      }
+     ]
+    }
+   ],
+   "Undetermined" : {
+    "NumberReads" : 77445490,
+    "Yield" : 9061122330,
+    "ReadMetrics" : [
+     {
+      "ReadNumber" : 1,
+      "Yield" : 2091028230,
+      "YieldQ30" : 1903733600,
+      "QualityScoreSum" : 74006097693,
+      "TrimmedBases" : 0
+     },
+     {
+      "ReadNumber" : 2,
+      "Yield" : 6970094100,
+      "YieldQ30" : 6061646677,
+      "QualityScoreSum" : 240139550748,
+      "TrimmedBases" : 0
+     }
+    ]
+   }
+  }
+ ],
+ "UnknownBarcodes" : [
+  {
+   "Lane" : 2,
+   "Barcodes" : {
+    "ATCTCGTA" : 19477460,
+    "GGGGGGGG" : 11064320,
+    "ACAGCACA" : 2369380,
+    "ATCGCGTA" : 2034680,
+    "TTCTCGTA" : 1494960,
+    "ACGCAACA" : 1419380,
+    "TTCGCGAA" : 1219180,
+    "GAGTTCGA" : 1054440,
+    "CAGCAACA" : 972040,
+    "TTTCCGAA" : 767000,
+    "CGGGGGGG" : 688200,
+    "ATCTCGTT" : 666600,
+    "CGCATTTA" : 650480,
+    "CCAATTTA" : 632640,
+    "AGTTGCGA" : 616440,
+    "TTTGCGAA" : 514480,
+    "GCAATTTA" : 500340,
+    "GATTGCGA" : 438940,
+    "TTCGCGTA" : 417640,
+    "GAGTTGGA" : 374560,
+    "ATAAAATA" : 358380,
+    "CACAATAT" : 352540,
+    "GGTTGCGA" : 334340,
+    "TATATCCA" : 309840,
+    "ATCTCGGA" : 306620,
+    "CGAATTTA" : 299420,
+    "AAGCAACA" : 277880,
+    "ACACAACA" : 275680,
+    "ACAGAACA" : 271460,
+    "ACAAAAAA" : 267600,
+    "AAACCAAA" : 261480,
+    "TTTCGGAA" : 260640,
+    "AAATAAAC" : 229100,
+    "CTCTCGTA" : 200900,
+    "CGGGGGGT" : 152120,
+    "GGGGTGGG" : 147900,
+    "GTCTCGTA" : 129200,
+    "CGCAACAT" : 123360,
+    "ATCGCGGA" : 117800,
+    "TTTTCGCG" : 114400,
+    "ACATAAAC" : 108920,
+    "ACGCACAT" : 103660,
+    "CGTCTGGA" : 97380,
+    "GGACTACA" : 97120,
+    "AAAGCTAA" : 94820,
+    "CTCATCTA" : 91640,
+    "CTATTGGA" : 90380,
+    "TAGATTGA" : 89340,
+    "TGGGGGGG" : 87840,
+    "ATCTAGTA" : 85420,
+    "CTCTGTTA" : 83840,
+    "ATTGACGA" : 83840,
+    "TTAGATGA" : 83140,
+    "CCACCCAA" : 82480,
+    "TGCCAGAA" : 81400,
+    "CTCTCATA" : 80760,
+    "GCCTTATA" : 80680,
+    "ATGGGAAA" : 80580,
+    "CGAAAATT" : 78760,
+    "CAGCTACA" : 78420,
+    "GTCTTGAA" : 78080,
+    "CTTCGACA" : 77980,
+    "TTTATCCA" : 76500,
+    "TTCTCGGA" : 74660,
+    "ACAACAAA" : 74340,
+    "ACAGCCAT" : 74280,
+    "AAAAAAAA" : 73040,
+    "AGCAACAT" : 72940,
+    "AAGCATAA" : 72200,
+    "GGGGTGCG" : 67800,
+    "AGGACTGA" : 67540,
+    "AAACCAAC" : 66860,
+    "AGGATGAA" : 66820,
+    "GAGTTTGC" : 66220,
+    "CTAAATTT" : 64480,
+    "TCATCTTA" : 64120,
+    "CAGCACAT" : 62620,
+    "GGGGGGCG" : 57740,
+    "CTGGCAGA" : 57260,
+    "CGGGGGTT" : 57080,
+    "TTCGCGGA" : 56740,
+    "CGAAAATA" : 56580,
+    "GGGGGGGT" : 56120,
+    "ACATCAAA" : 55840,
+    "AGAAAATT" : 55560,
+    "TCACACGA" : 55340,
+    "CGCAATAA" : 55100,
+    "AAATCAAC" : 54540,
+    "ACGTCACA" : 53300,
+    "GGGGGGGC" : 52900,
+    "CATGGCGA" : 51840,
+    "GGTCGCGA" : 51300,
+    "TTTATCGA" : 51220,
+    "ATGGACGA" : 50040,
+    "CGCAAATA" : 49620,
+    "ACGGACTA" : 49460,
+    "CTTCGTTA" : 49420,
+    "ATCTCGGT" : 49380,
+    "CTTCTTTA" : 49200,
+    "CGCCAATT" : 48860,
+    "AAGTGATA" : 48240,
+    "TTCTCGTT" : 47880,
+    "ACAGAAAA" : 47120,
+    "ACGCAAAT" : 46340,
+    "ACACCAAA" : 46260,
+    "ATCTACTA" : 46060,
+    "CCTCTACA" : 45780,
+    "CCTCAACA" : 45640,
+    "GATATCCA" : 45400,
+    "CTCAACAA" : 44900,
+    "TATCTGAA" : 44400,
+    "AAAGAAAC" : 44020,
+    "CCCAAAAA" : 43660,
+    "ACACAAAC" : 43200,
+    "CTCAGCCA" : 42980,
+    "CTAAAATA" : 42980,
+    "CTTTCGCA" : 42640,
+    "CTCCACAA" : 42400,
+    "CGGGGGTG" : 42360,
+    "CGAGTTGC" : 41820,
+    "ACAAAATA" : 41620,
+    "CATGCAGA" : 41260,
+    "GCCGCAAC" : 41180,
+    "GGGGGGTG" : 41080,
+    "GGGTTGGG" : 41040,
+    "AGAAAATA" : 40860,
+    "TTATCGAA" : 40700,
+    "AGTCATAA" : 40260,
+    "TTAATTGA" : 39880,
+    "GGGAATTT" : 39240,
+    "ATCGCGTT" : 39120,
+    "CTCAATAT" : 39100,
+    "TGTCCGTA" : 38640,
+    "AGTCTGGA" : 38000,
+    "GTCGAGCA" : 37920,
+    "TTTCGCCG" : 37460,
+    "CTCTCGTT" : 37220,
+    "TGCCCGAA" : 37100,
+    "TGTGCCTA" : 36700,
+    "TCCCAGAA" : 36580,
+    "CCTTAACA" : 36440,
+    "AAATAAAA" : 36260,
+    "TATAGCGA" : 36120,
+    "CTTTCGCG" : 36060,
+    "TCGCATTA" : 35940,
+    "CCCCCCAA" : 35940,
+    "GGGGGTGG" : 35440,
+    "GCAAGGAA" : 35240,
+    "TAACCAAA" : 34600,
+    "GACTGTCA" : 34500,
+    "AAGTTATA" : 34500,
+    "CCAAAAAA" : 34220,
+    "ACATAAAA" : 34220,
+    "GCGAGGGA" : 34040,
+    "AGCTTACA" : 34000,
+    "GCTAGGGA" : 33980,
+    "GAATCACA" : 33900,
+    "ACACAAAA" : 33860,
+    "TCATCGAA" : 33840,
+    "TTTCGAAT" : 33680,
+    "ATCGACTA" : 33620,
+    "GGGTGGGG" : 33360,
+    "ATGGCAGA" : 33340,
+    "CACAGAAA" : 32820,
+    "TCACACCA" : 32720,
+    "CCCTAACA" : 32720,
+    "AAACAAAC" : 32180,
+    "AGCAAATT" : 32080,
+    "GCATACTA" : 31920,
+    "CGGCAATT" : 31460,
+    "CGAAATTA" : 31220,
+    "TCATCATA" : 31200,
+    "CTCATATA" : 31080,
+    "AAACAAAA" : 31040,
+    "TGTACGGA" : 30920,
+    "ATAAAATT" : 30880,
+    "CTAGCTTA" : 30380,
+    "CTAAAATT" : 30380,
+    "GAGTATCG" : 30320,
+    "GCCCAGAA" : 30300,
+    "CGCATTAT" : 30300,
+    "TGTGCGTA" : 30200,
+    "ACGTTACA" : 29880,
+    "GGTCAGCA" : 29840,
+    "TTTCCGCG" : 29460,
+    "AGGGGGGG" : 29460,
+    "CTGCACCA" : 29380,
+    "AGAACCCA" : 29340,
+    "GCGCACTA" : 29320,
+    "ACCAAAAA" : 29320,
+    "TGGCCGTA" : 29240,
+    "GTAAGTGA" : 29120,
+    "GCCACAAA" : 28960,
+    "TTAGCGGA" : 28720,
+    "TGAGCGGA" : 28580,
+    "CTATCATA" : 28420,
+    "TTGCCGTA" : 28400,
+    "ACAGCCAA" : 28400,
+    "GGCAGGAA" : 28240,
+    "GTCGCGTA" : 27760,
+    "AACCGAAA" : 27540,
+    "TCGCGAAT" : 27360,
+    "ACAACTGA" : 27360,
+    "CGCAAAAT" : 27100,
+    "AATATCAA" : 26880,
+    "AAATCAAA" : 26740,
+    "ATACAATA" : 26560,
+    "TATGCGAA" : 26480,
+    "TCCACAGA" : 26340,
+    "TCACCTTA" : 26120,
+    "GGGACTCA" : 26120,
+    "ACCAGCAA" : 26120,
+    "TCTTTGAA" : 26000,
+    "TTAAAATA" : 25940,
+    "TGCAGCCA" : 25940,
+    "CGCAGCCA" : 25940,
+    "CAGCTTCA" : 25940,
+    "ACTTCACA" : 25940,
+    "TCCAATTA" : 25880,
+    "GGGACACA" : 25840,
+    "CAGTCGGA" : 25840,
+    "TCCCACGA" : 25780,
+    "GAGTCGAT" : 25740,
+    "CCATCATA" : 25620,
+    "GGTGCGTA" : 25380,
+    "TTTAGCCA" : 25360,
+    "TCCACCGA" : 25320,
+    "AAACCCAA" : 25320,
+    "CAGCAAAT" : 25300,
+    "CTTTGTTA" : 25260,
+    "ACGCGAAA" : 25260,
+    "CAGGCAGA" : 25100,
+    "ATCGTCTA" : 25000,
+    "AGACGCCA" : 25000,
+    "AAAGAAAA" : 24980,
+    "GTTAAGGA" : 24960,
+    "CACTTACA" : 24920,
+    "AGGGAGAA" : 24920,
+    "TCACCTCA" : 24800,
+    "AGCTACCA" : 24780,
+    "CGCACCTA" : 24760,
+    "GAGATGCT" : 24740,
+    "CCCGCAAC" : 24540,
+    "TTAGATCA" : 24500,
+    "TGAGATCA" : 24480,
+    "CTCACATA" : 24280,
+    "CAAGTCTA" : 24260,
+    "AATGCACA" : 24200,
+    "GACAATAT" : 24080,
+    "CGCTTACA" : 24060,
+    "TCAGCGAA" : 23980,
+    "TTTCGACA" : 23960,
+    "GGGATGAA" : 23940,
+    "TACGTCCA" : 23880,
+    "TAGCTGTA" : 23860,
+    "GGCGCAAC" : 23840,
+    "ATATACGA" : 23840,
+    "AAACGCCA" : 23740,
+    "TATCCTTA" : 23640,
+    "TGTGTACA" : 23620,
+    "GACAGCTA" : 23520,
+    "CATCCTTA" : 23480,
+    "CACAGCAA" : 23440,
+    "ACGTACTA" : 23440,
+    "ATGTACTA" : 23340,
+    "TCCAACGA" : 23260,
+    "ACAAAAAC" : 23260,
+    "GCCTTTTA" : 23240,
+    "GCTTTATA" : 23200,
+    "GTCTCGTT" : 23140,
+    "TAATAAAC" : 23060,
+    "GCAACAAA" : 22860,
+    "TTCTGTTA" : 22800,
+    "CTTTCACA" : 22760,
+    "TGTAATCA" : 22740,
+    "GGTGAGCA" : 22740,
+    "GAGATCCA" : 22740,
+    "AAAAAAAC" : 22700,
+    "CGCAAAAA" : 22660,
+    "AGTTGATA" : 22620,
+    "GTGGTGCG" : 22600,
+    "CCCAAAAT" : 22540,
+    "AGAAATAA" : 22480,
+    "TTGGGAAA" : 22460,
+    "GTTAATGA" : 22360,
+    "ACCAAATT" : 22320,
+    "CTTTGACA" : 22180,
+    "TGTGCGGA" : 22160,
+    "AACTAGAA" : 22140,
+    "TATCGCCA" : 22080,
+    "AGCAAATA" : 22040,
+    "GACTTTCA" : 21960,
+    "CAGGTCTA" : 21940,
+    "CAGTTGGA" : 21700,
+    "CGCAAATC" : 21480,
+    "CCCAATAT" : 21380,
+    "TCTCCTTA" : 21260,
+    "GGGACTGA" : 21180,
+    "GACATGAA" : 21060,
+    "CATTTGGA" : 20940,
+    "TTACTGAA" : 20840,
+    "ATCTAGTT" : 20780,
+    "AGGCACCA" : 20580,
+    "AAGGTCTA" : 20560,
+    "GATGCACA" : 20520,
+    "ATCAAAAT" : 20520,
+    "TTGCGAAT" : 20480,
+    "GTGCCGTA" : 20420,
+    "GTAGCGGA" : 20380,
+    "GTTATCCA" : 20280,
+    "GGGGTGAC" : 20240,
+    "TCCGCAAC" : 20160,
+    "TGTTGACA" : 20120,
+    "CAGCTGTA" : 20100,
+    "ACCAAAAT" : 20080,
+    "CATGCGAA" : 20020,
+    "CAAAAAAA" : 20020,
+    "TATTTGGA" : 19960,
+    "TGTAGACA" : 19760,
+    "TTTCTCCA" : 19740,
+    "ACAGGCTA" : 19720,
+    "TTGATTGA" : 19660,
+    "TAAAGCGA" : 19640,
+    "TCAGCAAA" : 19600,
+    "ATAAATAA" : 19460,
+    "CACACTCA" : 19360,
+    "CTCAATAA" : 19340,
+    "TTACGAGA" : 19300,
+    "GGTCGACA" : 19240,
+    "AATCTAAA" : 19200,
+    "ACGTTCCA" : 19140,
+    "CTCGCGTA" : 19020,
+    "AAAACCCA" : 18920,
+    "TAACTCCA" : 18900,
+    "CACAATAA" : 18820,
+    "TCCACTCA" : 18800,
+    "TGCATCGA" : 18780,
+    "GGGGGCGG" : 18680,
+    "CGNAATNT" : 18680,
+    "GCTGTTCA" : 18620,
+    "GTGCGCGA" : 18540,
+    "ATAAATTT" : 18480,
+    "CCAACAAA" : 18440,
+    "GTTAGTGA" : 18380,
+    "GGGGGGGA" : 18340,
+    "TGTGATCA" : 18320,
+    "GGGGAGGG" : 18320,
+    "CCAAATTT" : 18300,
+    "AACGTCCA" : 18260,
+    "TGCAATTA" : 18200,
+    "TCGTACTA" : 18160,
+    "TCACATCA" : 18140,
+    "TTNCGCNA" : 18080,
+    "CAGCTGGA" : 18060,
+    "GAAGTTGC" : 18040,
+    "CACAATTA" : 17920,
+    "GAATGCCA" : 17820,
+    "GCCACCTA" : 17760,
+    "AGCAATTA" : 17700,
+    "TTTCGGCG" : 17680,
+    "GTAGATCA" : 17660,
+    "ACAATTTA" : 17640,
+    "TTTCGATA" : 17620,
+    "GAACGCCA" : 17520,
+    "GGCAACTA" : 17480,
+    "GGGGGGCC" : 17420,
+    "ACAAAATT" : 17400,
+    "TTACAATA" : 17380,
+    "GTTAGCGA" : 17380,
+    "TTAGCAAC" : 17360,
+    "AACAGCAA" : 17360,
+    "AAACATAA" : 17320,
+    "CGGGGGGC" : 17080,
+    "CATCTGGA" : 17080,
+    "CTCAATTA" : 17040,
+    "TTTAGCTA" : 17020,
+    "GGGCTACA" : 17020,
+    "ATCGTATA" : 16960,
+    "GAACTGAA" : 16940,
+    "TATATCCG" : 16880,
+    "CTTTTGGA" : 16880,
+    "CGCACTTA" : 16860,
+    "AGTTCACA" : 16820,
+    "GACGTTCA" : 16660,
+    "GGGCGCGA" : 16620,
+    "GAACAGAA" : 16620,
+    "TATGGTGA" : 16600,
+    "TCAACTCA" : 16540,
+    "ATCACGTA" : 16480,
+    "GTGGGGGG" : 16420,
+    "CAGTATCG" : 16400,
+    "TATCACGA" : 16380,
+    "CAATTTAT" : 16380,
+    "GGAGTTGC" : 16320,
+    "ACCGCAAA" : 16280,
+    "CCACACGA" : 16240,
+    "TTAGTTGA" : 16200,
+    "TTACCAGA" : 16200,
+    "AGAAATTT" : 16120,
+    "TAAAACAA" : 16100,
+    "GTTGCGAT" : 16080,
+    "TTAATAGA" : 16020,
+    "AAAACAAA" : 16020,
+    "GAGTAGAG" : 16000,
+    "GAAGCACA" : 16000,
+    "TTTAGAGA" : 15920,
+    "TAACGCCA" : 15920,
+    "GCTGGGGA" : 15900,
+    "CTGAGGGA" : 15820,
+    "GAGTTTAG" : 15760,
+    "CCTTTATA" : 15740,
+    "ATGAACGA" : 15740,
+    "TTACGCTA" : 15720,
+    "TAACGCGA" : 15680,
+    "ACNGCANC" : 15680,
+    "AAAAAATA" : 15620,
+    "CTCAAAAT" : 15600,
+    "ATCTCTTA" : 15580,
+    "TTAAACGA" : 15540,
+    "CAATTTCT" : 15540,
+    "TGTAGGGA" : 15460,
+    "ATTCGCAA" : 15380,
+    "AATACAGA" : 15320,
+    "TGATACGA" : 15260,
+    "CTAGCGTA" : 15260,
+    "AATTTGAA" : 15260,
+    "AATTGATA" : 15220,
+    "AAAAATAA" : 15200,
+    "TTTACAAA" : 15180,
+    "ACACTTGA" : 15080,
+    "AGGGTGAA" : 15040,
+    "TTGGACGA" : 15020,
+    "TCATGGAA" : 15020,
+    "TTGTGACA" : 14940,
+    "CATCATGA" : 14880,
+    "TATTGTGA" : 14840,
+    "AACGGAAA" : 14840,
+    "AGCAAAAA" : 14800,
+    "CTGCGCCA" : 14760,
+    "GGCTACTA" : 14660,
+    "GAGGTTGC" : 14640,
+    "TACAAACA" : 14600,
+    "ATGATCGA" : 14600,
+    "GATGCGAT" : 14580,
+    "TAAATAAA" : 14520,
+    "GANTTGNG" : 14500,
+    "TTAAGCGA" : 14480,
+    "ACAGGCAA" : 14460,
+    "TACACTCA" : 14440,
+    "TATTACCT" : 14420,
+    "GAGTTGGC" : 14420,
+    "ATACTACA" : 14420,
+    "CACAAATT" : 14240,
+    "TAAAACAC" : 14200,
+    "GAGATGCA" : 14100,
+    "CAGTTACA" : 14060,
+    "ACAAGCAA" : 14060,
+    "TCGAATTA" : 14040,
+    "CACAACCA" : 13960,
+    "TAAATTCC" : 13940,
+    "GAGTTCAT" : 13940,
+    "TATCACCA" : 13900,
+    "AGATACGA" : 13880,
+    "ACTGTTCA" : 13880,
+    "GGCATCTA" : 13860,
+    "CCACGAAA" : 13860,
+    "ACAACATC" : 13860,
+    "TTTCTGAA" : 13820,
+    "TATTGGGA" : 13820,
+    "GAGTGCTA" : 13800,
+    "GGGGGGTT" : 13760,
+    "AACATGAA" : 13680,
+    "TGGTGACA" : 13640,
+    "CGTTCACA" : 13620,
+    "ATCTAGAA" : 13620,
+    "CTGAGCCA" : 13500,
+    "CCCAGAAA" : 13500,
+    "ATCTCGAA" : 13460,
+    "AACAATAT" : 13420,
+    "TACAAACG" : 13400,
+    "AAACACAA" : 13400,
+    "TTCCGAAT" : 13380,
+    "TATCCAAA" : 13360,
+    "GAGGCGAT" : 13360,
+    "AAACGACA" : 13340,
+    "CAAAATAT" : 13300,
+    "GGGATACA" : 13240,
+    "CTACTGTA" : 13180,
+    "TATAGCCA" : 13160,
+    "TAACACTA" : 13080,
+    "ATTGGCGA" : 13020,
+    "ATACAACA" : 13020,
+    "GAGTCGTA" : 12960,
+    "GTCTCGGA" : 12920,
+    "TAAACCTA" : 12880,
+    "CGGGGTTT" : 12860,
+    "CTGCTGTA" : 12840,
+    "CGGGACTA" : 12840,
+    "ATCAGTGA" : 12760,
+    "CCAAGAAA" : 12740,
+    "AGTGCGAT" : 12740,
+    "AGGCTCCA" : 12680,
+    "ATACCAGA" : 12620,
+    "CTAGCAAC" : 12580,
+    "TATATAAC" : 12560,
+    "GGCATATA" : 12540,
+    "AGCTCGTA" : 12480,
+    "TAAACACA" : 12460,
+    "GAATGACA" : 12440,
+    "GGGGATTT" : 12420,
+    "ATTCAAGA" : 12400,
+    "ATCAATTT" : 12400,
+    "AAGTAAAA" : 12360,
+    "CCAATTAT" : 12300,
+    "AATCGACA" : 12260,
+    "GAGTTCCT" : 12180,
+    "GAGTATAG" : 12180,
+    "AGAAGCCA" : 12180,
+    "TGTGGACA" : 12160,
+    "TTAACAGA" : 12100,
+    "GTGTTGGG" : 12100,
+    "TGCACTGA" : 12080,
+    "GGTCGGCA" : 12040,
+    "GGGTGGCG" : 12040,
+    "CNNAATNT" : 12040,
+    "ACCAACAT" : 12040,
+    "CAATATCT" : 12020,
+    "TTACGATA" : 11960,
+    "ATAAAAAT" : 11920,
+    "ATTCACCA" : 11900,
+    "TAACAAGA" : 11860,
+    "TTCGCAAT" : 11800,
+    "ATATCGTA" : 11760,
+    "TTTCGCAT" : 11740,
+    "GAGTGGTG" : 11720,
+    "GCGCCCTA" : 11680,
+    "TAAAGCCA" : 11640,
+    "CTCAAATT" : 11640,
+    "TAATACAT" : 11620,
+    "GATCTCGT" : 11620,
+    "CTAGTGTA" : 11620,
+    "CCAAATAA" : 11560,
+    "AAGATACC" : 11560,
+    "ATAAATTA" : 11540,
+    "GGATACTA" : 11500,
+    "GGCGAGCA" : 11460,
+    "ATGTACGA" : 11440,
+    "AAGTTGTA" : 11440,
+    "AAAAAGCC" : 11380,
+    "GACGGCTA" : 11360,
+    "TATCGCTA" : 11340,
+    "CATTTCAG" : 11340,
+    "CAAAATTA" : 11320,
+    "AACTTACT" : 11320,
+    "CGATTTAT" : 11300,
+    "GCAATTAT" : 11260,
+    "CGGGGGCC" : 11200,
+    "ATTACATA" : 11200,
+    "GAGAATAC" : 11120,
+    "TTTAGATA" : 11100,
+    "CCAGCAAA" : 11100,
+    "ATGATAGA" : 11060,
+    "AGTGCGTA" : 11060,
+    "GAGGGGGG" : 11040,
+    "CAAAATTT" : 11040,
+    "CAAGGTTA" : 11020,
+    "GATATACC" : 11000,
+    "CATGGAGA" : 10960,
+    "TTATTGAA" : 10940,
+    "ATCTCCTA" : 10920,
+    "TTTCCGAT" : 10900,
+    "TTAAGTGA" : 10900,
+    "ATAACATA" : 10900,
+    "TAATTCCA" : 10840,
+    "TGCATTGA" : 10820,
+    "CATCAGGA" : 10820,
+    "TTCTCGGT" : 10780,
+    "GGAAGGAA" : 10760,
+    "GTGAGGGA" : 10740,
+    "CGGGGGGA" : 10660,
+    "ATCGCGGT" : 10660,
+    "CAATAAAC" : 10640,
+    "AAGCGAAA" : 10640,
+    "TGCGCGTA" : 10580,
+    "AACTCGTA" : 10580,
+    "TTACCCGA" : 10560,
+    "GTTTTGAA" : 10540,
+    "CAGAAGCC" : 10480,
+    "CAAAAGAA" : 10440,
+    "AAAGATAA" : 10440,
+    "TATCTCCA" : 10380,
+    "GTGATCCA" : 10380,
+    "AAAAATTT" : 10340,
+    "TAGAAAAT" : 10220,
+    "TTCTAGTA" : 10180,
+    "GCTTTGAA" : 10160,
+    "CCCAATAA" : 10160,
+    "TATCGAGA" : 10140,
+    "TATCAATA" : 10120,
+    "GACAAGCA" : 10120,
+    "ACAGACAT" : 10120,
+    "TAAAGCAA" : 10080,
+    "GTCGATTG" : 10080,
+    "GAGATCCG" : 10080,
+    "AACAATAA" : 10080,
+    "GGAGCAAC" : 10040,
+    "TNNCGCNA" : 10000,
+    "ATTCACTA" : 10000,
+    "ATAACCTA" : 9980,
+    "TGTAGTCA" : 9880,
+    "GCATCTGA" : 9880,
+    "AATTTACG" : 9860,
+    "TGCTCGTA" : 9840,
+    "GAGGCGTA" : 9840,
+    "ATAATCAA" : 9840,
+    "GAGTTCCA" : 9820,
+    "CCCCCCCC" : 9820,
+    "CACAAACA" : 9820,
+    "CGCAACAA" : 9800,
+    "TAAGTCCA" : 9780,
+    "ANNGCANC" : 9720,
+    "TTTCTCAA" : 9660,
+    "CATATAAC" : 9660,
+    "GCGGGGGG" : 9600,
+    "TATAGCTA" : 9580,
+    "GAAATGAA" : 9580,
+    "ATTACCAA" : 9560,
+    "TAACCCAA" : 9540,
+    "GACTTTAC" : 9540,
+    "GAATAAAC" : 9520,
+    "ATTCTACA" : 9500,
+    "TGTGTGCA" : 9480,
+    "TAAAGATA" : 9480,
+    "CGCTTTAT" : 9460,
+    "GTGATGCG" : 9420,
+    "CTAAATAA" : 9420,
+    "CAAAAAAT" : 9360,
+    "TAATATCA" : 9320,
+    "TACAATTT" : 9280,
+    "AGGTATAA" : 9280,
+    "TAAGCAAC" : 9260,
+    "CCGGGGGG" : 9260,
+    "AGGCATAA" : 9240,
+    "CTGCAATT" : 9220,
+    "ATTGGAGA" : 9220,
+    "CGGGATTT" : 9200,
+    "GGTCATAA" : 9180,
+    "CAATTTCG" : 9180,
+    "AGGTCTAA" : 9180,
+    "AATCGCAA" : 9160,
+    "AATCGCGA" : 9140,
+    "TATTTGAC" : 9120,
+    "AAGTACAG" : 9120,
+    "TGCTCTGA" : 9100,
+    "GGGGGCCG" : 9100,
+    "GGCTATTT" : 9100,
+    "GCGACCTA" : 9100,
+    "AAGTATCA" : 9080,
+    "GATGTTCA" : 9040,
+    "GGGGGTTG" : 8980,
+    "GAGGGGCG" : 8980,
+    "AGAAATTA" : 8960,
+    "AATCCAAA" : 8960,
+    "TTAATACA" : 8940,
+    "ATAATAGA" : 8900,
+    "GNNTTGNG" : 8800,
+    "CATATGAT" : 8800,
+    "AGCGCGTA" : 8800,
+    "CCAGAAAC" : 8760,
+    "GAGGTGGG" : 8680,
+    "CAGCAATT" : 8680,
+    "ATTGAAAT" : 8640,
+    "AGTTCGAT" : 8640,
+    "ACGCAATC" : 8640,
+    "GGGAGATC" : 8620,
+    "GAGAACCT" : 8600,
+    "CGCACATC" : 8560,
+    "ATACGCGA" : 8560,
+    "GGGTGCGA" : 8500,
+    "GACAGGTA" : 8460,
+    "GTCGCGGA" : 8440,
+    "TCTGCGAA" : 8420,
+    "CAAGGCTA" : 8420,
+    "ACCTAAAC" : 8400,
+    "ATTCGCTA" : 8340,
+    "GAAGGCTA" : 8320,
+    "ACAAATTT" : 8320,
+    "CGCGAATC" : 8280,
+    "CCCAAATT" : 8280,
+    "TATATCAA" : 8260,
+    "AAACCCCA" : 8240,
+    "GGCAAGTT" : 8200,
+    "CTCAAAAA" : 8180,
+    "CACAAAAA" : 8180,
+    "CGAAATAA" : 8160,
+    "TACATCAG" : 8140,
+    "GGGGGCGA" : 8140,
+    "ATTATACA" : 8120,
+    "GAAAACAA" : 8080,
+    "GTGTTGCT" : 8020,
+    "ACGGGATA" : 8020,
+    "GGGGGCCC" : 8000,
+    "GGGGGTTT" : 7980,
+    "TAACGACA" : 7940,
+    "CATTAGAC" : 7900,
+    "ATAACCCA" : 7880,
+    "AAACCACA" : 7880,
+    "TTTCAAGA" : 7860,
+    "ATTTTGAA" : 7860,
+    "AATTTATC" : 7860,
+    "GGCACCTA" : 7760,
+    "GCGGTGGG" : 7740,
+    "CCAAATTA" : 7740,
+    "ATAAACTA" : 7740,
+    "TAATATAG" : 7720,
+    "CATAGTGA" : 7720,
+    "GGTGGGGG" : 7680,
+    "GAAAATCA" : 7680,
+    "TTTCTCTA" : 7640,
+    "GATATGCG" : 7580,
+    "ATACCATA" : 7580,
+    "CCCACAAA" : 7540,
+    "GATGCGTA" : 7500,
+    "AAAAATAG" : 7480,
+    "CAACTTGA" : 7460,
+    "CGGGGGTA" : 7440,
+    "ATTTGGGA" : 7440,
+    "TTTGCGAT" : 7420,
+    "GACAATTT" : 7400,
+    "CCACAAAC" : 7380,
+    "TTAATCTA" : 7360,
+    "GGGGCGGG" : 7300,
+    "TATTTGAG" : 7260,
+    "AAGTTACT" : 7260,
+    "AAAGCCAA" : 7260,
+    "CGCATCTC" : 7240,
+    "TATCCCGA" : 7220,
+    "GCGAATCT" : 7220,
+    "CACTATAT" : 7220,
+    "GTTCGCGT" : 7180,
+    "GTCTCGGT" : 7160,
+    "GAGTAAAC" : 7140,
+    "GACTTGAG" : 7120,
+    "CGCATATC" : 7120,
+    "CACATTAT" : 7100,
+    "GATTAGCG" : 7060,
+    "CGCAGCAA" : 7060,
+    "CAAACCCA" : 7040,
+    "ACAAATAA" : 7020,
+    "TCAACAAC" : 6980,
+    "CTAAATTA" : 6980,
+    "TCGGGGGG" : 6940,
+    "GGCTACCA" : 6940,
+    "ATTCTCTA" : 6940,
+    "ACGTTGCG" : 6940,
+    "TGAGCAAC" : 6920,
+    "GAGATGAG" : 6920,
+    "GACTAGCG" : 6920,
+    "CATAAGAG" : 6920,
+    "CGCTTATC" : 6900,
+    "GACAGCAA" : 6880,
+    "GGTGCGAT" : 6860,
+    "GCCAATTT" : 6860,
+    "TCAAACAC" : 6840,
+    "CCCCACCC" : 6840,
+    "GGGGGGTC" : 6820,
+    "GAGTGGTA" : 6820,
+    "GACTTTCG" : 6820,
+    "ATTCGACA" : 6820,
+    "ACAATTGA" : 6820,
+    "GGGAAGTT" : 6740,
+    "CGGGCTTT" : 6680,
+    "GTGTGGCG" : 6660,
+    "GAGCAACA" : 6660,
+    "AATCTAAC" : 6640,
+    "TTTAACTA" : 6620,
+    "GTAAAATA" : 6620,
+    "CACAGTGA" : 6600,
+    "TTCGCGTT" : 6580,
+    "TTTCACTA" : 6560,
+    "GTGTGACA" : 6560,
+    "CAACAAAA" : 6540,
+    "GGGGGTGT" : 6520,
+    "TATCTCGT" : 6500,
+    "GACATTAT" : 6500,
+    "TTAAGCTA" : 6480,
+    "TTAAGATA" : 6480,
+    "TATCTCGA" : 6480,
+    "CGAATTAT" : 6480,
+    "GAGCGATC" : 6460,
+    "GACATGCG" : 6460,
+    "ACAAACAT" : 6460,
+    "GGGCGGGG" : 6440,
+    "ACCGAAAC" : 6420,
+    "CACAAGAT" : 6400,
+    "GAGTTTCT" : 6380,
+    "CGCAATCG" : 6380,
+    "ACATCTCG" : 6360,
+    "GCAACATC" : 6340,
+    "CTCTAGTA" : 6340,
+    "AAACTTGA" : 6340,
+    "GCGCAACA" : 6320,
+    "TCAGAAAC" : 6300,
+    "AGCACATA" : 6300,
+    "AGAAAAAA" : 6300,
+    "CATCTCGT" : 6260,
+    "GAGTATAC" : 6240,
+    "AACTAAAC" : 6200,
+    "TTTCGAGC" : 6180,
+    "GGGCGGGT" : 6180,
+    "GGGTATTT" : 6160,
+    "GGCAATTA" : 6160,
+    "ACAGAAAT" : 6160,
+    "GGGAGCGG" : 6120,
+    "ATTGCGAT" : 6120,
+    "ACCTAAAA" : 6120,
+    "GGGGGGAC" : 6080,
+    "ATTGGTGA" : 6060,
+    "AATCTCGT" : 6060,
+    "TTTCGATC" : 6020,
+    "CGCCATTA" : 6020,
+    "CTCAGTGA" : 6000,
+    "CGAGCAAC" : 6000,
+    "AAATAACC" : 6000,
+    "TCAAACTA" : 5980,
+    "ACGGGGGG" : 5980,
+    "TGCGAATC" : 5960,
+    "TATCGACA" : 5960,
+    "GTGATGCT" : 5960,
+    "GTCTTTTG" : 5960,
+    "GGGTTTGG" : 5960,
+    "CGGGGTGG" : 5960,
+    "CCCACCAT" : 5920,
+    "GGCGATTT" : 5880,
+    "ACAAAAAT" : 5880,
+    "ATTCGAGA" : 5860,
+    "TGGGTCTG" : 5840,
+    "GGCAATGT" : 5840,
+    "GATTCGAT" : 5820,
+    "TTATCTCG" : 5800,
+    "TATCCCAA" : 5800,
+    "GGCAATAT" : 5780,
+    "GGCCATTT" : 5720,
+    "GACTATAG" : 5720,
+    "TGGGGGGA" : 5700,
+    "ATAGCGTA" : 5700,
+    "GATATGCA" : 5660,
+    "GAGTAGCC" : 5660,
+    "CGGGGGCA" : 5640,
+    "TGTTGCGA" : 5620,
+    "GGGGGCGC" : 5620,
+    "AGGTACCA" : 5600,
+    "AGTTGCAT" : 5580,
+    "GTGGTGGG" : 5560,
+    "TCAGCCAC" : 5540,
+    "GGGGCAAC" : 5540,
+    "CCCAATTA" : 5540,
+    "GGCGCGTA" : 5520,
+    "AACAAAAA" : 5500,
+    "GGGCGTGC" : 5480,
+    "ACAACCCA" : 5480,
+    "GGGGGTGC" : 5440,
+    "GATATCCG" : 5440,
+    "TCAGCACA" : 5420,
+    "ATCAATTA" : 5420,
+    "TTAAGAGA" : 5360,
+    "CTCTCGGA" : 5360,
+    "CAAAACAA" : 5360,
+    "TCAAAAAA" : 5320,
+    "TTTCCAGA" : 5300,
+    "TCGCAACA" : 5300,
+    "CCCACAGA" : 5300,
+    "GTAATAGA" : 5280,
+    "GGGTGGGT" : 5280,
+    "GGCGGGGG" : 5280,
+    "CGGGGGCG" : 5280,
+    "ACGGGCTA" : 5280,
+    "GAGATTCG" : 5200,
+    "GGTGGCGA" : 5180,
+    "GCAGGCTA" : 5180,
+    "GAGAAGCG" : 5180,
+    "CACAACCC" : 5180,
+    "ACGTAAAC" : 5180,
+    "TTCGGAAT" : 5160,
+    "AATCTCGG" : 5160,
+    "TTCGCGAT" : 5140,
+    "ATCTATTA" : 5140,
+    "TATCGCAA" : 5120,
+    "GTTCGAGA" : 5080,
+    "CGTTTATC" : 5080,
+    "TCATACAT" : 5040,
+    "ACAAATTA" : 5040,
+    "TTTACAGA" : 5020,
+    "TATATCGA" : 5020,
+    "CGTTGCGA" : 5020,
+    "CCCAAATA" : 5020,
+    "ACAACATA" : 5020,
+    "TTACCATA" : 5000,
+    "TAAGCAAA" : 5000,
+    "AATCACTA" : 5000,
+    "TTTATCTC" : 4980,
+    "TTCGGGGA" : 4980,
+    "CCGGGAAA" : 4980,
+    "AAACAACA" : 4980,
+    "GACTATAT" : 4960,
+    "CTTATTTG" : 4960,
+    "CNNNNNNT" : 4940,
+    "TCACCAAC" : 4920,
+    "CTTTTCGA" : 4920,
+    "CCCACTTG" : 4920,
+    "TCACCAAA" : 4900,
+    "TAACCAAC" : 4900,
+    "TNNNNNNA" : 4860,
+    "TTTCCAAT" : 4840,
+    "GGGCATTT" : 4820,
+    "AGCTCGAG" : 4820,
+    "ACACACAT" : 4820,
+    "ACAAACAA" : 4820,
+    "TTGGGGGG" : 4800,
+    "TTAAACTA" : 4800,
+    "CGAAAAAA" : 4800,
+    "CAGCTTTA" : 4800,
+    "GTGGGGCG" : 4780,
+    "GGGGGGTA" : 4780,
+    "GAGTGGGG" : 4780,
+    "TTTCCCTA" : 4760,
+    "GATTGCAT" : 4760,
+    "ATTGGAAT" : 4760,
+    "ACCGCACA" : 4760,
+    "ACCAATTT" : 4760,
+    "GAGTAACC" : 4740,
+    "TTTCTAGA" : 4720,
+    "TACTAGAA" : 4720,
+    "GGGGCCGA" : 4720,
+    "GGCACTTT" : 4720,
+    "GAGTTCCC" : 4700,
+    "GACTTGCT" : 4700,
+    "GAATCTCG" : 4680,
+    "TTCGAATC" : 4660,
+    "GAGTTGAC" : 4660,
+    "GAGTATCT" : 4660,
+    "TCAGCACC" : 4640,
+    "ACACAATA" : 4640,
+    "TNNNNNNN" : 4620,
+    "TCCAAATT" : 4620,
+    "ATAAAAAA" : 4620,
+    "TAAACCTT" : 4600,
+    "CCATAAAC" : 4580,
+    "AACATCTC" : 4560,
+    "GGGGTTGA" : 4540,
+    "GATTTCCG" : 4540,
+    "TGTATAAC" : 4520,
+    "ACAACATT" : 4520,
+    "GAGATCCT" : 4500,
+    "TAAACAAA" : 4480,
+    "GGGTGGTG" : 4480,
+    "GACTTTAG" : 4480,
+    "ACAGCTTA" : 4480,
+    "GATAAGAG" : 4460,
+    "CACAACAT" : 4460,
+    "ATAAAAGA" : 4460,
+    "GAGTAACG" : 4440,
+    "GACTAAAC" : 4420,
+    "CCATTTAT" : 4420,
+    "ACCACAAA" : 4420,
+    "AATATCAC" : 4420,
+    "ACAGATCT" : 4400,
+    "TCAAACAA" : 4380,
+    "CGGGGTGT" : 4380,
+    "AAAGCAAT" : 4380,
+    "GGGGGTGA" : 4360,
+    "GCGTAGCG" : 4360,
+    "ACCCAAAA" : 4360,
+    "TATCGCGC" : 4340,
+    "GGGGTGTC" : 4340,
+    "GGGGCCCG" : 4340,
+    "CCAAAATA" : 4340,
+    "TTTATCTA" : 4320,
+    "TGCCCCAG" : 4320,
+    "GTTATCGA" : 4320,
+    "CTCTAGTT" : 4320,
+    "TAGATCCA" : 4300,
+    "TAAACCCA" : 4300,
+    "GGGAGTTC" : 4300,
+    "CAGCATAA" : 4300,
+    "CAGCAATC" : 4300,
+    "ATGGAAAT" : 4300,
+    "ATCTGGGG" : 4300,
+    "AAAGCACC" : 4300,
+    "GGCACACG" : 4280,
+    "AACAATTT" : 4280,
+    "TTTAGCGT" : 4260,
+    "GAGTATCC" : 4240,
+    "TCTGCAAC" : 4220,
+    "TTGGGGGA" : 4200,
+    "CCTGCAGC" : 4200,
+    "CAAGCAAC" : 4200,
+    "AAAAACAA" : 4200,
+    "TTTGGTGA" : 4180,
+    "TTACCCTA" : 4180
+   }
+  }
+ ]
+}
