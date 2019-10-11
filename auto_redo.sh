@@ -62,7 +62,11 @@ if [ ! -e "$samplesheets_this_month" ] ; then
     exit 0
 fi
 
-candidate_ss=(`find "$samplesheets_this_month" -name '*_*.csv' -mmin -$(( $htlb * 60 ))`)
+# Robustly capture the list of files from find. See:
+# https://stackoverflow.com/questions/1116992/capturing-output-of-find-print0-into-a-bash-array
+candidate_ss=()
+while IFS= read -r -d '' file ; do candidate_ss+=("$file") ; done < \
+    <( find "$samplesheets_this_month" -name '*_*.csv' -mmin -$(( $htlb * 60 )) -print0 )
 echo "Checking ${#candidate_ss[@]} files."
 
 set +u ; for ss in "${candidate_ss[@]}" ; do set -u
@@ -101,7 +105,7 @@ set +u ; for ss in "${candidate_ss[@]}" ; do set -u
     fi
     # No restart, as override is in effect.
     if [ "$(basename $(readlink "$seqdir/SampleSheet.csv"))" = SampleSheet.csv.OVERRIDE ] ; then
-        echo "OVERRIDE is in effect ($seqdir/SampleSheet.csv -> SampleSheet.csv.OVERRIDE)"
+        echo "OVERRIDE is in effect ($seqdir/SampleSheet.csv -> $(readlink "$seqdir/SampleSheet.csv"))"
         continue
     fi
 

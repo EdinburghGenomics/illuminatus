@@ -147,7 +147,7 @@ save_start_time(){
 
 rt_runticket_manager(){
     # Simple wrapper for ticket manager that sets the run and queue
-    rt_runticket_manager.py -r "$RUNID" -Q run "$@"
+    rt_runticket_manager.py -Q run -r "$RUNID" "$@"
 }
 
 action_new(){
@@ -613,7 +613,7 @@ pipeline_fail() {
 
 if [ -n "${REDO_HOURS_TO_LOOK_BACK:-}" ] ; then
     log "Looking for new replacement sample sheets from the last $REDO_HOURS_TO_LOOK_BACK hours."
-    auto_redo.sh |& log
+    auto_redo.sh |& log || true
 fi
 
 log "Looking for run directories matching regex $SEQDATA_LOCATION/$RUN_NAME_REGEX/"

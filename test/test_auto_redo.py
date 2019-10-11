@@ -178,5 +178,27 @@ class T(unittest.TestCase):
         for pd in glob(self.seqdata.sandbox + '/*_*_*_*/pipeline'):
             self.assertTrue( os.lstat(pd).st_mtime < unixtime2 )
 
+    def test_space_in_filename(self):
+        """See doc/bug_on_A00291_0218.txt
+           It is indeed possible to get spaces etc. in the filenames.
+        """
+        # For starters, make all the files in the sandbox 20 hours old
+        self.seqdata.touch('.', hours_age=20, recursive=True)
+
+        # Now just copy in example 4 above - ie. for C9E4KANXX
+        for ns in glob(NEWSHEETS_DIR + '/sheet_C9E4KANXX.csv'):
+            shutil.copy(ns, self.sheets_dir, follow_symlinks=True)
+            os.rename(self.sheets_dir + '/sheet_C9E4KANXX.csv',
+                      self.sheets_dir + '/eat my sheet_C9E4KANXX.csv')
+
+        # Now run the thing
+        res1 = self.bm_run_redo()
+        self.assertEqual(res1[1], "Checking 1 files.")
+
+        # The appropriate run should have 2 and 5 changed
+        self.assertEqual( self.seqdata.lsdir('160607_D00248_0174_AC9E4KANXX/pipeline', glob="*.redo"),
+                          ['lane2.redo', 'lane5.redo'] )
+
+
 if __name__ == '__main__':
     unittest.main()

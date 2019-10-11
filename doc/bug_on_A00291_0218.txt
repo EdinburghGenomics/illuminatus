@@ -1,0 +1,45 @@
+On 10th October, Tony noted that two new NovaSeq runs were not being picked up by the
+pipeline. The log at the time they were picked up indicates why:
+
+=============================================================================================================
+=== Thu Oct 10 01:25:02 BST 2019. Running /lustre/home/pipeline/illuminatus/v1.3.3.1/driver.sh; PID=20783 ===
+=============================================================================================================
+Running /lustre/home/pipeline/illuminatus/current/activate_venv ...VEnv ACTIVATED
+Looking for new replacement sample sheets from the last 12 hours.
+Looking for new samplesheets in /fluidfs/clarity/live/samplesheets_bcl2fastq_format that relate to completed runs in /lustre/seqdata
+Checking 3 files.
+Checking /fluidfs/clarity/live/samplesheets_bcl2fastq_format/2019/10/92-335767_191010_X_H37FMCCX2_K1931_H37FMCCX2.csv (H37FMCCX2@1570632699)
+No directory found in /lustre/seqdata for FCID H37FMCCX2
+=== Thu Oct 10 01:25:02 BST 2019. Finished run; PID=20783 ===
+=============================================================================================================
+=== Thu Oct 10 01:30:02 BST 2019. Running /lustre/home/pipeline/illuminatus/v1.3.3.1/driver.sh; PID=26855 ===
+=============================================================================================================
+Running /lustre/home/pipeline/illuminatus/current/activate_venv ...VEnv ACTIVATED
+Looking for new replacement sample sheets from the last 12 hours.
+Looking for new samplesheets in /fluidfs/clarity/live/samplesheets_bcl2fastq_format that relate to completed runs in /lustre/seqdata
+Checking 1 files.
+Checking /fluidfs/clarity/live/samplesheets_bcl2fastq_format/2019/10/92-335767_191010_X_H37FMCCX2_K1931_H37FMCCX2.csv (H37FMCCX2@1570632699)
+No directory found in /lustre/seqdata for FCID H37FMCCX2
+DONE
+Looking for run directories matching regex /lustre/seqdata/[0-9]{6}_[MAE].*_.*_[^.]*/
+/lustre/seqdata/191007_M01270_0095_000000000-CNWLJ/ has 191007_M01270_0095_000000000-CNWLJ from miseq_M01270 with 1 lane(s) and status=reads_finished
+\_READS_FINISHED 191007_M01270_0095_000000000-CNWLJ. Checking for new SampleSheet.csv and preparing to demultiplex.
+  Starting bcl2fastq on 191007_M01270_0095_000000000-CNWLJ.
+
+At 01:25:02 the pipeline runs auto_redo.sh and clearly this fails and then the whole driver.sh script exits.
+
+At 01:30:02 the error in auto_redo.sh goes away and the pipeline resumes operations.
+
+The big hint is the "Checking 3 files." message suddenly becomes "Checking 1 files." so clearly two sample sheets are now older than
+the 12 hour cutoff. Looking on the disk for files dated 13:30 on October 9th:
+
+"92-335688_191009_A291_216_BHCJJ2DRXX_K1931_HCJJ2 DRXX.csv"
+
+Ooo. The filename has a space in it. I bet that's the problem.
+
+So two bugs here:
+
+1) The system should deal with spaces in the filenames (for auto_redo and sample_sheet_fetcher)
+2) The driver should not exit just because the auto-redo failed
+
+OK. We can make unit tests for these and fix them.

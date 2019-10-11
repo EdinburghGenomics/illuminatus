@@ -208,6 +208,11 @@ class T(unittest.TestCase):
         expected_calls['upload_report.sh'] = [self.temp_dir + '/fastqdata/160606_K00166_0102_BHF22YBBXX']
         expected_calls['clarity_run_id_setter.py'] = ['-- 160606_K00166_0102_BHF22YBBXX']
 
+        # This may or may not be mocked. If so, and REDO_HOURS_TO_LOOK_BACK is set, it should
+        # be called.
+        if 'auto_redo.sh' in expected_calls and self.environment.get('REDO_HOURS_TO_LOOK_BACK'):
+            expected_calls['auto_redo.sh'] = ['']
+
         #The call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
         self.bm.last_calls['rt_runticket_manager.py'][0] = re.sub(
                                     r'@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][0] )
@@ -236,6 +241,15 @@ class T(unittest.TestCase):
         self.assertEqual( len(self.bm.last_calls['rt_runticket_manager.py']), 1 )
         self.assertEqual( self.bm.last_calls['upload_report.sh'], [] )
         self.assertFalse( os.path.exists(test_data + '/pipeline/failed') )
+
+    def test_new_auto_redo_fail(self):
+        """See doc/bug_on_A00291_0218.txt, A failure to auto-redo should not prevent
+           the rest of the driver from running.
+        """
+        self.bm.add_mock('auto_redo.sh', fail=True)
+        self.environment['REDO_HOURS_TO_LOOK_BACK'] = "12"
+
+        self.test_new()
 
     def test_read1_multiqc_fail(self):
         """A failure to run interop/multiqc when finishing up with read1 processing should

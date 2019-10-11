@@ -7,7 +7,8 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 # These files come direct from 10x:
 # https://support.10xgenomics.com/single-cell-gene-expression/sequencing/doc/specifications-sample-index-sets-for-single-cell-3
-TX_CODES = os.path.dirname(__file__) + '/10x_barcodes/*.csv'
+# Note the use of abspath is needed to keep the tests happy.
+TX_CODES = os.path.abspath(os.path.dirname(__file__)) + '/10x_barcodes/*.csv'
 
 """ Given a demultiplexed run, how many 10x barcodes were present.
 """
