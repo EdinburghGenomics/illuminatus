@@ -1,0 +1,8 @@
+Run 191011_M01270_0096_000000000-CLVY8 failed to process as no clusters at all passed the filter,
+so I marked the run as aborted.
+
+Not a real problem, however it raises the possibility that we might see a NovaSeq run where one
+lane is usable and the other has no clusters at all. In that case the pipeline would fail and it
+would be a problem.
+
+Therefore I'm going to slim down 191011_M01270_0096_000000000-CLVY8 and see if I can 'fix' it.

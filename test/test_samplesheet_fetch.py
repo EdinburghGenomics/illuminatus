@@ -184,7 +184,7 @@ class T(unittest.TestCase):
         # SampleSheet.csv.0 and symlinked.
         self.assertTrue(os.path.isfile('SampleSheet.csv.0'))
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
-        self.assertEqual(last_stdout[2], "Please move SampleSheet.csv.OVERRIDE to ./pipeline and retry.")
+        self.assertEqual(last_stdout[2], "Please move SampleSheet.csv.OVERRIDE to the pipeline subdir then redo lanes.")
 
     def test_override(self):
         """For testing, or if for some reason we need to amend the samplesheet outside

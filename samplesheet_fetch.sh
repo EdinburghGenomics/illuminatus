@@ -63,7 +63,7 @@ touch -h SampleSheet.csv
 # Detect old and maybe ambiguous cases
 if [ -e SampleSheet.csv.OVERRIDE ] ; then
     echo "Sample sheet overrides now need to go in the pipeline directory."
-    echo "Please move SampleSheet.csv.OVERRIDE to ./pipeline and retry."
+    echo "Please move SampleSheet.csv.OVERRIDE to the pipeline subdir then redo lanes."
     exit 1
 fi
 
