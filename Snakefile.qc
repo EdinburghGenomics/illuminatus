@@ -153,12 +153,14 @@ finally:
     assert '_' in run
     del(runs)
 
-lanes = sorted( set( sf['lane'] for sf in all_all ) )
+# Since there is a possibility that one or more lanes may fail completely and produce no FASTQ
+# I need to look for Stats.json, which always appears.
+all_stats_json_lanes = [ f.split('/')[1][4:] for f in glob("demultiplexing/lane*/Stats/Stats.json") ]
+lanes = sorted( set( [sf['lane'] for sf in all_all] + all_stats_json_lanes ) )
+
 # All report names - lane1, lane2, ..., overview
+
 # This will not generate the per-lane reports until the demultiplexing has been done.
-# FIXME - stop the dangling links on the overview that will result from this. Or else
-# make empty reports, but they won't have the samples on as I'm getting these from
-# Stats.json.
 allreps = expand("lane{l}", l=lanes) + ['overview']
 
 # Also when generating the reports the driver can tell the pipeline what status it is in
@@ -541,8 +543,9 @@ rule get_bcl2fastq_stats:
 
 localrules: get_bcl2fastq_json
 rule get_bcl2fastq_json:
-    # Straight up just copies the file into place, for MultiQC to find
-    # Doing it this way means you can delete the QC dir and Snakemake will put this file back.
+    # Simply copies the file into place, for MultiQC to find
+    # Doing it this way accords with the principle that everything in the QC directory
+    # should be created by this Snakefile.
     output: "QC/lane{lane}/Stats.json"
     input: "demultiplexing/lane{lane}/Stats/Stats.json"
     shell: "cp {input} {output}"

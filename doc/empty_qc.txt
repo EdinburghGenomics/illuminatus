@@ -1,8 +1,19 @@
 Run 191011_M01270_0096_000000000-CLVY8 failed to process as no clusters at all passed the filter,
 so I marked the run as aborted.
 
-Not a real problem, however it raises the possibility that we might see a NovaSeq run where one
+Not a real problem for this run, however it raises the possibility that we might see a NovaSeq run where one
 lane is usable and the other has no clusters at all. In that case the pipeline would fail and it
 would be a problem.
 
 Therefore I'm going to slim down 191011_M01270_0096_000000000-CLVY8 and see if I can 'fix' it.
+
+Do I want to make a lane report with no lanes at all?
+
+Possibly. I could look for Stats.json files rather than FASTQ files.
+
+OK, it seems that if I simply get the list of demultiplexed lanes by globbing for Stats.json files
+rather than FASTQ files then I get an empty report with no further tinkering. So I'll stick with
+this.
+
+Note I'm actually globbing both and combining the list of lanes. My reasoning is that this will make
+any inconsistencies more obvious. Not that there should be inconsistencies.
