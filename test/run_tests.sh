@@ -2,6 +2,10 @@
 
 # When running the tests, we need to ensure Python picks up the right environment.
 # For this reason ,it's worth having a test wrapper.
+
+# Note - at present the unit tests will only run fully when using the system Python,
+# because the VirtualEnv Python can't see the snakemake module. This is borken.
+
 cd "`dirname $0`"/..
 
 export RUN_SLOW_TESTS=${RUN_SLOW_TESTS:-0}

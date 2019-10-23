@@ -4,8 +4,8 @@ import json
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from math import isnan
 from statistics import mean, stdev
+import yaml, yamlloader
 
-from illuminatus.YAMLOrdered import yaml
 from illuminatus.Formatters import rat
 
 """ This script builds the Project Summary table on the overview pages.
@@ -242,7 +242,11 @@ def output_yml(all_stats_by_pool, all_stats_by_project, project_to_name, pools_p
                    stats_by_project = all_stats_by_project,
                    project_to_name = project_to_name,
                    pools_per_project = pools_per_project )
-    print(yaml.safe_dump(struct, default_flow_style=False), file=fh, end='')
+    print( yaml.dump( struct,
+                      Dumper = yamlloader.ordereddict.CSafeDumper,
+                      default_flow_style = False ),
+           file = fh,
+           end = '')
 
 def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_per_project, args, fh):
     """This also happens to be YAML but is specifically for display
@@ -374,7 +378,11 @@ def output_mqc(all_stats_by_pool, all_stats_by_project, project_to_name, pools_p
         print("data: []", file=fh)
     else:
         # That's all she wrote. Print it out...
-        print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
+        print( yaml.dump( mqc_out,
+                          Dumper = yamlloader.ordereddict.CSafeDumper,
+                          default_flow_style = False ),
+               file = fh,
+               end = '' )
 
 
 def output_tsv(all_stats_by_pool, all_stats_by_project, project_to_name, pools_per_project, args, fh):

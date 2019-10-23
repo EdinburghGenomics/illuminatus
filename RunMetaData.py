@@ -3,7 +3,7 @@ import os, sys
 from collections import defaultdict
 from datetime import datetime
 
-import yaml
+import yaml, yamlloader
 from urllib.parse import quote as url_quote
 
 from illuminatus import illuminatus_version
@@ -124,7 +124,9 @@ class RunMetaData:
                 't2//Sequencer Finish': self.pipeline_info['Sequencer Finish']
             }
 
-        return yaml.safe_dump(idict, default_flow_style=False)
+        return yaml.dump( idict,
+                          Dumper = yamlloader.ordereddict.CSafeDumper,
+                          default_flow_style = False )
 
 def get_pipeline_script():
     return os.path.realpath(os.path.dirname(__file__)) + '/driver.sh'

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys, os
 import datetime
-import yaml
+import yaml, yamlloader
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 #from pprint import pprint, pformat
 
@@ -126,7 +126,11 @@ def main(args):
 def output_yml(rids, fh):
     """Simply dump the whole data structure as YAML
     """
-    print(yaml.safe_dump(rids, default_flow_style=False), file=fh, end='')
+    print( yaml.dump( rids,
+                      Dumper = yamlloader.ordereddict.CSafeDumper,
+                      default_flow_style = False),
+           file = fh,
+           end = '' )
 
 def output_mqc(rids, fh):
     """This also happens to be YAML but is specifically for display
@@ -270,7 +274,11 @@ def output_mqc(rids, fh):
                 dd['col_07'] = lane_b2f_totals.get('Assigned Reads',0) + lane_b2f_totals.get('Unassigned Reads PF',0)
 
 
-    print(yaml.safe_dump(mqc_out, default_flow_style=False), file=fh, end='')
+    print( yaml.dump( mqc_out,
+                      Dumper = yamlloader.ordereddict.CSafeDumper,
+                      default_flow_style = False ),
+           file = fh,
+           end='' )
 
 def scan_for_info(run_dir, project_name_list=''):
     """Hoovers up the info and builds a data structure which can

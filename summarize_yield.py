@@ -11,7 +11,7 @@
 # is very pertinent.
 
 import os, sys
-import yaml
+import yaml, yamlloader
 
 from interop import py_interop_run_metrics, py_interop_run, py_interop_summary
 from interop.py_interop_metrics import index_out_of_bounds_exception
@@ -37,7 +37,10 @@ def main(run_dir, out_dir=None, always_dump=False):
 
     if not out_dir or always_dump:
         # Dump to YAML
-        print(yaml.safe_dump(res, default_flow_style=False), end='')
+        print( yaml.dump( res,
+                          Dumper = yamlloader.ordereddict.CSafeDumper,
+                          default_flow_style = False ),
+               end = '' )
 
     if out_dir:
         # Dump to _mqc.yaml for all lanes and overview.
@@ -49,7 +52,10 @@ def main(run_dir, out_dir=None, always_dump=False):
                 except FileExistsError: pass
 
                 with open(kof, 'w') as kofh:
-                    print(yaml.safe_dump(format_mqc(k, v)), file=kofh, end='')
+                    print( yaml.dump( format_mqc(k, v),
+                                      Dumper = yamlloader.ordereddict.CSafeDumper ),
+                           file = kofh,
+                           end='' )
 
 def format_mqc(lane, info):
     """Format the data structure as wanted by MultiQC. This will be turned

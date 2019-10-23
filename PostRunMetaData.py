@@ -2,7 +2,7 @@
 import os, sys, re
 from glob import glob
 
-import yaml
+import yaml, yamloader
 
 class PostRunMetaData:
     """This Class provides information about a demultiplexing/QC process, given
@@ -80,7 +80,9 @@ class PostRunMetaData:
                 mf = ', '.join(self.mismatch_flags)
         idict['post_demux_info']['barcode mismatches'] = mf or 'unknown'
 
-        return yaml.safe_dump(idict, default_flow_style=False)
+        return yaml.dump( idict,
+                          Dumper = yamlloader.ordereddict.CSafeDumper,
+                          default_flow_style = False )
 
 def munge_lanes(l):
     """Take the lanes arguments and return a dict {'lanes': [int, int, int]} or else

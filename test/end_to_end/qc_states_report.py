@@ -10,6 +10,7 @@ import os, sys, re
 from collections import defaultdict
 from subprocess import run, PIPE
 import pystache
+import yaml, yamlloader
 
 # Allow importing of modules from up the way.
 PROG_BASE=os.path.dirname(__file__)+'/../..'
@@ -24,7 +25,6 @@ def glob():
 glob = glob()
 
 # Direct import form a runnable program. This should really be made a library.
-from illuminatus.YAMLOrdered import yaml
 from RunStatus import RunStatus
 
 # Default environment
@@ -123,7 +123,7 @@ def main(args):
         resv['instruments'] = [ dict(name=k, count=v) for k, v in sorted(resv['instruments'].items()) ]
 
     print("### Run report as YAML:")
-    print(yaml.safe_dump(res))
+    print(yaml.dump(dict_strip(res), Dumper=yamlloader.ordereddict.CSafeDumper))
 
     # Now lets render that puppy as PDF (needs pystache which I'll add to the project)...
     # Since the PDF is disposable I'll just clobber it for now.
@@ -144,6 +144,20 @@ def render_pdf(res):
 
     # TODO - let us configure where reports go.
     print("See PDF in {}".format(pdf))
+
+def dict_strip(x):
+    """As I've switched from YAMLOrdered to yamlloader I can no longer dump
+       default dicts. Meh.
+       This recursively converts all defaultdicts to dicts.
+       No loop detection so be careful!
+    """
+    if type(x) in [dict, defaultdict]:
+        return { k: dict_strip(v) for k, v in x.items() }
+    elif type(x) in [list, tuple]:
+        return [ dict_strip(v) for v in x ]
+    else:
+        return x
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])

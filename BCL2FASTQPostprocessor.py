@@ -11,7 +11,7 @@
 
 import os, sys, re, time
 from glob import glob
-from illuminatus.YAMLOrdered import yaml
+import yaml
 
 from collections import namedtuple
 

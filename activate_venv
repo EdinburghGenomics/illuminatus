@@ -27,7 +27,7 @@ install_multiqc() {
     #pip3 install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git#egg=multiqc'
     # For now, use the dev branch
 
-    # For now we need older versions of these modules:
+    # For now we need specific older versions of these modules:
     pip3 install 'networkx==1.11' 'spectra==0.0.8' 'colormath==2.1.1'
 
     for url in \
@@ -61,18 +61,20 @@ else
     python3 -mvenv ./_py3_venv
     activate_venv
 
-    pip3 install --upgrade pip
-    pip3 install 'pyyaml==3.13'
-    pip3 install Rt
-    pip3 install pyclarity_lims
-    pip3 install psycopg2-binary
-    pip3 install pystache
+    pip3 install pip==19.2.1
+    pip3 install pyyaml==5.1.1
+    pip3 install yamlloader==0.5.5
+    pip3 install Rt==1.0.11
+    pip3 install pyclarity_lims==0.4.8
+    pip3 install psycopg2-binary==2.8.3
+    pip3 install pystache==0.5.4
 
     # InterOP is now on PyPI so no pre-build needed :-)
-    pip3 install interop
+    pip3 install numpy==1.13.1
+    pip3 install interop==1.1.8
 
     # Needed if well_dups runs in the local VEnv, which it currently does.
-    pip3 install python-Levenshtein
+    pip3 install python-Levenshtein==0.12.0
 
     # My own MultiQC and MultiQC_EdGen. Pip installs directly from GIT so
     # why not? Assume the master branch is always good, since it's simpler than

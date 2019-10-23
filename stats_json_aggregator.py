@@ -7,9 +7,9 @@
 #import os, sys, re
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import json
+import yaml, yamlloader
 from statistics import mean, stdev
 from illuminatus.FixedOrderedDict import FixedOrderedDict
-from illuminatus.YAMLOrdered import yaml
 from illuminatus.Formatters import rat
 
 def get_data_container():
@@ -81,7 +81,10 @@ def main(args):
 
         all_stats_out[lane] = s.to_dict()
 
-    print(yaml.safe_dump(all_stats_out, default_flow_style=False))
+    print( yaml.dump( all_stats_out,
+                      Dumper = yamlloader.ordereddict.CSafeDumper,
+                      default_flow_style = False ),
+           end = '' )
 
 
 def parse_args(*args):

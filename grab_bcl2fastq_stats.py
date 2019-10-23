@@ -11,9 +11,10 @@ from __future__ import division, print_function, absolute_import
 
 import os, sys
 from glob import glob
-from collections import defaultdict, OrderedDict
+import yaml, yamlloader
+
+from collections import OrderedDict
 from illuminatus.FixedOrderedDict import FixedOrderedDict
-from illuminatus.YAMLOrdered import yaml
 from illuminatus.Formatters import rat
 
 #I guess I want pstdev since I'm calculating variance over the whole run?
@@ -97,7 +98,8 @@ def gather_fastq_stats(fastq_stats_file):
     dc['Unassigned Reads Raw'] = 0
     dc['Unassigned Reads PF']  = 0
 
-    reads_per_sample = defaultdict(int)
+    # Don't use a defaultdict as we can't dump these as YAML
+    reads_per_sample = dict()
 
     fastq_stats_header = 'SampleNumber Tile NumberOfReadsRaw NumberOfReadsPF'.split()
     for num, line in enumerate(slurp(fastq_stats_file)):
@@ -114,6 +116,7 @@ def gather_fastq_stats(fastq_stats_file):
                 dc['Assigned Reads Raw'] += int(rr)
                 dc['Assigned Reads PF'] += int(rpf)
 
+                reads_per_sample.setdefault(sample_num, 0)
                 reads_per_sample[sample_num] += int(rpf)
 
     total_reads_raw = dc['Assigned Reads Raw'] + dc['Unassigned Reads Raw']
@@ -152,7 +155,7 @@ def gather_fastq_stats(fastq_stats_file):
 
     return dc
 
-def print_fastq_stats(runid, lane, dc, file=sys.stdout):
+def print_fastq_stats(runid, lane, dc, fh=sys.stdout):
     """Print out the data container to a file.  As YAML, of course.
     """
 
@@ -165,7 +168,11 @@ def print_fastq_stats(runid, lane, dc, file=sys.stdout):
     if dc:
         od.update(dc)
 
-    print(yaml.safe_dump(od, default_flow_style=False), file=file)
+    print(yaml.dump(od,
+                    Dumper = yamlloader.ordereddict.CSafeDumper,
+                    default_flow_style = False),
+          file = fh,
+          end = '')
 
 def dump_lane(basedir, runid, lane):
     #Find the stats file, extract the data and print it out.
