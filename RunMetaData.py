@@ -6,6 +6,7 @@ from datetime import datetime
 import yaml
 from urllib.parse import quote as url_quote
 
+from illuminatus import illuminatus_version
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
 from illuminatus.RunParametersXMLParser import RunParametersXMLParser
 
@@ -82,10 +83,8 @@ class RunMetaData:
             # Now if this script belong to a different version we need to say so, and we
             # end up with a version like 0.0.3+0.1.0. Redo the run from scratch if you need to
             # ensure consistency.
-            myvers = get_pipeline_version()
-
-            if myvers != self.pipeline_info['version']:
-                self.pipeline_info['version'] += "+" + myvers
+            if illuminatus_version != self.pipeline_info['version']:
+                self.pipeline_info['version'] += "+" + illuminatus_version
 
             # If the pipeline started, the sequencer MUST have finished.
             touch_file = os.path.join( self.run_path_folder , 'RTAComplete.txt' )
@@ -126,17 +125,6 @@ class RunMetaData:
             }
 
         return yaml.safe_dump(idict, default_flow_style=False)
-
-def get_pipeline_version():
-    """ Here it's reasonable to report the verison of the pipeline that owns this script.
-        Re-running just this script on an old run will not tell you what version was used
-        at the time (for that, look to the old report).
-    """
-    try:
-        with open( os.path.dirname(__file__) + '/version.txt') as vfh:
-            return vfh.read().strip()
-    except Exception:
-        return 'unknown'
 
 def get_pipeline_script():
     return os.path.realpath(os.path.dirname(__file__)) + '/driver.sh'

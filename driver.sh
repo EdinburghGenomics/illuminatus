@@ -34,10 +34,6 @@ if [ -e "$ENVIRON_SH" ] ; then
            WRITE_TO_CLARITY
 fi
 
-# Tools may reliably use this to report the version of Illuminatus being run right now.
-# They should look at pipeline/start_times to see which versions have touched a given run.
-export ILLUMINATUS_VERSION=$(cat "$(dirname $BASH_SOURCE)"/version.txt || echo unknown)
-
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
 
@@ -121,6 +117,13 @@ if [ "${py_venv}" != none ] ; then
 fi
 
 PATH="$(readlink -m $BIN_LOCATION):$PATH"
+
+# Tools may reliably use this to report the version of Illuminatus being run right now.
+# They should look at pipeline/start_times to see which versions have touched a given run.
+# Note we don't run this until after VEnv activation so we can't print this version at
+# the top of the log.
+export ILLUMINATUS_VERSION=$(illuminatus_version.py)
+
 
 # 3) Define an action for each possible status that a run can have:
 # new)            - this run is seen for the first time (sequencing might be done or is still in progress)
