@@ -10,7 +10,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 # Note the use of abspath is needed to keep the tests happy.
 TX_CODES = os.path.abspath(os.path.dirname(__file__)) + '/10x_barcodes/*.csv'
 
-""" Given a demultiplexed run, how many 10x barcodes were present.
+""" Given a demultiplexed run, how many 10x barcodes were present?
 """
 
 def main(args):

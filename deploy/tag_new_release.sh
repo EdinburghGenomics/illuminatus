@@ -11,7 +11,7 @@ set -u
 #               - don't edit version.txt by hand
 
 # What it does...
-# 1) Check that I'm on branch master
+# 1) Check that I'm on branch "master"
 # 2) Check that work dir is clean
 # 3) Check that version.txt corresponds to the latest tag
 # 4) Suggest a new version tag
@@ -20,7 +20,7 @@ set -u
 # 5b) git tag
 # 6) git push --tags
 # 7) remind the user to now do
-#     cd /ifs/software/linux_x86_64/qc_tools_python/ ; `pwd`/get_latest_tag.sh
+#     cd ~pipeline/illuminatus ; get_latest_tag.sh
 
 
 listtags(){
@@ -98,4 +98,4 @@ git push --tags
 git push
 
 echo "All done.  Now log in as the pipeline user and do:"
-echo "  cd ~/illuminatus && `pwd`/get_latest_tag.sh"
+echo "  cd ~/illuminatus && $(dirname $(readlink -f "$BASH_SOURCE"))/get_latest_tag.sh"
