@@ -25,3 +25,8 @@ Ick, it's not fun. Lets see what we can do with our big data files before we sta
 messing around. If we want to run more things (like bcl2fastq) over a subset of reads maybe
 we can do the subset one using whatever method is in fastq_screen - this saves reading
 the file multiple times.
+
+---
+
+Seems this problem went away. We almost always use indexes, and if we don't we put up with
+the processing being really slow.

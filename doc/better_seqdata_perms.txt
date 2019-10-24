@@ -64,7 +64,8 @@ EPCC say we can do this ourselves - see below.
 3) Alter the auto-deletion system to respect pipeline/keep files instead of the old .keep files, and move
    the existing files. DONE in GIT.
 
-   The altered code looks for both so we can release it now, then move the files and change the docs.
+   The altered code looks for both so we can release it now, then (after Illuminatus update) move
+   the files and change the docs.
 
 4) Recursively change the group ownership on /lustre/seqdata to eg-pipeline (aside from import_staging)
    and the ownership of /lustre/fastqdata to eg-bioinfo. Also clean up cron_logs which is redundant.
@@ -104,3 +105,6 @@ Now in about 5 minutes this should filter down to the nodes. I'm keeping an eye 
 [tbooth2@r2i1n7 ~]$ watch -n 30 groups hdunnda
 ...
 
+# Well it didn't work but now Kris has fixed it so it does.
+
+# Next job is to release the update deletion_management_tools, then Illuminatus 1.4!

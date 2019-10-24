@@ -30,6 +30,9 @@ While doing this, I noticed bcl2fastq does not write empty files, so I added a h
 these appear. Otherwise, the risk is the would simply be left off the report and we'd not
 notice that a sample was missing and deliver incomplete data.
 
+(Actually I took this out - no-read libraries appear in the report as they are always in
+Stats.json)
+
 Other things...
 
 Also, the textual run report should not try to link to the "ControlLane" project.

@@ -1,3 +1,12 @@
+The info below is wrong/irrelevant. Turns out that after upgrading the SSL certs package
+we simply set:
+
+export REQUESTS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
+
+And this fixes everything.
+
+---
+
 This is of general interest but important for Illuminatus. The text below is copied from
 /etc/pki/tls/certs/how_to_add_a_cert.txt
 
