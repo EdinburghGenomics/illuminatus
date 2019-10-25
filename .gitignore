@@ -9,7 +9,7 @@ __pycache__
 tmp/
 .snakemake
 sge_output
-_py*_venv*/
+_*_venv*/
 doc/*.ps
 doc/*.pdf
 reports/*.pdf

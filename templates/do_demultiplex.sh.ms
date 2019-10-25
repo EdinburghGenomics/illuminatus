@@ -26,6 +26,7 @@ SHEET_FILTER="`tr -d {{lane}} <<<'^[12345678],'`"
 
 {{#barcode_mismatches}}
 # --barcode-mismatches explicitly set to {{barcode_mismatches}}
+
 {{bcl2fastq}} -R "$INPATH" -o "$OUTPATH" {{#bcl2fastq_opts}}{{{.}}} {{/bcl2fastq_opts}} \
     --sample-sheet <(grep -v "$SHEET_FILTER" {{samplesheet}}) -p ${PROCESSING_THREADS:-10} \
     2> "$OUTPATH"/bcl2fastq.log && \

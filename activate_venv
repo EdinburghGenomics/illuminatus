@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Bootstrap a new VEnv in ./_py3_venv suitable for running Illuminatus.
+# Bootstrap a new VEnv in ./_illuminatus_venv suitable for running Illuminatus.
 # This should probably be re-done as setup.py with proper deployment etc.
 # Just now we're running Illuminatus off the default python3 but a custom VEnv
 # seems much more sensible, for production and testing!
@@ -18,7 +18,7 @@ fi
 activate_venv() {
     #We need to ensure -u is not set but then put the old value back.
     reset=`set +o | grep -w nounset` ; set +o nounset
-    source ./_py3_venv/bin/activate
+    source ./_illuminatus_venv/bin/activate
     $reset
 }
 
@@ -45,7 +45,7 @@ install_multiqc() {
     python -c "from multiqc.utils import config ; config.avail_modules['fastqc'].load()"
 }
 
-if [ -e ./_py3_venv/bin/activate ] ; then
+if [ -e ./_illuminatus_venv/bin/activate ] ; then
 
     activate_venv
 
@@ -58,7 +58,7 @@ if [ -e ./_py3_venv/bin/activate ] ; then
 else
     echo "Bootstrapping new VEnv from `which python3`"
     ( set -e ;
-        python3 -mvenv ./_py3_venv
+        python3 -mvenv ./_illuminatus_venv
         activate_venv
 
         pip3 install pip==19.2.1

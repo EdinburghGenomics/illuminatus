@@ -2,7 +2,7 @@
 import os, sys, re
 from glob import glob
 
-import yaml, yamloader
+import yaml, yamlloader
 
 class PostRunMetaData:
     """This Class provides information about a demultiplexing/QC process, given
