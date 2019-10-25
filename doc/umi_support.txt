@@ -34,3 +34,17 @@ I'll check with Tony when the time comes.
 
 I've gone ahead and added support for renaming read2 to 'UMI' when a UMI is detected. Let's see if this
 is what we actually need. Fixing the QC should be simple(ish). Did this too.
+
+--
+
+So the project that first made use of this was 11742, sequenced on a single run 190528_A00291_0161_AHCHCLDRXX.
+
+Note I needed to add the following settings. The second is important or all the UMIs turn to Ns!:
+
+==> /lustre/home/tbooth2/test_seqdata/190528_A00291_0161_AHCHCLDRXX/pipeline_settings.ini <==
+[bcl2fastq]
+--use-bases-mask: Y145n,I8Y9,I8,Y145n
+--mask-short-adapter-reads: 1
+
+This will be supported in production from release 1.4.x, but the pipeline_settings.ini will need to be added
+manually per run. Note it is possible to have per-lane settings if need be.
