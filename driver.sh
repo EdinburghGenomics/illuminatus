@@ -37,7 +37,7 @@ fi
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
 
-BIN_LOCATION="${BIN_LOCATION:-$(dirname $0)}"
+BIN_LOCATION="${BIN_LOCATION:-$(dirname $BASH_SOURCE)}"
 MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 
 # 1) Sanity check these directories exist and complain to STDERR (triggering CRON
@@ -88,11 +88,11 @@ plog1() {
 
 plog_start() {
     mkdir -vp "$DEMUX_OUTPUT_FOLDER" |& debug
-    plog $'>>>\n>>>\n>>>'" $0 starting action_$STATUS at `date`"
+    plog $'>>>\n>>>\n>>>'" $BASH_SOURCE starting action_$STATUS at `date`"
 }
 
 # Print a message at the top of the log, and trigger one to print at the end.
-intro="`date`. Running $(readlink -f "$0"); PID=$$"
+intro="`date`. Running $(readlink -f "$BASH_SOURCE"); PID=$$"
 log "====`tr -c '' = <<<"$intro"`==="
 log "=== $intro ==="
 log "====`tr -c '' = <<<"$intro"`==="
