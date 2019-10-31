@@ -107,4 +107,38 @@ Now in about 5 minutes this should filter down to the nodes. I'm keeping an eye 
 
 # Well it didn't work but now Kris has fixed it so it does.
 
-# Next job is to release the update deletion_management_tools, then Illuminatus 1.4!
+# Next job is to release the updated deletion_management_tools, then Illuminatus 1.4!
+
+# On 25th Oct - this is done. Next job is to fix the permissions...
+
+In fact I should have done this first, because now I have pipeline dirs becoming owned
+by eg-pipeline. Oh well, at least this shows that the group change works. So here's the PLN:
+
+1) Change the group ownership on the top level directories:
+
+$ sudo chgrp eg-pipeline seqdata
+$ sudo chgrp eg-bioinfo fastqdata
+
+DONE!
+
+2) Change the perms on one directory from each as a test. Let's try:
+
+191011_A00291_0222_AHM5WHDMXX
+
+$ for run in 191011_A00291_0222_AHM5WHDMXX ; do sudo bash -c "chgrp -R eg-pipeline /lustre/seqdata/$run ; chgrp -R eg-bioinfo /lustre/seqdata/$run/pipeline ; chgrp -R eg-bioinfo /lustre/fastqdata/$run" ; done
+
+That works (of course). But does it mess up the backup script? Let's see. The command I use in
+sync_to_backup_location.sh is:
+
+rsync -nsa --itemize-changes --include='pipeline.log' --exclude='*' "$run" "$BACKUP_LOCATION/$run_name"
+
+Does it output a '.'? Yes, it does. Can I fix the problem by changing the perms on the backup myself??
+
+$ for run in 191011_A00291_0222_AHM5WHDMXX ; do sudo bash -c "chgrp eg-bioinfo /fluidfs/f1/fastqdata_copy/$run /fluidfs/f1/fastqdata_copy/$run/pipeline.log" ; done
+
+Yes that works! Cool. So there are now 5 things I need to change for each run. Let's do another one.
+
+191011_M01270_0096_000000000-CLVY8
+
+I get errors. But the run is aborted so that's expected. Good.
+

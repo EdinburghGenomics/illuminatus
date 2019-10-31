@@ -1,0 +1,15 @@
+I've noticed that some of the old scripts assume that runs begin with a '1'.
+Obviously from next year this won't be true.
+
+To test Illuminatus and my own data processing scripts (qc_tools_python) let's
+take a run (191021_A00291_0223_AHM77MDMXX) which is already slimmed and:
+
+1) Make a copy and rename it to 201021_A00291_2020_AHM00MDMXX
+
+2) Re-run Illuminatus to process the slimmed run
+
+3) DRY_RUN a QC of project 11868
+
+4) DRY_RUN a delivery of project 11868
+
+As I'd hoped, all is well. So if we see any problems we can blame it on Berinski.
