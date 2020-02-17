@@ -142,3 +142,7 @@ Yes that works! Cool. So there are now 5 things I need to change for each run. L
 
 I get errors. But the run is aborted so that's expected. Good.
 
+---
+
+On 16/1 - all of the above is done and I'm just going to remove the group membership from Frances, Donald
+and Urmi.
