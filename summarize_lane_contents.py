@@ -302,7 +302,7 @@ def scan_for_info(run_dir, project_name_list=''):
         pass
 
     # Reads are pairs (length, index?)
-    rids['CyclesAsList'] = [ (ri_xml.read_and_length[i], ri_xml.read_and_indexed[i] is 'Y')
+    rids['CyclesAsList'] = [ (ri_xml.read_and_length[i], ri_xml.read_and_indexed[i] == 'Y')
                              for i in
                              sorted(ri_xml.read_and_length.keys(), key=int) ]
 
