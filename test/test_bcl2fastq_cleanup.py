@@ -110,6 +110,33 @@ class T(unittest.TestCase):
         self.assertEqual( len(glob(run_id + '/QC/lane*')), 2 )
         self.assertEqual( len(glob(run_id + '/demultiplexing/lane*')), 2 )
 
+    def test_cleanup_badname(self):
+        """200214_M01270_0118_000000000-CYMPG is a run that didn't clean properly due to
+           a funny project name.
+        """
+        run_id = '200214_M01270_0118_000000000-CYMPG'
+        self.copy_run(run_id)
+
+        # Check the test data is as expected
+        with open(run_id + '/projects_ready.txt') as fh:
+            self.assertEqual(sorted([ l.rstrip('\n') for l in fh ]), ['12000', '1200C'])
+
+        # Clean lane 1 should leave both pending (and projects_ready untouched)
+        self.c_main(run_id, '1')
+
+        with open(run_id + '/projects_ready.txt') as fh:
+            self.assertEqual(sorted([ l.rstrip('\n') for l in fh ]), ['12000', '1200C'])
+        with open(run_id + '/projects_pending.txt') as fh:
+            self.assertEqual(sorted([ l.rstrip('\n') for l in fh ]), ['12000', '1200C'])
+
+        # And we should have removed absolutely everything
+        self.assertEqual( len(glob(run_id + '/*_unassigned_*')), 0 )
+        self.assertEqual( len(glob(run_id + '/12*')), 0 )
+        self.assertEqual( len(glob(run_id + '/md5sums/*')), 0 )
+        self.assertEqual( len(glob(run_id + '/counts/*')), 0 )
+        self.assertEqual( len(glob(run_id + '/QC/lane*')), 0 )
+        self.assertEqual( len(glob(run_id + '/demultiplexing/lane*')), 0 )
+
     def test_cleanup_badargs(self):
         """ Run 170329_K00166_0198_BHJ53FBBXX has three projects.
             Let's ask to clean lanes 8 and 9

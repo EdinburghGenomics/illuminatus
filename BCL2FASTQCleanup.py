@@ -4,6 +4,12 @@ from glob import glob
 from shutil import rmtree
 import time
 
+# Here we have a baked-in idea of what a project number
+# should look like, so if this changes the code will have to change.
+# We also dynamically add all the projects in 'projects_ready.txt' but note that we may
+# well need to clean up a project that's not in there, so we can't rely on that file.
+PPATTERNS = ['[0-9]+', 'ControlLane']
+
 def main(output_dir, *lanes):
     """Usage: BCL2FASTQCleanup.py <output_dir> <lanes_list>
 
@@ -34,6 +40,15 @@ def main(output_dir, *lanes):
         for l in lanes:
             if l not in list("12345678"):
                 die("%s is not a valid lane." % l)
+
+        # See if we have projects_ready.txt
+        try:
+            with open(os.path.join(output_dir, 'projects_ready.txt')) as fh:
+                old_pr = [ l.rstrip('\n') for l in fh ]
+                log("# Lines in projects_ready.txt: %s" % repr(old_pr))
+                PPATTERNS.extend([re.escape(x) for x in old_pr])
+        except Exception:
+            log("# Failed to read projects_ready.txt")
 
         # Collector for projects removed
         projects = set()
@@ -118,9 +133,7 @@ def delete_d_dirs(path, lanes, log=lambda x: None):
 def delete_fastq(path, lanes, match_pattern, log=lambda x: None, otherdirs=()):
     """Generic file deleter given a path and a pattern.
     """
-    # Find all the matching files. Here we have a baked-in idea of what a project number
-    # should look like, so if this changes the code will have to change.
-    ppatterns = ['[0-9]+', 'ControlLane']
+    ppatterns = PPATTERNS
 
     projects = set()
     deletions = list()
@@ -155,21 +168,23 @@ def delete_fastq(path, lanes, match_pattern, log=lambda x: None, otherdirs=()):
     # We're looking for files with a matching name, but a different extension.
     for od in otherdirs:
         for f in deletions:
-            for odf in glob( "{}/{}/{}.*".format(path, od, f.split('.')[0]) ):
+            for odf in glob( "{}/{}/{}.*".format(path, od, f.split('.')[0].lstrip('/')) ):
                 os.remove(odf)
                 log( "rm '{}'".format(odf) )
                 od_deletions += 1
 
 
-    # Now remove empty directories. We only want to look at those in projects.
-    for proj in projects:
-        for root, dirs, files in os.walk(os.path.join(path, proj), topdown=False):
-            try:
-                os.rmdir(root)
-                log("rmdir '%s'" % root)
-                emptydirs += 1
-            except Exception:
-                pass # Assume it was non-empty.
+    # Now remove empty directories. We only want to look at those in projects, or in project
+    # dirs within otherdirs.
+    for od in ['.'] + list(otherdirs):
+        for proj in projects:
+            for root, dirs, files in os.walk(os.path.join(path, od, proj), topdown=False):
+                try:
+                    os.rmdir(root)
+                    log("rmdir '%s'" % root)
+                    emptydirs += 1
+                except Exception:
+                    pass # Assume it was non-empty.
 
     msg = "Deleted {} fastq files and {} ancillary files and {} directories from {} relating to {} projects.".format(
                    len(deletions),    od_deletions,          emptydirs, os.path.basename(path), len(projects) )
