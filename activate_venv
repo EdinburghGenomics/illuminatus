@@ -22,22 +22,27 @@ activate_venv() {
     $reset
 }
 
+pip_install() {
+    # Send all output to stdout
+    pip3 --disable-pip-version-check install "$@" 2>&1
+}
+
 install_multiqc() {
     #Install/upgrade MultiQC from GIT
-    #pip3 install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git#egg=multiqc'
+    #pip_install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git#egg=multiqc'
     # For now, use the dev branch
 
     # For now we need specific older versions of these modules:
-    pip3 install 'networkx==1.11' 'spectra==0.0.8' 'colormath==2.1.1'
+    pip_install 'networkx==1.11' 'spectra==0.0.8' 'colormath==2.1.1'
 
     for url in \
         'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc' \
         'git+http://gitlab.genepool.private/production-team/MultiQC_EdGen.git#egg=multiqc_edgen'
         do
         if [ "${1:-}" = 'upgrade' ] ; then
-            pip3 install --upgrade --no-deps "$url"
+            pip_install --upgrade --no-deps "$url"
         else
-            pip3 install "$url"
+            pip_install "$url"
         fi
     done
 
@@ -51,7 +56,7 @@ if [ -e ./_illuminatus_venv/bin/activate ] ; then
 
     # MultiQc is under active development, so enable easy update
     if [ "${UPDATE_MULTIQC:-0}" != 0 ] ; then
-        #pip3 install --upgrade pip
+        #pip_install --upgrade pip
         install_multiqc upgrade
     fi
 
@@ -61,20 +66,20 @@ else
         python3 -mvenv ./_illuminatus_venv
         activate_venv
 
-        pip3 install pip==19.2.1
-        pip3 install pyyaml==5.1.1
-        pip3 install yamlloader==0.5.5
-        pip3 install Rt==1.0.11
-        pip3 install pyclarity_lims==0.4.8
-        pip3 install psycopg2-binary==2.8.3
-        pip3 install pystache==0.5.4
+        pip_install pip==19.2.1
+        pip_install pyyaml==5.1.1
+        pip_install yamlloader==0.5.5
+        pip_install Rt==1.0.11
+        pip_install pyclarity_lims==0.4.8
+        pip_install psycopg2-binary==2.8.3
+        pip_install pystache==0.5.4
 
         # InterOP is now on PyPI so no pre-build needed :-)
-        pip3 install numpy==1.16.4
-        pip3 install interop==1.1.8
+        pip_install numpy==1.16.4
+        pip_install interop==1.1.8
 
         # Needed if well_dups runs in the local VEnv, which it currently does.
-        pip3 install python-Levenshtein==0.12.0
+        pip_install python-Levenshtein==0.12.0
 
         # My own MultiQC and MultiQC_EdGen. Pip installs directly from GIT so
         # why not? Assume the master branch is always good, since it's simpler than

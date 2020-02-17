@@ -67,6 +67,6 @@ fi
 
 echo "Checked out version $latest_tag.  If you are happy, copy the config and bootstrap the virtualenv now:"
 echo "  cd `pwd`"
-echo "  (cd $latest_tag && source ./activate_venv )"
 echo "  cp -i $latest_checked_out/environ.sh $latest_tag/"
+echo "  (cd $latest_tag && source ./activate_venv )"
 echo "  rm current ; ln -s $latest_tag current"
