@@ -65,7 +65,11 @@ def save_projects_ready(output_dir, proj_seen):
 
     with open(proj_ready_file, 'w') as pr_fh:
         for p in sorted(proj_seen):
-            print(p, file=pr_fh)
+            # Only add projects for which there is a directory. This catches the
+            # case where a incorrect project name was in the sample sheet and
+            # the files have been completely flushed on re-do.
+            if os.path.isdir(os.path.join(output_dir,p)):
+                print(p, file=pr_fh)
 
     # And delete projects_pending.txt. It probably doesn't exist, which is fine.
     try:

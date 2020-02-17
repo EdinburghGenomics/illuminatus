@@ -5,6 +5,7 @@ import sys, os, glob, re
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
 from glob import glob
+from copy import copy
 from fnmatch import fnmatch
 
 # Adding this to sys.path makes the test work if you just run it directly.
@@ -74,6 +75,31 @@ class T(unittest.TestCase):
         #Also, the empty project dir should have been removed from demultiplexing
         self.assertTrue(os.path.exists(out_dir + '/demultiplexing/lane1'))
         self.assertFalse(os.path.exists(out_dir + '/demultiplexing/lane1/10510'))
+
+    def test_rerun(self):
+        """Re-running the postprocessor should be idempotent, right?
+        """
+        # As above
+        run_id = '160811_D00261_0355_BC9DA7ANXX'
+        out_dir = self.run_postprocessor(run_id, '.std')
+
+        self.assertEqual(slurp(os.path.join(out_dir, 'projects_ready.txt')), ['10510'])
+        self.assertRaises(FileNotFoundError, slurp, os.path.join(out_dir, 'projects_pending.txt'))
+
+        # Run again, with an extra dummy project in projects_ready.txt to simulate a project
+        # removed from the sample sheet.
+        with open(os.path.join(out_dir, 'projects_ready.txt'), 'a') as pfh:
+            print('11111', file=pfh)
+
+        proj_seen = do_renames(out_dir, run_id, log=lambda l: self.pp_log.append(l))
+        proj_seen2 = copy(proj_seen)
+
+        # Eek an impure function?! Not tidy but never mind.
+        save_projects_ready(out_dir, proj_seen2)
+
+        self.assertEqual(proj_seen, set())
+        self.assertEqual(proj_seen2, {'10510', '11111'})
+        self.assertEqual(slurp(os.path.join(out_dir, 'projects_ready.txt')), ['10510'])
 
     def test_umi(self):
         """For one sample there are reads3 so we treat read 2 as the UMI read.
