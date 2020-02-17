@@ -1,8 +1,0 @@
-1 Y75n,I6nn,nnnnnnnn,Y75n
-2 Y75n,I6nn,nnnnnnnn,Y75n
-3 Y75n,I6nn,nnnnnnnn,Y75n
-8 Y75n,I6nn,nnnnnnnn,Y75n
-4 Y75n,I8,I8,Y75n
-5 Y75n,I8,I8,Y75n
-6 Y75n,I8,I8,Y75n
-7 Y75n,I8,I8,Y75n

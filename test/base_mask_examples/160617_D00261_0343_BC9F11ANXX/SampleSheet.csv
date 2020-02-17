@@ -1,9 +1,0 @@
-FCID,Lane,SampleID,SampleRef,Index,Description,Control,Recipe,Operator,SampleProject
-C9F11ANXX,1,PhiX,PhiX control,NNNNNN,DummyIndex,Y,,TM,ControlLane
-C9F11ANXX,2,PhiX,PhiX control,NNNNNN,DummyIndex,Y,,TM,ControlLane
-C9F11ANXX,3,PhiX,PhiX control,NNNNNN,DummyIndex,Y,,TM,ControlLane
-C9F11ANXX,4,PhiX,PhiX control,NNNNNN,DummyIndex,Y,,TM,ControlLane
-C9F11ANXX,5,PhiX,PhiX control,NNNNNN,DummyIndex,Y,,TM,ControlLane
-C9F11ANXX,6,PhiX,PhiX control,NNNNNN,DummyIndex,Y,,TM,ControlLane
-C9F11ANXX,7,PhiX,PhiX control,NNNNNN,DummyIndex,Y,,TM,ControlLane
-C9F11ANXX,8,PhiX,PhiX control,NNNNNN,DummyIndex,Y,,TM,ControlLane
