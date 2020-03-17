@@ -204,10 +204,12 @@ localrules: configure_multiqc
 rule configure_multiqc:
     # Emits configuration for MultiQC. This may want to be split out into a separate
     # module but for now I'll just embed it here. The config wants to be saved out per run
-    # so we can have provenance. Strictly, we should have a 'min_multiqc_version' since I'm
+    # so we can have provenance, so the file will be moved over to multiqc_reports/ by
+    # upload_report.sh.
+    # Strictly, we should have a 'min_multiqc_version' since I'm
     # often adding new possible settings in MultiQC then adding them to this config and they
     # are not backwards-compatible.
-    output: rules.run_multiqc.input.config
+    output: "QC/multiqc_config.yml"
     run:
         conf = dict( title = 'placeholder',
                      intro_text = False,
@@ -261,7 +263,7 @@ rule configure_multiqc:
                      fastqscreen_simpleplot = 160,
                    )
 
-        with open(output[0], "w") as cfh:
+        with open(str(output), "w") as cfh:
             print(yaml.safe_dump(conf, default_flow_style=False), file=cfh)
 
 # === Actual data-gathering rules ===
