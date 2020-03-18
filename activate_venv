@@ -37,7 +37,7 @@ install_multiqc() {
 
     for url in \
         'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc' \
-        'git+http://gitlab.genepool.private/production-team/MultiQC_EdGen.git#egg=multiqc_edgen'
+        'git+https://github.com/EdinburghGenomics/MultiQC_EdGen.git@master#egg=multiqc_edgen'
         do
         if [ "${1:-}" = 'upgrade' ] ; then
             pip_install --upgrade --no-deps "$url"
