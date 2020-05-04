@@ -42,7 +42,7 @@ ln -sfn "$dirtomake" multiqc_reports/latest
         { if (match($0,"<dt>Pipeline Status:</dt><dd>(.+)</dd>",m) && match(FILENAME,"([^/]+)",f) ) \
           print "AddDescription \""m[1]"\" "f[1] }' \
        */multiqc_report_overview.html \
-) > .htaccess
+  > .htaccess )
 
 # Check where (and if) we want to push reports on the server.
 if [ "${REPORT_DESTINATION:-none}" == none ] ; then
