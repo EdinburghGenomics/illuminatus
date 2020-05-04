@@ -85,7 +85,7 @@ class TestSandbox:
                     print(content, file=fh)
             os.utime(os.path.join(dirname, basename), times=(modtime, modtime))
 
-        # Now go back through the diretories fixing up the mtimes (strictly speaking the ordering
+        # Now go back through the directories fixing up the mtimes (strictly speaking the ordering
         # is not necessary but we may as well be orderly)
         for d in sorted(dirtimes, key=lambda s: len(s), reverse=False):
             os.utime(d, times=(dirtimes[d], dirtimes[d]))

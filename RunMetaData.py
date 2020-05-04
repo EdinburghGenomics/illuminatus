@@ -18,7 +18,7 @@ class RunMetaData:
          RunInfo.xml file
          runParameters.xml
          RTAComplete.txt (timestamp only)
-         SampleSheet.csv (only for linking)
+         SampleSheet.csv (only for linking - no parsing is attempted)
          start_times file in pipeline folder
     """
     def __init__( self , run_folder , run_path = '' ):
