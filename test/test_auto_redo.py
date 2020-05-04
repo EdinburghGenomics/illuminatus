@@ -47,17 +47,20 @@ class T(unittest.TestCase):
         self.environment = dict(
                 PATH = BIN_PATH + ':' + os.environ['PATH'],
                 SEQDATA_LOCATION = self.seqdata.sandbox,
+                VERBOSE = "1", # Note the VERBOSE fed to the script is not related to test verbosity!
                 GENOLOGICSRC = os.path.join( self.sheets.sandbox, 'genologics.conf' ) )
 
         # Grab the current time (after copying everything)
         self.unixtime = time.time()
 
-    def bm_run_redo(self, expected_retval=0):
+    def bm_run_redo(self, expected_retval=0, **env):
         """A convenience wrapper around self.bm.runscript that sets the environment
            appropriately and runs auto_redo.sh and captures the output.
            (You can always examine self.bm.last_stderr directly)
         """
-        retval = self.bm.runscript(AUTO_REDO, set_path=True, env=self.environment)
+        combined_env = self.environment.copy()
+        combined_env.update(env)
+        retval = self.bm.runscript(AUTO_REDO, set_path=True, env=combined_env)
 
         #Where a file is missing it's always useful to see the error.
         #(status 127 is the standard shell return code for a command not found)
@@ -74,11 +77,15 @@ class T(unittest.TestCase):
 
     ### THE TESTS ###
     def test_noop(self):
-        """With nothing in self.sheets_dir the script should do nothing.
+        """With nothing useful in self.sheets_dir the script should do nothing.
         """
+        # Verbosely...
         res1 = self.bm_run_redo()
-
         self.assertEqual(res1[1], "Checking 0 files.")
+
+        # Non-verbosely...
+        res1q = self.bm_run_redo(VERBOSE="0")
+        self.assertEqual(res1q[1], "")
 
         # Add a 3 day old sample sheet and a new one which does not relate
         # to any run, and a new one in another directory.

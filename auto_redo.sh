@@ -67,6 +67,12 @@ fi
 candidate_ss=()
 while IFS= read -r -d '' file ; do candidate_ss+=("$file") ; done < \
     <( find "$samplesheets_this_month" -name '*_*.csv' -mmin -$(( $htlb * 60 )) -print0 )
+
+# Just to tidy up the messages when there are no files to scan.
+if [ "${VERBOSE:-0}" = 0 ] ; then
+    [[ ${#candidate_ss[@]} != 0 ]] || exit 0
+fi
+
 echo "Checking ${#candidate_ss[@]} files."
 
 set +u ; for ss in "${candidate_ss[@]}" ; do set -u
