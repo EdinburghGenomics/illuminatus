@@ -34,6 +34,16 @@ mv -t multiqc_reports/"$dirtomake" QC/multiqc_*
 # Add a symlink to this latest version
 ln -sfn "$dirtomake" multiqc_reports/latest
 
+# Add status labels to the directory listing by building an .htaccess file. This is a tad hacky
+# in the way it scrapes the reports but given that it's not core to the pipeline I think this is OK.
+# An advantage of doing it this way is it will add on labels to existing reports.
+( cd multiqc_reports/v ;
+  gawk 'BEGIN{print "IndexOptions DescriptionWidth=*"} \
+        { if (match($0,"<dt>Pipeline Status:</dt><dd>(.+)</dd>",m) && match(FILENAME,"([^/]+)",f) ) \
+          print "AddDescription \""m[1]"\" "f[1] }' \
+       */multiqc_report_overview.html \
+) > .htaccess
+
 # Check where (and if) we want to push reports on the server.
 if [ "${REPORT_DESTINATION:-none}" == none ] ; then
     echo "Skipping report upload, as no \$REPORT_DESTINATION is set." >&2
@@ -79,10 +89,6 @@ ssh -T ${dest%%:*} "cat > ${dest#*:}/$runname/index.php" <<'END'
 </body>
 </html>
 END
-
-# For stuff already uploaded we have an index.html symlink which must be (cautiously) removed.
-# TODO - remove this in a month or so when there's no danger of a clash.
-ssh -T ${dest%%:*} "[ ! -L ${dest#*:}/$runname/index.html ] || rm ${dest#*:}/$runname/index.html"
 
 echo "...done. Report uploaded and index.php written to ${dest#*:}/$runname/." >&2
 

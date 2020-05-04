@@ -1,0 +1,25 @@
+Matt wants some very reasonable things...
+
+1) In the /v/ listing when looking at historical reports, add the pipeline status to the
+table. It may be possible somehow to push this into the 'Description' column?
+Otherwise, force it into the directory name, but note this messes up the 'New version available'
+indicator so meh.
+
+OK there is a neat way to do this - see:
+web1:/var/runinfo/illuminatus_reports/test/190515_A00291_0147_AHJV72DMXX/v/.htaccess
+
+Now my idea is to build this file on-the-fly when pushing to the server, probably by adding a description.txt
+file to each report. Now the question is can I do this for existing reports or is that too much to ask?
+
+Yeah here's a hacky but effective way to do it:
+
+gawk 'BEGIN{print "IndexOptions DescriptionWidth=*"}{ if (match($0,"<dt>Pipeline Status:</dt><dd>(.+)</dd>",m) && match(FILENAME,"([^/]+)",f) ) print "AddDescription \""m[1]"\" "f[1] }' */multiqc_report_overview.html > .htaccess
+
+So I'll add this to the uploader script. I can also run it retroactively.
+
+2) Add the Experiment name to the initial e-mail not just the report. (Easy!)
+
+This is in summarize_lane_contents.py and should only need changes to that file.
+
+3) Make the pass/fail/marginal colours in MultiQC not be red+green. This goes for the thing at
+the top, and the lines too.

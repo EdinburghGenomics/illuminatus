@@ -293,10 +293,12 @@ def scan_for_info(run_dir, project_name_list=''):
     rids = ri_xml.run_info.copy()
 
     # We need this to reliably get the NovoSeq flowcell type (same logic as RunMetaData.py)
+    # Also we now care about the experiment name here (makes this even more redundant with RunMetaData.py)
     try:
         run_params = RunParametersXMLParser( run_dir ).run_parameters
         if 'Flowcell Type' in run_params:
             rids['FCType'] = run_params['Flowcell Type']
+        rids['Experiment Name'] = run_params.get('Experiment Name')
     except Exception:
         # Not to worry we can do without this.
         pass
@@ -400,6 +402,7 @@ def output_txt(rids, fh):
 
     # Basic metadata, followed be a per-lane summary.
     p( "Run ID: {}".format(rids['RunId']) )
+    p( "Experiment: {}".format(rids.get('Experiment Name', 'Unknown')) )
     p( "Instrument: {}".format(rids['Instrument']) )
     p( "Flowcell Type: {}".format(rids.get('FCType', 'Unknown')) )  # May be missing if the YAML file is old.
     p( "Read length: {}".format(rids['Cycles']) )
