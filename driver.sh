@@ -650,10 +650,11 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   #Call the appropriate function in the appropriate directory.
   BREAK=0
   DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
-  pushd "$run" >/dev/null && eval action_"$STATUS" && popd >/dev/null
+  pushd "$run" >/dev/null && eval action_"$STATUS"
   [ $? = 0 ] || log "Error while trying to run action_$STATUS on $run"
   #in case it got clobbered...
   set -e
+  popd >/dev/null
 
   # If the driver started some actual work it should request to break, as the CRON will start
   # a new scan at regular intervals in any case. We don't want an instance of the driver to
