@@ -3,7 +3,7 @@ set -euo pipefail
 shopt -sq failglob
 
 echo "Some obscure BASH behaviour here"
-echo "On CentOS 7 this prints '1' and 'Caught The Exception' for 2 and 3 and 4"
+echo "On CentOS 7 this prints '1' and 'Caught The Exception' for 2 and 4"
 echo "On CentOS 8 this only works for version 4"
 
 foo(){

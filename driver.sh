@@ -650,9 +650,8 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   #Call the appropriate function in the appropriate directory.
   BREAK=0
   DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
-  { pushd "$run" >/dev/null && eval action_"$STATUS" &&
-    popd >/dev/null
-  } || log "Error while trying to run action_$STATUS on $run"
+  pushd "$run" >/dev/null && eval action_"$STATUS" && popd >/dev/null
+  [ $? = 0 ] || log "Error while trying to run action_$STATUS on $run"
   #in case it got clobbered...
   set -e
 
