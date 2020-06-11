@@ -137,8 +137,8 @@ class BinMocker:
                 full_env['PATH'] = os.path.abspath(self.mock_bin_dir)
 
             if self._bash_env:
-                #Note - interactive scripts shouldn't normally depend on BASH_ENV,
-                #so complain if I'm clobbering it. Ditto for ENV.
+                # Note - interactive scripts shouldn't normally depend on BASH_ENV,
+                # so complain if I'm clobbering it. Ditto for ENV.
                 if full_env.get('BASH_ENV'):
                     raise RuntimeError("BASH_ENV was already set")
 

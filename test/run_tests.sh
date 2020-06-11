@@ -13,7 +13,9 @@ export RUN_NETWORK_TESTS=${RUN_NETWORK_TESTS:-1}
 
 # This allows tests to import modules from the test directory, but also we don't
 # want any lingering PYTHONPATH in the environment - eg. as set by qc_tools_python.
+# Same for BASH_ENV
 export PYTHONPATH='./test'
+unset BASH_ENV
 
 #Test in Py3 only
 if [ "$*" == "" ] ; then
