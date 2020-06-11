@@ -31,7 +31,7 @@ if [ -e "$ENVIRON_SH" ] ; then
            PROJECT_NAME_LIST  PROJECT_PAGE_URL REDO_HOURS_TO_LOOK_BACK \
            REPORT_DESTINATION REPORT_LINK      RT_SYSTEM     RUN_NAME_REGEX \
            SEQDATA_LOCATION   SSPP_HOOK        TOOLBOX       VERBOSE       \
-           WRITE_TO_CLARITY
+           WRITE_TO_CLARITY   LOCAL_JOBS       SNAKE_THREADS DRY_RUN
 fi
 
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
@@ -105,17 +105,18 @@ if [ "${py_venv}" != none ] ; then
     if [ "${py_venv}" = default ] ; then
         log -n "Running `dirname $BASH_SOURCE`/activate_venv ..."
         pushd "`dirname $BASH_SOURCE`" >/dev/null
-        source ./activate_venv || { log 'FAILED' ; exit 1 ; }
+        source ./activate_venv >&5 || { log 'FAILED' ; exit 1 ; }
         popd >/dev/null
     else
         log -n "Activating Python3 VEnv from ${py_venv} ..."
         reset=`set +o | grep -w nounset` ; set +o nounset
-        source "${py_venv}/bin/activate" || { log 'FAILED' ; exit 1 ; }
+        source "${py_venv}/bin/activate" >&5 || { log 'FAILED' ; exit 1 ; }
         $reset
     fi
     log 'VEnv ACTIVATED'
 fi
 
+# Fix the PATH only after VEnv activation
 PATH="$(readlink -m $BIN_LOCATION):$PATH"
 
 # Tools may reliably use this to report the version of Illuminatus being run right now.

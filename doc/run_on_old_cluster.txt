@@ -1,0 +1,22 @@
+# To make this thing run on the old cluster:
+
+1) Bootstrap Snakemake in the VEnv, copying the recipe from Hesiod
+
+DONE
+
+2) Add a toolbox_oldcluster and fix up all the things.
+
+Working on it...
+I've made the interpretation of the TOOLBOX setting more sane.
+
+3) Roll a new environ.sh
+
+DONE
+
+4) Ensure I have access to RT and clarity (there may be SSL issues?)
+
+The .dotfiles are already in place.
+
+5) Profit!
+
+Just now I have two unit test failures. Hmmm. (But hooray for unit tests!)
