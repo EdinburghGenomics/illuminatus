@@ -187,7 +187,7 @@ rule multiqc_main:
 rule run_multiqc:
     output:
         report = "QC/multiqc_report_{l}.html",
-        data = "QC/multiqc_report_{l}_data"    # A directory! Later Snakemake needs this explicit.
+        data = directory("QC/multiqc_report_{l}_data")
     input:
         config   = "QC/multiqc_config.yml",
         runinfo  = "QC/run_info.{r}.1.yml".format(r=run),

@@ -73,8 +73,8 @@ snakerun_drmaa() {
          ${EXTRA_SNAKE_FLAGS:-} --keep-going --cluster-config cluster.yml \
          --jobname "{rulename}.snakejob.{jobid}.sh" \
          --drmaa " -p ${CLUSTER_QUEUE} {cluster.slurm_opts} \
-                   -e slurm_output/{rule}.snakejob.{jobid}.%A.err \
-                   -o slurm_output/{rule}.snakejob.{jobid}.%A.out \
+                   -e slurm_output/{rule}.snakejob.%A.err \
+                   -o slurm_output/{rule}.snakejob.%A.out \
                  " \
          "$@"
 
