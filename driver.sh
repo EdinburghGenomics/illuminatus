@@ -650,9 +650,11 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
   #Call the appropriate function in the appropriate directory.
   BREAK=0
   DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
-  pushd "$run" >/dev/null && eval action_"$STATUS"
+  pushd "$run" >/dev/null ; eval action_"$STATUS"
+  # Even though 'set -e' is in effect this next line is reachable if the called function turns
+  # it off...
   [ $? = 0 ] || log "Error while trying to run action_$STATUS on $run"
-  #in case it got clobbered...
+  # Reset the error trap in any case
   set -e
   popd >/dev/null
 
