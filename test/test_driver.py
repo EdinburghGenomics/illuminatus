@@ -8,6 +8,7 @@ from tempfile import mkdtemp
 from shutil import rmtree, copytree
 from unittest.mock import patch
 from glob import glob
+from shlex import quote as shell_quote
 
 """Here we're using a Python script to test a shell script.  The shell script calls
    various programs.  Ideally we want to have a cunning way of catching and detecting
@@ -73,6 +74,7 @@ class T(unittest.TestCase):
     def tearDown(self):
         """Remove the shadow folder and clean up the BinMocker
         """
+        os.system("chmod -R u+w {}".format(shell_quote(self.temp_dir)))
         rmtree(self.temp_dir)
 
         self.bm.cleanup()
@@ -117,6 +119,18 @@ class T(unittest.TestCase):
         """Assert that there is at least one line in stdout containing all these strings
         """
         o_split = self.bm.last_stdout.split("\n")
+
+        #This loop progressively prunes down the lines, until anything left
+        #must have contained each word in the list.
+        for w in words:
+            o_split = [ l for l in o_split if w in l ]
+
+        self.assertTrue(o_split)
+
+    def assertInStderr(self, *words):
+        """Assert that there is at least one line in stderr containing all these strings
+        """
+        o_split = self.bm.last_stderr.split("\n")
 
         #This loop progressively prunes down the lines, until anything left
         #must have contained each word in the list.
@@ -187,18 +201,18 @@ class T(unittest.TestCase):
         if not test_data:
             test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
-            #We need to remove the flag file to make it look like the run is still going.
+            # We need to remove the flag file to make it look like the run is still going.
             os.system("rm " + test_data + "/RTAComplete.txt")
 
         self.bm_rundriver()
 
-        #Run should be seen
+        # Run should be seen
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "NEW")
 
-        #Pipeline folder should appear
+        # Pipeline folder should appear
         self.assertTrue(os.path.isdir(test_data + '/pipeline'))
 
-        #Sample sheet should be summarized
+        # Sample sheet should be summarized
         expected_calls = self.bm.empty_calls()
         expected_calls['samplesheet_fetch.sh'] = ['']
         expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml',
@@ -213,15 +227,46 @@ class T(unittest.TestCase):
         if 'auto_redo.sh' in expected_calls and self.environment.get('REDO_HOURS_TO_LOOK_BACK'):
             expected_calls['auto_redo.sh'] = ['']
 
-        #The call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
+        # The call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
         self.bm.last_calls['rt_runticket_manager.py'][0] = re.sub(
                                     r'@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][0] )
 
-        #But nothing else should happen
+        # But nothing else should happen
         self.assertEqual(self.bm.last_calls, expected_calls)
 
-        #Log file should appear (here accessed via the output symlink)
+        # Log file should appear (here accessed via the output symlink)
         self.assertTrue(os.path.isfile(test_data + '/pipeline/output/pipeline.log') )
+
+    def test_broken_and_new(self):
+        """If a run cannot be processed at all the driver should loop to the next one.
+           We'll do this by making the directory unwriteable.
+        """
+        # This run comes first but we make it read-only
+        test_data1 = self.copy_run("150602_M01270_0108_000000000-ADWKV")
+        os.system("chmod u-w " + test_data1)
+
+        # This can be processed
+        test_data2 = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+
+        # Driver should run but there will be messages to STDERR. Not sure this
+        # is the most informative message but it's what we got.
+        self.bm_rundriver(check_stderr=False)
+        self.assertInStderr("No such file or directory")
+
+        # First run should be seen and give an error
+        self.assertInStdout("150602_M01270_0108_000000000-ADWKV", "NEW")
+        self.assertInStdout("cannot create directory", "Permission denied")
+
+        # We don't actually see this because the function returns success
+        #self.assertInStdout("Error while trying to run action_new on 150602_M01270_0108_000000000-ADWKV")
+
+        # Second run should be seen
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "NEW")
+
+        # Pipeline folder should appear
+        self.assertTrue(os.path.isdir(test_data2 + '/pipeline'))
+        self.assertEqual(self.bm.last_calls['Snakefile.qc'],
+                         ['-- metadata_main', '-F --config pstatus=Waiting for data -- multiqc_main'])
 
     def test_new_multiqc_fail(self):
         """Same as above but MultiQC fails for some reason.
