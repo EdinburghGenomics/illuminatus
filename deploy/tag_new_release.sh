@@ -54,7 +54,7 @@ git push
 #2 - As well as being on master, all untracked files should be in .gitignore
 # and all changes should be pushed upstream.
 foo=`env LC_ALL=C git status`
-[ "$foo" = $'# On branch master\nnothing to commit, working directory clean' ] || \
+[[ "$foo" =~ On.branch.master.*nothing.to.commit,.working.directory.clean ]] || \
     die $'GIT reports that not all changes are pushed on the master branch...\n'"$foo"
 
 #3
