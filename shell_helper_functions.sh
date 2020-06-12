@@ -69,7 +69,7 @@ snakerun_drmaa() {
     mkdir -p ./slurm_output
     set -x
     snakemake \
-         -s "$snakefile" -j $__SNAKE_THREADS -p -T --rerun-incomplete \
+         -s "$snakefile" -j $__SNAKE_THREADS -p --rerun-incomplete \
          ${EXTRA_SNAKE_FLAGS:-} --keep-going --cluster-config cluster.yml \
          --jobname "{rulename}.snakejob.{jobid}.sh" \
          --drmaa " -p ${CLUSTER_QUEUE} {cluster.slurm_opts} \
@@ -86,7 +86,7 @@ snakerun_single() {
     echo
     echo "Running $snakefile in `pwd` in local mode"
     snakemake \
-         -s "$snakefile" -j $LOCAL_JOBS -p -T --rerun-incomplete \
+         -s "$snakefile" -j $LOCAL_JOBS -p --rerun-incomplete \
          "$@"
 }
 
