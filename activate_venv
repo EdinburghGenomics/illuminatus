@@ -45,6 +45,15 @@ install_multiqc() {
     python -c "from multiqc.utils import config ; config.avail_modules['fastqc'].load()"
 }
 
+post_activate() {
+    # If the toolbox has a post_activate_venv.sh then run it.
+    _pav="${TOOLBOX:-`dirname $BASH_SOURCE`/toolbox}"/post_activate_venv.sh
+    if [ -e "$_pav" ] ; then
+        echo "Running commands in $_pav"
+        source "$_pav"
+    fi
+}
+
 if [ -e ./_illuminatus_venv/bin/activate ] ; then
 
     # We already got one!
@@ -89,6 +98,8 @@ else
         # searching for the last release tag (though that is possible).
         # see https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support
         install_multiqc
+
+        post_activate
     )
 
     if [ $? = 0 ] ; then

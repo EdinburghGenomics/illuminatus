@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Script added by Tim to ensure FastQC runs in the preferred Java environment
+# at Edinburgh Genomics, and to use the java_autoxmx wrapper.
+scriptpath="$(dirname $(readlink -f "$0"))"  #Readlink to allow making symlinks to this file.
+
+exec perl /fluidfs/f1/from_lustre/software/FastQC/Fastqc_v0.11.5/fastqc.orig \
+  --java /fluidfs/f1/from_lustre/software/bin/java8_autoxmx "$@"

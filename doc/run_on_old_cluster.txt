@@ -20,3 +20,5 @@ The .dotfiles are already in place.
 5) Profit!
 
 Just now I have two unit test failures. Hmmm. (But hooray for unit tests!)
+OK those are fixed. One was simple. The other really weird - see test_e2.sh
+for a simplified version of the changed BASH behaviour.

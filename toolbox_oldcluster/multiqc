@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# The version of MultiQC used by the pipeline needs to be selected from the
+# active Python virtualenv. If the system version gets run instead then we get
+# weird errors. This script tries to block that from happening and give a meaningful
+# error.
+
+# If you really aren't using a virtualenv and you want the default version of MultiQC to
+# be run then simply remove this file from the toolbox.
+
+if [ -z "${VIRTUAL_ENV:-}" ] ; then
+    echo "The pipeline should always run MultiQC from the active Python3 VEnv. But no VEnv is active!"  >&2
+    exit 1
+else
+    #We're good, assuming multiqc really is installed in the VEnv
+    exec "${VIRTUAL_ENV}/bin/multiqc" "$@"
+fi
+
