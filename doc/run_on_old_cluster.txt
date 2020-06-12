@@ -7,7 +7,8 @@ DONE
 2) Add a toolbox_oldcluster and fix up all the things.
 
 Working on it...
-I've made the interpretation of the TOOLBOX setting more sane.
+I've made the interpretation of the TOOLBOX setting more sane and
+allowed cutadapt to be installed in the VEnv.
 
 3) Roll a new environ.sh
 
