@@ -222,7 +222,7 @@ action_reads_finished(){
       log "  Starting bcl2fastq on $RUNID."
       ( rundir="`pwd`"
         cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
-        Snakefile.demux --config lanes="$(echo `seq $LANES`)" rundir="$rundir"
+        Snakefile.demux --config lanes="$(quote_lanes `seq $LANES`)" rundir="$rundir"
       ) |& plog
 
       for f in pipeline/lane?.started ; do
@@ -411,7 +411,7 @@ action_redo() {
       log "  Starting bcl2fastq on $RUNID lanes ${redo_list[*]}."
       ( rundir="`pwd`"
         cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
-        Snakefile.demux --config lanes="${redo_list[*]}" rundir="$rundir"
+        Snakefile.demux --config lanes="$(quote_lanes ${redo_list[*]})" rundir="$rundir"
       ) |& plog
 
       for f in pipeline/lane?.started ; do
@@ -436,6 +436,12 @@ touch_atomic(){
     for f in "$@" ; do
         (set -o noclobber ; >"$f")
     done
+}
+
+quote_lanes(){
+    # Given a list of lane numbers, eg. "1 2 4 6"
+    # Returns "[1,2,4,6]" which will keep Snakemake happy.
+    echo "[$(tr ' ' ',' <<<"$*")]"
 }
 
 fetch_samplesheet(){

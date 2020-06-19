@@ -376,7 +376,7 @@ class T(unittest.TestCase):
 
         #Check invoking of Snakefile.demux (in the sedata dir)
         self.assertEqual( self.bm.last_calls['Snakefile.demux'][0],
-                          '--config lanes=1 2 3 4 5 6 7 8 rundir={}'.format(test_data)
+                          '--config lanes=[1,2,3,4,5,6,7,8] rundir={}'.format(test_data)
                         )
 
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READS_FINISHED")
@@ -494,7 +494,7 @@ class T(unittest.TestCase):
 
         # It should have called Snakefile.demux
         self.assertEqual( self.bm.last_calls['Snakefile.demux'],
-                          ["--config lanes=1 2 rundir=" + test_data ]
+                          ["--config lanes=[1,2] rundir=" + test_data ]
                         )
 
         # It should have removed the .done, .started and .redo files, then

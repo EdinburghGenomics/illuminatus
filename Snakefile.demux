@@ -44,7 +44,7 @@ def glob():
 glob = glob()
 
 # Config - must be supplied
-LANES = config['lanes'].split()
+LANES = config['lanes']
 RUNDIR = os.path.realpath(config.get('rundir', './seqdata')) #symlink now made by driver.sh
 
 def get_sequential_file(pattern):
