@@ -1,5 +1,6 @@
-# Special toolbox
+# Special toolbox and NFS latency fix
 TOOLBOX="toolbox_oldcluster"
+EXTRA_SNAKE_FLAGS="--latency-wait 200"
 
 # Settings and switches for Illuminatus on headnode2:~tbooth
 # This is the configuration for the backup production pipeline.
@@ -16,7 +17,7 @@ RT_SYSTEM="production-rt"
 # are in the system bundle.
 export REQUESTS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
 
-# And this...
+# And this, because...
 unset BASH_ENV
 
 # We only have one queue
