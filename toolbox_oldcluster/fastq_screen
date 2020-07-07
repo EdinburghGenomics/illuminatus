@@ -14,9 +14,9 @@
 export PATH="/fluidfs/f1/from_lustre/software/bowtie/bowtie-1.2.2-beta2-linux-x86_64:$PATH"
 
 # Remove this line to disable graph generation...
-export PERL5LIB="/fluidfs/f1/from_lustre/software/fastq_screen/perl_libs/lib64/perl5/:/fluidfs/f1/from_lustre/software/fastq_screen/perl_libs/share/perl5/"
+export PERL5LIB="/fluidfs/f1/software/fastq_screen/perl_libs/lib64/perl5/:/fluidfs/f1/software/fastq_screen/perl_libs/share/perl5/"
 
-exec /fluidfs/f1/from_lustre/software/fastq_screen/fastq_screen_v0.11.3_debug/fastq_screen \
+exec /fluidfs/f1/software/fastq_screen/fastq_screen_v0.11.3_debug/fastq_screen \
     --aligner bowtie \
     --conf /fluidfs/f1/from_lustre/references/fastqscreen/fastq_screen.conf_bowtie1_20200612 \
     "$@"
