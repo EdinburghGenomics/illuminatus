@@ -7,18 +7,23 @@ shopt -sq failglob
 # As a well behaved CRON job it should only output critical error messages
 # to stdout - this is controlled by the MAINLOG setting.
 # The script wants to run every 5 minutes or so, and having multiple instances
-# in flight at once is fine, though in fact there are race conditions possible if two
-# instances start at once and claim the same run for processing (Snakemake locking
-# should catch any fallout before data is scrambled).
+# in flight at once is fine, though theoretically are race conditions possible if two
+# instances start at once and claim the same run for processing (but that will be caught
+# by touch_atomic so in the worst case you should just get an error).
 
 # Note within this script I've tried to use ( subshell blocks ) along with "set -e"
 # to emulate eval{} statements in Perl. It does work but you have to be really careful
 # on the syntax, and you have to check $? explicitly - trying to do it implicitly in
-# the manner of ( foo ) || handle_error won't do what you expect.
+# the manner of ( foo ) || handle_error won't do what you expect (and the behaviour
+# changes in different BASH versions!)
+
+# Canonicalize the path.
+BASH_SRC="$(readlink -f "$BASH_SOURCE")"
+BASH_DIR="$(dirname "$BASH_SRC")"
 
 # For the sake of the unit tests, we must be able to skip loading the config file,
 # so allow the location to be set to, eg. /dev/null
-ENVIRON_SH="${ENVIRON_SH:-`dirname $BASH_SOURCE`/environ.sh}"
+ENVIRON_SH="${ENVIRON_SH:-$BASH_DIR/environ.sh}"
 
 # This file must provide SEQDATA_LOCATION, FASTQ_LOCATION if not set externally.
 if [ -e "$ENVIRON_SH" ] ; then
@@ -31,13 +36,14 @@ if [ -e "$ENVIRON_SH" ] ; then
            PROJECT_NAME_LIST  PROJECT_PAGE_URL REDO_HOURS_TO_LOOK_BACK \
            REPORT_DESTINATION REPORT_LINK      RT_SYSTEM     RUN_NAME_REGEX \
            SEQDATA_LOCATION   SSPP_HOOK        TOOLBOX       VERBOSE       \
-           WRITE_TO_CLARITY   LOCAL_JOBS       SNAKE_THREADS DRY_RUN
+           WRITE_TO_CLARITY   LOCAL_JOBS       SNAKE_THREADS DRY_RUN \
+           EXTRA_SNAKE_FLAGS
 fi
 
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
 
-BIN_LOCATION="${BIN_LOCATION:-$(dirname $BASH_SOURCE)}"
+BIN_LOCATION="${BIN_LOCATION:-$BASH_DIR}"
 MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
 
 # 1) Sanity check these directories exist and complain to STDERR (triggering CRON
@@ -88,11 +94,11 @@ plog1() {
 
 plog_start() {
     mkdir -vp "$DEMUX_OUTPUT_FOLDER" |& debug
-    plog $'>>>\n>>>\n>>>'" $BASH_SOURCE starting action_$STATUS at `date`"
+    plog $'>>>\n>>>\n>>>'" $BASH_SRC starting action_$STATUS at `date`"
 }
 
 # Print a message at the top of the log, and trigger one to print at the end.
-intro="`date`. Running $(readlink -f "$BASH_SOURCE"); PID=$$"
+intro="`date`. Running $BASH_SRC; PID=$$"
 log "====`tr -c '' = <<<"$intro"`==="
 log "=== $intro ==="
 log "====`tr -c '' = <<<"$intro"`==="
@@ -103,8 +109,8 @@ trap 'log "=== `date`. Finished run; PID=$$ ==="' EXIT
 py_venv="${PY3_VENV:-default}"
 if [ "${py_venv}" != none ] ; then
     if [ "${py_venv}" = default ] ; then
-        log -n "Running `dirname $BASH_SOURCE`/activate_venv ..."
-        pushd "`dirname $BASH_SOURCE`" >/dev/null
+        log -n "Running $BASH_DIR/activate_venv ..."
+        pushd "$BASH_DIR" >/dev/null
         source ./activate_venv >&5 || { log 'FAILED' ; exit 1 ; }
         popd >/dev/null
     else
@@ -117,7 +123,7 @@ if [ "${py_venv}" != none ] ; then
 fi
 
 # Fix the PATH only after VEnv activation
-PATH="$(readlink -m $BIN_LOCATION):$PATH"
+PATH="$(readlink -m "$BIN_LOCATION"):$PATH"
 
 # Tools may reliably use this to report the version of Illuminatus being run right now.
 # They should look at pipeline/start_times to see which versions have touched a given run.
@@ -222,7 +228,7 @@ action_reads_finished(){
       log "  Starting bcl2fastq on $RUNID."
       ( rundir="`pwd`"
         cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
-        Snakefile.demux --config lanes="$(echo `seq $LANES`)" rundir="$rundir"
+        Snakefile.demux --config lanes="$(quote_lanes `seq $LANES`)" rundir="$rundir"
       ) |& plog
 
       for f in pipeline/lane?.started ; do
@@ -411,7 +417,7 @@ action_redo() {
       log "  Starting bcl2fastq on $RUNID lanes ${redo_list[*]}."
       ( rundir="`pwd`"
         cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing
-        Snakefile.demux --config lanes="${redo_list[*]}" rundir="$rundir"
+        Snakefile.demux --config lanes="$(quote_lanes ${redo_list[*]})" rundir="$rundir"
       ) |& plog
 
       for f in pipeline/lane?.started ; do
@@ -436,6 +442,12 @@ touch_atomic(){
     for f in "$@" ; do
         (set -o noclobber ; >"$f")
     done
+}
+
+quote_lanes(){
+    # Given a list of lane numbers, eg. "1 2 4 6"
+    # Returns "[1,2,4,6]" which will keep Snakemake happy.
+    echo "[$(tr ' ' ',' <<<"$*")]"
 }
 
 fetch_samplesheet(){

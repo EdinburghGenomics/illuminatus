@@ -23,3 +23,7 @@ The .dotfiles are already in place.
 Just now I have two unit test failures. Hmmm. (But hooray for unit tests!)
 OK those are fixed. One was simple. The other really weird - see test_e2.sh
 for a simplified version of the changed BASH behaviour.
+
+Things I forgot above...
+
+6) Making a DRMMA RPM and installing it (fairly easy - see ~egadmin/rpm)
