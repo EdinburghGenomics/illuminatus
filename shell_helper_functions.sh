@@ -40,7 +40,7 @@ find_snakefile() {
 }
 
 snakerun_drmaa() {
-    CLUSTER_QUEUE="${CLUSTER_QUEUE:-casava}"
+    CLUSTER_QUEUE="${CLUSTER_QUEUE:-edgen-casava}"
 
     if [ "$CLUSTER_QUEUE" = none ] ; then
         snakerun_single "$@"
@@ -64,15 +64,17 @@ snakerun_drmaa() {
     # SGE. See v1.4.6 for the old code that actually supported this.
     echo
     echo "Running $snakefile in `pwd` on the SLURM cluster"
-    __SNAKE_THREADS="${SNAKE_THREADS:-100}"
+    SNAKE_THREADS="${SNAKE_THREADS:-100}"
+    EXTRA_SNAKE_FLAGS="${EXTRA_SLURM_FLAGS:-}"
+    EXTRA_SLURM_FLAGS="${EXTRA_SLURM_FLAGS:--t 24:00}"
 
     mkdir -p ./slurm_output
     set -x
     snakemake \
-         -s "$snakefile" -j $__SNAKE_THREADS -p --rerun-incomplete \
-         ${EXTRA_SNAKE_FLAGS:-} --keep-going --cluster-config cluster.yml \
+         -s "$snakefile" -j $SNAKE_THREADS -p --rerun-incomplete \
+         ${EXTRA_SNAKE_FLAGS} --keep-going --cluster-config cluster.yml \
          --jobname "{rulename}.snakejob.{jobid}.sh" \
-         --drmaa " -p ${CLUSTER_QUEUE} {cluster.slurm_opts} \
+         --drmaa " ${EXTRA_SLURM_FLAGS} -p ${CLUSTER_QUEUE} {cluster.slurm_opts} \
                    -e slurm_output/{rule}.snakejob.%A.err \
                    -o slurm_output/{rule}.snakejob.%A.out \
                  " \
