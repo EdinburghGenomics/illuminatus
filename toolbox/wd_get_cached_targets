@@ -2,6 +2,6 @@
 
 # Choose which well_duplicates to use and where to cache the cluster lists.
 
-exec env PATH="/lustre/software/well_duplicates/git_20171103:$PATH" \
-         CLUSTER_LISTS="/lustre/software/well_duplicates/shared_cluster_lists" \
+exec env PATH="/lustre-gseg/software/well_duplicates/git_20180212:$PATH" \
+         CLUSTER_LISTS="/lustre-gseg/software/well_duplicates/shared_cluster_lists" \
          get_cached_targets.sh "$@"

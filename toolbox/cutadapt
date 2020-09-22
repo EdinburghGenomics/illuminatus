@@ -1,1 +1,4 @@
-/lustre/software/cutadapt/cutadapt-1.13/bin/cutadapt
+#!/bin/bash
+set -euo pipefail
+
+exec "${VIRTUAL_ENV}/bin/cutadapt" "$@"

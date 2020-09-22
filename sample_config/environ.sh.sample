@@ -6,13 +6,13 @@
 # FASTQ_LOCATION.
 # LOG_DIR will collect daily logs, or you can set MAINLOG directly. For testing,
 # set MAINLOG=/dev/stdout to see progress in the terminal.
-SEQDATA_LOCATION=/lustre/seqdata
-FASTQ_LOCATION=/lustre/fastqdata
+SEQDATA_LOCATION=/lustre-gseg/seqdata
+FASTQ_LOCATION=/lustre-gseg/fastqdata
 LOG_DIR=~pipeline/illuminatus/logs
 
 # Slurm queue to use. This will be passed to Snakemake, as all cluster jobs are
 # controlled by Snakemake.
-CLUSTER_QUEUE=casava
+CLUSTER_QUEUE=edgen-casava
 
 # Where to SCP the reports and how to make the links. (Neither should end with
 # a slash)
