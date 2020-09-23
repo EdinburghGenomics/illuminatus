@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os, sys, re
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from contextlib import suppress
 import configparser
 from rt import Rt, AuthorizationError
 
@@ -273,10 +274,9 @@ class RTManager():
         if not self._config: return
 
         kwargs = dict( Status = status )
-        try:
-            return self.tracker.edit_ticket(ticket_id, **kwargs)
-        except IndexError:
-            pass # if the status is the same getting this exception
+        # Ignore IndexError raised when subject is already set
+        with suppress(IndexError):
+            self.tracker.edit_ticket(ticket_id, **kwargs)
 
     def change_ticket_subject(self, ticket_id, subject):
         """You can reply to a ticket with a one-off subject, but not via the
@@ -289,14 +289,16 @@ class RTManager():
 
         # why the extra space?? I'm not sure but it looks to have been added deliberately.
         kwargs = dict( Subject = "{} ".format(subject) )
-        try:
-            return self.tracker.edit_ticket(ticket_id, **kwargs)
-        except IndexError:
-            pass # if the subject is the same getting this exception
+
+        # Ignore IndexError raised when subject is already set
+        with suppress(IndexError):
+            self.tracker.edit_ticket(ticket_id, **kwargs)
 
 def parse_args(*args):
-    description = """This script allows you to manipulate a ticket for a PacBio or Illumina run.
+    description = """This script allows you to manipulate a ticket for an instrument run.
                      You can reply, comment, open, stall, resolve tickets.
+                     Replying or commenting on a closed or non-existent ticket will create a new one,
+                     unless you specify --no-create.
                   """
     argparser = ArgumentParser( description=description,
                                 formatter_class = ArgumentDefaultsHelpFormatter )
