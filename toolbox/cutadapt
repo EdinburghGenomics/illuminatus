@@ -1,4 +1,1 @@
-#!/bin/bash
-set -euo pipefail
-
-exec "${VIRTUAL_ENV}/bin/cutadapt" "$@"
+/lustre-gseg/software/cutadapt/cutadapt-1.13-venv/bin/cutadapt
