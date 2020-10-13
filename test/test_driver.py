@@ -74,7 +74,7 @@ class T(unittest.TestCase):
     def tearDown(self):
         """Remove the shadow folder and clean up the BinMocker
         """
-        os.system("chmod -R u+w {}".format(shell_quote(self.temp_dir)))
+        self.shell("chmod -R u+w {}", self.temp_dir)
         rmtree(self.temp_dir)
 
         self.bm.cleanup()
@@ -139,12 +139,16 @@ class T(unittest.TestCase):
 
         self.assertTrue(o_split)
 
-    def shell(self, cmd):
+    def shell(self, cmd, *args):
         """Call to os.system in 'safe mode'
         """
-        status = os.system("set -euo pipefail ; " + cmd)
+        if args:
+            status = os.system("set -euo pipefail ; " + cmd.format(*[shell_quote(a) for a in args]) )
+        else:
+            # Assume that any curlies are bash expansions
+            status = os.system("set -euo pipefail ; " + cmd)
         if status:
-            raise ChildProcessError("Exit status was %s runnign command:\n%s" % (status, cmd))
+            raise ChildProcessError("Exit status was %s running command:\n%s" % (status, cmd))
 
         return status
 
@@ -202,7 +206,7 @@ class T(unittest.TestCase):
             test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
             # We need to remove the flag file to make it look like the run is still going.
-            os.system("rm " + test_data + "/RTAComplete.txt")
+            self.shell("rm {}", test_data + "/RTAComplete.txt")
 
         self.bm_rundriver()
 
@@ -243,7 +247,7 @@ class T(unittest.TestCase):
         """
         # This run comes first but we make it read-only
         test_data1 = self.copy_run("150602_M01270_0108_000000000-ADWKV")
-        os.system("chmod u-w " + test_data1)
+        self.shell("chmod u-w {}", test_data1)
 
         # This can be processed
         test_data2 = self.copy_run("160606_K00166_0102_BHF22YBBXX")
@@ -268,12 +272,43 @@ class T(unittest.TestCase):
         self.assertEqual(self.bm.last_calls['Snakefile.qc'],
                          ['-- metadata_main', '-F --config pstatus=Waiting for data -- multiqc_main'])
 
+    def test_existing_and_new(self):
+        """If a run appears new (no pipeline dir) but then has an existing output directory we shouldn't
+           do anything silly. I think making a pipeline directory but then failing it is reasonable.
+        """
+        test_data1 = self.copy_run("150602_M01270_0108_000000000-ADWKV")
+        test_data2 = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+
+        # The first of these has an existing output dir.
+        self.shell("mkdir {}", os.path.join(self.temp_dir, "fastqdata", "150602_M01270_0108_000000000-ADWKV"))
+
+        self.bm_rundriver()
+
+        # First run should be seen and give an error
+        self.assertInStdout("150602_M01270_0108_000000000-ADWKV", "NEW")
+        self.assertInStdout("cannot create directory", "File exists")
+
+        # Pipeline folder should appear, and status should be failed
+        self.assertTrue(os.path.isdir(test_data1 + '/pipeline'))
+        self.assertFalse(os.path.exists(test_data1 + '/pipeline/output'))
+        self.assertTrue(os.path.isfile(test_data1 + '/pipeline/failed'))
+
+        # Second run should be seen
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "NEW")
+        self.assertTrue(os.path.isdir(test_data2 + '/pipeline'))
+
+        # Second run of the driver should see the broken run as failed (once RTAComplete.txt is added)
+        self.shell("touch {}", os.path.join(test_data2, 'pipeline', 'aborted'))
+        self.shell("touch {}", os.path.join(test_data1, 'RTAComplete.txt'))
+        self.bm_rundriver()
+        self.assertInStdout("\_FAILED 150602_M01270_0108_000000000-ADWKV")
+
     def test_new_multiqc_fail(self):
         """Same as above but MultiQC fails for some reason.
            This needs to be non-fatal as we still want demultiplexing to kick in.
         """
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        os.system("rm " + test_data + "/RTAComplete.txt")
+        self.shell("rm {}", test_data + "/RTAComplete.txt")
 
         self.bm.add_mock('Snakefile.qc', fail=True)
 
@@ -301,6 +336,7 @@ class T(unittest.TestCase):
            not cause the pipeline to jam in eg. read1_processing state.
         """
         test_data = self.copy_run("160603_M01270_0196_000000000-AKGDE")
+        self.shell("ln -s {} {}", self.temp_dir, test_data + "/pipeline/output")
 
         # For this, we want summarize_lane_contents.py to actually make a file
         self.bm.add_mock("summarize_lane_contents.py",
@@ -321,8 +357,8 @@ class T(unittest.TestCase):
         # Make it so Snakefile.qc and rt_runticket_manager.py fails, and remove the output files, and go once more.
         self.bm.add_mock('rt_runticket_manager.py', fail=True)
         self.bm.add_mock('Snakefile.qc', fail=True)
-        os.system("rm " + test_data + "/pipeline/read1.done")
-        os.system("rm " + test_data + "/pipeline/sample_summary.yml")
+        self.shell("rm {}", test_data + "/pipeline/read1.done")
+        self.shell("rm {}", test_data + "/pipeline/sample_summary.yml")
         self.bm_rundriver()
 
         # Test (again) that despite the failure read1.done still appeared
@@ -346,9 +382,14 @@ class T(unittest.TestCase):
              The log should say "READS_FINISHED"
         """
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
 
         #Now we need to make the ./pipeline folder to push it out of status NEW.
-        self.shell("mkdir -p " + test_data + "/pipeline")
+        self.shell("mkdir {}", test_data + "/pipeline")
+
+        # And the output directory needs to exist already
+        self.shell("mkdir {}", fastqdir)
+        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
 
         #Run the driver once to do the read1 processing (a no-op due to the mocks)
         self.bm_rundriver()
@@ -368,7 +409,6 @@ class T(unittest.TestCase):
                           "SampleSheet.csv.0" )
 
         #Check demultiplexing folder
-        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
         self.assertTrue( os.path.isdir(os.path.join(fastqdir, "demultiplexing")) )
 
         #Check presence of 8 .done files
@@ -388,8 +428,12 @@ class T(unittest.TestCase):
         """
         # Start the same as test_reads_finished...
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        self.shell("mkdir -p " + test_data + "/pipeline")
-        self.shell("touch " + test_data + "/pipeline/read1.started")
+        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+
+        self.shell("mkdir {}", test_data + "/pipeline")
+        self.shell("mkdir {}", fastqdir)
+        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
+        self.shell("touch {}", test_data + "/pipeline/read1.started")
 
         self.bm.add_mock('Snakefile.demux', fail=True)
 
@@ -400,7 +444,6 @@ class T(unittest.TestCase):
 
         # I still expect to see the demultiplexing folder and 8 lock files,
         # as these are not removed on failure.
-        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
         self.assertTrue( os.path.isdir(os.path.join(fastqdir, "demultiplexing")) )
         self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline/lane?.started')) ) )
 
@@ -476,6 +519,9 @@ class T(unittest.TestCase):
         self.shell("touch " + test_data + "/pipeline/lane{1,2}.redo")
         self.shell("mkdir -p " + fastqdir + "/demultiplexing")
 
+        # And we need the pipeline/output symlink
+        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
+
         # This should suppresss sending a new report to RT, since there will
         # already appear to be an up-to-date samplesheet plus a summary.
         self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
@@ -530,6 +576,42 @@ class T(unittest.TestCase):
                            "-Q run -r 160606_K00166_0102_BHF22YBBXX --subject re-demultiplexed"
                            " --comment Re-Demultiplexing of lanes 1 2 completed"] )
 
+    def test_redo_missing_output(self):
+        """If the output link is broken the driver needs to fail quickly.
+           Use the same redo setup as before.
+        """
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+
+        self.shell("mkdir -p " + test_data + "/pipeline")
+        self.shell("touch " + test_data + "/pipeline/read1.done")
+        self.shell("touch " + test_data + "/pipeline/lane{1..8}.started")
+        self.shell("touch " + test_data + "/pipeline/lane{2..8}.done")
+
+        # Without this failed flag, the RunStatus will be in_demultiplexing.
+        self.shell("touch " + test_data + "/pipeline/failed")
+        self.shell("touch " + test_data + "/pipeline/lane{1,2}.redo")
+        self.shell("mkdir -p " + fastqdir + "/demultiplexing")
+
+        # This should suppresss sending a new report to RT, since there will
+        # already appear to be an up-to-date samplesheet plus a summary.
+        self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
+        self.shell("touch " + test_data + "/pipeline/sample_summary.yml")
+
+        self.bm_rundriver()
+
+        # The driver should spot that the run needed a REDO
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "status=redo")
+
+        # But it should fail
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "status=redo")
+        self.assertInStdout("pipeline/output directory is missing")
+        self.assertInStdout("FAIL Missing_Output_Dir 160606_K00166_0102_BHF22YBBXX")
+
+        self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
+                          ["-Q run -r 160606_K00166_0102_BHF22YBBXX --subject failed --reply Processing failed."
+                           " Missing_Output_Dir. See log in /dev/stdout" ] )
+
     def test_redo_fail_cleanup(self):
         """If BCL2FASTQCleanup.py fails then it should stop processing the run, not continuing
            to run Snakefile.demux etc.
@@ -546,6 +628,7 @@ class T(unittest.TestCase):
         self.shell("touch " + test_data + "/pipeline/failed")
         self.shell("touch " + test_data + "/pipeline/lane{1,2}.redo")
         self.shell("mkdir -p " + fastqdir + "/demultiplexing")
+        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
 
         # This should suppresss sending a new report to RT, since there will
         # already appear to be an up-to-date samplesheet plus a summary.

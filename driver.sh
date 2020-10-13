@@ -75,9 +75,9 @@ debug(){ if [ "${VERBOSE:-0}" != 0 ] ; then log "$@" ; else [ $# = 0 ] && cat >/
 # Unfortunately this could get scrambled if we try to run read1 processing and demux
 # at the same time (which we want to be able to do!), so have a plog1 for that.
 plog() {
-    per_run_log="$DEMUX_OUTPUT_FOLDER/pipeline.log"
-    if ! { [ $# = 0 ] && cat >> "$per_run_log" || echo "$*" >> "$per_run_log" ; } ; then
-       log '!!'" Failed to write to $per_run_log"
+    per_run_log="$(readlink -f ./pipeline/output)/pipeline.log"
+    if ! { [ $# = 0 ] && cat >> "$per_run_log" || echo "$*" >> "$per_run_log" ; } 2>/dev/null ; then
+       log '!!'" Failed to write to $per_run_log:"
        log "$@"
     fi
 }
@@ -85,7 +85,7 @@ plog() {
 # Have a special log for the read1 processing, as this can happen in parellel
 # with other actions.
 plog1() {
-    per_run_log1="$DEMUX_OUTPUT_FOLDER/pipeline_read1.log"
+    per_run_log1="$(readlink -f ./pipeline/output)/pipeline_read1.log"
     if ! { [ $# = 0 ] && cat >> "$per_run_log1" || echo "$*" >> "$per_run_log1" ; } ; then
        log '!!'" Failed to write to $per_run_log1"
        log "$@"
@@ -93,7 +93,6 @@ plog1() {
 }
 
 plog_start() {
-    mkdir -vp "$DEMUX_OUTPUT_FOLDER" |& debug
     plog $'>>>\n>>>\n>>>'" $BASH_SRC starting action_$STATUS at `date`"
 }
 
@@ -161,7 +160,10 @@ rt_runticket_manager(){
 }
 
 action_new(){
-    # Create a pipeline/ directory and make a sample sheet summary
+    # Create an output directory for the new run. Being conservative, if this
+    # already exists then fail.
+
+    # Also create a pipeline/ directory and make a sample sheet summary
     # For now the sample sheet summary will just be a copy of the sample sheet
     # If this works we can BREAK, but if not go on to process more runs
 
@@ -175,7 +177,7 @@ action_new(){
     log "\_NEW $RUNID. Creating ./pipeline folder and making skeleton report."
     set +e ; ( set -e
       mkdir -v ./pipeline |& debug
-      mkdir -vp "$DEMUX_OUTPUT_FOLDER" |&debug
+      mkdir -v "$DEMUX_OUTPUT_FOLDER" |&debug
       ln -nsv "$DEMUX_OUTPUT_FOLDER" ./pipeline/output |& debug
       ln -nsv "`pwd -P`" ./pipeline/output/seqdata |& debug
       chgrp -c --reference="$DEMUX_OUTPUT_FOLDER" ./pipeline |& debug
@@ -199,9 +201,9 @@ action_reads_finished(){
     # Lock the run by writing pipeline/lane?.started per lane
     # Note this action must not attempt to run any QC ops - an interim report will be triggered
     # by action_demultiplexed before it fires off all the QC jobs.
-    eval touch_atomic pipeline/"lane{1..$LANES}.started"
-
     log "\_READS_FINISHED $RUNID. Checking for new SampleSheet.csv and preparing to demultiplex."
+    check_outdir || return 0
+    eval touch_atomic pipeline/"lane{1..$LANES}.started"
     plog_start
 
     # Log the start in a way we can easily read back (humans can check the main log!)
@@ -255,12 +257,13 @@ action_in_read1_qc_reads_finished(){
 # and also to see exactly where the run is. (See state diagram)
 action_demultiplexed() {
     log "\_DEMULTIPLEXED $RUNID"
-    log "  Now commencing QC on $RUNID."
 
     # This touch file puts the run into status in_qc.
-    # Upload of report is regarded as the final QC step, so if this fails wen need to
+    # Upload of report is regarded as the final QC step, so if this fails we need to
     # log a failure.
     touch_atomic pipeline/qc.started
+    check_outdir || return 0
+    log "  Now commencing QC on $RUNID."
     BREAK=1
 
     # First this...
@@ -278,6 +281,7 @@ action_demultiplexed() {
         else
             # ||true avoids calling the error handler twice
             pipeline_fail QC_report_final_upload || true
+
         fi
     ) |& plog ; [ $? = 0 ] || pipeline_fail QC
 
@@ -295,9 +299,10 @@ action_in_demultiplexing() {
 
 action_read1_finished() {
     debug "\_READ1_FINISHED $RUNID"
+    touch_atomic pipeline/read1.started
+    check_outdir || return 0
     log "  Now commencing read1 processing on $RUNID."
 
-    touch_atomic pipeline/read1.started
     plog_start
     plog ">>> See pipeline_read1.log for details on read1 processing."
     plog1 </dev/null  #Log1 must be primed before entering subshell!
@@ -362,6 +367,7 @@ action_complete() {
 action_redo() {
     # Some lanes need to be re-done. Complicated...
     log "\_REDO $RUNID"
+    check_outdir || return 0
     plog_start
 
     # Log the start in a way we can easily read back (humans can check the main log!)
@@ -442,6 +448,31 @@ touch_atomic(){
     for f in "$@" ; do
         (set -o noclobber ; >"$f")
     done
+}
+
+check_outdir(){
+    # Ensure that pipeline/output is a directory, and fail in a sensible way if it is not.
+    # Caller may override the failure reason.
+    if [ -d pipeline/output ] ; then
+        return 0
+    fi
+    log "ERROR ./pipeline/output directory is missing or invalid"
+
+    # Modified version of pipeline_fail()
+    stage="${1:-Missing_Output_Dir}"
+    echo "$stage on `date`" > pipeline/failed
+
+    # Send an alert to RT but obviously we can't plog anything.
+    log "Attempting to notify error to RT"
+    if rt_runticket_manager --subject failed --reply "Processing failed. $stage. See log in $MAINLOG" |& log ; then
+        log "FAIL $stage $RUNID."
+    else
+        # RT failure. Complain to STDERR in the hope this will generate an alert mail via CRON
+        msg="FAIL $stage $RUNID, and also failed to report the error via RT. See $MAINLOG"
+        echo "$msg" >&2
+        log "$msg"
+    fi
+    return 1
 }
 
 quote_lanes(){
