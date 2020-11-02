@@ -176,11 +176,11 @@ action_new(){
     # be the same as the output dir.
     log "\_NEW $RUNID. Creating ./pipeline folder and making skeleton report."
     set +e ; ( set -e
-      mkdir -v ./pipeline |& debug
-      mkdir -v "$DEMUX_OUTPUT_FOLDER" |&debug
-      ln -nsv "$DEMUX_OUTPUT_FOLDER" ./pipeline/output |& debug
-      ln -nsv "`pwd -P`" ./pipeline/output/seqdata |& debug
-      chgrp -c --reference="$DEMUX_OUTPUT_FOLDER" ./pipeline |& debug
+      mkdir ${VERBOSE:+-v} ./pipeline |& log
+      mkdir ${VERBOSE:+-v} "$DEMUX_OUTPUT_FOLDER" |& log
+      ln ${VERBOSE:+-v} -ns "$DEMUX_OUTPUT_FOLDER" ./pipeline/output |& log
+      ln ${VERBOSE:+-v} -ns "`pwd -P`" ./pipeline/output/seqdata |& log
+      chgrp ${VERBOSE:+-c} --reference="$DEMUX_OUTPUT_FOLDER" ./pipeline |& log
 
       plog_start
       fetch_samplesheet
