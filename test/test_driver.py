@@ -673,5 +673,55 @@ class T(unittest.TestCase):
                           ["-Q run -r 160606_K00166_0102_BHF22YBBXX --subject failed --reply Cleanup_for_Re-demultiplexing failed."
                            " See log in " + fastqdir + "/pipeline.log" ] )
 
+    def test_10x_restart_bug(self):
+        """I had a bug where restarting QC on a 10X run would exit leaving the run in_qc with
+           no error in the log. This was symptomatic of more general shaky error handling.
+        """
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+
+        self.shell("mkdir {}", test_data + "/pipeline")
+        self.shell("mkdir {}", fastqdir)
+        self.shell("touch " + test_data + "/pipeline/read1.done")
+        self.shell("touch " + test_data + "/pipeline/lane{1..8}.done")
+        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
+
+        # We also need this or count_10x_barcodes.py never runs at all as there
+        # are no input files.
+        self.shell("mkdir -p {}", fastqdir + "/demultiplexing/lane1/Stats")
+        self.shell("touch {}", fastqdir + "/demultiplexing/lane1/Stats/Stats.json")
+
+        # Now let's say that count_10x_barcodes.py returns true and Snakefile.qc fails.
+        # We also need upload_report.sh to look like it did something.
+        self.bm.add_mock('count_10x_barcodes.py', fail=False)
+        self.bm.add_mock('Snakefile.qc', fail=True)
+        self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK > pipeline/report_upload_url.txt")
+
+        # And run it.
+        self.bm_rundriver()
+
+        # We should see qc.started and failed touch files, and a keep file
+        self.assertTrue(os.path.isfile(test_data + '/pipeline/failed'))
+        self.assertTrue(os.path.isfile(test_data + '/pipeline/qc.started'))
+        self.assertTrue(os.path.isfile(test_data + '/pipeline/keep'))
+
+        # Check in the log
+        with open(test_data + '/pipeline/output/pipeline.log') as lfh:
+            loglines = [ l.rstrip() for l in lfh ]
+            self.assertTrue("10X barcodes detected, so adding pipeline/keep file" in loglines)
+
+        # Now start again, but this time Snakefile.qc succeeds. We should be good.
+        self.bm.add_mock('Snakefile.qc', fail=False)
+        self.shell("rm {}", test_data + "/pipeline/qc.started")
+        self.shell("rm {}", test_data + "/pipeline/failed")
+
+        # Run again...
+        self.bm_rundriver()
+        #self.shell("cat {}", test_data + "/pipeline/output/pipeline.log")
+
+        self.assertTrue(os.path.isfile(test_data + '/pipeline/qc.done'))
+        self.assertFalse(os.path.isfile(test_data + '/pipeline/qc.started'))
+        self.assertFalse(os.path.isfile(test_data + '/pipeline/failed'))
+
 if __name__ == '__main__':
     unittest.main()

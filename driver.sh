@@ -266,10 +266,11 @@ action_demultiplexed() {
     log "  Now commencing QC on $RUNID."
     BREAK=1
 
-    # First this...
-    detect_and_keep_10x
+    set +e
 
-    set +e ; ( set -e
+    detect_and_keep_10x |& plog
+
+    ( set -e
         run_qc
         log "  Completed QC on $RUNID."
 
@@ -611,9 +612,12 @@ send_summary_to_rt() {
 detect_and_keep_10x() {
     # Attempt to avoid accidental deletion of 10x runs following the incident where
     # they were left unprocessed and the run was deleted.
+    # Note this might resonably fail so set +e before running it, and redirect outputs
+    # to the plog.
     if count_10x_barcodes.py "$DEMUX_OUTPUT_FOLDER"/demultiplexing/lane*/Stats/Stats.json ; then
+        echo "10X barcodes detected, so adding pipeline/keep file"
         ( set -o noclobber ;
-          echo "10X barcodes detected by Illuminatus" > pipeline/keep ) 2>/dev/null
+          echo "10X barcodes detected by Illuminatus" > pipeline/keep )
     fi
 }
 
