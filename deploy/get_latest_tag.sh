@@ -52,6 +52,9 @@ done
 runcmd mkdir "$latest_tag"
 runcmd git --git-dir=git_repo --work-tree="$latest_tag" checkout -f tags/"$latest_tag"
 
+# Copy the config file
+cp -vn -t $latest_tag $latest_checked_out/environ.sh
+
 # Finally, alert the user if there were local changes in $latest_checked_out
 
 # Sanity check
@@ -65,8 +68,8 @@ if git --git-dir=git_repo --work-tree="$latest_checked_out" diff tags/"$latest_c
     echo
 fi
 
-echo "Checked out version $latest_tag.  If you are happy, copy the config and bootstrap the virtualenv now:"
+echo "Checked out version $latest_tag.  If you are happy, check the config and bootstrap the virtualenv now:"
 echo "  cd `pwd`"
-echo "  cp -i $latest_checked_out/environ.sh $latest_tag/"
+echo "  cat $latest_tag/environ.sh"
 echo "  (cd $latest_tag && source ./activate_venv )"
-echo "  rm current ; ln -s $latest_tag current"
+echo "  ln -snf $latest_tag current"
