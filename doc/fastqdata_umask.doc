@@ -1,0 +1,12 @@
+After the cluster upgrade, it seems we can no longer hard-link the .fastq.gz files
+for delivery. Previously they were mode 664 but now they are mode 644.
+
+Now I think there was a umask setting in the old pipeline account. Where was it and
+why is it no longer active?
+
+Oh, the account is the same but my CRON hack (~pipeline/scripts/cron_shell.sh)
+doesn't pick up the correct umask. I've now fixed this. I did it by just
+setting the umask but I suppose I could also force loading of all the startup
+files. But then this has its own problems.
+
+Anyway there's a copy of the script in here for reference.
