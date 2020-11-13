@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 
 # Default jobscript for Snakemake on the GSEG environment.
 # Made by Tim B on 2016-11-01
