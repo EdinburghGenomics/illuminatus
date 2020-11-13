@@ -44,7 +44,7 @@ LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
 
 BIN_LOCATION="${BIN_LOCATION:-$BASH_DIR}"
-MAINLOG="${MAINLOG:-${LOG_DIR}/bcl2fastq_driver.`date +%Y%m%d`.log}"
+MAINLOG="${MAINLOG:-${LOG_DIR}/illuminatus_driver.`date +%Y%m%d`.log}"
 
 # 1) Sanity check these directories exist and complain to STDERR (triggering CRON
 #    warning mail) if not.
