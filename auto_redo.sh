@@ -85,7 +85,9 @@ set +u ; for ss in "${candidate_ss[@]}" ; do set -u
     echo "Checking $ss ($fcid@$ts)"
 
     # See if there is a matching run, accounting for the naming differences between MiSeq and HiSeq/NovaSeq
-    seqdir="`ls -d "$SEQDATA_LOCATION"/*_?$fcid  "$SEQDATA_LOCATION"/*-$fcid 2>/dev/null || true`"
+    seqdir="$(find "$SEQDATA_LOCATION" -maxdepth 1 -mindepth 1 -type d -print | \
+            { egrep -i "(_A|_B|_|-)${fcid}\$" || true ; } )"
+
     if [ ! -d "$seqdir" ] ; then
         echo "No directory found in $SEQDATA_LOCATION for FCID $fcid"
         continue

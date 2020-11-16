@@ -136,7 +136,7 @@ class T(unittest.TestCase):
         self.seqdata.touch('.', hours_age=20, recursive=True)
 
         # These are in auto_redo_newsheets so copy them in. No need to update
-        # the timestamps as copy() leave all files with current mtime.
+        # the timestamps as copy() leaves all files with current mtime.
         for ns in glob(NEWSHEETS_DIR + '/*.csv'):
             shutil.copy(ns, self.sheets_dir, follow_symlinks=True)
 
@@ -206,6 +206,27 @@ class T(unittest.TestCase):
         self.assertEqual( self.seqdata.lsdir('160607_D00248_0174_AC9E4KANXX/pipeline', glob="*.redo"),
                           ['lane2.redo', 'lane5.redo'] )
 
+    def test_case_mismatch(self):
+        """Looking at run 201113_M01270_0137_jd7l6 it seems we can get a case mismatch
+           in the flowcell name. This may be a quirk of the upgraded software. I'm not sure
+           if it signigfies something specific?
+        """
+        # Rename the 180430_M05898_0007_000000000-BR92R run
+        os.rename( self.seqdata.sandbox + '/180430_M05898_0007_000000000-BR92R',
+                   self.seqdata.sandbox + '/180430_M05898_0007_br92r' )
+        # Now make all the files in the sandbox 20 hours old
+        self.seqdata.touch('.', hours_age=20, recursive=True)
+
+        # Now copy in the replacement sheet
+        shutil.copy(NEWSHEETS_DIR + '/sheet_BR92R.csv', self.sheets_dir, follow_symlinks=True)
+
+        # Now run the thing
+        res1 = self.bm_run_redo()
+        self.assertEqual(res1[1], "Checking 1 files.")
+
+        # We should be redoing the run.
+        self.assertEqual( self.seqdata.lsdir('180430_M05898_0007_br92r/pipeline', glob="*.redo"),
+                          ['lane1.redo'] )
 
 if __name__ == '__main__':
     unittest.main()
