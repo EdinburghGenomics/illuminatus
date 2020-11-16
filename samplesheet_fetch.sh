@@ -101,7 +101,9 @@ fi
 
 # The latest one that matches the flowcell ID is the one we want.
 # Or do we want to sort on some other criterion?
-candidate_ss=`find "$SAMPLESHEETS_ROOT" -name "*_${FLOWCELLID}.csv" -print0 | xargs -r0 ls -tr | tail -n 1`
+candidate_ss=$(find "$SAMPLESHEETS_ROOT" -name "*_*.csv" -print0 | \
+               { egrep -zi "_${FLOWCELLID}\.csv$" || true ; } | \
+               xargs -r0 ls -tr -- | tail -n 1)
 
 if [ ! -e "$candidate_ss" ] ; then
     echo "No candidate replacement samplesheet for ${FLOWCELLID} under $SAMPLESHEETS_ROOT"

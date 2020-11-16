@@ -239,6 +239,27 @@ class T(unittest.TestCase):
         self.assertEqual(second_stdout[0], "SampleSheet.csv for XXXX is already up-to-date")
         self.assertTrue(os.lstat('SampleSheet.csv').st_mtime > utimestamp)
 
+    def test_case_mismatch(self):
+        """Test still fetching the sample sheet even when the case mismatches,
+           since this seems to be a thing with the new MiSeq software.
+        """
+        #Create a couple of candiate sample sheets.
+        touch('SampleSheet.csv')
+        touch(self.ss_dir + '/foo_jd7l6.csv')
+        touch(self.ss_dir + '/bar_JD7L6.csv', 'this one')
+
+        self.environment['FLOWCELLID'] = 'jd7l6'
+        last_stdout = self.bm_run_fetch()
+
+        self.assertTrue(os.path.isfile('SampleSheet.csv.0'))
+        self.assertTrue(os.path.isfile('SampleSheet.csv.1'))
+        self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.1')
+
+        self.assertEqual(last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
+        self.assertEqual(last_stdout[2], "SampleSheet.csv for jd7l6 is now linked to new SampleSheet.csv.1")
+
+        with open("SampleSheet.csv") as fh:
+            self.assertEqual(fh.read().rstrip(), 'this one')
 
 def touch(filename, contents="touch"):
     with open(filename, 'x') as fh:
