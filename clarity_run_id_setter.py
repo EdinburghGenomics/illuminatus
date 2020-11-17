@@ -92,6 +92,10 @@ def main(args):
 
     existing_containers = lims.get_containers(name=container_name)
 
+    # If the container name is not in all upper case then try making it so...
+    if container_name != container_name.upper():
+        existing_containers.extend(lims.get_containers(name=container_name.upper()))
+
     # 3
     if len(existing_containers) == 0:
         L.warning("No container found with name {}.".format(container_name))
