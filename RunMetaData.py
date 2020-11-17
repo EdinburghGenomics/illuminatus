@@ -107,7 +107,7 @@ class RunMetaData:
         idict['pre_start_info'] = {
                 'Run Date': info['RunDate'],
                 'LaneCount': int(info['LaneCount']),
-                'Experiment Name': params['Experiment Name'],
+                'Experiment Name': params.get('Experiment Name'),
                 'Run ID': info['RunId'],
                 'Instrument': info['Instrument'],
                 'Flowcell Type' : params.get('Flowcell Type', info['FCType']),

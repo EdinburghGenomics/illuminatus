@@ -39,7 +39,7 @@ done
 # Copy files, but not folders, at various levels
 for p in . Data Data/Intensities Data/Intensities/BaseCalls ; do
     echo "Copying all regular files from $RUN_PATH/$p"
-    cp "$RUN_PATH/$p"/* "$DEST/$p" 2>/dev/null || true
+    cp -P -t "$DEST/$p" "$RUN_PATH/$p"/* 2>/dev/null || true
 done
 
 for lane in $LANES ; do
@@ -81,11 +81,13 @@ if [ ! -e "$DEST"/pipeline_settings.ini ] ; then
 fi
 echo '--tiles: s_[$LANE]_1101' >> "$DEST"/pipeline_settings.ini
 
-# Finally, if it's already a link, copy the SampleSheet.csv to SampleSheet.csv.OVERRIDE
-# so it can be edited and Illuminatus won't try to replace it.
-if [ -L "$DEST"/SampleSheet.csv ] ; then
-    echo Creating "$DEST"/SampleSheet.csv.OVERRIDE
-    cat "$DEST"/SampleSheet.csv > "$DEST"/SampleSheet.csv.OVERRIDE
+# Finally, if it's already a link, copy the SampleSheet.csv to SampleSheet.csv.XOVERRIDE
+# so it can be edited and Illuminatus won't try to replace it. This can't be in the pipeline
+# directory since the pipeline needs to create that.
+if [ -L "$RUN_PATH/SampleSheet.csv" ] ; then
+    echo Creating "$DEST/SampleSheet.csv.XOVERRIDE"
+    cat "$RUN_PATH/SampleSheet.csv" > "$DEST/SampleSheet.csv.XOVERRIDE"
+    ( cd "$DEST" && ln -snf SampleSheet.csv.XOVERRIDE SampleSheet.csv )
 fi
 
 echo DONE

@@ -71,8 +71,17 @@ fi
 if [ -e pipeline/SampleSheet.csv.OVERRIDE ] ; then
     echo "Giving priority to pipeline/SampleSheet.csv.OVERRIDE."
 
-    ln -sf pipeline/SampleSheet.csv.OVERRIDE SampleSheet.csv
+    ln -snf pipeline/SampleSheet.csv.OVERRIDE SampleSheet.csv
     echo "SampleSheet.csv for ${FLOWCELLID} is now linked to pipeline/SampleSheet.csv.OVERRIDE."
+    exit 0
+fi
+
+# Special case to allow slim_a_run to work
+if [ -e SampleSheet.csv.XOVERRIDE ] ; then
+    echo "Giving priority to SampleSheet.csv.XOVERRIDE."
+
+    ln -snf SampleSheet.csv.XOVERRIDE SampleSheet.csv
+    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to SampleSheet.csv.XOVERRIDE."
     exit 0
 fi
 
