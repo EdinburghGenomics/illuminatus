@@ -29,6 +29,11 @@ class T(unittest.TestCase):
             os.chdir(oldcwd)
             rmtree(temp_dir)
 
+        if os.environ.get("KEEPTMP"):
+            print(temp_dir, file=sys.stderr)
+        else:
+            self.addCleanup(cleanup)
+
         # See the errors in all their glory
         self.maxDiff = None
 

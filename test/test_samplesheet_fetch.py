@@ -32,12 +32,14 @@ class T(unittest.TestCase):
             os.chdir(oldcwd)
             rmtree(temp_dir)
 
+        self.bm = BinMocker('RunStatus.py')
+
         if os.environ.get("KEEPTMP"):
-            print(temp_dir)
+            print("Temp dir = " + temp_dir, file=sys.stderr)
+            print("Binmocker = " + self.bm.mock_bin_dir, file=sys.stderr)
         else:
             self.addCleanup(cleanup)
-
-        self.bm = BinMocker('RunStatus.py')
+            self.addCleanup(self.bm.cleanup)
 
         #The script will find sample sheets in here...
         self.ss_dir = "fs_root/samplesheets_bcl2fastq_format"
@@ -231,7 +233,8 @@ class T(unittest.TestCase):
 
         utimestamp = time.time()
 
-        # Assumes we have millisecond timestamps on the files.
+        # Assumes we have millisecond timestamps on the files. If not, these and
+        # other tests will fail.
         self.assertTrue(os.lstat('SampleSheet.csv').st_mtime < utimestamp)
 
         # Run the thingy again
@@ -264,6 +267,9 @@ class T(unittest.TestCase):
 def touch(filename, contents="touch"):
     with open(filename, 'x') as fh:
         print(contents, file=fh)
+
+    # If we don't have high-resolution timestamps on $TMPDIR then we need:
+    # time.sleep(1)
 
 if __name__ == '__main__':
     unittest.main()
