@@ -219,7 +219,7 @@ class T(unittest.TestCase):
 
         #The script should have attempted to call RunStatus.py just once.
         expected_calls = self.bm.empty_calls()
-        expected_calls['RunStatus.py'] = ['']
+        expected_calls['RunStatus.py'] = [[]]
         self.assertEqual(self.bm.last_calls, expected_calls)
 
     def test_always_touch(self):

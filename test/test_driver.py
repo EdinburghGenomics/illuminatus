@@ -218,22 +218,23 @@ class T(unittest.TestCase):
 
         # Sample sheet should be summarized
         expected_calls = self.bm.empty_calls()
-        expected_calls['samplesheet_fetch.sh'] = ['']
-        expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml',
-                                                        '--from_yml pipeline/sample_summary.yml --txt -']
-        expected_calls['rt_runticket_manager.py'] = ['-Q run -r 160606_K00166_0102_BHF22YBBXX --subject new --comment @???']
-        expected_calls['Snakefile.qc'] = ['-- metadata_main', '-F --config pstatus=Waiting for data -- multiqc_main']
-        expected_calls['upload_report.sh'] = [self.temp_dir + '/fastqdata/160606_K00166_0102_BHF22YBBXX']
-        expected_calls['clarity_run_id_setter.py'] = ['-- 160606_K00166_0102_BHF22YBBXX']
+        expected_calls['samplesheet_fetch.sh'] = [[]]
+        expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml'.split(),
+                                                        '--from_yml pipeline/sample_summary.yml --txt -'.split()]
+        expected_calls['rt_runticket_manager.py'] = ['-Q run -r 160606_K00166_0102_BHF22YBBXX --subject new --comment @???'.split()]
+        expected_calls['Snakefile.qc'] = [ '-- metadata_main'.split(),
+                                           ['-F', '--config', 'pstatus=Waiting for data', '--', 'multiqc_main'] ]
+        expected_calls['upload_report.sh'] = [[self.temp_dir + '/fastqdata/160606_K00166_0102_BHF22YBBXX']]
+        expected_calls['clarity_run_id_setter.py'] = ['-- 160606_K00166_0102_BHF22YBBXX'.split()]
 
         # This may or may not be mocked. If so, and REDO_HOURS_TO_LOOK_BACK is set, it should
         # be called.
         if 'auto_redo.sh' in expected_calls and self.environment.get('REDO_HOURS_TO_LOOK_BACK'):
-            expected_calls['auto_redo.sh'] = ['']
+            expected_calls['auto_redo.sh'] = [[]]
 
         # The call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
-        self.bm.last_calls['rt_runticket_manager.py'][0] = re.sub(
-                                    r'@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][0] )
+        self.bm.last_calls['rt_runticket_manager.py'][0][-1] = re.sub(
+                                    r'^@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][0][-1] )
 
         # But nothing else should happen
         self.assertEqual(self.bm.last_calls, expected_calls)
@@ -270,7 +271,8 @@ class T(unittest.TestCase):
         # Pipeline folder should appear
         self.assertTrue(os.path.isdir(test_data2 + '/pipeline'))
         self.assertEqual(self.bm.last_calls['Snakefile.qc'],
-                         ['-- metadata_main', '-F --config pstatus=Waiting for data -- multiqc_main'])
+                         [['--', 'metadata_main'],
+                          ['-F', '--config', 'pstatus=Waiting for data', '--', 'multiqc_main']])
 
     def test_existing_and_new(self):
         """If a run appears new (no pipeline dir) but then has an existing output directory we shouldn't
@@ -416,8 +418,7 @@ class T(unittest.TestCase):
 
         #Check invoking of Snakefile.demux (in the sedata dir)
         self.assertEqual( self.bm.last_calls['Snakefile.demux'][0],
-                          '--config lanes=[1,2,3,4,5,6,7,8] rundir={}'.format(test_data)
-                        )
+                          ['--config', 'lanes=[1,2,3,4,5,6,7,8]', 'rundir=' + test_data] )
 
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READS_FINISHED")
 
@@ -450,8 +451,8 @@ class T(unittest.TestCase):
         # Look for evidence of clean failure, report to RT, etc.
         self.assertTrue( os.path.exists(os.path.join(test_data, 'pipeline', 'failed')) )
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'][-1],
-                          "-Q run -r 160606_K00166_0102_BHF22YBBXX --subject failed --reply " +
-                          "Demultiplexing failed. See log in " + fastqdir + "/pipeline.log"
+                          "-Q run -r 160606_K00166_0102_BHF22YBBXX --subject failed --reply".split() +
+                          ["Demultiplexing failed. See log in " + fastqdir + "/pipeline.log"]
                         )
         self.assertInStdout("FAIL Demultiplexing 160606_K00166_0102_BHF22YBBXX")
 
@@ -535,12 +536,12 @@ class T(unittest.TestCase):
 
         # It should have called for a cleanup on lanes 1 and 2
         self.assertEqual( self.bm.last_calls['BCL2FASTQCleanup.py'],
-                          [fastqdir + " 1 2"]
+                          [[fastqdir, '1', '2']]
                         )
 
         # It should have called Snakefile.demux
         self.assertEqual( self.bm.last_calls['Snakefile.demux'],
-                          ["--config lanes=[1,2] rundir=" + test_data ]
+                          [['--config', 'lanes=[1,2]', 'rundir=' + test_data]]
                         )
 
         # It should have removed the .done, .started and .redo files, then
@@ -563,18 +564,19 @@ class T(unittest.TestCase):
         # detecting if the sample sheet changed or not.
         # So check the summary is re-made and then read back to make the e-mail:
         self.assertEqual( self.bm.last_calls['summarize_lane_contents.py'], [
-                                '--yml pipeline/sample_summary.yml',
-                                '--from_yml pipeline/sample_summary.yml --txt -' ] )
+                                '--yml pipeline/sample_summary.yml'.split(),
+                                '--from_yml pipeline/sample_summary.yml --txt -'.split() ] )
 
         # And two notes should go to RT - a reply about the redo starting and a comment about the success.
         # The first call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...
-        self.bm.last_calls['rt_runticket_manager.py'][0] = re.sub(
-                                    r'@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][0] )
+        self.bm.last_calls['rt_runticket_manager.py'][0][-1] = re.sub(
+                                    r'^@\S+$', '@???', self.bm.last_calls['rt_runticket_manager.py'][0][-1] )
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
-                          ["-Q run -r 160606_K00166_0102_BHF22YBBXX --subject redo lanes 1 2 --reply @???",
+                          [['-Q', 'run', '-r', '160606_K00166_0102_BHF22YBBXX', '--subject', 'redo lanes 1 2',
+                            '--reply', '@???'],
 
-                           "-Q run -r 160606_K00166_0102_BHF22YBBXX --subject re-demultiplexed"
-                           " --comment Re-Demultiplexing of lanes 1 2 completed"] )
+                           ['-Q', 'run', '-r', '160606_K00166_0102_BHF22YBBXX', '--subject', 're-demultiplexed',
+                            '--comment', 'Re-Demultiplexing of lanes 1 2 completed'] ])
 
     def test_redo_missing_output(self):
         """If the output link is broken the driver needs to fail quickly.
@@ -609,8 +611,8 @@ class T(unittest.TestCase):
         self.assertInStdout("FAIL Missing_Output_Dir 160606_K00166_0102_BHF22YBBXX")
 
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
-                          ["-Q run -r 160606_K00166_0102_BHF22YBBXX --subject failed --reply Processing failed."
-                           " Missing_Output_Dir. See log in /dev/stdout" ] )
+                          ["-Q run -r 160606_K00166_0102_BHF22YBBXX --subject failed --reply".split() +
+                           ["Processing failed. Missing_Output_Dir. See log in /dev/stdout"] ] )
 
     def test_redo_fail_cleanup(self):
         """If BCL2FASTQCleanup.py fails then it should stop processing the run, not continuing
@@ -646,7 +648,7 @@ class T(unittest.TestCase):
 
         # It should have called for a cleanup on lanes 1 and 2
         self.assertEqual( self.bm.last_calls['BCL2FASTQCleanup.py'],
-                          [fastqdir + " 1 2"]
+                          [[fastqdir, '1', '2']]
                         )
 
         # As this fails, it should should NOT have called Snakefile.demux or
@@ -670,8 +672,8 @@ class T(unittest.TestCase):
         # And a note about the failure should go to RT
         # Since the cleanup runs before the call to run_multiqc we won't get the redo notification to RT at all.
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
-                          ["-Q run -r 160606_K00166_0102_BHF22YBBXX --subject failed --reply Cleanup_for_Re-demultiplexing failed."
-                           " See log in " + fastqdir + "/pipeline.log" ] )
+                          ["-Q run -r 160606_K00166_0102_BHF22YBBXX --subject failed --reply".split() +
+                           ["Cleanup_for_Re-demultiplexing failed. See log in " + fastqdir + "/pipeline.log"] ] )
 
     def test_10x_restart_bug(self):
         """I had a bug where restarting QC on a 10X run would exit leaving the run in_qc with
