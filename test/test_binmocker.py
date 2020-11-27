@@ -3,6 +3,7 @@
 import sys, os
 import unittest
 from unittest.mock import patch
+from shlex import quote
 
 with patch('sys.path', new=['.'] + sys.path):
     from test.binmocker import BinMocker
@@ -26,8 +27,8 @@ class T(unittest.TestCase):
             self.assertEqual(res2, 1)
             self.assertEqual(bm.last_stdout.rstrip().split('\n'), ['123', '456'])
             self.assertEqual(bm.last_stderr.rstrip().split('\n'), ['888'])
-            self.assertEqual(bm.last_calls['foo'], ["foo args"])
-            self.assertEqual(bm.last_calls['bad'], ["dog", "doggy"])
+            self.assertEqual(bm.last_calls['foo'], [ ["foo", "args"] ])
+            self.assertEqual(bm.last_calls['bad'], [ ["dog"], ["doggy"] ])
 
             #Test that everything resets properly
             res3 = bm.runscript('true')
@@ -35,6 +36,24 @@ class T(unittest.TestCase):
             self.assertEqual(bm.last_stdout, '')
             self.assertEqual(bm.last_stderr, '')
             self.assertEqual(bm.last_calls, dict(foo=[], bad=[]))
+
+    def test_character_escaping(self):
+        with BinMocker('foo') as bm:
+
+            # Some exotic looking args
+            args = [ [ "a", "b", "c", "a b c" ],
+                     [ ''' ""''"<>!!! ''' ],
+                     [ '\n\n', '', '\t\t \n\r\r' ],
+                     [ '-' ] ]
+
+            script = ' ; '.join([ ' '.join(['foo'] + [quote(a) for a in alist])
+                                  for alist in args ])
+
+            res1 = bm.runscript(script)
+
+            self.assertEqual(bm.last_stdout, '')
+            self.assertEqual(bm.last_stderr, '')
+            self.assertEqual(bm.last_calls, dict(foo=args))
 
     def test_side_effect(self):
         """New feature - we can add a side_effect to our mock.
@@ -66,7 +85,7 @@ class T(unittest.TestCase):
 
         res1 = bm.runscript('/bin/false 123')
         self.assertEqual(res1, 0)
-        self.assertEqual(bm.last_calls['/bin/false'], ['123'])
+        self.assertEqual(bm.last_calls['/bin/false'], [ ['123'] ])
         self.assertEqual(bm.last_stdout, 'THIS\n')
 
         #Should also work if called from a sub-script.
@@ -74,9 +93,9 @@ class T(unittest.TestCase):
         bm.add_mock('/bin/wibble',  side_effect="woo 456")
 
         res2 = bm.runscript('/bin/wibble 123')
-        self.assertEqual(bm.last_calls['/bin/wibble'], ['123'])
-        self.assertEqual(bm.last_calls['woo'], ['456'])
-        self.assertEqual(bm.last_calls['/bin/false'], ['789'])
+        self.assertEqual(bm.last_calls['/bin/wibble'], [ ['123'] ])
+        self.assertEqual(bm.last_calls['woo'], [ ['456'] ])
+        self.assertEqual(bm.last_calls['/bin/false'], [ ['789'] ])
         self.assertEqual(bm.last_stdout, 'THIS\n')
 
         #Referring to a command stored in a var is OK
