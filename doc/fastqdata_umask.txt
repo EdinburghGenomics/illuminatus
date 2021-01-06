@@ -10,3 +10,10 @@ setting the umask but I suppose I could also force loading of all the startup
 files. But then this has its own problems.
 
 Anyway there's a copy of the script in here for reference.
+
+--
+
+On Hesiod, I now have a problem where the umask is set for the headnode but not for the
+cluster jobs. It seems I fixed this on Illuminatus?? How?
+
+Oh, I think it's just by removing the '-l' from the snakemake jobscript. Maybe. Yup.
