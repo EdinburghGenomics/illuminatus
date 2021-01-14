@@ -75,7 +75,7 @@ for run in "$FASTQ_LOCATION"/*/ ; do
   # Comparing times on pipeline.log is probably the simplest way to see if the copy
   # is up-to-date and saves my sync-ing everything again and again
   # Note this will also trigger if the run directory itself has changed (perms or mtime)
-  if rsync -nsa --itemize-changes --include='pipeline.log' --exclude='*' "$run" "$BACKUP_LOCATION/$run_name" | grep -q . ; then
+  if rsync -ns -rlptgD --itemize-changes --include='pipeline.log' --exclude='*' "$run" "$BACKUP_LOCATION/$run_name" | grep -q . ; then
     log_size=`stat -c %s "$run/pipeline.log"`
     echo "Detected activity for $run_name with log size $log_size"
   else
@@ -100,7 +100,7 @@ for run in "$FASTQ_LOCATION"/*/ ; do
   # triggered again and again.
   rsync -sbav --exclude='**/.snakemake' --exclude='**/slurm_output' --exclude={seqdata,projects_deleted.txt,pipeline.log} \
     "$run" "$BACKUP_LOCATION/$run_name"
-  rsync -svrt --exclude='**' \
+  rsync -svrtg --exclude='**' \
     "$run" "$BACKUP_LOCATION/$run_name"
 
   # Just to test the log catcher below we can...
