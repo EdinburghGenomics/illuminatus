@@ -108,7 +108,7 @@ for run in "$FASTQ_LOCATION"/*/ ; do
 
   # Now add the pipeline directory and the SampleSheets from the seqdata dir (if it still exists)
   [ ! -e "$run"/seqdata/ ] || \
-  rsync -sbav --del --include='pipeline**' --include='SampleSheet*' --include='*.xml' --exclude='*' \
+  rsync -sbav --del --exclude='pipeline/output' --include='pipeline**' --include='SampleSheet*' --include='*.xml' --exclude='*' \
     "$run"seqdata/ "$BACKUP_LOCATION/$run_name/seqdata"
 
   # And finally the log. Do this last so if copying was interrupted/incomplete it will be obvious.
