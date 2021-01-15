@@ -32,6 +32,10 @@ class RunParametersXMLParser:
         for e in root.iter('FlowCellMode'):
             self.run_parameters[ 'Flowcell Type' ] = e.text
 
+        # On the newer NovaSeq runs we can get the chemistry version
+        for e in root.iter('SbsConsumableVersion'):
+            self.run_parameters[ 'Consumable Version' ] = e.text
+
         #The start time is the timestamp of the file, or else the oldest file in the Recipe dir
         started_times = sorted( os.stat(f).st_mtime for f in
                                 [runparameters_file] +
