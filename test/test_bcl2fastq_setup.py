@@ -180,6 +180,40 @@ class T(unittest.TestCase):
         self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
                                                              '--barcode-mismatches 9' ] )
 
+    def test_nocolon_override(self):
+        """SampleSheet.csv should be allowed to override barcode-mismatches etc.
+           To be compatible with the processed format this needs to work with no colon.
+        """
+        run_id = '160607_D00248_0174_AC9E4KANXX'
+        shadow_dir = self.get_ex(run_id, shadow=True)
+
+        ini_file = os.path.join(shadow_dir, "pipeline_settings.ini")
+        self.assertFalse(os.path.exists( ini_file ))
+
+        # Munge the SampleSheet.csv with an extra heading.
+        with open(os.path.join(shadow_dir, 'SampleSheet.csv'), "r") as fh:
+            lines = list(fh)
+        with open(os.path.join(shadow_dir, 'SampleSheet.csv'), "w") as fh:
+            print("[bcl2fastq]", file=fh)
+            print("", file=fh)
+            print("--foo bar", file=fh)
+            print("--barcode-mismatches 2", file=fh)
+            print("--barcode-mismatches-lane4 4", file=fh)
+            print("", file=fh)
+            for l in lines: print(l, file=fh, end='')
+
+        pp = BCL2FASTQPreprocessor( run_dir = shadow_dir,
+                                    lane = "2",
+                                    revcomp = None )
+        self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
+                                                             '--barcode-mismatches 2' ] )
+
+        pp = BCL2FASTQPreprocessor( run_dir = shadow_dir,
+                                    lane = "4",
+                                    revcomp = None )
+        self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
+                                                             '--barcode-mismatches 4' ] )
+
     def test_miseq_badlane(self):
         """What if I try to demux a non-existent lane on a MiSEQ?
         """
@@ -234,6 +268,53 @@ class T(unittest.TestCase):
         pp = BCL2FASTQPreprocessor(shadow_dir, "4", None)
         self.assertEqual(pp.get_bcl2fastq_options()[1], "--use-bases-mask '4:Y50n,I8,n*'")
 
+    def test_auto_revcomp(self):
+        """ Run 201125_A00291_0321_AHWHKYDRXX is the original one that needed a revcomp
+        """
+        run_id = '201125_A00291_0321_AHWHKYDRXX'
+        run_dir = self.get_ex(run_id, shadow=False)
+
+        out_lines = BCL2FASTQPreprocessor( run_dir = run_dir,
+                                           lane = "1",
+                                           revcomp = None ).get_output('test')
+        self.assertEqual( out_lines[-4], '[Data]' )
+        self.assertEqual( out_lines[-3].split(',')[0], 'Lane' )
+        self.assertEqual( out_lines[-3].split(',')[7], 'index' )
+        self.assertEqual( out_lines[-3].split(',')[9], 'index2' )
+
+        # With no revcomp, we get this...
+        self.assertEqual( out_lines[-1].split(',')[0], '1' )
+        self.assertEqual( out_lines[-1].split(',')[7], 'TTATAACC' )
+        self.assertEqual( out_lines[-1].split(',')[9], 'GATATCGA' )
+
+        # With forced double revcomp, this
+        out_lines = BCL2FASTQPreprocessor( run_dir = run_dir,
+                                           lane = "1",
+                                           revcomp = "12" ).get_output('test')
+        self.assertEqual( out_lines[-1].split(',')[7], 'GGTTATAA' )
+        self.assertEqual( out_lines[-1].split(',')[9], 'TCGATATC' )
+
+        # Auto revcomp just modifies the second index
+        pp = BCL2FASTQPreprocessor( run_dir = run_dir,
+                                    lane = "1",
+                                    revcomp = "auto" )
+        out_lines = pp.get_output('test')
+
+        self.assertEqual( pp.infer_revcomp(), '2' )
+        self.assertEqual( out_lines[-1].split(',')[7], 'TTATAACC' )
+        self.assertEqual( out_lines[-1].split(',')[9], 'TCGATATC' )
+
+    def test_empty_samplesheet(self):
+        """If there is no sample sheet the pipeline generates an empty file.
+           We want a clean error.
+        """
+        run_id = '160606_K00166_0102_BHF22YBBXX'
+        run_dir = self.get_ex(run_id, shadow=False)
+
+        self.assertRaises( AssertionError,
+                BCL2FASTQPreprocessor, run_dir = run_dir,
+                                       lane = "1",
+                                       revcomp = None )
 
 if __name__ == '__main__':
     unittest.main()

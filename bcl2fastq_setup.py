@@ -113,7 +113,7 @@ class BCL2FASTQPreprocessor:
     def infer_revcomp(self):
         """Do we need to do the thing? This is a special hack for certain NovaSeq runs.
         """
-        if self.run_info['RunId'].split('_')[1][1] != 'A':
+        if self.run_info['RunId'].split('_')[1][0] != 'A':
             # Not a NovaSeq run then
             return ''
 
@@ -168,10 +168,12 @@ class BCL2FASTQPreprocessor:
                 l = l.strip()
                 if l:
                     data_headers = [ h.lower() for h in l.split(',') ]
+                    res.append(l)
                     break
             else:
                 # We never found the headers
                 raise Exception("No headers after the [Data] line in SampleSheet.csv")
+
             try:
                 lane_header_idx = data_headers.index('lane')
             except ValueError:
@@ -183,12 +185,12 @@ class BCL2FASTQPreprocessor:
                 if not l.strip():
                     continue
                 l = l.strip().split(',')
-                if (not lane_header_idx) or (l[lane_header_idx] == self.lane):
+                if (lane_header_idx is None) or (l[lane_header_idx] == self.lane):
                     # Yeah we want this. But do we need any index munging?
                     if '1' in self.revcomp and 'index' in data_headers:
-                        l[h.index('index')] = revcomp(l[data_headers.index('index')])
+                        l[data_headers.index('index')] = revcomp(l[data_headers.index('index')])
                     if '2' in self.revcomp and 'index2' in data_headers:
-                        l[h.index('index2')] = revcomp(l[data_headers.index('index2')])
+                        l[data_headers.index('index2')] = revcomp(l[data_headers.index('index2')])
 
                     res.append(','.join(l))
 
@@ -198,7 +200,7 @@ class BCL2FASTQPreprocessor:
         """Loads the [bcl2fastq] section from self._samplesheet into self.ini_settings,
            allowing things like --barcode-mismatches to be embedded in the SampleSheet.csv
         """
-        cp = configparser.ConfigParser(empty_lines_in_values=False)
+        cp = configparser.ConfigParser(empty_lines_in_values=False, delimiters=(':', '=', ' '))
         try:
             with open(self.samplesheet) as sfh:
                 cp.read_file( takewhile(lambda x: not x.startswith('[Data]'),
