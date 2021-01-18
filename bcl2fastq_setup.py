@@ -18,7 +18,7 @@ from illuminatus.RunParametersXMLParser import RunParametersXMLParser
 class BCL2FASTQPreprocessor:
     """The name is a hangover from the old script name.
     """
-    def __init__(self, run_dir, lane):
+    def __init__(self, run_dir, lane, revcomp):
 
         #Read data_dir and check that requested lane is in the SampleSheet.
         self.run_dir = run_dir
@@ -35,18 +35,21 @@ class BCL2FASTQPreprocessor:
         # Check the lane is valid. Note lane must be a str
         assert self.bme.get_lanes(), \
             "SampleSheet.csv does not seem to list any lanes."
-        assert lane  in [ str(l) for l in self._bme.get_lanes() ], \
-            "{!r} not in {!r}".format(lane, self._bme.get_lanes())
+        assert str(lane) == lane, \
+            "{!r} is not a string".format(lane)
+        assert lane  in [ str(l) for l in self.bme.get_lanes() ], \
+            "{!r} not in {!r}".format(lane, self.bme.get_lanes())
         self.lane = lane
 
-        # This set usp self.ini_settings()
+        # This sets up self.ini_settings()
         self.get_ini_settings()
 
         # See if we want to revcomp at all
-        if args.revcomp == 'auto':
+        if revcomp == 'auto':
             self.revcomp = self.infer_revcomp()
         else:
-            self.revcomp = self.revcomp or ''
+            # Convert None to ''
+            self.revcomp = revcomp or ''
 
     def get_ini_settings(self):
         """Extract the appropriate settings for embedding to the [bcl2fastq] section.
@@ -72,29 +75,11 @@ class BCL2FASTQPreprocessor:
                 if k.startswith('--barcode-mismatches-'):
                     del self.ini_settings['bcl2fastq'][k]
 
-    def infer_revcomp(self):
-        """Do we need to do the thing? This is a special hack for certain NovaSeq runs.
+    def get_bcl2fastq_options(self):
+        """Get the options which will go into the [bcl2fastq] section on the sample sheet.
+           Unlike get_ini_settings() this does not set a variable on the object but just returns
+           a list.
         """
-        if self._runinfo['RunId'].split('_')[1][1] != 'A':
-            # Not a NovaSeq run then
-            return ''
-
-        rp = RunParametersXMLParser( self.run_dir ).run_parameters
-        if rp.get('Consumable Version') == '3':
-            # For these we want to revcomp the i5 barcode.
-            return '2'
-
-        # In all other cases, nowt to do.
-        return ''
-
-
-    def get_output(self, me):
-        """Return a new partial sample sheet as a list of lines.
-        """
-        res = ['[Header]']
-
-        # Calculate the bcl2fastq_opts:
-        # work out all the options plus --barcode-mismatches which is special.
         bcl2fastq_opts = ["--fastq-compression-level 6"]
 
         # Add base mask for this lane
@@ -123,22 +108,51 @@ class BCL2FASTQPreprocessor:
                 #print ("appending from pipeline_settings.ini " + ini_option)
                 bcl2fastq_opts.append(replace_value)
 
+        return bcl2fastq_opts
+
+    def infer_revcomp(self):
+        """Do we need to do the thing? This is a special hack for certain NovaSeq runs.
+        """
+        if self.run_info['RunId'].split('_')[1][1] != 'A':
+            # Not a NovaSeq run then
+            return ''
+
+        rp = RunParametersXMLParser( self.run_dir ).run_parameters
+        if rp.get('Consumable Version') == '3':
+            # For these we want to revcomp the i5 barcode.
+            return '2'
+
+        # In all other cases, nowt to do.
+        return ''
+
+
+    def get_output(self, me):
+        """Return a new partial sample sheet as a list of lines.
+        """
+        res = ['[Header]']
+
+        # Calculate the bcl2fastq_opts:
+        # work out all the options plus --barcode-mismatches which is special.
+        bcl2fastq_opts = self.get_bcl2fastq_options()
+
         # OK now we can go through the input sample sheet.
-        with open(self._rundir + '/SampleSheet.csv') as ssfh:
+        with open(self.run_dir + '/SampleSheet.csv') as ssfh:
             # We expect a [Header] section.
             assert next(ssfh).strip() == '[Header]'
             for l in ssfh:
                 l = l.strip()
                 if l == '' or l.startswith('['):
                     break
-                if not l.startswith('Description'):
+                if not any(l.startswith(x) for x in ('Description', '#')):
                     res.append(l)
+            res.append("Run ID,{}".format(self.run_info['RunId']))
             res.append("Description,Fragment processed with {}".format(me))
 
             # Now add the bcl2fastq_opts
             res.append('')
-            res.append(['bcl2fastq'])
+            res.append('[bcl2fastq]')
             res.extend(bcl2fastq_opts)
+            res.append('')
 
             # Get to the [Data] line
             for l in ssfh:
@@ -149,23 +163,32 @@ class BCL2FASTQPreprocessor:
                 raise Exception("No [Data] line in SampleSheet.csv")
 
             # Grab the header. Allow for a blank line
+            res.append('[Data]')
             for l in ssfh:
                 l = l.strip()
                 if l:
-                    table_headers = [ h.lower() for h in l.split(',') ]
+                    data_headers = [ h.lower() for h in l.split(',') ]
                     break
+            else:
+                # We never found the headers
+                raise Exception("No headers after the [Data] line in SampleSheet.csv")
+            try:
+                lane_header_idx = data_headers.index('lane')
+            except ValueError:
+                # If there is no lane the semantics say that all lines apply to all lanes.
+                lane_header_idx = None
 
             # Get the actual entries
             for l in ssfh:
                 if not l.strip():
                     continue
                 l = l.strip().split(',')
-                if l[h.index('lane')] == self.lane:
+                if (not lane_header_idx) or (l[lane_header_idx] == self.lane):
                     # Yeah we want this. But do we need any index munging?
-                    if '1' in self.revcomp and 'index' in table_headers:
-                        l[h.index('index')] = revcomp(l[h.index('index')])
-                    if '2' in self.revcomp and 'index2' in table_headers:
-                        l[h.index('index2')] = revcomp(l[h.index('index2')])
+                    if '1' in self.revcomp and 'index' in data_headers:
+                        l[h.index('index')] = revcomp(l[data_headers.index('index')])
+                    if '2' in self.revcomp and 'index2' in data_headers:
+                        l[h.index('index2')] = revcomp(l[data_headers.index('index2')])
 
                     res.append(','.join(l))
 
@@ -177,17 +200,17 @@ class BCL2FASTQPreprocessor:
         """
         cp = configparser.ConfigParser(empty_lines_in_values=False)
         try:
-            with open(self._samplesheet) as sfh:
+            with open(self.samplesheet) as sfh:
                 cp.read_file( takewhile(lambda x: not x.startswith('[Data]'),
                                         dropwhile(lambda x: not x.startswith('[bcl2fastq]'), sfh)),
-                              self._samplesheet )
+                              self.samplesheet )
 
                 for section in cp.sections():
                     # Cast all to strings
                     self.ini_settings[section].update(cp.items(section))
-
-        except Exception:
+        except KeyError:
             return
+
 
     def load_ini_file(self, ini_file):
         """ Read the options from config_file into self.ini_settings,
@@ -211,10 +234,11 @@ def revcomp(seq, ttable=str.maketrans('ATCG','TAGC')):
 def main(args):
     """ Main mainness
     """
-    exit(repr(args))
-
     me = "Illuminatus " + os.path.basename(sys.argv[0])
-    pp = BCL2FASTQPreprocessor(run_dir=args.run_dir, lane=args.lane)
+    # This always comes out as a list of 1
+    run_dir, = args.run_dir
+
+    pp = BCL2FASTQPreprocessor(run_dir=run_dir, lane=args.lane, revcomp=args.revcomp)
 
     print( *pp.get_output(me), sep='\n' )
 
