@@ -91,9 +91,12 @@ class T(unittest.TestCase):
         bm = BinMocker()
         self.addCleanup(bm.cleanup)
 
-        #Side effect should happen but should not affect the return value.
+        # Side effect should happen but should not affect the return value.
         bm.add_mock('this', side_effect="echo THIS ; false")
         bm.add_mock('that', side_effect="echo THAT >&2 ; true", fail=True)
+
+        # Unless the side effect explicitly calls 'exit'.
+        bm.add_mock('theother', side_effect="echo THEOTHER ; exit $1")
 
         res1 = bm.runscript('this')
         self.assertEqual(res1, 0)
@@ -102,6 +105,13 @@ class T(unittest.TestCase):
         res2 = bm.runscript('that')
         self.assertEqual(res2, 1)
         self.assertEqual(bm.last_stderr, 'THAT\n')
+
+        res3 = bm.runscript('theother 42')
+        self.assertEqual(res3, 42)
+        self.assertEqual(bm.last_stdout, 'THEOTHER\n')
+        self.assertEqual(bm.last_calls, dict( this = [],
+                                              that = [],
+                                              theother = [[ '42' ]] ))
 
     def test_mock_abs_path(self):
         """It should be possible to mock out even commands referred to by

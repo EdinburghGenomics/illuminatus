@@ -47,9 +47,9 @@ class BinMocker:
 
         mockscript = r'''
             #!/bin/bash
-            {side_effect}
             _fs='%s\0%d\0' ; for x in "$@" ; do _fs+='%s\0' ; done ; _fs+='\n'
             printf "$_fs" "$(basename "$0")" "$#" "$@" >> "$(dirname "$0")"/_MOCKCALLS
+            {side_effect}
             exit {retcode}
         '''.format(**locals())
 
