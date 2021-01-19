@@ -121,7 +121,8 @@ class BinMocker:
         self.mock_bin_dir = None
 
     def runscript(self, cmd, set_path=True, env=None):
-        """Runs the specified command, which may contain shell syntax,
+        """Runs the specified command, which may contain shell syntax if
+           it is a string or else may be a list of literal [cmd, arg1, arg2, ...]
            and captures the output and the commands that were invoked.
            By default, the mock scripts will be prepended to the PATH, but you
            can alternatively specify set_path=False in which case you take
@@ -154,13 +155,15 @@ class BinMocker:
 
                 full_env['BASH_ENV'] = self._bash_env
 
-        p = subprocess.Popen(cmd, shell = True,
+        use_shell = (type(cmd) == str)
+        p = subprocess.Popen(cmd,
+                             shell = use_shell,
                              stdout = subprocess.PIPE,
                              stderr = subprocess.PIPE,
                              universal_newlines = True,
                              env = full_env,
-                             executable = "/bin/bash",
-                             close_fds=True)
+                             executable = "/bin/bash" if use_shell else None,
+                             close_fds = True)
 
         self.last_stdout, self.last_stderr = p.communicate()
 

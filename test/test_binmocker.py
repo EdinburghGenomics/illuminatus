@@ -22,7 +22,7 @@ class T(unittest.TestCase):
             self.assertEqual(bm.last_calls, bm.empty_calls())
             self.assertEqual(bm.last_calls, dict(foo=[], bad=[]))
 
-            #Now something that actually calls things
+            # Now something that actually calls things
             res2 = bm.runscript('echo 123 ; foo foo args ; echo 456 ; ( echo 888 >&2 ) ; bad dog ; bad doggy')
             self.assertEqual(res2, 1)
             self.assertEqual(bm.last_stdout.rstrip().split('\n'), ['123', '456'])
@@ -30,12 +30,42 @@ class T(unittest.TestCase):
             self.assertEqual(bm.last_calls['foo'], [ ["foo", "args"] ])
             self.assertEqual(bm.last_calls['bad'], [ ["dog"], ["doggy"] ])
 
-            #Test that everything resets properly
+            # Test that everything resets properly
             res3 = bm.runscript('true')
             self.assertEqual(res3, 0)
             self.assertEqual(bm.last_stdout, '')
             self.assertEqual(bm.last_stderr, '')
             self.assertEqual(bm.last_calls, dict(foo=[], bad=[]))
+
+    def test_cmd_as_list(self):
+        """When bm.runscript() is called with a list arg it should bypass the shell.
+        """
+        with BinMocker('foo', 'bad') as bm:
+            bm.add_mock('bad', fail=True)
+
+            # Same as above
+            res1 = bm.runscript(['true'])
+            self.assertEqual(res1, 0)
+            self.assertEqual(bm.last_stdout, '')
+            self.assertEqual(bm.last_stderr, '')
+            self.assertEqual(bm.last_calls, bm.empty_calls())
+            self.assertEqual(bm.last_calls, dict(foo=[], bad=[]))
+
+            # Now echo some stuff.
+            res2 = bm.runscript(['echo', '123', '\n', '* <!!!"'])
+            self.assertEqual(res2, 0)
+            self.assertEqual(bm.last_stderr, '')
+            self.assertEqual(bm.last_stdout, '123 \n * <!!!"\n')
+
+            # And run the mocked scripts
+            res3 = bm.runscript(['foo'])
+            self.assertEqual(res3, 0)
+            self.assertEqual(bm.last_calls['foo'], [ [] ])
+
+            res4 = bm.runscript(['/usr/bin/env', 'bad', 'dog', ')))))'])
+            self.assertEqual(res4, 1)
+            self.assertEqual(bm.last_calls['foo'], [])
+            self.assertEqual(bm.last_calls['bad'], [ ["dog", ")))))"] ])
 
     def test_character_escaping(self):
         with BinMocker('foo') as bm:
