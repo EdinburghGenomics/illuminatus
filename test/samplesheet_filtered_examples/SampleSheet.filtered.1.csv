@@ -1,0 +1,18 @@
+[Header]
+IEMFileVersion,4
+Investigator Name,Stewart Laing
+Project Name
+Date,11/25/2020
+Run ID,201125_A00291_0321_AHWHKYDRXX
+Description,Fragment processed with Illuminatus bcl2fastq_setup.py
+
+[bcl2fastq]
+--fastq-compression-level 6
+--use-bases-mask '1:Y100n,I8,I8,Y100n'
+--tiles=s_[$LANE]
+--barcode-mismatches 1
+
+[Data]
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,Sample_Project,I7_Index_ID,index,I5_Index_ID,index2,Description
+1,12010OCpool01__12010OC0001L01,,HWHKYDRXX,,12010,01-A01-UDI7001,CCGCGGTT,UDI5001-AGCGCTAG,AGCGCTAG,12010OCpool01
+1,12010OCpool01__12010OC0002L01,,HWHKYDRXX,,12010,02-B01-UDI7002,TTATAACC,UDI5002-GATATCGA,GATATCGA,12010OCpool01

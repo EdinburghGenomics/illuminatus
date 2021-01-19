@@ -1,55 +1,64 @@
 #!/bin/bash
-# Run bcl2fastq on {{runid}} lane {{lane}}.
+# Run bcl2fastq on <rundir> to <outdir> with <samplesheet> for <lane>.
 
 set -euo pipefail
 
-# You are either looking at the template used by BCL2FASTQPreprocessor.py or else a
-# script made from the template. See templates/do_demultiplex.sh.ms for the original.
-
 # Main settings:
-echo BCL2FASTQ={{bcl2fastq}}
-echo INPATH={{rundir}}
-echo SAMPLESHEET={{samplesheet}}
-echo OUTPATH={{destdir}}/lane{{lane}}
+RUNDIR="$1"
+OUTDIR="$2"
+SAMPLESHEET="$3"
+LANE="$4"
 
-INPATH={{rundir}}
-OUTPATH={{destdir}}/lane{{lane}}
+# bcl2fastq version, and resolve the link if there is one
+BCL2FASTQ="$(which bcl2fastq)"
+BCL2FASTQ_REAL="$(readlink -f "$BCL2FASTQ")"
+
+echo "RUNDIR=$RUNDIR"
+echo "OUTDIR=$OUTDIR"
+echo "SAMPLESHEET=$SAMPLESHEET"
+echo "LANE=$LANE"
+echo "BCL2FASTQ=$BCL2FASTQ"
+echo "BCL2FASTQ_REAL=$BCL2FASTQ_REAL"
 
 # We need to strip the other lanes out of the SampleSheet.csv, due to the bug that bcl2fastq
 # will do an index collision check for ALL lanes even if you are only trying to process one,
 # which breaks the per-lane-base-mask feature.
-# We can do this munging on the fly (this assuming we never see more than 8 lanes)...
-LANE={{lane}}
-SHEET_FILTER="`tr -d {{lane}} <<<'^[12345678],'`"
+# This is now done by bcl2fastq_setup.py so no furter filtering is needed.
 
-{{bcl2fastq}} --version 2> "$OUTPATH"/bcl2fastq.version
+# Capture the bcl2fastq version
+"$BCL2FASTQ" --version 2>&1 | grep . > "$OUTDIR"/bcl2fastq.version
 
-{{#barcode_mismatches}}
-# --barcode-mismatches explicitly set to {{barcode_mismatches}}
+# Get the bcl2fastq section from the SAMPLESHEET.
+opts="$( <"$SAMPLESHEET" sed -ne '/^\[bcl2fastq\]/,/^\[/ p' | egrep '^[^[]' )"
 
-{{bcl2fastq}} -R "$INPATH" -o "$OUTPATH" {{#bcl2fastq_opts}}{{{.}}} {{/bcl2fastq_opts}} \
-    --sample-sheet <(grep -v "$SHEET_FILTER" {{samplesheet}}) -p ${PROCESSING_THREADS:-10} \
-    2> "$OUTPATH"/bcl2fastq.log && \
-echo "--barcode-mismatches {{barcode_mismatches}}" > "$OUTPATH"/bcl2fastq.opts
+# Compile all options in a list
+# The 'eval' is needed to convert $LANE to the actual lane number.
+opts_list=(-R "$RUNDIR" -o "$OUTDIR")
+opts_list+=($(eval echo $opts))
+opts_list+=(--sample-sheet "$SAMPLESHEET" -p ${PROCESSING_THREADS:-10})
 
-{{/barcode_mismatches}}
-{{^barcode_mismatches}}
-# --barcode-mismatches needs to be determined by trial and error
+# See if --barcode-mismatches is in the options at all
+if grep -w -- '^--barcode-mismatches' <<<"$opts" ; then
+#if printf "%s\n" "${opts_list[@]}" | grep -qFx -- '--barcode-mismatches' ; then
 
-if ! ( {{bcl2fastq}} -R "$INPATH" -o "$OUTPATH" {{#bcl2fastq_opts}}{{{.}}} {{/bcl2fastq_opts}} \
-            --sample-sheet <(grep -v "$SHEET_FILTER" {{samplesheet}}) -p ${PROCESSING_THREADS:-10} --barcode-mismatches 1 \
-            2> "$OUTPATH"/bcl2fastq.log && \
-       echo "--barcode-mismatches 1" > "$OUTPATH"/bcl2fastq.opts ) ; then
-    # Fail due to barcode collision or something else?
-    if grep -qF 'Barcode collision for barcodes:' "$OUTPATH"/bcl2fastq.log ; then
-        mv "$OUTPATH"/bcl2fastq.log "$OUTPATH"/bcl2fastq_mismatch1.log
-        {{bcl2fastq}} -R "$INPATH" -o "$OUTPATH" {{#bcl2fastq_opts}}{{{.}}} {{/bcl2fastq_opts}} \
-            --sample-sheet <(grep -v "$SHEET_FILTER" {{samplesheet}}) -p ${PROCESSING_THREADS:-10} --barcode-mismatches 0 \
-            2> "$OUTPATH"/bcl2fastq.log && \
-        echo "--barcode-mismatches 0" > "$OUTPATH"/bcl2fastq.opts
-    else
-        # Failure
-        false
+    # --barcode-mismatches is explicitly set
+
+    "$BCL2FASTQ" "${opts_list[@]}" 2> "$OUTDIR"/bcl2fastq.log
+
+    echo "$opts" > "$OUTDIR"/bcl2fastq.opts
+else
+
+    # --barcode-mismatches needs to be determined by trial and error
+
+    if ! ( "$BCL2FASTQ" "${opts_list[@]}" --barcode-mismatches 1 2>"$OUTDIR"/bcl2fastq.log && \
+            echo "--barcode-mismatches 1" > "$OUTDIR"/bcl2fastq.opts ) ; then
+
+        # Fail due to barcode collision or something else?
+        grep -qF 'Barcode collision for barcodes:' "$OUTDIR"/bcl2fastq.log
+        mv "$OUTDIR"/bcl2fastq.log "$OUTDIR"/bcl2fastq_mismatch1.log
+        "$BCL2FASTQ" "${opts_list[@]}" --barcode-mismatches 0 2>"$OUTDIR"/bcl2fastq.log
+        echo "--barcode-mismatches 0" > "$OUTDIR"/bcl2fastq.opts
+
     fi
+    echo "$opts" >> "$OUTDIR"/bcl2fastq.opts
 fi
-{{/barcode_mismatches}}

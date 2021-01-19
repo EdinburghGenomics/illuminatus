@@ -128,5 +128,3 @@ class TestSandbox:
 
     def lsdir(self, adir, glob="*"):
         return sorted(f for f in os.listdir(os.path.join(self.sandbox, adir)) if fnmatch(f, glob))
-
-

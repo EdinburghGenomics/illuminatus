@@ -15,8 +15,7 @@ from shlex import quote as shell_quote
    the calls to those programs, similar to the way that Test::Mock works.
    To this end, see the BinMocker class. I've broken this out for general use.
 """
-with patch('sys.path', new=['.'] + sys.path):
-    from test.binmocker import BinMocker
+from binmocker import BinMocker
 
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')
