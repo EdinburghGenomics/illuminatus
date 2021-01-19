@@ -104,7 +104,7 @@ class T(unittest.TestCase):
             self.assertEqual(len(list(fh)), 4)
 
     def test_bad_bcl2fastq(self):
-        """If bcl2fastq won't run at all
+        """If bcl2fastq won't run at all, even to give a version
         """
         self.bm.add_mock( 'bcl2fastq', fail=True )
 
@@ -117,7 +117,7 @@ class T(unittest.TestCase):
         self.assertEqual(self.bm.last_calls, dict( bcl2fastq = [ ['--version'] ] ))
 
     def test_fail_demux(self):
-        """The same but demultiplexing fails
+        """And if demultiplexing fails?
         """
         # Here I need a dummy bcl2fastq that will print a version but fail otherwise
         self.bm.add_mock( 'bcl2fastq',
@@ -135,13 +135,119 @@ class T(unittest.TestCase):
         with open(os.path.join(self.tmp_dir.sandbox, 'bcl2fastq.version')) as fh:
             self.assertEqual(list(fh), ['123\n'])
 
+    def test_fail_demux_n(self):
+        """And if demultiplexing fails without --barcode-mismatches supplied?
+           This should run the same as test_fail_demux
+        """
+        # Here I need a dummy bcl2fastq that will print a version but fail otherwise
+        self.bm.add_mock( 'bcl2fastq',
+                          side_effect = 'if [ $1 = --version ] ; then echo 123 ; exit 0 ; else exit 1 ; fi' )
+
+        res = self.bm_rundemux( [ 'dummy_seqdata',
+                                  self.tmp_dir.sandbox,
+                                  self.get_example('N'),
+                                  '1' ],
+                                expected_retval = 1 )
+
+        # No .opts file written on failure. No mismatch1.log because the failure is not a
+        # collision failure.
+        self.assertEqual( self.tmp_dir.lsdir('.'), ['bcl2fastq.log', 'bcl2fastq.version'] )
+
+        self.assertEqual(self.bm.last_calls, dict( bcl2fastq = [
+                        ['--version'],
+                        ['-R', 'dummy_seqdata', '-o', self.tmp_dir.sandbox,
+                         '--fastq-compression-level', '6',
+                         '--use-bases-mask', '1:Y100n,I8,I8,Y100n',
+                         '--tiles=s_[1]',
+                         '--sample-sheet', self.get_example('N'),
+                         '-p', '10',
+                         '--barcode-mismatches', '1' ] ]))
+
+        with open(os.path.join(self.tmp_dir.sandbox, 'bcl2fastq.version')) as fh:
+            self.assertEqual(list(fh), ['123\n'])
+
     def test_demux_auto_mismatch(self):
         """A run that fails at mismatch 1 then works at mismatch 0
         """
+        # Now I need a dummy bcl2fastq that will print a version AND succeed if
+        # --barcode-mismatches 0 is supplied...
 
-    def test_demux_fail_both(self):
-        """A run the won't demultiplex with either setting
+        self.bm.add_mock( 'bcl2fastq',
+                          side_effect = 'if [ $1 = --version ] ;'
+                                        '  then echo 123 >&2 ; exit 0 ;'
+                                        'elif grep -q -- "--barcode-mismatches 0" <<<"$*" ;'
+                                        '  then echo OK >&2 ; exit 0 ;'
+                                        'else '
+                                        '  echo "Barcode collision for barcodes: XXX" >&2 ; exit 1 ;'
+                                        'fi' )
+
+        res = self.bm_rundemux( [ 'dummy_seqdata',
+                                  self.tmp_dir.sandbox,
+                                  self.get_example('N'),
+                                  '1' ],
+                                expected_retval = 0 )
+
+        self.assertEqual( self.tmp_dir.lsdir('.'), [ 'bcl2fastq.log',
+                                                     'bcl2fastq.opts',
+                                                     'bcl2fastq.version',
+                                                     'bcl2fastq_mismatch1.log' ] )
+
+        self.assertEqual(self.bm.last_calls, dict( bcl2fastq = [
+                        ['--version'],
+                        ['-R', 'dummy_seqdata', '-o', self.tmp_dir.sandbox,
+                         '--fastq-compression-level', '6',
+                         '--use-bases-mask', '1:Y100n,I8,I8,Y100n',
+                         '--tiles=s_[1]',
+                         '--sample-sheet', self.get_example('N'),
+                         '-p', '10',
+                         '--barcode-mismatches', '1',
+                         ],
+                        ['-R', 'dummy_seqdata', '-o', self.tmp_dir.sandbox,
+                         '--fastq-compression-level', '6',
+                         '--use-bases-mask', '1:Y100n,I8,I8,Y100n',
+                         '--tiles=s_[1]',
+                         '--sample-sheet', self.get_example('N'),
+                         '-p', '10',
+                         '--barcode-mismatches', '0',
+                         ] ]))
+
+        with open(os.path.join(self.tmp_dir.sandbox, 'bcl2fastq.version')) as fh:
+            self.assertEqual(list(fh), ['123\n'])
+
+        with open(os.path.join(self.tmp_dir.sandbox, 'bcl2fastq_mismatch1.log')) as fh:
+            self.assertEqual(list(fh), ['Barcode collision for barcodes: XXX\n'])
+
+        with open(os.path.join(self.tmp_dir.sandbox, 'bcl2fastq.log')) as fh:
+            self.assertEqual(list(fh), ['OK\n'])
+
+        with open(os.path.join(self.tmp_dir.sandbox, 'bcl2fastq.opts')) as fh:
+            self.assertEqual([l.rstrip('\n') for l in list(fh)], [
+                            "--barcode-mismatches 0",
+                            "--fastq-compression-level 6",
+                            "--use-bases-mask '1:Y100n,I8,I8,Y100n'",
+                            "--tiles=s_[$LANE]",
+                            ])
+
+    def test_fail_demux_both(self):
+        """A run that reports collisions with either setting
         """
+        # Here I need a dummy bcl2fastq that will print a version but feign
+        # a collision otherwise.
+        self.bm.add_mock( 'bcl2fastq',
+                          side_effect = 'if [ $1 = --version ] ; then echo 123 ; exit 0 ;'
+                                        ' else echo "Barcode collision for barcodes: XXX" >&2 ; exit 1 ; fi' )
+
+        res = self.bm_rundemux( [ 'dummy_seqdata',
+                                  self.tmp_dir.sandbox,
+                                  self.get_example('N'),
+                                  '1' ],
+                                expected_retval = 1 )
+
+        # No .opts file written on failure.
+        self.assertEqual( self.tmp_dir.lsdir('.'), ['bcl2fastq.log', 'bcl2fastq.version', 'bcl2fastq_mismatch1.log'] )
+
+        with open(os.path.join(self.tmp_dir.sandbox, 'bcl2fastq.version')) as fh:
+            self.assertEqual(list(fh), ['123\n'])
 
 if __name__ == '__main__':
     unittest.main()
