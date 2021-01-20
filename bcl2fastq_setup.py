@@ -147,6 +147,7 @@ class BCL2FASTQPreprocessor:
                     res.append(l)
             res.append("Run ID,{}".format(self.run_info['RunId']))
             res.append("Description,Fragment processed with {}".format(me))
+            res.append("Lane,{}".format(self.lane))
             res.append("Revcomp,{}".format(self.revcomp or 'None'))
 
             # Now add the bcl2fastq_opts

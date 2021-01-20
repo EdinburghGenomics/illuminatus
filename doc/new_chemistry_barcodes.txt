@@ -33,7 +33,7 @@ OK, so currently the sample sheet is filtered by some logic baked into the scrip
 BCL2FASTQPreprocessor.py and the filtering is done on-the-fly. What I'd want is to generate the
 sample sheet as a file in the output directory.
 
-If I do this with a Snakemake rule then it may not get replaced? Well, 1 it neeeds to depend on the
+If I do this with a Snakemake rule then it may not get replaced? Well, 1 it needs to depend on the
 sample sheet and 2 the cleanup process should delete it anyway (check it does).
 
 So I need:
@@ -49,3 +49,18 @@ So I need:
 
 Ah, no, let's put the bcl2fastq.preset.opts into the sample sheet. That way we have a complete config
 for the run in one place. Yeah. Cool.
+
+So on 20/1/21 I've done this. We no longer have a Python script that generates a shell script and we no longer
+have the input to bcl2fastq being read from a pipe with no direct record of exactly what was run. And there
+is unit test coverage. All good.
+
+So now, fix the Snakefile.demux and get testing on some slimmed runs. I need to make sure:
+
+1) Sample sheet fragment is removed by bcl2fastqcleanup
+2) Revcomp setting is reported somehow
+3) Erm?
+
+So in terms of reporting the revcomp setting, I think the thing to do is to add this to
+RunMetaData.py, so we get a report of the chemistry version. DONE.
+
+

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os, sys
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from datetime import datetime
 
 import yaml, yamlloader
@@ -94,6 +94,23 @@ class RunMetaData:
             #OK, the pipeline didn't start
             pass
 
+    def get_chemistry(self):
+        """Get the 'Consumable Version' from params and interpret it.
+        """
+        con_vers = self.run_params.get('Consumable Version')
+
+        if not con_vers:
+            return None
+
+        con_note = "unknown"
+        if self.runinfo_xml['Instrument'].startswith('novaseq_'):
+            if con_vers == '1':
+                con_note = "chemistry 1.0"
+            elif con_vers == '3':
+                con_note = "chemistry 1.5; revcomp index2"
+
+        return "{} ({})".format(con_vers, con_note)
+
     def get_yaml(self):
 
         info = self.runinfo_xml
@@ -104,18 +121,23 @@ class RunMetaData:
 
         idict = dict()
 
-        idict['pre_start_info'] = {
-                'Run Date': info['RunDate'],
-                'LaneCount': int(info['LaneCount']),
-                'Experiment Name': params.get('Experiment Name'),
-                'Run ID': info['RunId'],
-                'Instrument': info['Instrument'],
-                'Flowcell Type' : params.get('Flowcell Type', info['FCType']),
-                'Cycles':  info['Cycles'], # '251 [12] 251',
-                't1//Run Start': params['Start Time'],
-                'Pipeline Script': get_pipeline_script(),
-                'Sample Sheet': self.sample_sheet # [ name, path ]
-            }
+        idict['pre_start_info'] = OrderedDict([
+                ('Run Date', info['RunDate']),
+                ('Run ID', info['RunId']),
+                ('Experiment Name', params.get('Experiment Name')),
+                ('Instrument', info['Instrument']),
+                ('Flowcell Type', params.get('Flowcell Type', info['FCType'])),
+                ('Consumable', self.get_chemistry()),
+                ('LaneCount', int(info['LaneCount'])),
+                ('Cycles', info['Cycles']), # '251 [12] 251',
+                ('Pipeline Script', get_pipeline_script()),
+                ('Sample Sheet', self.sample_sheet), # [ name, path ]
+                ('t1//Run Start', params['Start Time']),
+            ])
+
+        # Eliminate empty value.
+        if not idict['pre_start_info']['Consumable']:
+            del idict['pre_start_info']['Consumable']
 
         if self.pipeline_info:
             idict['post_start_info'] = {
@@ -135,4 +157,4 @@ if __name__ == '__main__':
     #If no run specified, examine the CWD.
     run = sys.argv[1] if len(sys.argv) > 1 else '.'
     run_info = RunMetaData(run)
-    print ( run_info.get_yaml() )
+    print ( run_info.get_yaml(), end='' )
