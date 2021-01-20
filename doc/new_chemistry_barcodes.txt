@@ -42,9 +42,9 @@ So I need:
     Actually no this just wants to be a rewrite of BCL2FASTQPreprocessor.py that outputs both files.
 2) Rule in snakemake now outputs config and SampleSheet not the script.
 3) Make the preprocessor a little more coherent:
-    bcl2fastq will always be the toolbox version
+    bcl2fastq will always be the toolbox version at the point of running do_demultiplex.sh
     bcl2fastq.opts will still contain the barcode-mismatches setting
-    bcl2fastq.preset.opts will replace {{ bcl2fastq_opts }} in the script
+    bcl2fastq.preset.opts will replace {{ bcl2fastq_opts }} in the script (no, see below)
     SampleSheet.filtered.csv will be the sample sheet
 
 Ah, no, let's put the bcl2fastq.preset.opts into the sample sheet. That way we have a complete config

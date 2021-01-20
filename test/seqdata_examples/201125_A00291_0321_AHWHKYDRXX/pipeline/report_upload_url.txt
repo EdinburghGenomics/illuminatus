@@ -1,0 +1,1 @@
+localhost:test_fastqdata/uploaded_reports/201125_A00291_0321_AHWHKYDRXX

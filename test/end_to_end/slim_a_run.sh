@@ -11,7 +11,7 @@ DEST="${2:-.}"
 # If RUN_ID contains no /, assume /lustre/seqdata
 # You can slim direct from /ifs/seqdata but you need to be explicit.
 if [[ ! "$RUN_PATH" =~ / ]] ; then
-    RUN_PATH=/lustre/seqdata/"$RUN_PATH"
+    RUN_PATH=/lustre-gseg/seqdata/"$RUN_PATH"
 fi
 RUN_ID="`basename $RUN_PATH`"
 

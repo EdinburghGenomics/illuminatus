@@ -33,7 +33,7 @@ snakerun_drmaa "$0" --keep-going -F "$@"
 #!/usr/bin/env snakemake
 import yaml
 
-# The pre-processor needs to find bcl2fastq in the toolbox.
+# do_demultiplex.sh needs to find bcl2fastq in the toolbox.
 TOOLBOX = 'env PATH="{}:$PATH"'.format(os.environ['TOOLBOX'])
 
 def glob():
@@ -102,27 +102,27 @@ rule bcl2fastq:
         stats   = "lane{l}/Stats/DemultiplexingStats.xml",
         json    = "lane{l}/Stats/Stats.json",
         opts    = "lane{l}/bcl2fastq.opts",
-        version = "lane{l}/bcl2fastq.version"
+    log:
+        version = "lane{l}/bcl2fastq.version",
+        log     = "lane{l}/bcl2fastq.log"
     input:
-        script  = "lane{l}/do_demultiplex{l}.sh"
+        ssheet  = "lane{l}/SampleSheet.filtered.csv"
     threads: 12 # if you edit this number, also edit the cluster.yml
     shell:
-        # The location for bcl2fastq and input/output should already be coded in the script
-        # Log will go to "lane{l}/bcl2fastq.log" which is a bit annoying but I need it there
-        # for the make-empty-fastq hack. For convenience, dump the tail of the log
+        # Run do_demultiplex.sh for this lane.
+        # Log will go to "lane{l}/bcl2fastq.log"; for convenience, dump the tail of the log
         # to stderr using a shell trap.
-        """set -x
-           trap 'tail -v -n 20 lane{wildcards.l}/bcl2fastq.log >&2' exit
+        """trap 'tail -v -n 20 lane{wildcards.l}/bcl2fastq.log >&2' exit
            echo "Log will be written to lane{wildcards.l}/bcl2fastq.log"
-           PROCESSING_THREADS={threads} ; source {input.script}
+           export PROCESSING_THREADS={threads}
+           {TOOLBOX} do_demultiplex.sh {RUNDIR} lane{wildcards.l} {input.ssheet} {wildcards.lane}
         """
 
 rule preprocess:
     output:
-        script = "lane{l}/do_demultiplex{l}.sh"
+        ssheet = "lane{l}/SampleSheet.filtered.csv"
     params:
         dest = os.path.abspath('.')
     shell:
-        """{TOOLBOX} BCL2FASTQPreprocessor.py {RUNDIR} {params.dest} {wildcards.l}
-           mv do_demultiplex{wildcards.l}.sh {output}
+        """bcl2fastq_setup.py --lane {wildcards.l} --revcomp auto {RUNDIR} > {output}
         """

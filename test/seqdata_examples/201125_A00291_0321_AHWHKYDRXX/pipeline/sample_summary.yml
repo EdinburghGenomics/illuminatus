@@ -1,0 +1,29 @@
+Cycles: 101 [8] [8] 101
+CyclesAsList:
+- - '101'
+  - false
+- - '8'
+  - true
+- - '8'
+  - true
+- - '101'
+  - false
+Experiment Name: K2094
+FCType: S1
+Flowcell: HWHKYDRXX
+Instrument: novaseq_A00291
+LaneCount: '2'
+Lanes:
+- Contents: {}
+  LaneNumber: '1'
+  Loading: {}
+  Unindexed: false
+- Contents: {}
+  LaneNumber: '2'
+  Loading: {}
+  Unindexed: false
+ProjectInfo: {}
+ReportDateTime: '2021-01-20 11:49:41'
+RunDate: '2020-11-25'
+RunId: 201125_A00291_0321_AHWHKYDRXX
+SampleSheet: SampleSheet.csv.0

@@ -15,7 +15,7 @@ DEST="${2:-.}"
 # If RUN_ID contains no /, assume /lustre/seqdata
 # You can slim direct from /ifs/seqdata but you need to be explicit.
 if [[ ! "$RUN_PATH" =~ / ]] ; then
-    RUN_PATH=/lustre/seqdata/"$RUN_PATH"
+    RUN_PATH=/lustre-gseg/seqdata/"$RUN_PATH"
 fi
 RUN_ID="`basename $RUN_PATH`"
 
@@ -43,13 +43,13 @@ done
 
 # Now make some links
 for lane in $LANES ; do
-  ln -v "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/s_*_2101.filter "$DEST"/Data/Intensities/BaseCalls/$lane/
+  ln -snrv -t "$DEST"/Data/Intensities/BaseCalls/$lane/ "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/s_*_2101.filter
 
   CYCLES="`ls "$RUN_PATH"/Data/Intensities/BaseCalls/$lane | grep -x 'C[0-9]\+.1'`"
   echo "Linking `wc -w <<<$CYCLES` cyles of bcl[.gz] files for side 2 of $lane..."
   for cycle in $CYCLES ; do
     mkdir "$DEST"/Data/Intensities/BaseCalls/$lane/$cycle
-    ln -v "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/$cycle/*_2.cbcl "$DEST"/Data/Intensities/BaseCalls/$lane/$cycle/
+    ln -snrv -t "$DEST"/Data/Intensities/BaseCalls/$lane/$cycle/ "$RUN_PATH"/Data/Intensities/BaseCalls/$lane/$cycle/*_2.cbcl
   done
 done
 

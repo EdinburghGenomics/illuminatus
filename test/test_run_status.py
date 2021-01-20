@@ -455,6 +455,14 @@ class T(unittest.TestCase):
         self.rm('pipeline/read1.started')
         no_redo('read1_finished')
 
+    def test_looks_like_a_bug(self):
+        """While messing around with a test run it wouldn't restart. Failure
+           was due to an invalid sample sheet so it should be a simple restart.
+        """
+        run_info = self.use_run('201125_A00291_0321_AHWHKYDRXX', copy=False)
+
+        ri = dictify(run_info.get_yaml())
+        self.assertEqual(ri['PipelineStatus:'], 'redo')
 
     @unittest.skip
     def test_pointless_copying(self):

@@ -3,7 +3,8 @@
 # This script will fetch a new SampleSheet for the current run. It must
 # be run in the folder where the sequencer data has been written. For testing, try:
 # $ ( PATH="$PWD:$PATH" ; cd ~/test_seqdata/170703_D00261_0418_ACB6HTANXX/ ; samplesheet_fetch.sh )
-set -e ; set -u
+set -euo pipefail
+shopt -s nullglob
 
 # Support a SampleSheet postprocessor hook. This must take one argument,
 # the file to be read, and print to stdout. I'm not really using this in production
@@ -12,7 +13,7 @@ SSPP_HOOK="${SSPP_HOOK:-}"
 
 if [ -z "${FLOWCELLID:-}" ] ; then
     #Try to determine flowcell ID by asking RunStatus.py
-    FLOWCELLID=`RunStatus.py | grep '^Flowcell:' | cut -f2 -d' '`
+    FLOWCELLID=$(RunStatus.py | grep '^Flowcell:' | cut -f2 -d' ') || true
 fi
 
 if [ -z "${FLOWCELLID:-}" ] ; then
@@ -25,27 +26,36 @@ if [ ! -e SampleSheet.csv ] ; then
     rm -f SampleSheet.csv
 fi
 
-# Firstly, SampleSheet.csv.0 needs to contain the original file from the
-# sequencer. It is technically possible to run the machine with no sample
-# sheet. In this case, this script will make an empty file.
+# List the sample sheet files we do see
+all_sheets=(SampleSheet.csv.[0-9]*)
+
+# SampleSheet.csv.0 needs to contain the original file from the
+# sequencer. It is also possible to run the machine with no sample
+# sheet. In this case, if there is nothing at all, this script will make an empty file.
 if [ ! -e SampleSheet.csv.0 ] && [ ! -L SampleSheet.csv ] ; then
     if mv SampleSheet.csv SampleSheet.csv.0 ; then
         echo "SampleSheet.csv renamed as SampleSheet.csv.0"
+        all_sheets=(SampleSheet.csv.0 ${all_sheets[@]})
     else
-        touch SampleSheet.csv.0
-        echo "SampleSheet.csv.0 created as empty file"
+        if [ "${#all_sheets[@]}" = 0 ] ; then
+            touch SampleSheet.csv.0
+            echo "SampleSheet.csv.0 created as empty file"
+            all_sheets=(SampleSheet.csv.0)
+        fi
     fi
 fi
 
-# Make link only if SampleSheet.csv was missing.
-ln -s SampleSheet.csv.0 SampleSheet.csv 2>/dev/null || true
+# If SampleSheet.csv is now missing, link it to the latest sample sheet.
+if [ ! -e SampleSheet.csv ] ; then
+    ln -s "${all_sheets[ -1]}" SampleSheet.csv
+fi
 
 # At this point we may expect that SampleSheet.csv is a symlink. Sanity check.
 if [ ! -L SampleSheet.csv ] ; then
     echo "Sanity check failed - SampleSheet.csv is not a symlink"
     #If the link was changed into a file (rsync was doing this at one point), try to undo the change
     if [ -e SampleSheet.csv ] ; then
-        for candidate_ss in SampleSheet.csv.* ; do
+        for candidate_ss in "${all_sheets[@]}" ; do
             if diff -q "$candidate_ss" SampleSheet.csv ; then
                 #Keep going - if several match the latest will end up linked.
                 echo "But it is identical to $candidate_ss, so linking it to that."
