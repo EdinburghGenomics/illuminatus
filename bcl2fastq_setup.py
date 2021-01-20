@@ -147,6 +147,7 @@ class BCL2FASTQPreprocessor:
                     res.append(l)
             res.append("Run ID,{}".format(self.run_info['RunId']))
             res.append("Description,Fragment processed with {}".format(me))
+            res.append("Revcomp,{}".format(self.revcomp or 'None'))
 
             # Now add the bcl2fastq_opts
             res.append('')
@@ -250,7 +251,7 @@ def parse_args():
     argparser = ArgumentParser( description=description,
                                 formatter_class = ArgumentDefaultsHelpFormatter )
 
-    argparser.add_argument("-r", "--revcomp", default=None, choices=[None, "1", "2", "12", "auto"],
+    argparser.add_argument("-r", "--revcomp", default=None, choices=[None, "", "1", "2", "12", "auto"],
                             help="Reverse complement index 2 and/or 1")
     argparser.add_argument("-l", "--lane", required=True, choices=list("12345678"),
                             help="Reverse complement index 2 and/or 1")
