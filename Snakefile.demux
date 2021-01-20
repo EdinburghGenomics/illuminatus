@@ -94,7 +94,12 @@ rule postprocess:
         log_file = get_sequential_file('renames.log.???')
         shell("ln -s {log_file} renames.log")
         shell("BCL2FASTQPostprocessor.py ..")
-        shell("test -s ../projects_ready.txt && cp ../projects_ready.txt projects_ready.txt.bak")
+        try:
+            shell("test -s ../projects_ready.txt")
+            shell("cp ../projects_ready.txt projects_ready.txt.bak")
+        except subprocess.CalledProcessError:
+             snakemake.logging.logger.error("No projects listed in projects_ready.txt after calling BCL2FASTQPostprocessor.py")
+             raise
 
 rule bcl2fastq:
     output:
@@ -115,7 +120,7 @@ rule bcl2fastq:
         """trap 'tail -v -n 20 lane{wildcards.l}/bcl2fastq.log >&2' exit
            echo "Log will be written to lane{wildcards.l}/bcl2fastq.log"
            export PROCESSING_THREADS={threads}
-           {TOOLBOX} do_demultiplex.sh {RUNDIR} lane{wildcards.l} {input.ssheet} {wildcards.lane}
+           {TOOLBOX} do_demultiplex.sh {RUNDIR} lane{wildcards.l} {input.ssheet} {wildcards.l}
         """
 
 rule preprocess:
