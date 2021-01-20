@@ -124,8 +124,9 @@ class T(unittest.TestCase):
         self.touch('pipeline/lane1.redo')
         self.assertEqual(self.gs(), 'reads_unfinished')
 
+        # At the moment, the redo will be acknowledged but the driver will fail
         self.touch('RTAComplete.txt')
-        self.assertEqual(self.gs(), 'failed')
+        self.assertEqual(self.gs(), 'redo')
 
         # Having the pipeline link finally allows this to redo
         self.md('pipeline/output/seqdata/pipeline')

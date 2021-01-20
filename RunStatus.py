@@ -204,15 +204,18 @@ class RunStatus:
             return "aborted"
 
         # RUN IS 'redo' if the run is marked for restarting and is ready for restarting (not running).
-        # If the _output_linked() test fails the run is not safe to redo.
+        # If the _output_linked() test fails the run is not safe to redo, but let the driver worry about
+        # that!
         # Ignore the read1 processing state here.
         if ( self._is_sequencing_finished() and
-             self._was_restarted() and
-             self._output_linked() and (
+             self._was_restarted() and (
                 self._was_ended() or
                 (not self._was_started() and self._was_failed()) or
                 (self._was_demultiplexed() and not self._qc_started()) ) ):
-            return "redo"
+            if self._output_linked():
+                return "redo"
+            else:
+                return "redo" # or maybe unknown?
 
         # We can't be failed until sequencing finishes, even though there could be
         # failed flag present.
