@@ -144,12 +144,10 @@ class T(unittest.TestCase):
         self.assertEqual(self.gs(), 'reads_unfinished')
         self.touch('RTAComplete.txt')
 
-        # If processing is started the failed flag overrides the state but we
-        # can't redo as we got in a tizz.
+        # If processing is started the failed flag overrides the state.
+        # Regardless of read1 processing status we redo
         self.touch('pipeline/lane1.started')
-        self.assertEqual(self.gs(), 'failed')
-
-        # If read1 processing had finished we'd be back to redo
+        self.assertEqual(self.gs(), 'redo')
         self.touch('pipeline/read1.done')
         self.assertEqual(self.gs(), 'redo')
         self.rm('pipeline/read1.done')
@@ -177,6 +175,7 @@ class T(unittest.TestCase):
             180209_D00261_0449_ACC8FGANXX
         """
         self.use_run('160726_K00166_0120_BHCVH2BBXX', copy=True, make_run_info=False)
+        self.md('pipeline/output/seqdata/pipeline')
         self.touch('pipeline/read1.done')
         self.touch('RTAComplete.txt')
 
@@ -302,7 +301,7 @@ class T(unittest.TestCase):
         # Should still be new until we put the pipeline dir back!
         self.assertEqual(gy()['PipelineStatus:'], 'new')
         self.assertEqual(gy()['MachineStatus:'], 'read1_complete')
-        self.md('pipeline')
+        self.md('pipeline/output/seqdata/pipeline')
         no_redo('read1_finished')
 
         # For this one, let's say that read1 processing completes before the run finishes (as
@@ -399,8 +398,8 @@ class T(unittest.TestCase):
 
         self.assertEqual(gy(), expected)
 
-        # Add the pipeline dir
-        self.md('pipeline')
+        # Add the pipeline dir and apparent links
+        self.md('pipeline/output/seqdata/pipeline')
         no_redo('reads_unfinished')
 
         # We're basing the read1 trigger on the appearance of data files for the second cycle,
@@ -419,16 +418,16 @@ class T(unittest.TestCase):
         self.touch('pipeline/read1.started')
         no_redo('in_read1_qc_reads_finished')
 
-        # A failure at this point should drop us back to 'in_read1_qc'
+        # A failure at this point should drop us back to 'in_read1_qc', but redo is still
+        # possible.
         self.touch('pipeline/failed')
-        no_redo('in_read1_qc')
+        yes_redo('in_read1_qc')
 
         # This should make no difference...
         self.touch('pipeline/lane1.started')
-        no_redo('in_read1_qc')
+        yes_redo('in_read1_qc')
 
         # Then only when the read1 finishes should we be failed
-        # And now redo is possible
         self.touch('pipeline/read1.done')
         yes_redo('failed')
 
@@ -444,20 +443,21 @@ class T(unittest.TestCase):
         self.touch('pipeline/lane1.done')
         yes_redo('demultiplexed')
 
-        # OK, but if the read1.done file never appeared we should still be in in_read1_qc
+        # Request to redo overrides read1 processing status
         self.rm('pipeline/read1.done')
-        no_redo('in_read1_qc')
+        yes_redo('in_read1_qc')
 
-        # And if the read1.started file vanishes we go right back to read1_finished,
-        # as QC should not start until both read1 and demultiplexing are done.
-        # Though in practise this state should not happen.
-        # Redo at this point is not allowed
+        # Redo at this point is allowed. Read 1 needs will be mopped up in QC.
         self.rm('pipeline/read1.started')
-        no_redo('read1_finished')
+        yes_redo('read1_finished')
 
-    def test_looks_like_a_bug(self):
+    def test_ambiguous_restart_bug(self):
         """While messing around with a test run it wouldn't restart. Failure
            was due to an invalid sample sheet so it should be a simple restart.
+           Turns out I had some confusion over whether a redo could happen if read1
+           processing is not completed - final decision is that it can; the read1
+           processing is not essential because the QC mops it all up for the final
+           report.
         """
         run_info = self.use_run('201125_A00291_0321_AHWHKYDRXX', copy=False)
 

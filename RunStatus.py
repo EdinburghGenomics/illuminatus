@@ -203,13 +203,15 @@ class RunStatus:
             # Aborted is a valid end state and takes precedence over 'failed'
             return "aborted"
 
-        # RUN IS 'redo' if the run is marked for restarting and is ready for restarting (not running):
-        import pdb ; pdb.set_trace()
+        # RUN IS 'redo' if the run is marked for restarting and is ready for restarting (not running).
+        # If the _output_linked() test fails the run is not safe to redo.
+        # Ignore the read1 processing state here.
         if ( self._is_sequencing_finished() and
-             self._was_restarted() and (
-                (not self._was_started() and self._output_linked() and self._was_failed()) or
-                (self._read1_done() and self._was_ended()) or
-                (self._read1_done() and self._was_demultiplexed() and not self._qc_started()) ) ):
+             self._was_restarted() and
+             self._output_linked() and (
+                self._was_ended() or
+                (not self._was_started() and self._was_failed()) or
+                (self._was_demultiplexed() and not self._qc_started()) ) ):
             return "redo"
 
         # We can't be failed until sequencing finishes, even though there could be
