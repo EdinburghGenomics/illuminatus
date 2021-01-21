@@ -12,7 +12,7 @@ fi
 
 activate_venv() {
     #We need to ensure -u is not set but then put the old value back.
-    reset=`set +o | grep -w nounset` ; set +o nounset
+    local reset=`set +o | grep -w nounset` ; set +o nounset
     source ./_illuminatus_venv/bin/activate
     $reset
 }
@@ -24,7 +24,7 @@ pip_install() {
 
 install_multiqc() {
     #Install/upgrade MultiQC from GIT
-    #pip_install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git#egg=multiqc'
+    #pip_install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc'
     # For now, use the dev branch
 
     # For now we need specific older versions of these modules:
@@ -66,10 +66,11 @@ if [ -e ./_illuminatus_venv/bin/activate ] ; then
     fi
 
 else
-    _py3="${TOOLBOX:-`dirname $BASH_SOURCE`/toolbox}"/bootstrap_python3
-    _py3_real="$(readlink -f "$_py3")"
-    echo "Bootstrapping new VEnv from $_py3 ($_py3_real)"
-    ( set -e ;
+    (   _py3="${TOOLBOX:-`dirname $BASH_SOURCE`/toolbox}"/bootstrap_python3
+        _py3_real="$(readlink -f "$_py3")"
+        echo "Bootstrapping new VEnv from $_py3 ($_py3_real)"
+
+        set -e
         "$_py3_real" -mvenv ./_illuminatus_venv
         activate_venv
 
@@ -101,6 +102,7 @@ else
 
         post_activate
     )
+    unset -f post_activate
 
     if [ $? = 0 ] ; then
         # We need this since we quit the subshell
