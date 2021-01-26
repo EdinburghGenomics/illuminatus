@@ -25,18 +25,20 @@ NON_POOLS = ['NoPool', 'None', '']
 
 def parse_args(*args):
     description = """This script is part of the Illuminatus pipeline.
-It makes the Samplesheet report that was previously handled by
-wiki-communication/bin/upload_run_info_on_wiki.py, by parsing the SampleSheet.csv
+It gathers an overview of the run by parsing the SampleSheet.csv, RunParameters.xml
 and RunInfo.xml in the current directory and by asking the LIMS for proper project
 names.
 Output may be in YAML, MQC,  TSV or Text format. MQC is suitable for MultiQC custom
-content - http://multiqc.info/docs/#custom-content.
-Soon it will ask the LIMS for additional details (loading conc) too.
+content - http://multiqc.info/docs/#custom-content. YAML may be re-loaded and re-presented
+as any format.
+Soon it should ask the LIMS for additional details (eg. loading conc) too.
 """
 
-# Note there is also RunMetaData.py and RunStatus.py which do similar jobs but this should
-# be the only script that is querying the LIMS and looking at the details of the SampleSheet
-# lines.
+# Note that summarize_for_overview.py now obtains much of the information from the YAML
+# outputted form this script. Possibly the functionality should be folded in here? One
+# reason to not do that is that a few things are always checked dynamically by that script,
+# but the shtick of this script is that any output format can be created purely from the YAML,
+# and the YAML is only dependent on the sample sheet and run metadata files.
 
     a = ArgumentParser( description=description,
                         formatter_class = ArgumentDefaultsHelpFormatter )
@@ -65,7 +67,9 @@ Soon it will ask the LIMS for additional details (loading conc) too.
     return a.parse_args(*args)
 
 def printable_date():
-    return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    #return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # ctime is the standard we like for printing
+    return datetime.datetime.now().ctime()
 
 
 def main(args):
@@ -298,6 +302,7 @@ def scan_for_info(run_dir, project_name_list=''):
         if 'Flowcell Type' in run_params:
             rids['FCType'] = run_params['Flowcell Type']
         rids['Experiment Name'] = run_params.get('Experiment Name')
+        rids['RunStartTime'] = run_params.get('Start Time')
     except Exception:
         # Not to worry we can do without this.
         pass
