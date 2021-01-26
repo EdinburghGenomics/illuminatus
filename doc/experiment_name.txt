@@ -1,0 +1,25 @@
+Matt has noted that the newer MiSeq runs, loaded without a sample sheet, are no longer reporting
+the experiment name from the LIMS, but always the number 15028382.
+
+So we'd like to get this info back. Firstly, I made sure the number was going into the reformatted
+sample sheets that Clarity picks up.
+
+Now I have to sort it out in Illuminatus. I edited summarize_lane_contents.py but we still have
+RunMetaData.py. Currently this re-calculates a lot of things from scratch, but now that we
+actually need to read the sample sheet and get the Experiment Name I think this needs to
+actually load pipeline/sample_summary.yml. In which case it needs to not be run before this
+is created and it needs to always be run if the sample sheet changes. I think this happens
+anyway.
+
+The RunMetaData.py script is invoked by ???
+I'll rename it to summarize_for_overview.py as that's what it really does.
+I'll rename PostRunMetaData.py to summarize_post_bcl2fastq.py
+
+Also when the link is generated I want to only link the part that is the actual number,
+so:
+
+mo = re.match(r'(.*)\[(.*)\](.*)', link_text)
+if mo:
+    return "<a href='{href}'>{lt}</a>".format(lt=link_text, href=href)
+else:
+    return "{mo[1]}<a href='{href}'>{mo[2]}</a>{mo[3]}".format(mo=mo.groups(), href=href)

@@ -10,6 +10,11 @@ from illuminatus import illuminatus_version
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
 from illuminatus.RunParametersXMLParser import RunParametersXMLParser
 
+# FIXME - the overlap between this script and summarize_lane_contents is now ridiculous.
+# This script should load sample_summary.yml and use that as the basis for outputs,
+# rather than re-parsing the XML files.
+# This will also allow me to fix the Experiment Name as Matt has requested.
+
 class RunMetaData:
     """This Class provides information about a sequencing run, given a run folder.
        It is rather similar to RunStatus.py but does not attempt to determine
@@ -116,7 +121,7 @@ class RunMetaData:
         info = self.runinfo_xml
         params = self.run_params
 
-        # Note that we can sometimes get the flowcell type from the params (Novoseq) and
+        # Note that we can sometimes get the flowcell type from the params (NovaSeq) and
         # otherwise from the info (everything else).
 
         idict = dict()
