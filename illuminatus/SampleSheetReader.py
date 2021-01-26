@@ -9,7 +9,8 @@ from .SampleSheetClass import SampleSheet
 class SampleSheetReader:
 
     def __init__( self , SampleSheetFile ):
-        self.column_mapping, self.samplesheet_data = self._get_column_mapping_from_ssfile( SampleSheetFile )
+        # sets self.headers, self.column_mapping, self.samplesheet_data
+        self._get_lines_from_ssfile( SampleSheetFile )
         '''
          e.g.:
         self.column_mapping =
@@ -26,7 +27,7 @@ class SampleSheetReader:
         'i5_index_id': 8
         }
         '''
-        self.samplesheet = self._get_samplesheet_data_object_from_column_mapping( self.column_mapping , self.samplesheet_data )
+        self.samplesheet = self._get_samplesheet_data_object_from_column_mapping()
 
     def get_index_lengths_by_lane(self):
         '''
@@ -51,38 +52,54 @@ class SampleSheetReader:
 
         return lane_number_index_length
 
-    def _get_column_mapping_from_ssfile( self , SampleSheetFile ):
+    def _get_lines_from_ssfile( self , SampleSheetFile ):
         csvFile = SampleSheetFile
         with open(csvFile, newline='') as csvFH:
             csvData = csv.reader(csvFH, delimiter=',')
-            column_mapping = {}
-            found_header = False
-            samplesheet_data = []
-            try:
-                for row in csvData:
-                    if found_header:
-                        samplesheet_data.append( row )
+            self.column_mapping = None
+            in_section = None
+            self.headers = {}
+            self.samplesheet_data = []
+            for row in csvData:
+                try:
+                    if not row or row[0] == '':
+                        continue
 
-                    if "Sample_ID" in row or "SampleID" in row:
-                        found_header = True
-                        for f in row:
-                            column_mapping[f.lower()] = row.index(f)
-            except Exception:
-                #FIXME - do we really want to swallow this exception?
-                e = str( sys.exc_info()[0] ) +": " + str( sys.exc_info()[1] )
-                L.error("while reading "+ csvFile + "\t" + e)
-        return column_mapping, samplesheet_data
+                    if row[0].startswith('['):
+                        in_section = row[0].lower().strip('[]')
+                        continue
 
-    def _get_samplesheet_data_object_from_column_mapping(self, column_mapping_dict , samplesheet_data ):
+                    if in_section == 'header':
+                        if len(row) > 1:
+                            self.headers[row[0]] = row[1]
+                        else:
+                            self.headers[row[0]] = ''
+
+                    if in_section == 'data':
+                        if not self.column_mapping:
+                            # Data header line
+                            assert "Sample_ID" in row or "SampleID" in row
+                            self.column_mapping = { f.lower(): idx for idx, f in enumerate(row) }
+                        else:
+                            self.samplesheet_data.append( row )
+
+                except Exception:
+                    #FIXME - do we really want to swallow this exception?
+                    e = str( sys.exc_info()[0] ) +": " + str( sys.exc_info()[1] )
+                    L.error("while reading "+ csvFile + "\t" + e)
+
+        assert self.column_mapping, "No [Data] found in {}".format(csvFile)
+
+    def _get_samplesheet_data_object_from_column_mapping(self):
         '''
         The Samplesheet data and column headers are now in memory and are passed on to this function.
         Will construct a general SampleSheet Object that can then be used to access Lanes/Pools/Indexes/etc.
         '''
         samplesheet = SampleSheet()
 
-        for row in samplesheet_data:
-            lane = self._get_lane_from_data_row( row , column_mapping_dict )
-            index_sequences = self._get_index_sequences_from_data_row( row , column_mapping_dict )
+        for row in self.samplesheet_data:
+            lane = self._get_lane_from_data_row( row , self.column_mapping )
+            index_sequences = self._get_index_sequences_from_data_row( row , self.column_mapping )
 
         # todo: should return a real SampleSheet object here after filling it up
         return samplesheet

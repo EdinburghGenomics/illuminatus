@@ -284,9 +284,8 @@ def scan_for_info(run_dir, project_name_list=''):
     """Hoovers up the info and builds a data structure which can
        be serialized to YAML.
     """
-    # Load both the RunInfo.xml and the SampleSheet.csv
+    # Load both the RunInfo.xml and (a little later) the SampleSheet.csv
     ri_xml = RunInfoXMLParser(run_dir)
-    ss_csv = SampleSheetReader(run_dir + "/SampleSheet.csv")
 
     # Build run info data structure (rids). First just inherit the info
     # from ri_xml (RunId, Instrument, Flowcell, ...)
@@ -314,53 +313,63 @@ def scan_for_info(run_dir, project_name_list=''):
     except OSError:
         # Weird - maybe not a link?
         rids['SampleSheet'] = "SampleSheet.csv"
+    try:
+        ss_csv = SampleSheetReader(run_dir + "/SampleSheet.csv")
+    except Exception:
+        # We can live without this if the sample sheet is invalid
+        ss_csv = None
 
     #When is this  report being made?
     rids['ReportDateTime'] = printable_date()
 
-    #Translate all the project numbers to names in one go
-    #If you try to feed this script an old 2500 Sample Sheet this is where it will fail.
-    assert not 'sampleproject' in ss_csv.column_mapping, \
-        "A sampleproject (without the underscore) column was found. Is this an old 2500 SampleSheet?"
-    rids['ProjectInfo'] = project_real_name(
-                            set([ line[ss_csv.column_mapping['sample_project']]
-                                  for line in ss_csv.samplesheet_data ]),
-                            project_name_list )
-
     #Slice the sample sheet by lane
     rids['Lanes'] = []
+    rids['ProjectInfo'] = {}
 
-    # NOTE - if a samplesheet has no 'lane' column then we shouldn't really be processing it,
-    # but as far as bcl2fastq is concerned this just means all lanes are identical, so for
-    # the purposes of this script I'll go with that.
-    if 'lane' in ss_csv.column_mapping:
-        ss_lanes = [ line[ss_csv.column_mapping['lane']] for line in ss_csv.samplesheet_data ]
-    else:
-        ss_lanes = [ str(x + 1) for x in range(int(rids['LaneCount'])) ]
+    if ss_csv:
+        # Snag the 'real' experiment name
+        rids['Experiment SS'] = ss_csv.headers.get('Experiment Name')
 
-    for lanenum in sorted(set(ss_lanes)):
-        thislane = {'LaneNumber': lanenum}
+        #Translate all the project numbers to names in one go
+        #If you try to feed this script an old 2500 Sample Sheet this is where it will fail.
+        assert not 'sampleproject' in ss_csv.column_mapping, \
+            "A sampleproject (without the underscore) column was found. Is this an old 2500 SampleSheet?"
+        rids['ProjectInfo'] = project_real_name(
+                                set([ line[ss_csv.column_mapping['sample_project']]
+                                      for line in ss_csv.samplesheet_data ]),
+                                project_name_list )
 
-        #Add lane loading. In reality we probably need to get all lanes in one fetch,
-        #but here's a placeholder.
-        thislane['Loading'] = get_lane_loading(rids['Flowcell'])
-
-        lines_for_lane = [ line for line in ss_csv.samplesheet_data
-                           if 'lane' not in ss_csv.column_mapping or
-                              line[ss_csv.column_mapping['lane']] == lanenum ]
-
-        thislane['Contents'] = summarize_lane( lines_for_lane, ss_csv.column_mapping )
-
-        #If the lane contains a single sample, is that one barcode or is it unindexed?
-        #We'd like to report which.
-        if len(lines_for_lane) == 1:
-            index_lengths = ss_csv.get_index_lengths_by_lane()[lanenum]
-            #It's unindexed if there are no indices or if they contain only N's.
-            thislane['Unindexed'] = not any( index_lengths )
+        # NOTE - if a samplesheet has no 'lane' column then we shouldn't really be processing it,
+        # but as far as bcl2fastq is concerned this just means all lanes are identical, so for
+        # the purposes of this script I'll go with that.
+        if 'lane' in ss_csv.column_mapping:
+            ss_lanes = [ line[ss_csv.column_mapping['lane']] for line in ss_csv.samplesheet_data ]
         else:
-            thislane['Unindexed'] = False
+            ss_lanes = [ str(x + 1) for x in range(int(rids['LaneCount'])) ]
 
-        rids['Lanes'].append(thislane)
+        for lanenum in sorted(set(ss_lanes)):
+            thislane = {'LaneNumber': lanenum}
+
+            #Add lane loading. In reality we probably need to get all lanes in one fetch,
+            #but here's a placeholder.
+            thislane['Loading'] = get_lane_loading(rids['Flowcell'])
+
+            lines_for_lane = [ line for line in ss_csv.samplesheet_data
+                               if 'lane' not in ss_csv.column_mapping or
+                                  line[ss_csv.column_mapping['lane']] == lanenum ]
+
+            thislane['Contents'] = summarize_lane( lines_for_lane, ss_csv.column_mapping )
+
+            #If the lane contains a single sample, is that one barcode or is it unindexed?
+            #We'd like to report which.
+            if len(lines_for_lane) == 1:
+                index_lengths = ss_csv.get_index_lengths_by_lane()[lanenum]
+                #It's unindexed if there are no indices or if they contain only N's.
+                thislane['Unindexed'] = not any( index_lengths )
+            else:
+                thislane['Unindexed'] = False
+
+            rids['Lanes'].append(thislane)
 
     return rids
 
@@ -401,8 +410,16 @@ def output_txt(rids, fh):
     p( "" )
 
     # Basic metadata, followed be a per-lane summary.
+    expname_from_xml = rids.get('Experiment Name', 'Unknown')
+    expname_from_ss  = rids.get("Experiment SS")
+
     p( "Run ID: {}".format(rids['RunId']) )
-    p( "Experiment: {}".format(rids.get('Experiment Name', 'Unknown')) )
+    if expname_from_ss and expname_from_ss != expname_from_xml:
+        # We have conflicting names for this experiment
+        p( "Experiment: {} ({})".format(expname_from_xml, expname_from_ss) )
+    else:
+        # We have one experiment name
+        p( "Experiment: {}".format(expname_from_xml) )
     p( "Instrument: {}".format(rids['Instrument']) )
     p( "Flowcell Type: {}".format(rids.get('FCType', 'Unknown')) )  # May be missing if the YAML file is old.
     p( "Read length: {}".format(rids['Cycles']) )
