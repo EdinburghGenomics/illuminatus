@@ -2,9 +2,14 @@
 
 # This script will fetch a new SampleSheet for the current run. It must
 # be run in the folder where the sequencer data has been written. For testing, try:
-# $ ( PATH="$PWD:$PATH" ; cd ~/test_seqdata/170703_D00261_0418_ACB6HTANXX/ ; samplesheet_fetch.sh )
+# $ cd ~/test_seqdata/170703_D00261_0418_ACB6HTANXX/ ; samplesheet_fetch.sh
 set -euo pipefail
 shopt -s nullglob
+
+# The $PATH should be set by the driver, but to allow this script to be run standalone:
+if ! which RunStatus.py >&/dev/null ; then
+    PATH="$(readlink -f $(dirname "$BASH_SOURCE")):$PATH"
+fi
 
 # Support a SampleSheet postprocessor hook. This must take one argument,
 # the file to be read, and print to stdout. I'm not really using this in production
