@@ -295,14 +295,19 @@ def scan_for_info(run_dir, project_name_list=''):
     # from ri_xml (RunId, Instrument, Flowcell, ...)
     rids = ri_xml.run_info.copy()
 
-    # We need this to reliably get the NovoSeq flowcell type (same logic as RunMetaData.py)
-    # Also we now care about the experiment name here (makes this even more redundant with RunMetaData.py)
+    # We need this to reliably get the NovoSeq flowcell type
+    # Also we now care about the experiment name which is here and lets us link to BaseSpace
     try:
         run_params = RunParametersXMLParser( run_dir ).run_parameters
         if 'Flowcell Type' in run_params:
             rids['FCType'] = run_params['Flowcell Type']
-        rids['Experiment Name'] = run_params.get('Experiment Name')
+        rids['ExperimentName'] = run_params.get('Experiment Name')
+        # This is a CTime based on file timestamps. RunDate on the NovaSeq also
+        # gives a timestamp but not on the MiSeq, even post-upgrade. And I don't
+        # trus the MiSEQ clock in any case.
         rids['RunStartTime'] = run_params.get('Start Time')
+
+        rids['Chemistry'] = get_chemistry(run_params, rids['Instrument'])
     except Exception:
         # Not to worry we can do without this.
         pass
@@ -333,7 +338,7 @@ def scan_for_info(run_dir, project_name_list=''):
 
     if ss_csv:
         # Snag the 'real' experiment name
-        rids['Experiment SS'] = ss_csv.headers.get('Experiment Name')
+        rids['ExperimentSS'] = ss_csv.headers.get('Experiment Name')
 
         #Translate all the project numbers to names in one go
         #If you try to feed this script an old 2500 Sample Sheet this is where it will fail.
@@ -415,8 +420,8 @@ def output_txt(rids, fh):
     p( "" )
 
     # Basic metadata, followed be a per-lane summary.
-    expname_from_xml = rids.get('Experiment Name', 'Unknown')
-    expname_from_ss  = rids.get("Experiment SS")
+    expname_from_xml = rids.get('ExperimentName') or 'unknown'
+    expname_from_ss  = rids.get('ExperimentSS')
 
     p( "Run ID: {}".format(rids['RunId']) )
     if expname_from_ss and expname_from_ss != expname_from_xml:
@@ -426,7 +431,7 @@ def output_txt(rids, fh):
         # We have one experiment name
         p( "Experiment: {}".format(expname_from_xml) )
     p( "Instrument: {}".format(rids['Instrument']) )
-    p( "Flowcell Type: {}".format(rids.get('FCType', 'Unknown')) )  # May be missing if the YAML file is old.
+    p( "Flowcell Type: {}".format(rids.get('FCType', 'unknown')) )  # May be missing if the YAML file is old.
     p( "Read length: {}".format(rids['Cycles']) )
     p( "Active SampleSheet: SampleSheet.csv -> {}".format(rids['SampleSheet']) )
     p( "" )
@@ -509,6 +514,24 @@ def get_lane_loading(flowcell):
        And we'll probably need to mock it out in the test cases.
     """
     return dict()
+
+def get_chemistry(run_params, instrument):
+    """Get the 'Consumable Version' from params and interpret it.
+       At present this tells us if the NovaSeq chemistry is 1.0 or 1.5
+    """
+    con_vers = run_params.get('Consumable Version')
+
+    if not con_vers:
+        return None
+
+    con_note = "unknown"
+    if instrument.startswith('novaseq_'):
+        if con_vers == '1':
+            con_note = "chemistry 1.0"
+        elif con_vers == '3':
+            con_note = "chemistry 1.5; revcomp index2"
+
+    return "SCV{} ({})".format(con_vers, con_note)
 
 # A rather contorted way to get project names. We may be able to bypass
 # this by injecting them straight into the sample sheet!

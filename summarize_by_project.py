@@ -27,10 +27,6 @@ content - http://multiqc.info/docs/#custom-content, while TSV/YAML is handy
 for debugging.
 """
 
-# Note there is also RunMetaData.py and RunStatus.py which do similar jobs but this should
-# be the only script that is querying the LIMS and looking at the details of the SampleSheet
-# lines.
-
     a = ArgumentParser( description = description,
                         formatter_class = ArgumentDefaultsHelpFormatter)
     a.add_argument("--project_name_list",

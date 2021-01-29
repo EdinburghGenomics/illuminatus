@@ -51,7 +51,7 @@ class RunInfoXMLParser:
             self.run_info[ 'RunId' ] = read.attrib['Id']
 
         for read in root.iter('FlowcellLayout'):
-            self.run_info[ 'LaneCount' ] = read.attrib['LaneCount']
+            self.run_info[ 'LaneCount' ] = int(read.attrib['LaneCount'])
 
         itypes = dict( i.split(':') for i in (instrument_types).split())
         for read in root.iter('Instrument'):
@@ -75,6 +75,9 @@ class RunInfoXMLParser:
             if d[2] == '/':
                 # Novaseq runs are being dated like '11/24/2017 4:52:13 AM'
                 self.run_info[ 'RunDate' ] = '{}-{}-{}'.format(d[6:10], d[0:2], d[3:5])
+            elif d[1] == '/':
+                # For Jan-Sep
+                self.run_info[ 'RunDate' ] = '{}-0{}-{}'.format(d[5:9], d[0:1], d[2:4])
             elif len(d) == 6:
                 # The date is in format YYMMDD but we want YYYY-MM-DD
                 self.run_info[ 'RunDate' ] = '20{}-{}-{}'.format(d[0:2], d[2:4], d[4:6])

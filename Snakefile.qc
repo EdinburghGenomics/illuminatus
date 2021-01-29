@@ -458,24 +458,28 @@ rule fastqc:
     shell:
         "{TOOLBOX} fastqc {input} --outdir `dirname {output.zip}` --noextract --nogroup --threads {threads}"
 
-# meta-data. this can change as the pipeline runs so make the rule depend on the pipeline
+# Meta-data to go at the top of the MultiQC report.
+# this can change as the pipeline runs so make the rule depend on the pipeline
 # directory. Also there is only one metadata file per run, not per lane, but it will be
-# symlinked by multiqc_main to be picked up on all runs
-localrules: get_run_metadata, get_postrun_metadata, get_lane_summary, get_project_summary
-rule get_run_metadata:
+# symlinked by multiqc_main to be picked up on all lanes and appear at the top of every
+# page of the report.
+localrules: summarize_for_overview, summarize_post_bcl2fastq, get_lane_summary, get_project_summary
+rule summarize_for_overview:
     output: "QC/run_info.{runid}.1.yml"
-    input: SEQDATA + "/pipeline"
+    input:
+        pipedir = SEQDATA + "/pipeline",
+        summary = SEQDATA + "/pipeline/sample_summary.yml"
     shell:
-        "RunMetaData.py {SEQDATA} > {output}"
+        "summarize_for_overview.py {SEQDATA} > {output}"
 
 # post-run metadata is per lane and also overall. Should be updated if ever
 # the demultiplexing directory contents change
-rule get_postrun_metadata:
+rule summarize_post_bcl2fastq:
     output: "QC/{lane,lane.|overview}/run_info.{runid}.2.yml"
     input: lanedir = lambda wc: "demultiplexing/" + wc.lane if wc.lane.startswith('lane') else \
                                 glob("demultiplexing/lane?")
     shell:
-        "summarize_for_overview.py . {wildcards.lane} > {output}"
+        "summarize_post_bcl2fastq.py . {wildcards.lane} > {output}"
 
 # lane summary is just a munge of the .yml already made by the driver,
 # but this time we need a special mqc table format.

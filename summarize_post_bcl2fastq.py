@@ -7,7 +7,7 @@ import yaml, yamlloader
 class PostRunMetaData:
     """This Class provides information about a demultiplexing/QC process, given
        a fastqdata folder.
-       The info made is supposed to complement the stuff from RunMetaData.py.
+       The info made is supposed to complement the stuff from summarize_for_overview.py
        The following sources will be checked:
          bcl2fastq.version files
          bcl2fastq.info files

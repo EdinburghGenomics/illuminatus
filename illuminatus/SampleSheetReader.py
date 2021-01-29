@@ -71,7 +71,7 @@ class SampleSheetReader:
 
                     if in_section == 'header':
                         if len(row) > 1:
-                            self.headers[row[0]] = row[1]
+                            self.headers[row[0]] = row[1].strip()
                         else:
                             self.headers[row[0]] = ''
 

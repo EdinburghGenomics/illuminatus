@@ -19,7 +19,7 @@ class T(unittest.TestCase):
                             'Flowcell': 'ADWKV',
                             'FCType': 'Normal v3',
                             'Instrument': 'miseq_M01270',
-                            'LaneCount': '1',
+                            'LaneCount': 1,
                             'RunDate': '2015-06-02',
                             'RunId': '150602_M01270_0108_000000000-ADWKV'
         })
@@ -33,7 +33,7 @@ class T(unittest.TestCase):
                             'Flowcell': 'BR92R',
                             'FCType': 'Normal v2',
                             'Instrument': 'miseq_M05898',
-                            'LaneCount': '1',
+                            'LaneCount': 1,
                             'RunDate': '2018-04-30',
                             'RunId': '180430_M05898_0007_000000000-BR92R'
         })
@@ -47,8 +47,8 @@ class T(unittest.TestCase):
                             'Flowcell': 'H5WJJDMXX',
                             'FCType': 'S2',
                             'Instrument': 'novaseq_A00291',
-                            'LaneCount': '2',
-                            'RunDate': '6/19/2018 11:54:50 AM',
+                            'LaneCount': 2,
+                            'RunDate': '2018-06-19',
                             'RunId': '180619_A00291_0044_BH5WJJDMXX'
         })
 
