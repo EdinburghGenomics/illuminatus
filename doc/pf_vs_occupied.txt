@@ -47,3 +47,19 @@ e
 # ###########################
 
 I think I'll stick with the logic of producing this and then running GNUPlot from MultiQC
+
+set xrange [0:100]; set yrange[0:100]
+plot "-" title "Lane 1" pointtype 6
+...
+
+Can I add some box-n-whiskers? Hmm. We can use transparency to show the density of dots at a point,
+which I think will be good. Maybe add a line to show the mean?
+
+Drawing a cross on the axis is best done with a headless arrow:
+
+set style arrow 7 nohead ls 1
+set arrow from 6,0 rto 0,10  as 7
+
+
+OK we got enough let's write a Python script to actually extract the data.
+
