@@ -22,7 +22,7 @@ pip_install() {
     pip3 --disable-pip-version-check install "$@" 2>&1
 }
 
-install_multiqc() {
+upgrade_multiqc() {
     #Install/upgrade MultiQC from GIT
     #pip_install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc'
     # For now, use the dev branch
@@ -34,10 +34,10 @@ install_multiqc() {
         'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc' \
         'git+https://github.com/EdinburghGenomics/MultiQC_EdGen.git@master#egg=multiqc_edgen'
         do
-        if [ "${1:-}" = 'upgrade' ] ; then
-            pip_install --upgrade --no-deps "$url"
-        else
+        if [ "${1:-}" == 'initial' ] ; then
             pip_install "$url"
+        else
+            pip_install --upgrade --no-deps "$url"
         fi
     done
 
@@ -58,12 +58,6 @@ if [ -e ./_illuminatus_venv/bin/activate ] ; then
 
     # We already got one!
     activate_venv
-
-    # MultiQc is under active development, so enable easy update
-    if [ "${UPDATE_MULTIQC:-0}" != 0 ] ; then
-        #pip_install --upgrade pip
-        install_multiqc upgrade
-    fi
 
 else
     (   _py3="${TOOLBOX:-`dirname $BASH_SOURCE`/toolbox}"/bootstrap_python3
@@ -98,7 +92,7 @@ else
         # why not? Assume the master branch is always good, since it's simpler than
         # searching for the last release tag (though that is possible).
         # see https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support
-        install_multiqc
+        upgrade_multiqc initial
 
         post_activate
     )
