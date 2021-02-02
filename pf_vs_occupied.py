@@ -119,8 +119,8 @@ def format_gnuplot(tds):
         plot = ["pct_pf", "pct_occup"]
     else:
         fname = "Cluster-Density-By-Tile"
-        xlabel = "PF Density (kilo-clusters/mm^2)"
-        ylabel = "Cluster Density (kilo-clusters/mm^2)"
+        xlabel = "PF Density (kclusters/mm^2)"
+        ylabel = "Cluster Density (kclusters/mm^2)"
         xrange = yrange = tds['density_max']
         plot = ["pf_density_k", "density_k"]
 
@@ -139,19 +139,23 @@ def format_gnuplot(tds):
                  "set datafile separator ','",
                ]
 
+    # Add a line to show x=y, because no point should ever be under this line
+    gp_lines.extend(["set style arrow 2 nohead linewidth 1.0 dashtype 3",
+                     "set arrow from 0,0 rto {},{} as 2 lc 'grey'".format(xrange, yrange)])
+
     # Add lines (using headless arrows) to show the means. And make them dotted (supported by pngcairo)
-    gp_lines.extend(["set style arrow 1 nohead linewidth 1 dashtype 2"])
-    for l in tds['lanes']:
+    gp_lines.extend(["set style arrow 1 nohead linewidth 1.2 dashtype 2"])
+    for n, l in enumerate(tds['lanes']):
         mean_x = mean([atile[plot[0]] for atile in tds[l]])
         mean_y = mean([atile[plot[1]] for atile in tds[l]])
 
-        gp_lines.append("set arrow from {},0 rto 0,{} as 1 front".format(mean_x, yrange))
-        gp_lines.append("set arrow from 0,{} rto {},0 as 1 front".format(mean_y, yrange))
+        gp_lines.append("set arrow from {},0 rto 0,{} as 1 lc {} front".format(mean_x, yrange, n+1))
+        gp_lines.append("set arrow from 0,{} rto {},0 as 1 lc {} front".format(mean_y, xrange, n+1))
 
     # Now plot the actual datas. Start by declaring all tiles to plot on one line.
-    gp_lines.extend(["set style fill transparent solid 0.04 noborder",
-                     "set style circle radius 0.01"])
-    plot_cmds = [ "'-' title '{}' pointtype 7".format(l)
+    gp_lines.extend(["set style fill transparent solid 0.2 border",
+                     "set style circle radius graph 0.01 noclip"])
+    plot_cmds = [ "'-' title '{}' with circles".format(l)
                   for l in tds['lanes'] ]
     gp_lines.append("plot" + (" ,".join(plot_cmds)))
 
