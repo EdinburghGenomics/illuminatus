@@ -13,6 +13,7 @@
 
 import os, sys
 from statistics import mean
+from math import ceil
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 import yaml
@@ -153,7 +154,7 @@ def format_gnuplot(tds):
         gp_lines.append("set arrow from 0,{} rto {},0 as 1 lc {} front".format(mean_y, xrange, n+1))
 
     # Now plot the actual datas. Start by declaring all tiles to plot on one line.
-    gp_lines.extend(["set style fill transparent solid 0.2 border",
+    gp_lines.extend(["set style fill transparent solid 0.1 border",
                      "set style circle radius graph 0.01 noclip"])
     plot_cmds = [ "'-' title '{}' with circles".format(l)
                   for l in tds['lanes'] ]
@@ -168,6 +169,24 @@ def format_gnuplot(tds):
         gp_lines.append('e')
 
     return gp_lines
+
+def get_density_range(tds, min_range, buffer=100):
+    """Given a set of density numbers, work out the right limit of the plot, ie. the
+       max xrange/yrange. For MiSeq tiles the density will normally be <1000 but
+       for clustered flowcells (if you force plot a JiSeq with no occupancy info) then
+       it could be more like 2500.
+    """
+    buffered_range = min_range
+    for alane in tds['lanes']:
+        for atile in tds[alane]:
+            dk = atile['density_k']
+
+            # See if dk is going to fit on a plot bounded by current min_range.
+            # The idea is that if res is 1000 and dk is 1020 we extend res to 1200
+            # because we round up to the nearest 100 then add 100
+            buffered_range = max(buffered_range, (ceil(dk/buffer) * buffer) + buffer)
+
+    return float(buffered_range)
 
 def main(args):
 
@@ -185,7 +204,7 @@ def main(args):
         if type(args.density_max) is float:
             res['density_max'] = args.density_max
         elif not res.get('density_max'):
-            res['density_max'] = float(args.density_max)
+            res['density_max'] = get_density_range(res, args.density_max)
 
     if args.dump_yaml:
         print(yaml.safe_dump(res), end='')
