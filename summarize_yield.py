@@ -204,7 +204,8 @@ def extract_info(summary):
             mylaneinfo['Totals']['density_pf'] = f(summary.at(0).at(lane).density_pf())
 
             try:
-                # Loop over reads
+                # Loop over reads. Yes there is a prettier way to do this but looping until we
+                # hit an exception works.
                 for i in range(20):
                     #foo = summary.at(i).read()
                     #import pdb; pdb.set_trace()
