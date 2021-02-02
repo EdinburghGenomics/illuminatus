@@ -290,12 +290,13 @@ rule interop_by_cycle:
         qmetrics = glob(format("{SEQDATA}/InterOp/CorrectedIntMetricsOut.bin"))
     shell: "{TOOLBOX} interop_plot_by_cycle {input.idir}/.. > {output}"
 
+# This now uses my custom Python plotter not toolbox/interop_plot_by_lane"
 rule interop_by_lane:
     output: "{foo}/by_lane.interop_plot"
     input:
         idir = format("{SEQDATA}/InterOp"),
         qmetrics = glob(format("{SEQDATA}/InterOp/TileMetricsOut.bin"))
-    shell: "{TOOLBOX} interop_plot_by_lane {input.idir}/.. > {output}"
+    shell: "pf_vs_occupied.py {input.idir}/.. > {output}"
 
 # I thought this was plotting for all cycles but in fact it simply plots for cycle 1
 rule interop_flowcell:
