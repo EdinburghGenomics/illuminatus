@@ -145,6 +145,7 @@ def format_gnuplot(tds):
                      "set arrow from 0,0 rto {},{} as 2 lc 'grey'".format(xrange, yrange)])
 
     # Add lines (using headless arrows) to show the means. And make them dotted (supported by pngcairo)
+    # Taking means of percentages is OK here as all the tiles are the same size.
     gp_lines.extend(["set style arrow 1 nohead linewidth 1.2 dashtype 2"])
     for n, l in enumerate(tds['lanes']):
         mean_x = mean([atile[plot[0]] for atile in tds[l]])
