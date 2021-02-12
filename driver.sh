@@ -662,6 +662,32 @@ pipeline_fail() {
     fi
 }
 
+get_run_status() { # run_dir
+  # invoke RunStatus.py in CWD and collect some meta-information about the run.
+  # We're passing this info to the state functions via global variables.
+  _run="$1"
+
+  # This construct allows error output to be seen in the log.
+  _runstatus="$(RunStatus.py "$_run")" || RunStatus.py "$_run" | log 2>&1
+
+  # Capture the various parts into variables (see test/grs.sh in Hesiod)
+  for _v in RUNID/RunID INSTRUMENT/Instrument STATUS/PipelineStatus \
+            LANES/LaneCount FLOWCELLID/Flowcell ; do
+    _line="$(awk -v FS=":" -v f="${_v#*/}" '$1==f {gsub(/^[^:]*:[[:space:]]*/,"");print}' <<<"$_runstatus")"
+    eval "${_v%/*}"='"$_line"'
+  done
+
+  if [ -z "${STATUS:-}" ] ; then
+    STATUS=unknown
+  fi
+
+  # Resolve output location (this has to work for new runs so we can't follow the symlink)
+  DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
+}
+
+# ==== And now the main processing actions, starting with a search for updated sample sheets for
+# ==== previously processed runs.
+
 if [ -n "${REDO_HOURS_TO_LOOK_BACK:-}" ] ; then
     log "Looking for new replacement sample sheets from the last $REDO_HOURS_TO_LOOK_BACK hours."
     auto_redo.sh |& log || true
@@ -674,29 +700,26 @@ for run in "$SEQDATA_LOCATION"/*/ ; do
 
   # $RUN_NAME_PATTERN is now RUN_NAME_REGEX
   if ! [[ "`basename $run`" =~ ^${RUN_NAME_REGEX}$ ]] ; then
-    debug "Ignoring `basename $run`"
+    debug "Ignoring `basename "$run"`"
     continue
   fi
 
   # invoke runinfo and collect some meta-information about the run. We're passing info
-  # to the state functions via global variables.
-  RUNINFO_OUTPUT="$(RunStatus.py "$run")" || RunStatus.py "$run" | log 2>&1
+  # to the state functions via global variables: RUNID LANES FLOWCELLID etc.
+  get_run_status "$run"
 
-  LANES=`grep ^LaneCount: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
-  STATUS=`grep ^PipelineStatus: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' ' || echo unknown`
-  RUNID=`grep ^RunID: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
-  INSTRUMENT=`grep ^Instrument: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
-  FLOWCELLID=`grep ^Flowcell: <<< "$RUNINFO_OUTPUT" | cut -f2 -d' '`
-
-  # FIXME - should probably check that [ "$RUNID" = `basename "$run"` ] or else BAD THINGS (TM)
+  # Check that [ "$RUNID" = `basename "$run"` ] or else BAD THINGS (TM)
   # will happen when later bits of the pipeline just assume that it is!
+  if [ "$RUNID" != `basename "$run"` ] ; then
+    log "Error processing $run. The RunInfo.xml says the run is named $RUNID. Names must match."
+    continue
+  fi
 
   if [ "$STATUS" = complete ] || [ "$STATUS" = aborted ] ; then _log=debug ; else _log=log ; fi
   $_log "$run has $RUNID from $INSTRUMENT with $LANES lane(s) and status=$STATUS"
 
   #Call the appropriate function in the appropriate directory.
   BREAK=0
-  DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
   pushd "$run" >/dev/null ; eval action_"$STATUS"
   # Even though 'set -e' is in effect this next line is reachable if the called function turns
   # it off...
