@@ -9,7 +9,7 @@ export DRY_RUN=${DRY_RUN:-0}
 LOCAL_CORES=${LOCAL_CORES:-4}
 SNAKE_THREADS=${SNAKE_THREADS:-200}
 EXTRA_SNAKE_FLAGS="${EXTRA_SNAKE_FLAGS:-}"
-EXTRA_SLURM_FLAGS="${EXTRA_SLURM_FLAGS:--t 24:00}"
+EXTRA_SLURM_FLAGS="${EXTRA_SLURM_FLAGS:--t 24:00:00}"
 
 ## Dump out the right cluster config (just now we only have one)
 function cat_cluster_yaml(){
@@ -69,7 +69,7 @@ snakerun_drmaa() {
     echo "Running $snakefile in `pwd` on the SLURM cluster"
     SNAKE_THREADS="${SNAKE_THREADS:-100}"
     EXTRA_SNAKE_FLAGS="${EXTRA_SNAKE_FLAGS:-}"
-    EXTRA_SLURM_FLAGS="${EXTRA_SLURM_FLAGS:--t 24:00}"
+    EXTRA_SLURM_FLAGS="${EXTRA_SLURM_FLAGS:--t 24:00:00}"
 
     mkdir -p ./slurm_output
     set -x
