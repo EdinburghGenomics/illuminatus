@@ -3,11 +3,11 @@
 ## Helper functions for shell scripts.
 __EXEC_DIR="${EXEC_DIR:-`dirname $BASH_SOURCE`}"
 
-# All the Snakefiles have bootstrapping scripts on them, but this script
-# will run snakemake directly via the shell helper functions.
+# All the Snakefiles have bootstrapping scripts on them, which load these
+# functions to help run themselves. I think this can be done with profiles now??
 export DRY_RUN=${DRY_RUN:-0}
 LOCAL_CORES=${LOCAL_CORES:-4}
-SNAKE_THREADS=${SNAKE_THREADS:-200}
+SNAKE_THREADS=${SNAKE_THREADS:-100}
 EXTRA_SNAKE_FLAGS="${EXTRA_SNAKE_FLAGS:-}"
 EXTRA_SLURM_FLAGS="${EXTRA_SLURM_FLAGS:--t 24:00:00}"
 
@@ -63,13 +63,8 @@ snakerun_drmaa() {
     # In particular this sets TMPDIR
     _jobscript="`find_toolbox`/snakemake_jobscript.sh"
 
-    # With alternative --drmaa args and cluster.yaml this could run on
-    # SGE. See v1.4.6 for the old code that actually supported this.
     echo
     echo "Running $snakefile in `pwd` on the SLURM cluster"
-    SNAKE_THREADS="${SNAKE_THREADS:-100}"
-    EXTRA_SNAKE_FLAGS="${EXTRA_SNAKE_FLAGS:-}"
-    EXTRA_SLURM_FLAGS="${EXTRA_SLURM_FLAGS:--t 24:00:00}"
 
     mkdir -p ./slurm_output
     set -x
