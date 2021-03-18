@@ -63,4 +63,9 @@ So now, fix the Snakefile.demux and get testing on some slimmed runs. I need to 
 So in terms of reporting the revcomp setting, I think the thing to do is to add this to
 RunMetaData.py, so we get a report of the chemistry version. DONE.
 
+---
 
+On 18th March, I'm still getting requests for ad-hoc reverse complementing. I guess I can add this to the
+pipeline most simply by having a 'pipeline/index_revcomp' file and if it exists it's fed to --revcomp
+flag of bcl2fastq_setup.py.
+The option will be recorded in the sample sheet fragment.

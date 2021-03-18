@@ -47,9 +47,13 @@ class BCL2FASTQPreprocessor:
         # See if we want to revcomp at all
         if revcomp == 'auto':
             self.revcomp = self.infer_revcomp()
+            self.revcomp_label = 'auto ' + (self.revcomp or 'none')
+        elif (not revcomp) or revcomp == 'none':
+            self.revcomp = ''
+            self.revcomp_label = 'none'
         else:
-            # Convert None to ''
-            self.revcomp = revcomp or ''
+            self.revcomp = revcomp
+            self.revcomp_label = revcomp
 
     def get_ini_settings(self):
         """Extract the appropriate settings for embedding to the [bcl2fastq] section.
@@ -148,7 +152,7 @@ class BCL2FASTQPreprocessor:
             res.append("Run ID,{}".format(self.run_info['RunId']))
             res.append("Description,Fragment processed with {}".format(me))
             res.append("#Lane,{}".format(self.lane))
-            res.append("#Revcomp,{}".format(self.revcomp or 'None'))
+            res.append("#Revcomp,{}".format(self.revcomp_label))
 
             # Now add the bcl2fastq_opts
             res.append('')
@@ -247,15 +251,15 @@ def main(args):
     print( *pp.get_output(me), sep='\n' )
 
 def parse_args():
-    description = """Set up config for bcl2fastq for one lane"""
+    description = """Outputs a sample sheet fragment for bcl2fastq for one lane"""
 
     argparser = ArgumentParser( description=description,
                                 formatter_class = ArgumentDefaultsHelpFormatter )
 
-    argparser.add_argument("-r", "--revcomp", default=None, choices=[None, "", "1", "2", "12", "auto"],
+    argparser.add_argument("-r", "--revcomp", default="none", choices=["none", "", "1", "2", "12", "auto"],
                             help="Reverse complement index 2 and/or 1")
     argparser.add_argument("-l", "--lane", required=True, choices=list("12345678"),
-                            help="Reverse complement index 2 and/or 1")
+                            help="Lane to be demultiplexed")
     argparser.add_argument("run_dir", nargs=1,
                             help="Directory containing the finished run")
 
