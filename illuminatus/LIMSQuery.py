@@ -16,6 +16,7 @@ import configparser
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 from psycopg2.extensions import adapt
+from pyclarity_lims.lims import Lims
 
 # This is needed to make any API access work, but for now I'm just reading the
 # database.
@@ -148,7 +149,7 @@ class MyLims:
                 projects.append(node.text)
             next_page = proot.find('next-page')
             if next_page is None: break
-            proot = self.get(next_page.attrib['uri'])
+            proot = lims.get(next_page.attrib['uri'])
 
         #Yes I'm scanning the list many times, but the key thing is I only fetch it once.
         res = []
