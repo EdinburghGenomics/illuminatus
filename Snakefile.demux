@@ -129,5 +129,6 @@ rule preprocess:
     params:
         dest = os.path.abspath('.')
     shell:
-        """bcl2fastq_setup.py --lane {wildcards.l} --revcomp auto {RUNDIR} > {output}
+        """revcomp=$(cat {RUNDIR}/pipeline/index_revcomp.OVERRIDE 2>/dev/null || echo auto)
+           bcl2fastq_setup.py --lane {wildcards.l} --revcomp $revcomp {RUNDIR} > {output}
         """
