@@ -69,3 +69,9 @@ On 18th March, I'm still getting requests for ad-hoc reverse complementing. I gu
 pipeline most simply by having a 'pipeline/index_revcomp.OVERRIDE' file and if it exists it's fed to --revcomp
 flag of bcl2fastq_setup.py.
 The option will be recorded in the sample sheet fragment. I really need to get this into the report.
+
+OK, todo on this:
+
+1 - Make the file index_revcomp.laneN.OVERRIDE since this needs to be set per-lane.
+2 - Make this show in the HTML report
+3 - Add the sample sheet fragment also (both of these in summarize_post_bcl2fastq.py)

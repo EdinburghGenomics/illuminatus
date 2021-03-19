@@ -66,7 +66,7 @@ class BCL2FASTQPreprocessor:
         for i in [ lambda: self.load_samplesheet_ini(),
                    lambda: self.load_ini_file( os.path.join(self.run_dir, "pipeline_settings.ini") ),
                    lambda: self.load_ini_file(
-                        os.path.join(self.run_dir, "pipeline_settings-lane{}.ini".format(self.lane)) ) ]:
+                        os.path.join(self.run_dir, "pipeline_settings.lane{}.ini".format(self.lane)) ) ]:
             i()
 
             # Special case for barcode-mismatches, even though we'll normally do this by retry.
