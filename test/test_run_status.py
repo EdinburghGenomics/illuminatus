@@ -465,24 +465,6 @@ class T(unittest.TestCase):
         ri = dictify(run_info.get_yaml())
         self.assertEqual(ri['PipelineStatus:'], 'redo')
 
-    @unittest.skip
-    def test_pointless_copying(self):
-        """This test is not yet very useful
-        """
-        runs = [ os.path.basename(r) for r in glob.glob(DATA_DIR + '/1*') ]
-        for run in runs:
-
-            run_info = self.use_run(run, copy=False)
-            #print("%s: %s" % (run, run_info.get_status()) )
-
-            # If copy=True you can safely change files in self.run_dir.
-            run_info_new = self.use_run(run, copy=True)
-
-            #TODO: make some changes in run_info_new that should not impact
-            #the status.
-
-            self.assertEqual(run_info.get_status(), run_info_new.get_status())
-
     def md(self, fp):
         os.makedirs(os.path.join(self.run_dir, self.current_run, fp))
 
