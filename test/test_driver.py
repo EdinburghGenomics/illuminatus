@@ -140,13 +140,15 @@ class T(unittest.TestCase):
 
     def shell(self, cmd, *args):
         """Call to os.system in 'safe mode'
-           Note this works for DASH as well as BASH, so no pipefail
+           Replaced by subprocess.call so we can ensure use of BASH. Using DASH breaks everything.
         """
+        full_cmd = "set -euo pipefail ; "
         if args:
-            status = os.system("set -eu ; " + cmd.format(*[shell_quote(a) for a in args]) )
+            full_cmd += cmd.format(*[shell_quote(a) for a in args])
         else:
             # Assume that any curlies are bash expansions
-            status = os.system("set -eu ; " + cmd)
+            full_cmd += cmd
+        status = subprocess.call(full_cmd, shell=True, executable="/bin/bash")
         if status:
             raise ChildProcessError("Exit status was %s running command:\n%s" % (status, cmd))
 
