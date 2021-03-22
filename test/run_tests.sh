@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # When running the tests, we need to ensure Python picks up the right environment.
 # For this reason ,it's worth having a test wrapper.

@@ -82,7 +82,7 @@ else
         pip_install interop==1.1.8
 
         # Needed if well_dups runs in the local VEnv, which it currently does.
-        pip_install python-Levenshtein==0.12.0
+        pip_install python-Levenshtein==0.12.1
 
         # snakemake and drmaa (note the settings/wrapper in shell_helper_functions.sh)
         pip_install snakemake==5.5.3
@@ -96,13 +96,14 @@ else
 
         post_activate
     )
-    unset -f post_activate
 
     if [ $? = 0 ] ; then
         # We need this since we quit the subshell
+        unset -f post_activate
         echo "VEnv provisioned OK"
         activate_venv
     else
+        unset -f post_activate upgrade_multiqc pip_install
         echo "Provisioning VEnv Failed!"
         false
     fi

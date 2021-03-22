@@ -140,12 +140,13 @@ class T(unittest.TestCase):
 
     def shell(self, cmd, *args):
         """Call to os.system in 'safe mode'
+           Note this works for DASH as well as BASH, so no pipefail
         """
         if args:
-            status = os.system("set -euo pipefail ; " + cmd.format(*[shell_quote(a) for a in args]) )
+            status = os.system("set -eu ; " + cmd.format(*[shell_quote(a) for a in args]) )
         else:
             # Assume that any curlies are bash expansions
-            status = os.system("set -euo pipefail ; " + cmd)
+            status = os.system("set -eu ; " + cmd)
         if status:
             raise ChildProcessError("Exit status was %s running command:\n%s" % (status, cmd))
 
