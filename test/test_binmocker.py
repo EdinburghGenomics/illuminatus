@@ -148,5 +148,30 @@ class T(unittest.TestCase):
         self.assertEqual(res4, 1)
         self.assertEqual(bm.last_stdout, '')
 
+    def test_fail_mock(self):
+        """I was seeing weird behaviour on Ubuntu. Actually I don't think
+           binmocker was to blame but I'm keeping this test anyway.
+        """
+        with BinMocker() as bm:
+            bm.add_mock('foo')
+            res = bm.runscript('foo')
+            self.assertEqual(res, 0)
+            self.assertEqual(bm.last_stdout, '')
+
+            res = bm.runscript('foo ; echo $?')
+            self.assertEqual(res, 0)
+            self.assertEqual(bm.last_stdout, '0\n')
+
+            # Now make it fail...
+            bm.add_mock('foo', fail=True)
+
+            res = bm.runscript('foo')
+            self.assertEqual(res, 1)
+            self.assertEqual(bm.last_stdout, '')
+
+            res = bm.runscript('foo ; echo $?')
+            self.assertEqual(res, 0)
+            self.assertEqual(bm.last_stdout, '1\n')
+
 if __name__ == '__main__':
     unittest.main()
