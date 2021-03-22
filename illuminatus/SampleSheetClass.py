@@ -69,13 +69,13 @@ class SampleSheetPrinter:
         return self._csv_header() + self._csv_data()
 
     def _csv_header(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def _csv_data(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def _csv_data_headings(self):
-        raise NotImplemented
+        raise NotImplementedError
 
 class HiseqSampleSheetPrinter(SampleSheetPrinter):
 

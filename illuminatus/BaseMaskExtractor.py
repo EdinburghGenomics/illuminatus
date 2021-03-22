@@ -62,7 +62,7 @@ class BaseMaskExtractor:
                         # no index/dummyindex was provided, ignore all cylces of this read by setting "n*"
                         base_mask = base_mask + delimiter + "n*"
                     else:
-                        # consider index by setting "Ix", ignore the remaining cycles after the index "n*" 
+                        # consider index by setting "Ix", ignore the remaining cycles after the index "n*"
                         base_mask = base_mask + delimiter + "I" + str(index_read_length) + "n*"
                 elif read_cycles < index_read_length:
                     # the index is longer than cycles of this read so will only consider the cycles avaialble
@@ -70,7 +70,7 @@ class BaseMaskExtractor:
                 indexed_read_counter = indexed_read_counter + 1
 
             if len(base_mask) > 0:
-        	    delimiter = ","
+                delimiter = ","
             #print ( base_mask )
         # end different approach
 

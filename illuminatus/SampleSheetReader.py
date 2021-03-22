@@ -144,7 +144,7 @@ class SampleSheetReader:
             except KeyError:
                 index2 = ""
 
-        # don't remove the N's from a sequence entirely NNNNNN 
+        # don't remove the N's from a sequence entirely NNNNNN
         # but remove from the end of e.g. AGTACNN
         if len( index1.rstrip('N') ) > 0:
             index1 = index1.rstrip('N')

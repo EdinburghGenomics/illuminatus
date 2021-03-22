@@ -82,7 +82,7 @@ def main(output_dir, *lanes):
             raise
 
 def delete_p_fastq(path, lanes, **kwargs):
-    """Delete FASTQ from the top-level dir and return a list of the projects
+   r"""Delete FASTQ from the top-level dir and return a list of the projects
        impacted.
        Files in here match [0-9]{6}_[^_]+_[0-9]+_[^_]+_(.)_[^_]+_(?:[0-9]|UMI)\.fastq\.gz
        where $1 is the lane number.
@@ -94,7 +94,7 @@ def delete_p_fastq(path, lanes, **kwargs):
 
 
 def delete_d_fastq(path, lanes, **kwargs):
-    """Delete FASTQ from the demultiplexing area and return a list of the projects
+   r"""Delete FASTQ from the demultiplexing area and return a list of the projects
        impacted.
        Files in here match .*_L00(.)_.\d_\d\d\d\.fastq\.gz where $1 is the lane.
     """
