@@ -10,7 +10,7 @@ import logging as L
 # Note that if there are no barcodes in the run or the Stats.json contains multiple lanes the
 # output will be empty and a wraning will be logged on STDERR.
 
-def format_lines(json_data, maxlines=200, commentor=lambda *ub: ''):
+def format_lines(json_data, maxlines=None, commentor=lambda *ub: ''):
     """Given the content of a Stats.json file as a Python object,
        return a list of lines that we can embed into the MultiQC report.
     """
@@ -47,13 +47,14 @@ def format_lines(json_data, maxlines=200, commentor=lambda *ub: ''):
 
 def make_revcomp_commentor(sdict):
     """Return a commentor function that looks for likely reverse-complement
-       issues.
+       issues. Note we don't look for reversed or swapped codes or anything
+       other than revcomp.
     """
     # Sanitize all the names in sdict, while also ensuring that changes to
     # the original dict cannot alter the function output.
     newdict = { k: v.split('__')[-1] for k, v in sdict.items() }
 
-    # We only care about the barcode not the count.
+    # We only care about the barcode not the count, so define the fuction like so:
     def comm_func(bc, *_):
 
         # Simple case
@@ -130,7 +131,7 @@ def main(args):
     expected_samples = get_samples_list(json_data)
     commentor = make_revcomp_commentor(expected_samples)
 
-    out_lines = format_lines(json_data, commentor=commentor)
+    out_lines = format_lines(json_data, maxlines=200, commentor=commentor)
 
     for l in out_lines:
         print(l)
