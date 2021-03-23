@@ -187,11 +187,13 @@ class BinMocker:
         self.last_stdout, self.last_stderr = p.communicate()
 
         # Fish the MOCK calls out of _MOCKCALLS
+        # Each line is \0 delimited but there may also be embedded newlines in
+        # the arguments, so we read it in a funny way. I could just slurp the file
+        # instead, I guess.
         calls = self.empty_calls()
         try:
             with open(calls_file, newline='\n') as fh:
                 for l in fh:
-                    # Each line is \0 delimited
                     mock_name, mock_argc, mock_argv = l.split('\0', 2)
                     while mock_argv.count('\0') < int(mock_argc):
                         # Must be an embedded newline; pull the next line
