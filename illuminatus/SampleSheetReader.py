@@ -133,12 +133,12 @@ class SampleSheetReader:
                 index1 = tmp.split("-")[0]
                 index2 = tmp.split("-")[1]
         except KeyError:
-                index1 = ""
+            index1 = ""
 
         #get index 2
         if len(index2) == 0:
             try:
-                    index2 = row[ column_header_mapping['index2'] ]
+                index2 = row[ column_header_mapping['index2'] ]
                 #index2 = index2.rstrip('N')
                 #index2 = index2.replace("N","")
             except KeyError:

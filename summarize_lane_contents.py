@@ -100,7 +100,7 @@ def main(args):
         try:
             key, filename = ai.split('=', 1)
 
-            if not key in ["wd", "yield", "b2f"]:
+            if key not in ["wd", "yield", "b2f"]:
                 exit("Key for add_in_yaml must be wd, b2f or yield.")
 
             if not filename:
@@ -181,7 +181,7 @@ def output_mqc(rids, fh):
 
     # Also tack on a grand total to the description line above the table,
     # unless we have the more accurate b2f values available.
-    if 'add_in_yield' in rids and not 'add_in_b2f' in rids:
+    if 'add_in_yield' in rids and 'add_in_b2f' not in rids:
         yield_totals = [ rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals'] for lane in rids['Lanes'] ]
         mqc_out['description'] += ", with {:,} of {:,} clusters passing filter, according to InterOP ({:.3f}%)".format(
                     sum(t['reads_pf'] for t in yield_totals),
@@ -342,7 +342,7 @@ def scan_for_info(run_dir, project_name_list=''):
 
         #Translate all the project numbers to names in one go
         #If you try to feed this script an old 2500 Sample Sheet this is where it will fail.
-        assert not 'sampleproject' in ss_csv.column_mapping, \
+        assert 'sampleproject' not in ss_csv.column_mapping, \
             "A sampleproject (without the underscore) column was found. Is this an old 2500 SampleSheet?"
         rids['ProjectInfo'] = project_real_name(
                                 set([ line[ss_csv.column_mapping['sample_project']]
@@ -409,7 +409,7 @@ def summarize_lane(lane_lines, column_mapping):
     return res
 
 def output_txt(rids, fh):
-    p = lambda *a: print(*a, file=fh)
+    def p(*a): print(*a, file=fh)
 
     # Show the pipeline version
     p( "Illuminatus {} [{}@{}:{}]".format(
@@ -472,7 +472,7 @@ def output_txt(rids, fh):
 def output_tsv(rids, fh):
     """TSV table for the run report.
     """
-    p = lambda *a: print('\t'.join(a), file=fh)
+    def p(*a): print('\t'.join(a), file=fh)
 
     #Headers
     p("Lane", "Project", "Pool/Library", "Loaded (pmol)", "Loaded PhiX (%)")

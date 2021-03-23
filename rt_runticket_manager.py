@@ -232,7 +232,7 @@ class RTManager():
             return (None, None)
 
         # Order the tickets by tid and get the highest one
-        get_id = lambda t: int(t.get('id').strip('ticket/'))
+        def get_id(t): return int(t.get('id').strip('ticket/'))
         tickets.sort(key=get_id, reverse=True)
         tid = get_id(tickets[0])
 
