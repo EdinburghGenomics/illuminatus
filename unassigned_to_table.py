@@ -45,11 +45,47 @@ def format_lines(json_data, maxlines=200, commentor=lambda *ub: ''):
     return [ line_template.format(*[x for z in zip(i,colwidth) for x in z]).rstrip()
              for i in ub_sorted ]
 
-def make_revcomp_commentor(json_data):
+def make_revcomp_commentor(sdict):
     """Return a commentor function that looks for likely reverse-complement
        issues.
     """
-    pass
+    # Sanitize all the names in sdict, while also ensuring that changes to
+    # the original dict cannot alter the function output.
+    newdict = { k: v.split('__')[-1] for k, v in sdict.items() }
+
+    # We only care about the barcode not the count.
+    def comm_func(bc, *_):
+
+        # Simple case
+        if bc in newdict:
+            return "is " + newdict[bc]
+
+        # The bc may or may not have a '+'
+        bc_split = bc.split('+')
+
+        if len(bc_split) > 2:
+            # I could make this work for any number of indices but it would just
+            # make the code ugly and would never do anything useful.
+            return ""
+        elif len(bc_split) == 1:
+            if revcomp(bc) in newdict:
+                return "revcomp of " + newdict[revcomp(bc)]
+            else:
+                # No match, no message
+                return ""
+        else:
+            # Here we need a list of possible matches - see the unit tests
+            poss_matches = [ ('idx1',
+                              newdict.get(revcomp(bc_split[0]) + "+" + bc_split[1])),
+                             ('idx2',
+                              newdict.get(bc_split[0] + "+" + revcomp(bc_split[1]))),
+                             ('idx1+2',
+                              newdict.get(revcomp(bc_split[0]) + "+" + revcomp(bc_split[1]))) ]
+            # String-ify. This works for the no-match case too
+            return "; ".join([ "revcomp {} of {}".format(*pm) for pm in poss_matches
+                               if pm[1] ])
+
+    return comm_func
 
 def revcomp(seq, rep_table=str.maketrans('ATCGatcg', 'TAGCtagc')):
     """The classic!
@@ -81,7 +117,6 @@ def get_samples_list(json_data):
         for sample_index in sample.get("IndexMetrics", []):
             res[sample_index["IndexSequence"]] = sample_name
 
-
     return res
 
 def main(args):
@@ -92,7 +127,8 @@ def main(args):
         json_data = json.load(sfh)
 
     # Commentor needs to know the expected samples
-    commentor = make_revcomp_commentor(json_data)
+    expected_samples = get_samples_list(json_data)
+    commentor = make_revcomp_commentor(expected_samples)
 
     out_lines = format_lines(json_data, commentor=commentor)
 

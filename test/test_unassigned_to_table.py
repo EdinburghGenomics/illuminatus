@@ -90,6 +90,50 @@ class T(unittest.TestCase):
                                           "CCTTCACC": "NoPool__11674BR0002L02",
                                           "GCCACAGG": "NoPool__11674BR0003L02" } )
 
+    def test_make_revcomp_commentor(self):
+        # This function takes a dict as output by get_samples_list() and returns
+        # a new function f(seq, *_) that points out likely reverse complement matches.
+
+        # Empty case. Should this add any message at all? I think not.
+        empty_commentor = make_revcomp_commentor({})
+        self.assertEqual( empty_commentor('ATC', 1), "" )
+
+        # Basic list with single barcodes as above
+        single_barcode_samples = { "TTCCTGTT": "NoPool__11674BR0001L02",
+                                   "CCTTCACC": "NoPool__11674BR0002L02",
+                                   "GCCACAGG": "NoPool__11674BR0003L02" }
+
+        sb_commentor = make_revcomp_commentor(single_barcode_samples)
+        # We shouldn't ever see an exact match in a real file, but logically I should say something
+        # Other than that we have only 2 cases, and we want to have the pool name snipped off in comments.
+        self.assertEqual( sb_commentor("TTCCTGTT"), "is 11674BR0001L02" )
+        self.assertEqual( sb_commentor(revcomp("TTCCTGTT")), "revcomp of 11674BR0001L02" )
+        self.assertEqual( sb_commentor("TGGGGGGG"), "" )
+
+        # Now for dual barcodes we have more possibilities
+        dual_barcode_samples = { "ATT+ACC": "sample1",
+                                 "ATT+CTT": "sample2",
+                                 "CAT+TAG": "sample3",
+                                 "CAT+AGA": "sample4",
+                                 "ATG+TCT": "sample5",
+                                 "ATG+AGA": "sample6"}
+
+        db_commentor = make_revcomp_commentor(dual_barcode_samples)
+        # 1. no match at all
+        self.assertEqual( db_commentor("AAA+AAA"), "" )
+        # 2. exact match (as noted above, should never be seen)
+        self.assertEqual( db_commentor("CAT+TAG"), "is sample3" )
+        # 3. match after index2 revcomp
+        self.assertEqual( db_commentor("CAT+CTA"), "revcomp idx2 of sample3" )
+        # 4. match after index1 revcomp
+        self.assertEqual( db_commentor("ATG+TAG"), "revcomp idx1 of sample3" )
+        # 5. match after double revcomp
+        self.assertEqual( db_commentor("ATG+CTA"), "revcomp idx1+2 of sample3" )
+        # 6. match after index2 revcomp OR index1 revcomp OR both
+        # Note this is starting to look like the old unassigned reads reporter which spewed out
+        # loads of possible barcode IDs, but this is only looking at codes within the lane so this
+        # kind or result should be very rare.
+        self.assertEqual( db_commentor("CAT+TCT"), "revcomp idx1 of sample5; revcomp idx2 of sample4; revcomp idx1+2 of sample6" )
 
 if __name__ == '__main__':
     unittest.main()
