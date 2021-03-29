@@ -48,12 +48,16 @@ class BCL2FASTQPreprocessor:
         if revcomp == 'auto':
             self.revcomp = self.infer_revcomp()
             self.revcomp_label = 'auto ' + (self.revcomp or 'none')
-        elif (not revcomp) or revcomp == 'none':
+        elif not revcomp:
             self.revcomp = ''
             self.revcomp_label = 'none'
+        elif revcomp == 'none':
+            # Explicitly none as opposed to implicitly none
+            self.revcomp = ''
+            self.revcomp_label = 'override none'
         else:
             self.revcomp = revcomp
-            self.revcomp_label = revcomp
+            self.revcomp_label = 'override ' + revcomp
 
     def get_ini_settings(self):
         """Extract the appropriate settings for embedding to the [bcl2fastq] section.
@@ -256,7 +260,7 @@ def parse_args():
     argparser = ArgumentParser( description=description,
                                 formatter_class = ArgumentDefaultsHelpFormatter )
 
-    argparser.add_argument("-r", "--revcomp", default="none", choices=["none", "", "1", "2", "12", "auto"],
+    argparser.add_argument("-r", "--revcomp", default="", choices=["none", "", "1", "2", "12", "auto"],
                             help="Reverse complement index 2 and/or 1")
     argparser.add_argument("-l", "--lane", required=True, choices=list("12345678"),
                             help="Lane to be demultiplexed")

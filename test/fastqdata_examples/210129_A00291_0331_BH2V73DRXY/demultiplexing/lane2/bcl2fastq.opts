@@ -1,0 +1,4 @@
+--barcode-mismatches 1
+--fastq-compression-level 6
+--use-bases-mask '2:Y150n,I8,I8,Y150n'
+--tiles=s_[$LANE]_2101

@@ -1,0 +1,21 @@
+[Header]
+IEMFileVersion,4
+Investigator Name,Liz Heap
+Project Name
+Experiment Name,K2117
+Date,1/29/2021
+Chemistry,Default
+Run ID,210129_A00291_0331_BH2V73DRXY
+Description,Fragment processed with Illuminatus bcl2fastq_setup.py
+#Lane,2
+#Revcomp,auto 2
+
+[bcl2fastq]
+--fastq-compression-level 6
+--use-bases-mask '2:Y150n,I8,I8,Y150n'
+--tiles=s_[$LANE]_2101
+
+[Data]
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,Sample_Project,I7_Index_ID,index,I5_Index_ID,index2,Description
+2,15572MApool02-N__15572MA0189L01,,H2V73DRXY,,15572,15572-GGACTCCT,GGACTCCT,15572-AGAGTAGA,TCTACTCT,15572MApool02-N
+2,15572MApool02-N__15572MA0190L01,,H2V73DRXY,,15572,15572-GCCTATGA,GCCTATGA,15572-AGAGTAGA,TCTACTCT,15572MApool02-N

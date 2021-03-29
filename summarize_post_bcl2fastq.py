@@ -11,15 +11,49 @@ class PostRunMetaData:
        The following sources will be checked:
          bcl2fastq.version files
          bcl2fastq.info files
+         laneN/SampleSheet.filtered.csv
        If you supply a lane only that lane will be checked, otherwise all will be checked.
     """
     def __init__( self , run_folder , fastqdata_path = '', lanes = None ):
 
         self.run_path_folder = os.path.join( fastqdata_path , run_folder )
-        self.lanes = lanes
+        self.lanes = lanes or []
 
         self.find_bcl2fastq_versions()
         self.find_bcl2fastq_opts()
+
+        self.find_filtered_samplesheet()
+
+    def find_filtered_samplesheet(self):
+        """If there is a filtered version of the sample sheet, take note of it and check
+           the #Revcomp, line.
+        """
+        self.filtered_samplesheet = None
+        self.revcomp_setting = None
+
+        if len(self.lanes) != 1:
+            # This info only makes sense for a single lane
+            return
+        single_lane, = self.lanes
+
+        try:
+            with open(os.path.join( self.run_path_folder,
+                                    'demultiplexing',
+                                    'lane{}'.format(single_lane),
+                                    'SampleSheet.filtered.csv' )) as fh:
+                self.filtered_samplesheet = [ os.path.basename(fh.name),
+                                              os.path.abspath(fh.name) ]
+                for l in fh:
+                    l = l.rstrip('\n')
+                    if l.startswith('[') and l != '[Header]':
+                        # We ran past the header section
+                        break
+                    elif l.startswith('#Revcomp,'):
+                        self.revcomp_setting = l.split(',')[1]
+                        break
+        except FileNotFoundError:
+            # OK we don't have one.
+            pass
 
     def find_bcl2fastq_versions(self):
         """If bcl2fastq ran already, the version will be recorded (if there was a cleanup, these files need to
@@ -79,6 +113,13 @@ class PostRunMetaData:
             else:
                 mf = ', '.join(self.mismatch_flags)
         idict['post_demux_info']['barcode mismatches'] = mf or 'unknown'
+
+        # Also we want to include the processed sample sheet.
+        if self.filtered_samplesheet:
+            idict['post_demux_info']['filtered samplesheet'] = self.filtered_samplesheet
+
+        if self.revcomp_setting:
+            idict['post_demux_info']['index revcomp'] = self.revcomp_setting
 
         return yaml.dump( idict,
                           Dumper = yamlloader.ordereddict.CSafeDumper,
