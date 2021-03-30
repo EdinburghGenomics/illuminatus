@@ -8,8 +8,6 @@ from io import StringIO
 from datetime import date
 import os
 
-from xml.dom.minidom import parseString
-
 class SampleSheetPrinter:
 
     def __init__(self,samplesheet):
@@ -69,13 +67,13 @@ class SampleSheetPrinter:
         return self._csv_header() + self._csv_data()
 
     def _csv_header(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def _csv_data(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def _csv_data_headings(self):
-        raise NotImplemented
+        raise NotImplementedError
 
 class HiseqSampleSheetPrinter(SampleSheetPrinter):
 
@@ -289,7 +287,6 @@ class HiseqXSampleSheetPrinter(Hiseq4000SampleSheetPrinter):
                 for lib in pool.libraries:
                     lib.index2_sequence = self._get_sequence_reverse_complement(lib.index2_sequence)
 
-        
 
 class Hiseq2500SampleSheetPrinter(HiseqSampleSheetPrinter):
     def printme(self):
@@ -303,7 +300,6 @@ class Hiseq2500RapidSampleSheetPrinter(HiseqSampleSheetPrinter):
 '''
     SampleSheet Class Declaration
 '''
-
 
 class SampleSheet:
 
@@ -358,7 +354,6 @@ class Pool:
         self.libraries.append( library )
         return self.pool_name
 
-
 class Library:
     def __init__(self, name):
         self.library_name = name
@@ -388,5 +383,3 @@ class Library:
 
     def setProject(self):
         self.library_project = self.library_name[0:5]
-
-

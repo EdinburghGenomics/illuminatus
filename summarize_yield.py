@@ -220,8 +220,10 @@ def extract_info(summary):
 
                     # Add the info to the appropriate totals. This time the code doesn't do the
                     # calculations for me.
-                    for tbit in [mylaneinfo['Totals']] if rinfo['is_index'] \
-                        else [mylaneinfo['Totals'], mylaneinfo['Non-Index Totals']]:
+                    tbits = [mylaneinfo['Totals']]
+                    if not rinfo['is_index']:
+                        tbits.append(mylaneinfo['Non-Index Totals'])
+                    for tbit in tbits:
 
                             tbit['cycles'] += rinfo['cycles']
                             tbit['yield_g'] += rinfo['yield_g']

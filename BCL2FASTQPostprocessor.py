@@ -32,7 +32,7 @@ def main(output_dir, prefix=None):
     #subdirectory.
     demux_dir = output_dir + "/demultiplexing"
     with open(os.path.join(demux_dir, 'renames.log'), 'a') as log_fh:
-        log = lambda m: print(m, file=log_fh)
+        def log(m): print(m, file=log_fh)
         log("# %s" % sys.argv[0])
         log("# renaming files in %s on %s" % (
                                  demux_dir,
@@ -96,6 +96,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         Returns the list of projects for which files have been renamed.
     """
     proj_seen = set()
+
     def add_project(proj_name):
         check_project_name(proj_name)
         proj_seen.add(proj_name)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import unittest
 from unittest.mock import Mock, patch
-import sys, os, glob, re
+import sys, os, re
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
 from glob import glob

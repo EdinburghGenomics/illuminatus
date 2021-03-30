@@ -178,7 +178,7 @@ def parse_args(*args):
     parser.add_argument("runid",
                         help="A run ID, like 180222_K00166_0345_BHT2F5BBXX.")
     parser.add_argument("--container_name",
-                        help="Attach the name to a container with the specified name, as" + \
+                        help="Attach the name to a container with the specified name, as" +
                              " opposed to extracting the flowcell name from the runid.")
     parser.add_argument("-c", "--close", "--complete", action="store_true",
                         help="Close/complete the QC step by calling advance().")

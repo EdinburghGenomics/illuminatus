@@ -24,8 +24,8 @@ def main(output_dir, *lanes):
 
     # Open the log. This will barf on non-existent output_dir.
     with open(os.path.join(output_dir, 'cleanup.log'), 'a') as log_fh:
-        log = lambda m: print(m, file=log_fh)
-        die = lambda m: print("# ERROR: %s" % m, file=log_fh) or exit(m)
+        def log(m): print(m, file=log_fh)
+        def die(m): print("# ERROR: %s" % m, file=log_fh) or exit(m)
 
         log("# %s" % sys.argv[0])
         log("# cleaning lanes %s in %s on %s" % (
@@ -82,11 +82,11 @@ def main(output_dir, *lanes):
             raise
 
 def delete_p_fastq(path, lanes, **kwargs):
-    """Delete FASTQ from the top-level dir and return a list of the projects
-       impacted.
-       Files in here match [0-9]{6}_[^_]+_[0-9]+_[^_]+_(.)_[^_]+_(?:[0-9]|UMI)\.fastq\.gz
-       where $1 is the lane number.
-    """
+    r"""Delete FASTQ from the top-level dir and return a list of the projects
+        impacted.
+        Files in here match [0-9]{6}_[^_]+_[0-9]+_[^_]+_(.)_[^_]+_(?:[0-9]|UMI)\.fastq\.gz
+        where $1 is the lane number.
+     """
     return delete_fastq( path, lanes,
                          re.compile(r'^[0-9]{6}_[^_]+_[0-9]+_[^_]+_(.)_[^_]+_(?:[0-9]|UMI)\.fastq\.gz'),
                          otherdirs=('md5sums', 'counts'),
@@ -94,10 +94,10 @@ def delete_p_fastq(path, lanes, **kwargs):
 
 
 def delete_d_fastq(path, lanes, **kwargs):
-    """Delete FASTQ from the demultiplexing area and return a list of the projects
-       impacted.
-       Files in here match .*_L00(.)_.\d_\d\d\d\.fastq\.gz where $1 is the lane.
-    """
+    r"""Delete FASTQ from the demultiplexing area and return a list of the projects
+        impacted.
+        Files in here match .*_L00(.)_.\d_\d\d\d\.fastq\.gz where $1 is the lane.
+     """
     return delete_fastq( path, lanes,
                          re.compile(r'_L00(.)_.._\d\d\d\.fastq\.gz$'),
                          **kwargs )

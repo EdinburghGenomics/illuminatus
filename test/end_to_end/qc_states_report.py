@@ -77,9 +77,9 @@ def main(args):
     pversions = dict()
 
     # Scan all of the directories in quick mode, but only if the match the regex
-    for run in glob(environ['SEQDATA_LOCATION'] + '/*/'):
+    for arun in glob(environ['SEQDATA_LOCATION'] + '/*/'):
 
-        runid = os.path.basename(run)
+        runid = os.path.basename(arun)
 
         if not re.match(rnr, runid):
             debug("Ignoring {} - regex mismatch".format(runid))
@@ -88,7 +88,7 @@ def main(args):
         # We just need to know about the instrument and status, which
         # can be done quickly.
         # You can ask the same by running RunStatus.py -q ...
-        rs = RunStatus(run, 'q')
+        rs = RunStatus(arun, 'q')
 
         # Note I'm overwriting runid - this will prune any .extension
         runid = rs.runinfo_xml.run_info['RunId']
@@ -96,7 +96,7 @@ def main(args):
         rstatus = rs.get_status()
 
         # Sanity check and print a warning if there is no symlimk and the dir names mismatch
-        if (not os.path.exists("{}/pipeline/output".format(run)) and
+        if (not os.path.exists("{}/pipeline/output".format(arun)) and
             not os.path.exists("{}/{}".format(environ['FASTQ_LOCATION'], runid)) and
             rstatus not in ['new', 'aborted']):
             print("{} has a pipeline dir but no fastq directory!".format(runid))
@@ -110,9 +110,9 @@ def main(args):
         # Normally, skip this. It's too slow.
         if debug():
             if rstatus == "complete":
-                for f in glob(run + "/pipeline/output/QC/run_info.*.yml"):
+                for f in glob(arun + "/pipeline/output/QC/run_info.*.yml"):
                     with open(f) as fh:
-                        fdata = yaml.safe_load(f)
+                        fdata = yaml.safe_load(fh)
                         for sect in fdata.values():
                             if 'Pipeline Version' in sect:
                                 pversions[runid] = fdata['Pipeline Version']

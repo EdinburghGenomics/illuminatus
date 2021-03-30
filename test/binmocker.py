@@ -12,23 +12,37 @@ from glob import glob
 class BinMocker:
     """A helper class that provides a way to replace tools with dummy
        calls and then summarize what was called.
-       This won't be anywhere near as robust/comprehensive as Test::Mock but it will do.
+       The idea is to make something vaguely similar to Test::Mock. I
+       wouldn't say this is fully robust but for unit tests it does the job.
 
+       Given a shell script named foo.sh:
+         #!/bin/bash
+         mycmd 1
+         mycmd 2
+
+       We can run the script with commands mocked out:
          with BinMocker('mycmd') as bm:
             bm.runscript('foo.sh')
 
-            #Check that foo.sh called mycmd once.
+            #Check that foo.sh called mycmd twice.
             assert len(bm.last_calls['mycmd']) == 2
+
+       I made this for testing BASH scripts but in fact any program that calls
+       other programs and respects env['PATH'] is testable this way.
     """
 
-    def __init__(self, *mocks):
+    def __init__(self, *mocks, shell=None):
         self.mock_bin_dir = mkdtemp()
+
+        # The shell may be changed to /bin/sh or /bin/dash or but the normal default of
+        # /bin/bash should be fine regardless of what you are testing.
+        self._shell = shell or "/bin/bash"
+        self._sh_env_val = None
 
         self._make_mockscript("_MOCK", 0)
         self._make_mockscript("_MOCKF", 1)
 
         self.mocks = set()
-        self._bash_env = None
         for m in mocks:
             self.add_mock(m)
 
@@ -44,10 +58,11 @@ class BinMocker:
         # for x in "$@" ; do _fs+=(%q) ; done
         # printf "%q %d ${_fs[*]}\n" "$0" "$#" "$@"
         # But using zeros seems better.
-
+        # Also I want this to work in both BASH and DASH which is tricky.
+        shell = self._shell
         mockscript = r'''
-            #!/bin/bash
-            _fs='%s\0%d\0' ; for x in "$@" ; do _fs+='%s\0' ; done ; _fs+='\n'
+            #!{shell}
+            _fs=%s\\0%d\\0 ; for x in "$@" ; do _fs="$_fs"%s\\0 ; done ; _fs="$_fs"\\n
             printf "$_fs" "$(basename "$0")" "$#" "$@" >> "$(dirname "$0")"/_MOCKCALLS
             {side_effect}
             exit {retcode}
@@ -63,24 +78,26 @@ class BinMocker:
     def _add_mockfunc(self, funcname, retcode, side_effect="#NOP"):
         """Internal function for writing mock functions.
            Note these will only apply to scripts that explicitly use #!/bin/bash
-           as the interpreter, not #!/bin/sh or any other way that commands are
-           called indirectly, like 'env /bin/true ...'.
+           as the interpreter, not #!/bin/sh or #!/bin/dash or anything
+           called indirectly within the script, like 'env /bin/true ...'.
         """
-        calls_file = os.path.join(self.mock_bin_dir, "_MOCKCALLS")
+        # This hack only works on BASH
+        if not self._shell.endswith('/bash'):
+            raise RuntimeError("Only BASH allows functions with slashes in the name")
 
         mockfunc = r'''
             {funcname}(){{
             {side_effect}
             local _fs
-            _fs='%s\0%d\0' ; for x in "$@" ; do _fs+='%s\0' ; done ; _fs+='\n'
+            _fs=%s\\0%d\\0 ; for x in "$@" ; do _fs="$_fs"%s\\0 ; done ; _fs="$_fs"\\n
             printf "$_fs" '{funcname}' "$#" "$@" >> "$(dirname "$BASH_SOURCE")"/_MOCKCALLS
             return {retcode} ; }}
         '''.format(**locals())
 
-        with open(os.path.join(self.mock_bin_dir, '_BASHENV'), 'a') as fh:
+        with open(os.path.join(self.mock_bin_dir, '_BASH_ENV'), 'a') as fh:
             print(mockfunc.strip(), file=fh)
 
-        self._bash_env = os.path.join(self.mock_bin_dir, "_BASHENV")
+        self._sh_env_val = os.path.join(self.mock_bin_dir, "_BASH_ENV")
 
 
     def add_mock(self, mock, fail=False, side_effect=None):
@@ -147,13 +164,15 @@ class BinMocker:
             else:
                 full_env['PATH'] = os.path.abspath(self.mock_bin_dir)
 
-            if self._bash_env:
+            if self._sh_env_val:
                 # Note - interactive scripts shouldn't normally depend on BASH_ENV,
-                # so complain if I'm clobbering it. Ditto for ENV.
+                # so complain if I'm clobbering it. Ditto for ENV, but we don't need that
+                # as BASH in compatibility mode won't set the functions we need.
                 if full_env.get('BASH_ENV'):
                     raise RuntimeError("BASH_ENV was already set")
 
-                full_env['BASH_ENV'] = self._bash_env
+                # Rather than working out which is needed, set both.
+                full_env['BASH_ENV'] = self._sh_env_val
 
         use_shell = (type(cmd) == str)
         p = subprocess.Popen(cmd,
@@ -162,17 +181,19 @@ class BinMocker:
                              stderr = subprocess.PIPE,
                              universal_newlines = True,
                              env = full_env,
-                             executable = "/bin/bash" if use_shell else None,
+                             executable = self._shell if use_shell else None,
                              close_fds = True)
 
         self.last_stdout, self.last_stderr = p.communicate()
 
-        #Fish the MOCK calls out of _MOCKCALLS
+        # Fish the MOCK calls out of _MOCKCALLS
+        # Each line is \0 delimited but there may also be embedded newlines in
+        # the arguments, so we read it in a funny way. I could just slurp the file
+        # instead, I guess.
         calls = self.empty_calls()
         try:
             with open(calls_file, newline='\n') as fh:
                 for l in fh:
-                    # Each line is \0 delimited
                     mock_name, mock_argc, mock_argv = l.split('\0', 2)
                     while mock_argv.count('\0') < int(mock_argc):
                         # Must be an embedded newline; pull the next line

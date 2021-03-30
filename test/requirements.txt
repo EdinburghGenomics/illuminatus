@@ -1,2 +1,4 @@
 pyyaml==5.4.1
 yamlloader==1.0.0
+snakemake==5.5.3
+Rt==1.0.11

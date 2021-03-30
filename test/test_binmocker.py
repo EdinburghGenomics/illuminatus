@@ -11,8 +11,10 @@ with patch('sys.path', new=['.'] + sys.path):
 class T(unittest.TestCase):
     """Internal testing for BinMocker helper
     """
+    shell = None
+
     def test_bin_mocker(self):
-        with BinMocker('foo', 'bad') as bm:
+        with BinMocker('foo', 'bad', shell=self.shell) as bm:
             bm.add_mock('bad', fail=True)
 
             res1 = bm.runscript('true')
@@ -40,7 +42,7 @@ class T(unittest.TestCase):
     def test_cmd_as_list(self):
         """When bm.runscript() is called with a list arg it should bypass the shell.
         """
-        with BinMocker('foo', 'bad') as bm:
+        with BinMocker('foo', 'bad', shell=self.shell) as bm:
             bm.add_mock('bad', fail=True)
 
             # Same as above
@@ -68,7 +70,7 @@ class T(unittest.TestCase):
             self.assertEqual(bm.last_calls['bad'], [ ["dog", ")))))"] ])
 
     def test_character_escaping(self):
-        with BinMocker('foo') as bm:
+        with BinMocker('foo', shell=self.shell) as bm:
 
             # Some exotic looking args
             args = [ [ "a", "b", "c", "a b c" ],
@@ -79,7 +81,7 @@ class T(unittest.TestCase):
             script = ' ; '.join([ ' '.join(['foo'] + [quote(a) for a in alist])
                                   for alist in args ])
 
-            res1 = bm.runscript(script)
+            bm.runscript(script)
 
             self.assertEqual(bm.last_stdout, '')
             self.assertEqual(bm.last_stderr, '')
@@ -88,7 +90,7 @@ class T(unittest.TestCase):
     def test_side_effect(self):
         """New feature - we can add a side_effect to our mock.
         """
-        bm = BinMocker()
+        bm = BinMocker(shell=self.shell)
         self.addCleanup(bm.cleanup)
 
         # Side effect should happen but should not affect the return value.
@@ -114,11 +116,12 @@ class T(unittest.TestCase):
                                               theother = [[ '42' ]] ))
 
     def test_mock_abs_path(self):
-        """It should be possible to mock out even commands referred to by
+        """It's possible, if hacky, to mock out even commands referred to by
            full path. Note that this will only work for things called from
-           BASH, not for things called indirectly like "env /bin/foo".
+           BASH, not for things called indirectly like "env /bin/foo". And
+           it won't work on DASH or with BASH in compatibility mode.
         """
-        bm = BinMocker()
+        bm = BinMocker(shell=self.shell)
         self.addCleanup(bm.cleanup)
 
         bm.add_mock('/bin/false', side_effect="echo THIS")
@@ -133,6 +136,7 @@ class T(unittest.TestCase):
         bm.add_mock('/bin/wibble',  side_effect="woo 456")
 
         res2 = bm.runscript('/bin/wibble 123')
+        self.assertEqual(res2, 0)
         self.assertEqual(bm.last_calls['/bin/wibble'], [ ['123'] ])
         self.assertEqual(bm.last_calls['woo'], [ ['456'] ])
         self.assertEqual(bm.last_calls['/bin/false'], [ ['789'] ])
@@ -147,6 +151,55 @@ class T(unittest.TestCase):
         res4 = bm.runscript('env /bin/false 123')
         self.assertEqual(res4, 1)
         self.assertEqual(bm.last_stdout, '')
+
+    def test_fail_mock(self):
+        """I was seeing weird behaviour on Ubuntu. Actually I don't think
+           binmocker was to blame but I'm keeping this test anyway.
+        """
+        with BinMocker(shell=self.shell) as bm:
+            bm.add_mock('foo')
+            res = bm.runscript('foo')
+            self.assertEqual(res, 0)
+            self.assertEqual(bm.last_stdout, '')
+
+            res = bm.runscript('foo ; echo $?')
+            self.assertEqual(res, 0)
+            self.assertEqual(bm.last_stdout, '0\n')
+
+            # Now make it fail...
+            bm.add_mock('foo', fail=True)
+
+            res = bm.runscript('foo')
+            self.assertEqual(res, 1)
+            self.assertEqual(bm.last_stdout, '')
+
+            res = bm.runscript('foo ; echo $?')
+            self.assertEqual(res, 0)
+            self.assertEqual(bm.last_stdout, '1\n')
+
+# On Debian-type systems SH will normally be DASH. On systems where SH is BASH then
+# BASH will behave differently depending how it's called. So account for all possibilities.
+@unittest.skipUnless(os.path.exists("/bin/bash") , "no /bin/bash")
+class T_sh(T):
+    """Test with explicit calls to /bin/sh
+    """
+    shell = '/bin/sh'
+
+    # This hack only works in BASH. Maybe there is another hack for DASH?
+    @unittest.expectedFailure
+    def test_mock_abs_path(self):
+        super().test_mock_abs_path()
+
+@unittest.skipUnless(os.path.exists("/bin/dash") , "no /bin/dash")
+class T_dash(T):
+    """Test with explicit calls to DASH
+    """
+    shell = '/bin/dash'
+
+    # This hack only works in BASH. Maybe there is another hack for DASH?
+    @unittest.expectedFailure
+    def test_mock_abs_path(self):
+        super().test_mock_abs_path()
 
 if __name__ == '__main__':
     unittest.main()

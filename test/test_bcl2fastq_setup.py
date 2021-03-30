@@ -22,7 +22,7 @@ try:
     # This is a safe way to manipulate sys.path without impacting later tests.
     with patch('sys.path', new=['.'] + sys.path):
         from bcl2fastq_setup import BCL2FASTQPreprocessor, revcomp
-except:
+except Exception:
     #If this fails, you is probably running the tests wrongly
     print("****",
           "To test your working copy of the code you should use the helper script:",
