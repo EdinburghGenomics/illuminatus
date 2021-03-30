@@ -69,8 +69,8 @@ else
         activate_venv
 
         pip_install pip==19.2.1
-        pip_install pyyaml==5.1.1
-        pip_install yamlloader==0.5.5
+        pip_install pyyaml==5.4.1
+        pip_install yamlloader==1.0.0
         pip_install Rt==1.0.11
         pip_install pyclarity_lims==0.4.8
         pip_install psycopg2-binary==2.8.3

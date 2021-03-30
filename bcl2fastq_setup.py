@@ -145,8 +145,13 @@ class BCL2FASTQPreprocessor:
 
         # OK now we can go through the input sample sheet.
         with open(self.run_dir + '/SampleSheet.csv') as ssfh:
-            # We expect a [Header] section.
-            assert next(ssfh).strip() == '[Header]'
+            # Allow for blank lines and comments at the top
+            for l in ssfh:
+                l = l.strip()
+                if l and (not l.startswith('#')):
+                    break
+            # We expect to have a [Header] section.
+            assert l == '[Header]'
             for l in ssfh:
                 l = l.strip()
                 if l == '' or l.startswith('['):

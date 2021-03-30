@@ -1,2 +1,2 @@
-pyyaml==5.1.1
-yamlloader==0.5.5
+pyyaml==5.4.1
+yamlloader==1.0.0
