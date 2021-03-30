@@ -16,6 +16,8 @@ import yaml, yamlloader
 from interop import py_interop_run_metrics, py_interop_run, py_interop_summary
 from interop.py_interop_metrics import index_out_of_bounds_exception
 
+# Also see pf_vs_occupied.py
+
 def main(run_dir, out_dir=None, always_dump=False):
     """Get the info from run_dir. If out_dir is set, dump individual
        files into all the laneN subdirectories. Else dump the info as
@@ -162,98 +164,84 @@ def extract_info(summary):
     # anyway so it's at best redundant.
     overview['Totals']['error_rate'] = float('nan')
 
-    try:
-        # Get the overview
-        for i in range(20):
-            rinfo = overview[str(summary.at(i).read().number())] = get_dict(summary.at(i).summary())
+    # Get the overview
+    for i in range(summary.size()):
+        rinfo = overview[str(summary.at(i).read().number())] = get_dict(summary.at(i).summary())
 
-            rinfo['is_index'] = summary.at(i).read().is_index()
-            rinfo['cycles']   = summary.at(i).read().total_cycles()
+        rinfo['is_index'] = summary.at(i).read().is_index()
+        rinfo['cycles']   = summary.at(i).read().total_cycles()
 
-            # Add the cycles to the overall info
-            overview['Totals']['cycles'] += rinfo['cycles']
-            if not rinfo['is_index']:
-                overview['Non-Index Totals']['cycles'] += rinfo['cycles']
-
-        assert False, "We shouldn't get here"
-    except index_out_of_bounds_exception:
-        #No more reads to process. No worries.
-        pass
+        # Add the cycles to the overall info
+        overview['Totals']['cycles'] += rinfo['cycles']
+        if not rinfo['is_index']:
+            overview['Non-Index Totals']['cycles'] += rinfo['cycles']
 
     # Now for the per-lane stats. Very similar. But this time I have to tot up all the
     # totals manually for some reason.
-    try:
-        for lane in range(20):
-            mylaneinfo = res['lane{}'.format(summary.at(0).at(lane).lane())] = dict()
+    for lane in range(summary.lane_count()):
+        lsummary = summary.at(0).at(lane)
+        mylaneinfo = res['lane{}'.format(lsummary.lane())] = dict()
 
-            mylaneinfo['Totals']           = get_dict(None, _q30=[0,0], _e=[0,0])
-            mylaneinfo['Non-Index Totals'] = get_dict(None, _q30=[0,0], _e=[0,0])
+        mylaneinfo['Totals']           = get_dict(None, _q30=[0,0], _e=[0,0])
+        mylaneinfo['Non-Index Totals'] = get_dict(None, _q30=[0,0], _e=[0,0])
 
-            # reads and reads_pf are available for the whole lane under read 0.
-            # And by reads we mean fragments, as opposed to everywhere else in this script
-            # where we mean groups-of-cycles!!
-            # In the report I'm calling them "clusters" or "fragments"
-            # Note that for patterned flowcells 'reads' is a constant property determined by the
-            # tile layout, but for some reason InterOP rounds the value and reports something
-            # which is close but not quite. Meh.
-            mylaneinfo['Totals']['reads'] = int(summary.at(0).at(lane).reads())
-            mylaneinfo['Totals']['reads_pf'] = int(summary.at(0).at(lane).reads_pf())
+        # reads and reads_pf are available for the whole lane under read 0.
+        # And by reads we mean fragments, as opposed to everywhere else in this script
+        # where we mean groups-of-cycles!!
+        # In the report I'm calling them "clusters" or "fragments"
+        # Note that for patterned flowcells 'reads' is a constant property determined by the
+        # tile layout, but for some reason InterOP rounds the value and reports something
+        # which is close but not quite. Meh.
+        mylaneinfo['Totals']['reads'] = int(lsummary.reads())
+        mylaneinfo['Totals']['reads_pf'] = int(lsummary.reads_pf())
 
-            # Add in the density and density_pf
-            mylaneinfo['Totals']['density'] = f(summary.at(0).at(lane).density())
-            mylaneinfo['Totals']['density_pf'] = f(summary.at(0).at(lane).density_pf())
+        # Add in the density and density_pf
+        mylaneinfo['Totals']['density'] = f(lsummary.density())
+        mylaneinfo['Totals']['density_pf'] = f(lsummary.density_pf())
 
-            try:
-                # Loop over reads. Yes there is a prettier way to do this but looping until we
-                # hit an exception works.
-                for i in range(20):
-                    #foo = summary.at(i).read()
-                    #import pdb; pdb.set_trace()
+        # Add in the % aligned (to PhiX)
+        mylaneinfo['Totals']['percent_aligned'] = f(lsummary.percent_aligned())
 
-                    # Need to test on a multi-lane run. Obviously on the MiSeq these numbers
-                    # come out the same.
-                    rinfo = mylaneinfo[str(summary.at(i).read().number())] = get_dict(summary.at(i).at(lane))
+        # Loop over reads. Yes there is a prettier way to do this but looping until we
+        # hit an exception works.
+        for i in range(summary.size()):
+            rsummary = summary.at(i).read()
+            lsummary = summary.at(i).at(lane)
 
-                    # Exactly the same as added to overview
-                    rinfo['is_index'] = summary.at(i).read().is_index()
-                    rinfo['cycles']   = summary.at(i).read().total_cycles()
+            # Obviously on the MiSeq the overalls come out the same as there's just one lane.
+            rinfo = mylaneinfo[str(rsummary.number())] = get_dict(lsummary)
 
-                    # Add the info to the appropriate totals. This time the code doesn't do the
-                    # calculations for me.
-                    tbits = [mylaneinfo['Totals']]
-                    if not rinfo['is_index']:
-                        tbits.append(mylaneinfo['Non-Index Totals'])
-                    for tbit in tbits:
+            # Exactly the same as added to overview
+            rinfo['is_index'] = rsummary.is_index()
+            rinfo['cycles']   = rsummary.total_cycles()
 
-                            tbit['cycles'] += rinfo['cycles']
-                            tbit['yield_g'] += rinfo['yield_g']
-                            tbit['projected_yield_g'] += rinfo['projected_yield_g']
+            # Add the info to the appropriate totals. This time the code doesn't do the
+            # calculations for me.
+            tbits = [mylaneinfo['Totals']]
+            if not rinfo['is_index']:
+                tbits.append(mylaneinfo['Non-Index Totals'])
+            for tbit in tbits:
 
-                            # percent_gt_q30 needs to be a weighted mean by summary.at(i).read().useable_cycles()
-                            # so we need to tot these up as well as doing the calculation
-                            tbit['_q30'][0] += summary.at(i).at(lane).percent_gt_q30()  * summary.at(i).read().useable_cycles()
-                            tbit['_q30'][1] += summary.at(i).read().useable_cycles()
-                            tbit['percent_gt_q30'] = f(tbit['_q30'][0] / tbit['_q30'][1])
+                    tbit['cycles'] += rinfo['cycles']
+                    tbit['yield_g'] += rinfo['yield_g']
+                    tbit['projected_yield_g'] += rinfo['projected_yield_g']
 
-                            # same for error_rate, as far as I can see
-                            tbit['_e'][0] += summary.at(i).at(lane).error_rate().mean() * summary.at(i).read().useable_cycles()
-                            tbit['_e'][1] += summary.at(i).read().useable_cycles()
-                            tbit['error_rate'] = f(tbit['_e'][0] / tbit['_e'][1])
+                    # percent_gt_q30 needs to be a weighted mean by rsummary.useable_cycles()
+                    # so we need to tot these up as well as doing the calculation
+                    tbit['_q30'][0] += lsummary.percent_gt_q30()  * rsummary.useable_cycles()
+                    tbit['_q30'][1] += rsummary.useable_cycles()
+                    tbit['percent_gt_q30'] = f(tbit['_q30'][0] / tbit['_q30'][1])
 
-                assert False, "We shouldn't get here - 20 reads"
-            except index_out_of_bounds_exception:
-                # We've already busted out of the loop
-                pass
+                    # same for error_rate, as far as I can see
+                    tbit['_e'][0] += lsummary.error_rate().mean() * rsummary.useable_cycles()
+                    tbit['_e'][1] += rsummary.useable_cycles()
+                    tbit['error_rate'] = f(tbit['_e'][0] / tbit['_e'][1])
 
-            # Having processed all reads for this lane, scrub _q30 and _e
-            for rinfo in mylaneinfo.values():
-                for k in list(rinfo):
-                    if k.startswith('_'): del rinfo[k]
 
-        assert False, "We shouldn't get here - 20 lanes"
-    except index_out_of_bounds_exception:
-        #Out of lanes.
-        pass
+        # Having processed all reads for this lane, scrub _q30 and _e
+        for rinfo in mylaneinfo.values():
+            for k in list(rinfo):
+                if k.startswith('_'): del rinfo[k]
 
     # Finally tot up the reads and reads_pf
     for foo in ['reads', 'reads_pf']:

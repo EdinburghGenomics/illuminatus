@@ -1,0 +1,26 @@
+> Hi Tim,
+> Talking to Matt the other I thought to ask you if a couple of minor things can be changed on the overview
+> illuminatus report. Not important at all so, if they are feasible and not much work, please add them next
+> time when you push updates in the software.
+
+> Lane Summary – In this table instead of the “Loaded PhiX (%)” value, which is unknown in all reports I’ve
+> seen, is it possible to have the “% Aligned” from the sequencing run? The %Aligned is shown by
+> Illumina software in the Data by lane graphs
+
+OK I think I want to extract this from the InterOP as part of the summarize_yield.py. Do I want to add to
+the actual yield table? I think yes.
+
+Then in MultiQC_edgen, where do I need to edit? OH, nowhere. I need to add this to
+summarize_lane_contents.py. Cool.
+
+> Occupancy By Tile – This is a very useful graph to know if the run is over or under clustered.
+> But sometimes it is difficult to see the effect if the points are close. This is because the axes start at 0.
+> Would it be possible to have a dynamic scale and instead of each axis starting at zero start at 10% less than
+> the minimum plotted value? Top value can still be 100% for both axes
+
+Yes this should be a fairly simple change to the gnuplot invocation.
+
+> Many thanks in advance,
+> Javier
+
+Ta
