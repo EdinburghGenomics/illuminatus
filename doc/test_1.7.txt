@@ -1,0 +1,12 @@
+OK, things I need to work on 1.7...
+
+Test on ~/test_seqdata/210322_A00291_0342_AH5VY5DRXY - this needs revcomp override set to 1.
+
+Do it with no override and check:L
+
+1) The barcodes report shows the best guesses
+2) The PhiX alignment is shown
+3) The sample sheet fragment is available
+
+Then add pipeline/index_revcomp.lane1.OVERRIDE and check it works and check the metadata looks OK
+and check the sample sheet frag looks ok. Yo.

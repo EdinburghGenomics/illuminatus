@@ -8,17 +8,24 @@
 > Illumina software in the Data by lane graphs
 
 OK I think I want to extract this from the InterOP as part of the summarize_yield.py. Do I want to add to
-the actual yield table? I think yes.
+the actual yield table? I think yes. Er, actually no. OK cool.
 
 Then in MultiQC_edgen, where do I need to edit? OH, nowhere. I need to add this to
-summarize_lane_contents.py. Cool.
+summarize_lane_contents.py. Cool 2.0.
+
+Try running this on any run directory...
+
+export PATH="$HOME/workspace/illuminatus:$PATH"
+summarize_lane_contents.py --yml - --add_in_yaml yield=<(summarize_yield.py .)
+
+Then with '--mqc -' instead.
 
 > Occupancy By Tile – This is a very useful graph to know if the run is over or under clustered.
 > But sometimes it is difficult to see the effect if the points are close. This is because the axes start at 0.
 > Would it be possible to have a dynamic scale and instead of each axis starting at zero start at 10% less than
 > the minimum plotted value? Top value can still be 100% for both axes
 
-Yes this should be a fairly simple change to the gnuplot invocation.
+Yes this should be a fairly simple change to the gnuplot invocation. Might leave if for next time, though.
 
 > Many thanks in advance,
 > Javier

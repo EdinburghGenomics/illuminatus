@@ -158,26 +158,27 @@ def output_mqc(rids, fh):
 
     #So my understanding is that pconfig needs to be a list of
     #singleton dicts as {col_id: { conf_1: 'foo', conf_2: 'bar' }}
-    #for colnum, col in enumerate(["Lane", "Project", "Pool/Library", "Loaded (pmol)", "Loaded PhiX (%)"]):
+    #for colnum, col in enumerate(["Lane", "Project", "Pool/Library", "Loaded (pmol)"]):
     #    mqc_out['pconfig'].append( { 'col_{:02}'.format(colnum) : dict() } )
 
     # Nope - apparently not. Had to read the source...
     # 'headers' needs to be a dict of { col_id: {title: ..., format: ... }
-    table_headers = ["Lane", "Project", "Pool/Library", "Num Indexes", "Loaded (pmol)", "Loaded PhiX (%)"]
-    table_formats = ["",     "{:s}",    "{:s}",         "{:,}",        "{:s}",          "{:s}"           ]
+    table_headers = ["Lane", "Project", "Pool/Library", "Num Indexes", "Loaded (pmol)"]
+    table_formats = ["",     "{:s}",    "{:s}",         "{:,}",        "{:s}",        ]
     table_desc =    [None,   None,      "Summary of lane contents. See per-lane pages for a full list.",
                                                         "Number of samples, or 0 for a single unindexed sample.",
-                                                                       None,            None ]
+                                                                       None,          ]
 
     # We'll always add the density column but will hide it later for patterned flowcells
     if 'add_in_yield' in rids:
-        table_headers.extend(["Density", "Clusters PF", "PF (%)", "Q30 (%)", "Yield GB"])
-        table_formats.extend(["{:,.1f}", "{:,}",        "{:.3f}", "{:.3f}",  "{:.3f}"  ])
-        table_desc.extend(   ["Raw cluster density according to InterOp",
-                                         "Count of clusters/wells passing filter",
-                                                       "Percent of clusters/wells passing filter",
-                                                                  "Percent of bases being Q30 or more",
-                                                                             "Yield in Gigabases"  ])
+        table_headers.extend(["Aligned PhiX (%)", "Density", "Clusters PF", "PF (%)", "Q30 (%)", "Yield GB"])
+        table_formats.extend(["{:.3f}",           "{:,.1f}", "{:,}",        "{:.3f}", "{:.3f}",  "{:.3f}"  ])
+        table_desc.extend(   ["Percentage of PhiX according to InterOp",
+                                                  "Raw cluster density according to InterOp",
+                                                             "Count of clusters/wells passing filter",
+                                                                            "Percent of clusters/wells passing filter",
+                                                                                      "Percent of bases being Q30 or more",
+                                                                                                 "Yield in Gigabases"  ])
 
     # Also tack on a grand total to the description line above the table,
     # unless we have the more accurate b2f values available.
@@ -240,13 +241,13 @@ def output_mqc(rids, fh):
                                     col_01 = ','.join( sorted(lane['Contents']) ),
                                     col_02 = contents_str,
                                     col_03 = num_indexes,
-                                    col_04 = lane['Loading'].get('pmol', 'unknown'),
-                                    col_05 = lane['Loading'].get('phix', 'unknown') )
+                                    col_04 = lane['Loading'].get('pmol', 'unknown') )
 
         if 'add_in_yield' in rids:
             # was: table_headers.extend(["Clusters PF", "Q30 (%)", "Yield"])
             # now: table_headers.extend(["Clusters PF", "PF (%)", "Q30 (%)", "Yield GB"])
             lane_yield_info = rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals']
+            dd['col_05'] = lane_yield_info.get('percent_aligned', 'unknown')
             dd['col_06'] = lane_yield_info['density']
             dd['col_07'] = lane_yield_info['reads_pf']
             dd['col_08'] = pct(lane_yield_info['reads_pf'], lane_yield_info['reads'])
