@@ -89,7 +89,9 @@ localrules: preprocess, postprocess
 # be modified by the post processor and never removed.
 rule postprocess:
     output: 'renames.log', 'projects_ready.txt.bak'
-    input: expand("lane{l}/Stats/DemuxSummaryF1L{l}.txt", l=LANES)
+    input:
+        summary = expand("lane{l}/Stats/DemuxSummaryF1L{l}.txt", l=LANES),
+        stats   = expand("lane{l}/Stats/Stats.json", l=LANES),
     run:
         log_file = get_sequential_file('renames.log.???')
         shell("ln -s {log_file} renames.log")
