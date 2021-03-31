@@ -133,5 +133,5 @@ rule preprocess:
     shell:
         # Override file being missing or empty results in auto revcomp
         """revcomp=$(cat {RUNDIR}/pipeline/index_revcomp.lane{wildcards.l}.OVERRIDE 2>/dev/null || true)
-           bcl2fastq_setup.py --lane {wildcards.l} --revcomp "${revcomp:-auto}" {RUNDIR} > {output}
+           bcl2fastq_setup.py --lane {wildcards.l} --revcomp "${{revcomp:-auto}}" {RUNDIR} > {output}
         """

@@ -559,7 +559,7 @@ rule get_bcl2fastq_json:
 
 localrules: get_unassigned
 rule get_unassigned:
-    output: "QC/lane{lane}/unassigned_to_table.txt"
+    output: "QC/lane{lane}/{run}_{lane}_unassigned_table.txt"
     input:  "demultiplexing/lane{lane}/Stats/Stats.json"
     shell:
         "unassigned_to_table.py {input} > {output}"
@@ -589,10 +589,10 @@ rule demux_stats_main:
     # get_bcl2fastq_stats_old.
     input:
         stats    = "QC/bcl2fastq_stats.yml",
-        oldstats = expand("QC/lane{l}/{r}_{l}.stats.yml", l=lanes, r=[run]),
-        json     = expand("QC/lane{l}/Stats.json",        l=lanes),
-        unass    = expand("QC/lane{l}/unassigned_to_table.txt", l=lanes),
-        runinfo  = expand("QC/{rep}/run_info.{r}.2.yml",  rep=allreps, r=[run]),
+        oldstats = expand("QC/lane{l}/{r}_{l}.stats.yml",  l=lanes, r=[run]),
+        json     = expand("QC/lane{l}/Stats.json",         l=lanes),
+        unass    = expand("QC/lane{l}/{r}_{l}_unassigned_table.txt", l=lanes, r=[run]),
+        runinfo  = expand("QC/{rep}/run_info.{r}.2.yml",   rep=allreps, r=[run]),
         matrices = rules.get_project_summary.output
 
 rule metadata_main:

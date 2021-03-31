@@ -2,11 +2,24 @@ OK, things I need to work on 1.7...
 
 Test on ~/test_seqdata/210322_A00291_0342_AH5VY5DRXY - this needs revcomp override set to 1.
 
-Do it with no override and check:L
+Do it with no override and check:
 
-1) The barcodes report shows the best guesses
-2) The PhiX alignment is shown
-3) The sample sheet fragment is available
+1) The barcodes report shows the best guesses - see below
+2) The PhiX alignment is shown - Yep
+3) The sample sheet fragment is available - Yep
 
 Then add pipeline/index_revcomp.lane1.OVERRIDE and check it works and check the metadata looks OK
 and check the sample sheet frag looks ok. Yo.
+
+Yes, it does.
+
+The barcodes report only shows after QC. It's not a big deal but really it could show after demultiplexing
+as the files is there. For this I'll need to do some fairly significant modifications to the MultiQC_edgen
+plugin as it only activates if the legacy report is there. Really it should activate on the .txt file and
+then add the legacy report if it sees it. This would mean we get to see the info earlier.
+
+Not a huge ask, but let's not delay the release for it.
+
+OK there were problems anyway so I did the fixes as noted. And it looks very good.
+
+So, release.
