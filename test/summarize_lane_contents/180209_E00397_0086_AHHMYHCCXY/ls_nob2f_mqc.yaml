@@ -116,10 +116,11 @@ headers:
     format: '{:s}'
     title: Loaded (pmol)
   col_05:
-    format: '{:s}'
+    description: 'Percentage of PhiX according to InterOp'
+    format: '{:.3f}'
     max: 100
     min: 0
-    title: Loaded PhiX (%)
+    title: Aligned PhiX (%)
   col_06:
     description: Raw cluster density according to InterOp
     format: '{:,.1f}'
