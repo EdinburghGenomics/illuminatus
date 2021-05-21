@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import unittest
-from unittest.mock import Mock, patch
 import sys, os, re
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
@@ -8,11 +7,9 @@ from glob import glob
 from copy import copy
 from fnmatch import fnmatch
 
-# Adding this to sys.path makes the test work if you just run it directly.
-with patch('sys.path', new=['.'] + sys.path):
-    #from BCL2FASTQPostprocessor import BCL2FASTQPostprocessor
-    from BCL2FASTQPostprocessor import main as pp_main
-    from BCL2FASTQPostprocessor import do_renames, save_projects_ready, ERRORS
+#from BCL2FASTQPostprocessor import BCL2FASTQPostprocessor
+from BCL2FASTQPostprocessor import main as pp_main
+from BCL2FASTQPostprocessor import do_renames, save_projects_ready, ERRORS
 
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 

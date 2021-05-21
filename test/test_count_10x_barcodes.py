@@ -12,20 +12,7 @@ from collections import namedtuple
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/stats_json_examples')
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
-try:
-    # This is a safe way to manipulate sys.path without impacting later tests.
-    with patch('sys.path', new=['.'] + sys.path):
-        from count_10x_barcodes import main as count_main
-except Exception:
-    #If this fails, you is probably running the tests wrongly
-    print("****",
-          "To test your working copy of the code you should use the helper script:",
-          "  ./run_tests.sh count_10x_barcodes",
-          "or to run all tests, just",
-          "  ./run_tests.sh",
-          "****",
-          sep="\n")
-    raise
+from count_10x_barcodes import main as count_main
 
 class T(unittest.TestCase):
 

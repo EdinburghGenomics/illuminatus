@@ -6,7 +6,6 @@ import sys, os, re
 import subprocess
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
-from unittest.mock import patch
 from glob import glob
 from shlex import quote as shell_quote
 

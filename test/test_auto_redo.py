@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-"""Template/boilerplate for writing new test classes"""
-
-# Note this will get discovered and run as a test. This is fine.
+"""Test the auto-redo. Most of the logic here is to ensure it doesn't auto-redo
+   when it's not safe to do so.
+"""
 
 import sys, os, re
 import unittest

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import unittest
-from unittest.mock import Mock, patch
 import sys, os
 
 from tempfile import mkdtemp

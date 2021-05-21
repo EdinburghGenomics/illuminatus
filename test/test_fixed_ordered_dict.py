@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 
 import unittest
-from unittest.mock import patch
 import copy
 import collections
 
 # Adding this to sys.path makes the test work if you just run it directly.
 import sys
 
-with patch('sys.path', new=['.'] + sys.path):
-    from illuminatus.FixedOrderedDict import FixedOrderedDict, DuplicateKeyError
+from illuminatus.FixedOrderedDict import FixedOrderedDict, DuplicateKeyError
 
 class TestFixedOrderedDict(unittest.TestCase):
     """Sorry, the order of these tests is somewhat arbitrary.

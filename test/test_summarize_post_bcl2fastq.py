@@ -4,27 +4,13 @@
 
 import sys, os, re
 import unittest
-from unittest.mock import patch
 import logging
 import yaml
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/fastqdata_examples')
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
-try:
-    # This is a safe way to manipulate sys.path without impacting later tests.
-    with patch('sys.path', new=['.'] + sys.path):
-        from summarize_post_bcl2fastq import PostRunMetaData, munge_lanes
-except:
-    #If this fails, you is probably running the tests wrongly
-    print("****",
-          "To test your working copy of the code you should use the helper script:",
-          "  ./run_tests.sh <name_of_test>",
-          "or to run all tests, just",
-          "  ./run_tests.sh",
-          "****",
-          sep="\n")
-    raise
+from summarize_post_bcl2fastq import PostRunMetaData, munge_lanes
 
 class T(unittest.TestCase):
 

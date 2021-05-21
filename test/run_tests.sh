@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # When running the tests, we need to ensure Python picks up the right environment.
-# For this reason ,it's worth having a test wrapper.
+# For this reason it's worth having a test wrapper.
 
-# Note - at present the unit tests will only run fully when using the system Python,
-# because the VirtualEnv Python can't see the snakemake module. This is borken.
+# Most tests currently pass using the system Python3 but really you should test with
+# the VEnv Python3. I guess this script could activate it for you...
 
 cd "`dirname $0`"/..
 

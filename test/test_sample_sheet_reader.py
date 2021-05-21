@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 import sys, os, glob, re
 import unittest
-from unittest.mock import patch
 
-# Adding this to sys.path makes the test work if you just run it directly.
-with patch('sys.path', new=['.'] + sys.path):
-    from illuminatus.SampleSheetReader import SampleSheetReader
+from illuminatus.SampleSheetReader import SampleSheetReader
 
 class T(unittest.TestCase):
 

@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 
 import unittest
-from unittest.mock import patch
 import sys, os, re
 from glob import glob
 from pprint import pprint
 import io
 
-# Adding this to sys.path makes the test work if you just run it directly.
-with patch('sys.path', new=['.'] + sys.path):
-    from summarize_lane_contents import project_real_name, scan_for_info, yaml, \
-            output_yml, output_tsv, output_txt, output_mqc
+from summarize_lane_contents import project_real_name, scan_for_info, yaml, \
+        output_yml, output_tsv, output_txt, output_mqc
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')
 LC_DIR =  os.path.abspath(os.path.dirname(__file__) + '/summarize_lane_contents')

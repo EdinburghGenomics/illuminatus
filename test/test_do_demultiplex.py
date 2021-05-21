@@ -4,7 +4,6 @@
 
 import sys, os, re
 import unittest
-from unittest.mock import patch
 import logging
 
 from tempfile import mkdtemp

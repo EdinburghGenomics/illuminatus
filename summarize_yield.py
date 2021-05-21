@@ -14,7 +14,6 @@ import os, sys
 import yaml, yamlloader
 
 from interop import py_interop_run_metrics, py_interop_run, py_interop_summary
-from interop.py_interop_metrics import index_out_of_bounds_exception
 
 # Also see pf_vs_occupied.py
 

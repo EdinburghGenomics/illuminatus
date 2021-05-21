@@ -1,31 +1,17 @@
 #!/usr/bin/env python3
 
-"""Template/boilerplate for writing new test classes"""
+"""CHANGEME: Template/boilerplate for writing new test classes"""
 
 # Note this will get discovered and run as a test. This is fine.
 
 import sys, os, re
 import unittest
-from unittest.mock import patch
 import logging
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/examples')
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
-try:
-    # This is a safe way to manipulate sys.path without impacting later tests.
-    with patch('sys.path', new=['.'] + sys.path):
-        "from scriptname import funcname"
-except Exception:
-    #If this fails, you is probably running the tests wrongly
-    print("****",
-          "To test your working copy of the code you should use the helper script:",
-          "  ./run_tests.sh <name_of_test>",
-          "or to run all tests, just",
-          "  ./run_tests.sh",
-          "****",
-          sep="\n")
-    raise
+"from scriptname import funcname"
 
 class T(unittest.TestCase):
 
