@@ -52,6 +52,24 @@ class T(unittest.TestCase):
                             'RunId': '180619_A00291_0044_BH5WJJDMXX'
         })
 
+    def test_rixp_date_bug(self):
+        """ Turns out that dates before the 10th of the month were being mangled.
+            Oops.
+            Note this flowell is XP but the RIXP calls it as S1 because it doesn't look
+            at the RunParameters file - this is expected.
+        """
+        rip = RunInfoXMLParser( DATA_DIR + '/210601_A00291_0371_AHF2HCDRXY' )
+        self.assertEqual(rip.run_info, {
+                            'Cycles': '51 [8] [8] 51',
+                            'Flowcell': 'HF2HCDRXY',
+                            'FCType': 'S1', # But not really
+                            'Instrument': 'novaseq_A00291',
+                            'LaneCount': 2,
+                            'RunDate': '2021-06-01',
+                            'RunId': '210601_A00291_0371_AHF2HCDRXY'
+        })
+
+
     def test_4k_runinfo(self):
         """ Since we no longer use the 4000, I have not added the flowcell type to the list.
         """

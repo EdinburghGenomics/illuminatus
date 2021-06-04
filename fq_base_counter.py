@@ -8,7 +8,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 """ This tool counts up the reads and bases in a FASTQ file.
     The idea is that for each .fastq.gz, as well as the .md5 file we also
-    want a .fasq.gz.counts which has:
+    want a .fastq.count which has:
 
      total_reads: ...
      read_length: ...

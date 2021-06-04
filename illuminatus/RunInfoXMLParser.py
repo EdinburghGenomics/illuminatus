@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import re
 import xml.etree.ElementTree as ET
 
 from datetime import datetime
@@ -15,7 +16,7 @@ flowcell_types = { # MiSeq types
                    "1/2/1/14" : "Normal v2",
                    "1/2/1/19" : "Normal v3",
 
-                   # NovaSeq types
+                   # NovaSeq types (but for the real type see RunParameters.xml !)
                    "2/2/2/78" : "S1",
                    "2/2/4/88" : "S2",
                    "4/2/6/78" : "S4",
@@ -72,15 +73,12 @@ class RunInfoXMLParser:
 
         for date_elem in root.iter('Date'):
             d = date_elem.text
-            if d[2] == '/':
-                # Novaseq runs are being dated like '11/24/2017 4:52:13 AM'
-                self.run_info[ 'RunDate' ] = '{}-{}-{}'.format(d[6:10], d[0:2], d[3:5])
-            elif d[1] == '/':
-                # For Jan-Sep
-                self.run_info[ 'RunDate' ] = '{}-0{}-{}'.format(d[5:9], d[0:1], d[2:4])
-            elif len(d) == 6:
+            if re.match(r'\d{6}$', d):
                 # The date is in format YYMMDD but we want YYYY-MM-DD
                 self.run_info[ 'RunDate' ] = '20{}-{}-{}'.format(d[0:2], d[2:4], d[4:6])
+            elif re.match(r'\d\d?/', d):
+                # Novaseq runs are being dated like '11/24/2017 4:52:13 AM'
+                self.run_info[ 'RunDate' ] = '{2}-{0:0>2}-{1:0>2}'.format(*d.split()[0].split('/'))
             else:
                 # Dunno. Just use it unmodified.
                 self.run_info[ 'RunDate' ] = d
