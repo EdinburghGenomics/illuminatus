@@ -117,8 +117,8 @@ def get_idict(rids, run_path, pipeline_info=None):
     if pipeline_info:
         idict['post_start_info'] = {
             'Pipeline Version': pipeline_info['version'],
+            't2//Sequencer Finish': pipeline_info['finish'],
             't3//Pipeline Start': pipeline_info['start'],
-            't2//Sequencer Finish': pipeline_info['finish']
         }
 
     return idict

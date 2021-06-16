@@ -276,7 +276,7 @@ action_demultiplexed() {
 
         if [ -s pipeline/report_upload_url.txt ] ; then
             send_summary_to_rt reply "Finished pipeline" \
-                "Pipeline completed on $RUNID and QC report is available at"
+                "Complete QC report available at"
             # Final success is contingent on the report upload AND that message going to RT.
             mv pipeline/qc.started pipeline/qc.done
         else
