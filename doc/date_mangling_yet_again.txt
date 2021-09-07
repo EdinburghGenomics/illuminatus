@@ -23,3 +23,6 @@ After that, the error is actually upstream as it is copied from
 Oh well. Still nice to have the tests!
 
 On to the actual fix...
+
+Ah. It was already fixed. I just never released the fix to prod. Oops. Oh well I got to add some
+good test coverage.

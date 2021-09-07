@@ -35,6 +35,21 @@ class T(unittest.TestCase):
 
         # TODO - test mock LIMS connection
 
+    def test_date_conversion(self):
+        """Test the date formatting logic for rids['RunDate']
+           on a few examples. Actually this comes from the RunParametersXMLParser
+           so the unit test should really be at that level.
+        """
+        self.scan_project(DATA_DIR + '/210722_A00291_0378_AHFT2CDRXY')
+        self.assertEqual(self.rids['RunDate'], '2021-07-22')
+
+        self.scan_project(DATA_DIR + '/210827_M05898_0165_000000000-JVM38')
+        self.assertEqual(self.rids['RunDate'], '2021-08-27')
+
+        # This one was broken. But now fixed.
+        self.scan_project(DATA_DIR + '/210903_A00291_0383_BHCYNNDRXY')
+        self.assertEqual(self.rids['RunDate'], '2021-09-03')
+
     def test_scan_project(self):
 
         self.scan_project(LC_DIR + '/170221_K00166_0183_AHHT3HBBXX')
@@ -146,6 +161,8 @@ class T(unittest.TestCase):
 
             out_buf.close()
 
+        # Grab the rids too
+        self.rids = rids
 
 if __name__ == '__main__':
     unittest.main()

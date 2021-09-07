@@ -71,6 +71,7 @@ class T(unittest.TestCase):
         self.assertEqual(dict(expected), got)
 
     ### THE TESTS ###
+    @patch('summarize_for_overview.illuminatus_version', '1.7.1-master-c15ee946')
     def test_miseq1(self):
         """A run that has not been processed at all
         """
@@ -88,6 +89,7 @@ class T(unittest.TestCase):
     def test_novaseq1(self):
         self.sfo_check("210722_A00291_0378_AHFT2CDRXY")
 
+    @patch('summarize_for_overview.illuminatus_version', '1.7.1-master-c15ee946')
     @patch('os.stat', mock_stat(1630767665))
     def test_novaseq2(self):
         """Another example. Here there is a second pipeline number
