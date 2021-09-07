@@ -1,0 +1,25 @@
+Looking at:
+
+http://web1.genepool.private/runinfo/illuminatus_reports/210903_A00291_0383_BHCYNNDRXY/v/0006/multiqc_report_overview.html
+
+The "Run Date" is "021-09-3/"
+
+I though I fixed this. Boo!
+
+Where does the run date come from and why are it mangled like this?
+
+It's in /lustre-gseg/fastqdata/210903_A00291_0383_BHCYNNDRXY/QC/run_info.210903_A00291_0383_BHCYNNDRXY.1.yml
+Which is made by "summarize_for_overview.py"
+
+$ ./summarize_for_overview.py /lustre-gseg/fastqdata/210903_A00291_0383_BHCYNNDRXY/seqdata
+
+OK this should be easy to debug. Do I have unit tests on this script?
+
+No. Well that's crap. Time to add some. DONE - added 3 tests in test_summarize_for_overview.py
+
+After that, the error is actually upstream as it is copied from
+/lustre-gseg/fastqdata/210903_A00291_0383_BHCYNNDRXY/seqdata/pipeline/sample_summary.yml
+
+Oh well. Still nice to have the tests!
+
+On to the actual fix...

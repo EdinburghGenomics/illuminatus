@@ -1,0 +1,85 @@
+Chemistry: SCV3 (chemistry 1.5; revcomp index2)
+Cycles: 28 [8] 91
+CyclesAsList:
+- - '28'
+  - false
+- - '8'
+  - true
+- - '91'
+  - false
+ExperimentName: K2196
+ExperimentSS: K2196
+FCType: S1
+Flowcell: HFT2CDRXY
+Instrument: novaseq_A00291
+LaneCount: 2
+Lanes:
+- Contents:
+    '18720':
+      18720WMpool01:
+      - 18720WM0001L01
+      - 18720WM0001L02
+      - 18720WM0001L03
+      - 18720WM0001L04
+      - 18720WM0002L01
+      - 18720WM0002L02
+      - 18720WM0002L03
+      - 18720WM0002L04
+      - 18720WM0003L01
+      - 18720WM0003L02
+      - 18720WM0003L03
+      - 18720WM0003L04
+      - 18720WM0004L01
+      - 18720WM0004L02
+      - 18720WM0004L03
+      - 18720WM0004L04
+      - 18720WM0005L01
+      - 18720WM0005L02
+      - 18720WM0005L03
+      - 18720WM0005L04
+      - 18720WM0006L01
+      - 18720WM0006L02
+      - 18720WM0006L03
+      - 18720WM0006L04
+  LaneNumber: '1'
+  Loading: {}
+  Unindexed: false
+- Contents:
+    '18720':
+      18720WMpool01:
+      - 18720WM0001L01
+      - 18720WM0001L02
+      - 18720WM0001L03
+      - 18720WM0001L04
+      - 18720WM0002L01
+      - 18720WM0002L02
+      - 18720WM0002L03
+      - 18720WM0002L04
+      - 18720WM0003L01
+      - 18720WM0003L02
+      - 18720WM0003L03
+      - 18720WM0003L04
+      - 18720WM0004L01
+      - 18720WM0004L02
+      - 18720WM0004L03
+      - 18720WM0004L04
+      - 18720WM0005L01
+      - 18720WM0005L02
+      - 18720WM0005L03
+      - 18720WM0005L04
+      - 18720WM0006L01
+      - 18720WM0006L02
+      - 18720WM0006L03
+      - 18720WM0006L04
+  LaneNumber: '2'
+  Loading: {}
+  Unindexed: false
+ProjectInfo:
+  '18720':
+    name: 18720_Wa_Mi
+    url: https://www.wiki.ed.ac.uk/display/GenePool/18720_Wa_Mi
+ReportDateTime: Thu Jul 22 14:50:09 2021
+RunDate: '2021-07-22'
+RunId: 210722_A00291_0378_AHFT2CDRXY
+RunStartTime: Thu Jul 22 14:47:38 2021
+SampleSheet: SampleSheet.csv.1

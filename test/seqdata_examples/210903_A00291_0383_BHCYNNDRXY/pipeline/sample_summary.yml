@@ -1,0 +1,99 @@
+Chemistry: SCV3 (chemistry 1.5; revcomp index2)
+Cycles: 151 [13] [13] 151
+CyclesAsList:
+- - '151'
+  - false
+- - '13'
+  - true
+- - '13'
+  - true
+- - '151'
+  - false
+ExperimentName: K2178
+ExperimentSS: K2178
+FCType: SP
+Flowcell: HCYNNDRXY
+Instrument: novaseq_A00291
+LaneCount: 2
+Lanes:
+- Contents:
+    '17260':
+      17260MSpool01:
+      - 17260MS0007L01
+      - 17260MS0007L02
+      - 17260MS0007L03
+      - 17260MS0007L04
+      - 17260MS0008L01
+      - 17260MS0008L02
+      - 17260MS0008L03
+      - 17260MS0008L04
+  LaneNumber: '1'
+  Loading: {}
+  Unindexed: false
+- Contents:
+    '17260':
+      17260MSpool02:
+      - 17260MS0001L01
+      - 17260MS0001L02
+      - 17260MS0001L03
+      - 17260MS0001L04
+      - 17260MS0002L01
+      - 17260MS0002L02
+      - 17260MS0002L03
+      - 17260MS0002L04
+      - 17260MS0003L01
+      - 17260MS0003L02
+      - 17260MS0003L03
+      - 17260MS0003L04
+      - 17260MS0004L01
+      - 17260MS0004L02
+      - 17260MS0004L03
+      - 17260MS0004L04
+      - 17260MS0005L01
+      - 17260MS0005L02
+      - 17260MS0005L03
+      - 17260MS0005L04
+      - 17260MS0006L01
+      - 17260MS0006L02
+      - 17260MS0006L03
+      - 17260MS0006L04
+      - 17260MS0009L01
+      - 17260MS0009L02
+      - 17260MS0009L03
+      - 17260MS0009L04
+      - 17260MS0010L01
+      - 17260MS0010L02
+      - 17260MS0010L03
+      - 17260MS0010L04
+      - 17260MS0011L01
+      - 17260MS0011L02
+      - 17260MS0011L03
+      - 17260MS0011L04
+      - 17260MS0012L01
+      - 17260MS0012L02
+      - 17260MS0012L03
+      - 17260MS0012L04
+      - 17260MS0013L01
+      - 17260MS0013L02
+      - 17260MS0013L03
+      - 17260MS0013L04
+      - 17260MS0014L01
+      - 17260MS0014L02
+      - 17260MS0014L03
+      - 17260MS0014L04
+      - 17260MS0017L01
+      - 17260MS0017L02
+      - 17260MS0017L03
+      - 17260MS0017L04
+  LaneNumber: '2'
+  Loading: {}
+  Unindexed: false
+ProjectInfo:
+  '17260':
+    name: 17260_Ma_Si
+    url: https://www.wiki.ed.ac.uk/display/GenePool/17260_Ma_Si
+ReportDateTime: Mon Sep  6 13:50:07 2021
+RunDate: whatever
+RunId: 210903_A00291_0383_BHCYNNDRXY
+RunStartTime: Fri Sep  3 16:56:47 2021
+SampleSheet: SampleSheet.csv.OVERRIDE

@@ -1,0 +1,15 @@
+pre_start_info:
+  Run Date: '2021-08-27'
+  Run ID: 210827_M05898_0165_111111111-JVM38
+  Experiment:
+  - '[15028382] (K2191)'
+  - https://basespace.illumina.com/search/?type=run&query=15028382
+  Instrument: miseq_M05898
+  Flowcell Type: Normal v2
+  LaneCount: 1
+  Cycles: 251 [8] [8] 251
+  Pipeline Script: driver.sh
+  Sample Sheet:
+  - SampleSheet.csv
+  - SampleSheet.csv
+  t1//Run Start: Fri Aug 27 13:47:08 2021

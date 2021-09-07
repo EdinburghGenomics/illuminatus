@@ -1,0 +1,20 @@
+post_start_info:
+  Pipeline Version: 1.7.1
+  t2//Sequencer Finish: Fri Jul 23 02:03:11 2021
+  t3//Pipeline Start: Fri Jul 23 02:05:06 2021
+pre_start_info:
+  Run Date: '2021-07-22'
+  Run ID: 210722_A00291_0378_AHFT2CDRXY
+  Experiment:
+  - K2196
+  - https://basespace.illumina.com/search/?type=run&query=K2196
+  Instrument: novaseq_A00291
+  Flowcell Type: S1
+  Chemistry: SCV3 (chemistry 1.5; revcomp index2)
+  LaneCount: 2
+  Cycles: 28 [8] 91
+  Pipeline Script: driver.sh
+  Sample Sheet:
+  - SampleSheet.csv.1
+  - SampleSheet.csv.1
+  t1//Run Start: Thu Jul 22 14:47:38 2021
