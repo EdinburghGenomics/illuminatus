@@ -204,8 +204,8 @@ localrules: configure_multiqc
 rule configure_multiqc:
     # Emits configuration for MultiQC. This may want to be split out into a separate
     # module but for now I'll just embed it here. The config wants to be saved out per run
-    # so we can have provenance, so the file will be moved over to multiqc_reports/ by
-    # upload_report.sh.
+    # so we can have provenance, so the file currently gets moved over to multiqc_reports/ by
+    # upload_report.sh (so if you want to re-run MultiQC manually you need to copy it back!)
     # Strictly, we should have a 'min_multiqc_version' since I'm
     # often adding new possible settings in MultiQC then adding them to this config and they
     # are not backwards-compatible.
