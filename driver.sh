@@ -32,13 +32,17 @@ if [ -e "$ENVIRON_SH" ] ; then
     popd >/dev/null
 
     # Saves having to put 'export' on every line in the config.
-    export CLUSTER_QUEUE      FASTQ_LOCATION    GENOLOGICSRC  SAMPLESHEETS_ROOT \
-           PROJECT_NAME_LIST  PROJECT_PAGE_URL  REDO_HOURS_TO_LOOK_BACK \
-           REPORT_DESTINATION REPORT_LINK       RT_SYSTEM     RUN_NAME_REGEX \
-           SEQDATA_LOCATION   SSPP_HOOK         TOOLBOX       VERBOSE       \
-           WRITE_TO_CLARITY   LOCAL_JOBS        SNAKE_THREADS DRY_RUN \
-           EXTRA_SNAKE_FLAGS  EXTRA_SLURM_FLAGS
+    export SEQDATA_LOCATION    FASTQ_LOCATION    GENOLOGICSRC  SAMPLESHEETS_ROOT \
+           RT_SYSTEM           PROJECT_PAGE_URL  \
+           REPORT_DESTINATION  REPORT_LINK       RSYNC_CMD     \
+           RUN_NAME_REGEX      PROJECT_NAME_LIST \
+           CLUSTER_QUEUE       SSPP_HOOK         TOOLBOX       VERBOSE \
+           WRITE_TO_CLARITY    DRY_RUN           \
+           SNAKE_THREADS       LOCAL_JOBS        EXTRA_SNAKE_FLAGS   EXTRA_SLURM_FLAGS \
+           REDO_HOURS_TO_LOOK_BACK
 fi
+
+# FIXME - DRY_RUN should actually activate a dry run, rather than being ignored.
 
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"

@@ -68,7 +68,9 @@ else
         "$_py3_real" -mvenv ./_illuminatus_venv
         activate_venv
 
-        pip_install 'pip<22'
+        pip_install --upgrade 'pip<22'
+        pip_install wheel
+
         pip_install pyyaml==5.4.1
         pip_install 'yamlloader<2'
         pip_install 'rt<2'
