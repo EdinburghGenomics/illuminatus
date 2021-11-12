@@ -78,7 +78,7 @@ else
         pip_install 'rt<2'
         pip_install pyclarity_lims==0.4.8
         pip_install psycopg2-binary==2.8.3
-        pip_install pystache==0.5.4
+        pip_install chevron     # Only needed for PDF states report
         pip_install pyflakes==2.2.0
 
         # InterOP is now on PyPI so no pre-build needed :-)
