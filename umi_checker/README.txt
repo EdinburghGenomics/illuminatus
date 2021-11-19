@@ -11,4 +11,8 @@ Hmmm. But this still uses a lot of memory if you have lots of possible values. I
 
 https://pypi.org/project/lossycount/
 
+Yeah let's try that. I can compare lossy and unlossy counts on my test data.
+
+Talking of the test data, it's mostly from the Nick Gilbert projects but also we have some from
+Simon Martin and the haplotagging. I gathered the files together in /lustre-gseg/home/tbooth2/test_umi_checker
 

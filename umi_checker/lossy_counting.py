@@ -2,7 +2,7 @@
 
    https://gist.github.com/giwa/bce63f3e2bd493167d92
 
-   Updated for Python3
+   Updated for Python3 by Tim
 """
 
 from collections import defaultdict
@@ -13,7 +13,7 @@ class LossyCounter(object):
     def __init__(self, epsilon=5e-4):
         self._n = 0
         self._count = defaultdict(int)
-        self._bucket_id = {}
+        self._bucket_id = dict()
         self._epsilon = epsilon
         self._current_bucket_id = 1
 
@@ -61,11 +61,22 @@ class LossyCounter(object):
 
         self._trim()
         for item, total in self._count.items():
+            # I'm not sure if the buckets should be added but it seems so.
             total_and_bucket = total + self._bucket_id[item]
             if total_and_bucket >= threshold_count - self._epsilon * self._n:
                 yield (item, total_and_bucket)
 
+    def most_common(self, n=None, **kwargs):
+        """Emulates the same method of collections.Counter
+        """
+        all_vals = list( self.get_iter(**kwargs) )
+        all_vals.sort(key=lambda e: e[1], reverse=True)
+        if n is None:
+            return all_vals
+        else:
+            return all_vals[:n]
 
+# Self test if run directly.
 if __name__ == "__main__":
     import random
     from collections import Counter
@@ -82,6 +93,7 @@ if __name__ == "__main__":
 
     for c in stream:
         lcounter.add_count(c)
+        # Keep the real counts too.
         rcounter[c] += 1
 
     for item, count in sorted(lcounter.get_iter(),
@@ -89,3 +101,6 @@ if __name__ == "__main__":
         print(item, count, rcounter[item])
 
     print(lcounter._bucket_id)
+
+    print(lcounter.most_common(4))
+    print(rcounter.most_common(4))
