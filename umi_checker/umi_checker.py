@@ -7,21 +7,36 @@
 
 import os, sys, re
 import collections
+from statistics import stdev, mean
 import gzip
 import logging as L
-from lossy_counting import LossyCounter
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from pprint import pprint
+
+from lossy_counting import LossyCounter
 
 class NormalCounter(collections.Counter):
-    """Just a normal counter with an extra method to make it compatible with
+    """Just a normal Counter with an extra method to make it compatible with
        LossyCounter
     """
     def add_count(self, item):
         self[item] += 1
+        try:
+            self._n += 1
+        except AttributeError:
+            self._n = 1
+
+    def get_n(self):
+        """Note this only returns the count of things added via .add_count()
+        """
+        return vars(self).get("_n", 0)
 
 def main(args):
 
-    L.basicConfig(format='{message:s}', level=L.INFO, style='{')
+    if args.debug:
+        L.basicConfig(format='{levelname:.1s}: {message:s}', level=L.DEBUG, style='{')
+    else:
+        L.basicConfig(format='{message:s}', level=L.INFO, style='{')
 
     fqfile, = args.fqfile
 
@@ -30,34 +45,49 @@ def main(args):
                                     istart = args.offset or 0,
                                     iend = args.length + (args.offset or 0) if args.length else -1 )
 
-    pprint(counts_obj.most_common(30))
+    top_hits = counts_obj.most_common(30)
+    pprint(top_hits)
+    pprint(counts_obj.get_n())
 
-def get_counts(fh, exact=False, istart=0, iend=-1):
+    # Noice. Now what I want is to calculate a running CoV over the top_hits, and then make some fancy
+    # plot overlaying the CoV with the histogram. Summon Seaborn!
 
-    if exact:
-        counter = NormalCounter()
-    else:
-        counter = LossyCounter()
+def cov(counts_list):
+    """Standard CoV calculation taken from grab_bcl2fastq_stats.py
+    """
+    if len(counts_list) < 2:
+        # Deviation is zero by definition
+        return 0.0
 
-    umi_len = None
+    return stdev(counts_list) / mean(counts_list)
+
+def get_counts(fh, exact=False, istart=0, iend=-1, min_len_umi=3):
+
+    # Lossy counter with epsilon=5e-7 keeps the memory usage to ~100MB even if the file is gigabytes
+    # in size. May need a smaller value for long UMIs in large files.
+    mycounter = NormalCounter() if exact else LossyCounter(epsilon=5e-7)
+
+    # We expect all the UMI sequences to be the same length, whatever that may be.
+    umi_lens = set()
 
     # The usual, take every fourth line
     for n, l in enumerate(fh):
         #Extract seq
-        if n % 4 == 2:
+        if n % 4 == 1:
             umi = l[istart:iend].rstrip(b"\n")
-            if not umi_len:
-                umi_len = len(umi)
-                if umi_len < 3:
-                    exit("Sequence length too short")
-            else:
-                if umi_len != len(l) -1:
-                    # Spew warnings
-                    L.warning(f"UMI length was {len(l) - 1} expected {umi_len}")
+            if len(umi) not in umi_lens:
+                if umi_lens:
+                    # Warn about seeing sequences of different lengths.
+                    L.warning(f"UMI length was {len(umi)}; we previously saw {umi_lens}")
+                if len(umi) < min_len_umi:
+                    L.warning(f"Ignoring short sequence {umi} of length {len(umi)}")
 
-            counter.add_count(umi)
+                umi_lens.add(len(umi))
 
-    return counter
+            if len(umi) >= min_len_umi:
+                mycounter.add_count(umi)
+
+    return mycounter
 
 
 def parse_args():
@@ -72,6 +102,9 @@ def parse_args():
                    help="Length of the UMI, if not the whole sequence")
     a.add_argument("fqfile", nargs=1,
                    help="File of sequences to scan")
+
+    a.add_argument("--debug", "--verbose", action="store_true",
+                   help="Show debugging infos")
 
     return a.parse_args()
 

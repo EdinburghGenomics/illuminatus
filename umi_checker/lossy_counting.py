@@ -6,11 +6,17 @@
 """
 
 from collections import defaultdict
+from math import log
+import logging
+
+L = logging.getLogger(__name__)
 
 class LossyCounter(object):
     'Implemendation of Lossy Counting'
 
-    def __init__(self, epsilon=5e-4):
+    # I think epsilon represents the lowest fraction of the items that can reasonably be detected.
+
+    def __init__(self, epsilon=5e-3):
         self._n = 0
         self._count = defaultdict(int)
         self._bucket_id = dict()
@@ -21,6 +27,9 @@ class LossyCounter(object):
         """Return the number of the item
         """
         return self._count[item]
+
+    def get_n(self):
+        return self._n
 
     def get_bucket_id(self, item):
         """Return the bucket id corresponding to the item
@@ -53,18 +62,21 @@ class LossyCounter(object):
             del self._count[item]
             del self._bucket_id[item]
 
-    def get_iter(self, threshold_count=0):
+    def get_iter(self, threshold_count=None):
         """Extract the counts. Note that this forces a trim of the counts
         """
-        if threshold_count:
-            assert threshold_count > self._epsilon * self._n, "too small threshold"
+        min_threshold = max( log(self._epsilon * self._n), 0 )
+        if threshold_count is not None:
+            assert threshold_count >= min_threshold, "too small threshold"
+        else:
+            threshold_count = min_threshold
+            L.debug(f"Setting threshold to log({self._epsilon}*{self._n}) = {threshold_count}")
 
         self._trim()
         for item, total in self._count.items():
-            # I'm not sure if the buckets should be added but it seems so.
-            total_and_bucket = total + self._bucket_id[item]
-            if total_and_bucket >= threshold_count - self._epsilon * self._n:
-                yield (item, total_and_bucket)
+            # Numbers < threshold_count are sus.
+            if total >= threshold_count:
+                yield (item, total)
 
     def most_common(self, n=None, **kwargs):
         """Emulates the same method of collections.Counter
@@ -102,5 +114,6 @@ if __name__ == "__main__":
 
     print(lcounter._bucket_id)
 
-    print(lcounter.most_common(4))
-    print(rcounter.most_common(4))
+    # Just to show that .most_common does the thing
+    print("Lossy:", lcounter.most_common(8))
+    print("Real: ", rcounter.most_common(8))
