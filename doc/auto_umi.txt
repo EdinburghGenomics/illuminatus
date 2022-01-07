@@ -1,0 +1,7 @@
+We're getting several projects where there is a UMI in the first index read. The pipeline handles this
+nicely but the sample sheets currently produced by Clarity don't actually work and need overriding.
+
+The proper fix here is to fix the SSG in Clarity. Or to bypass Clarity entirely and just have our
+customers provide a sample sheet in Excel format. I'm tempted to workaround it by editing
+bcl2fastq_setup.py but no this really needs fixed at the LIMS level, and I'm not touching the SSG
+code unless I'm forced to.

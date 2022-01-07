@@ -9,7 +9,7 @@
 import os, sys, re
 from collections import defaultdict
 from subprocess import run, PIPE
-import pystache
+import chevron
 import yaml, yamlloader
 
 # Allow importing of modules from up the way.
@@ -125,9 +125,9 @@ def main(args):
     print("### Run report as YAML:")
     print(yaml.dump(dict_strip(res), Dumper=yamlloader.ordereddict.CSafeDumper))
 
-    # Now lets render that puppy as PDF (needs pystache which I'll add to the project)...
+    # Now lets render that puppy as PDF (needs chevron which I'll add to the project)...
     # Since the PDF is disposable I'll just clobber it for now.
-    ##msrender -d "$OFH" -- "$(dirname $BASH_SOURCE)"/qc_states.gv.tmpl | dot -Tpdf -o "$(dirname $BASH_SOURCE)"/qc_states_scanned.pdf
+    ##chevron -d "$OFH" -- "$(dirname $BASH_SOURCE)"/qc_states.gv.tmpl | dot -Tpdf -o "$(dirname $BASH_SOURCE)"/qc_states_scanned.pdf
     render_pdf(res)
 
 def render_pdf(res):
@@ -137,7 +137,7 @@ def render_pdf(res):
 
     # Now load and render the template
     with open(template) as tfh:
-        rendered = pystache.render(tfh.read(), res)
+        rendered = chevron.render(tfh, dict(res))
 
     os.makedirs(os.path.dirname(pdf), exist_ok=True)
     run(r'''dot -Tpdf -o "{}"'''.format(pdf), shell=True, check=True, input=rendered, universal_newlines=True)

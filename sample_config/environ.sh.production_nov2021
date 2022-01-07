@@ -1,0 +1,42 @@
+# Settings and switches for Illuminatus.
+# This is the configuration for the production pipeline.
+
+SEQDATA_LOCATION=/lustre-gseg/seqdata
+FASTQ_LOCATION=/lustre-gseg/fastqdata
+LOG_DIR=~pipeline/illuminatus/logs
+
+# And for some annoying reason we still need this??
+# Basically because the cacerts package in Python is missing some certs which
+# are in the system bundle.
+export REQUESTS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt
+
+# Use the real RT system for notifications.
+RT_SYSTEM=production-rt
+# SLURM queue
+CLUSTER_QUEUE=edgen-casava
+
+# Now processing all runs for MiSeq/NovaSeq and HiSeq X:
+RUN_NAME_REGEX="[0-9]{6}_[MAE].*_.*_[^.]*"
+# We could add the 2500 and the 4000 back...
+# RUN_NAME_REGEX="[0-9]{6}_[MAKED].*_.*_[^.]*"
+
+# Push reports to web1 for now.
+REPORT_DESTINATION=web1.genepool.private:/var/runinfo/illuminatus_reports
+REPORT_LINK=http://web1.genepool.private/runinfo/illuminatus_reports
+
+# And link them to the Wiki
+PROJECT_PAGE_URL=https://www.wiki.ed.ac.uk/display/GenePool/
+
+#BACKUP_NAME_REGEX='[0-9]{6}_.*_.*_[^._]*'
+# RSYNC-Backup all runs from 2018 (not 2017, as with the simpler pattern above), to /fluidfs
+BACKUP_NAME_REGEX='(1[89]|[^1].)...._.*_.*_[^._]*'
+BACKUP_LOCATION=/fluidfs/f1/fastqdata_copy
+
+# Since ~/.genologicsrc already points to production Clarity we don't need to
+# set this.
+# GENOLOGICSRC=/alternative/genologicsrc
+# But we do need to explicitly enable writes of Run IDs back to Clarity
+WRITE_TO_CLARITY=yes
+
+# Finally, enable the auto-redo feature
+REDO_HOURS_TO_LOOK_BACK=12

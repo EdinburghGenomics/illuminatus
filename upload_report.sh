@@ -3,14 +3,20 @@ set -euo pipefail
 
 # If you just want to push existing reports to the server, see the RSYNC line below.
 # Eg:
-#  rsync -drvlOt multiqc_reports/ web1.genepool.private:/var/runinfo/illuminatus_reports/test/$(basename $(pwd))/
+#  rsync --rsync-path=bin/rsync_reports -drvlOt multiqc_reports/ \
+#      egadmin@egcloud.bio.ed.ac.uk:illuminatus/$(basename $(pwd))/
 
 # See doc/how_to_display.txt for thoughts on how this should really work.
-# Normal report destination is web1.genepool.private:/var/runinfo/illuminatus_reports
+# Normal report destination is https://egcloud.bio.ed.ac.uk/illuminatus
 
 # See where to get the report from (by default, right here)
 cd "${1:-.}"
 runname="`basename $PWD`"
+
+function echorun(){
+    printf $'%q ' "$@" ; printf '\n'
+    "$@"
+}
 
 # Make a new versioned directory in multiqc_reports and move the reports in there.
 # We want to do this even if the actual upload will be skipped.
@@ -54,44 +60,22 @@ if [ "${REPORT_DESTINATION:-none}" == none ] ; then
 fi
 dest="${REPORT_DESTINATION}"
 
-# Note the proxy setting in my ~/.ssh/config which lets both ssh
-# and rsync run through monitor transparently. Really we should have direct access to the
-# DMZ machines.
+# Allow overriding of RSYNC command. Needed for the setup on egcloud.
+# Any required SSH settings should go in ~/.ssh/config
+RSYNC_CMD="echorun ${RSYNC_CMD:-rsync}"
+
 echo "Uploading report for $runname to $dest..." >&2
-rsync -drvlOt multiqc_reports/ $dest/$runname/ >&2
+$RSYNC_CMD -drvlOt multiqc_reports/ $dest/$runname/ >&2
 
 # Add the index. We now have to make this a PHP script but at least the content is totally fixed.
-ssh -T ${dest%%:*} "cat > ${dest#*:}/$runname/index.php" <<'END'
-<?php
-    # Script added by upload_report.sh in Illuminatus.
-    # First resolve symlink. The subtlety here is that anyone saving the link will get a permalink,
-    # and anyone just reloading the page in their browser will see the old one. I think that's
-    # OK. It's easy to change in any case.
-    $latest = readlink("latest");
-    # Get the url and slice off index.php and/or / if found. No, I'm not fluent in PHP!
-    $myurl = strtok($_SERVER["REQUEST_URI"],'?');
-    if( preg_match('/' . basename(__FILE__) . '$/', $myurl )){
-        $myurl = substr( $myurl, 0, -(strlen(basename(__FILE__))) );
-    }
-    if( preg_match(',/$,', $myurl )){
-        $myurl = substr( $myurl, 0, -1 );
-    }
-    header("Location: $myurl/$latest/multiqc_report_overview.html", true, 302);
-    exit;
-?>
-<html>
-<head>
-<title>Redirect</title>
-<meta name="robots" content="none" />
-</head>
-<body>
-   You should be redirected to <a href='latest/multiqc_report_overview.html'>latest/multiqc_report_overview.html</a>
-</body>
-</html>
-END
-
-echo "...done. Report uploaded and index.php written to ${dest#*:}/$runname/." >&2
+index_php="$(dirname $BASH_SOURCE)/templates/index.php"
+if $RSYNC_CMD -vp "$index_php" $dest/$runname/ >&2 ; then
+    echo "...done. Report uploaded and index.php written to ${dest#*:}/$runname/." >&2
+else
+    echo "...done. Report uploaded but failed to write index.php to ${dest#*:}/$runname/." >&2
+fi
 
 # Say where to find it:
-# eg. http://web1.genepool.private/runinfo/illuminatus_reports/...
+# eg. https://egcloud.bio.ed.ac.uk/illuminatus/...
+echo "Link to report is: ${REPORT_LINK:-$REPORT_DESTINATION}/$runname" >&2
 echo "${REPORT_LINK:-$REPORT_DESTINATION}/$runname"
