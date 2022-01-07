@@ -38,7 +38,7 @@ if [ -e "$ENVIRON_SH" ] ; then
            RUN_NAME_REGEX      PROJECT_NAME_LIST \
            CLUSTER_QUEUE       SSPP_HOOK         TOOLBOX       VERBOSE \
            WRITE_TO_CLARITY    DRY_RUN           \
-           SNAKE_THREADS       LOCAL_JOBS        EXTRA_SNAKE_FLAGS   EXTRA_SLURM_FLAGS \
+           SNAKE_THREADS       LOCAL_CORES       EXTRA_SNAKE_FLAGS   EXTRA_SLURM_FLAGS \
            REDO_HOURS_TO_LOOK_BACK
 fi
 
