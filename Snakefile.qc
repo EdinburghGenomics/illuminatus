@@ -58,10 +58,6 @@ if ( not os.path.dirname(workflow.snakefile) in os.environ['PATH'].split(':') an
 # DEBUG. Note that the TOOLBOX doesn't go in the PATH - you have to invoke it explicitly.
 #print("PATH is {}".format(os.environ['PATH']), file=sys.stderr)
 
-# Special case for count_unassigned, which really should be made into a separate tool and
-# then put in the TOOLBOX
-UNASS = os.path.dirname(workflow.snakefile) + '/unassigned_report'
-
 def glob():
     """Regular glob() is useful but it can be improved like so.
     """
@@ -404,52 +400,6 @@ rule fqscreen:
            done
         """
 
-# Even though there should simply be one per lane, do this per unassigned fastq
-# to match all the other rules.
-# The output is an HTML file but I can't use an .html extension because then
-# MultiQC will refuse to look at it.
-rule unassigned_scan:
-    output: "QC/lane{l,[0-9]+}/{fq}.unassigned"
-    input:
-        bcs = "QC/known_barcodes.pdump",
-        stats = "QC/lane{l}/Stats.json", #we can extract total reads from this
-        fq = "{fq}.fastq.gz"
-    threads: 2
-    params:
-        # See if a 4000 (or X) run. There should probably be a more generic way
-        flag4000 = '-hiSeqRun4000' if run.split('_')[1][0] in 'KE' else ''
-    run:
-        with open(input.stats) as jfh:
-            json_info = json.loads(jfh.read())
-
-            # Normally there should be just one lane in the JSON but let's be
-            # explicit anyway.
-            reads_in_lane, = [ cr['TotalClustersPF'] for cr in
-                               json_info['ConversionResults'] if
-                               cr['LaneNumber'] == int(wildcards.l) ]
-
-        shell("""gzip -d -c {input.fq} | \
-                 {UNASS}/count -flagtablestart -noprogress -numtooutput 30 -cutoff 1500 -sortby count \
-                   -loadbc {input.bcs} -reportfile {output}.tmp1 {params.flag4000}""")
-        shell("""{UNASS}/count -xmlwiki -noprogress -in {output}.tmp1 -addnumlanepercent {reads_in_lane} \
-                   -reportfile {output}.tmp2""")
-
-        # Make it vaguely readable and add a title as requested by Matt A
-        shell("""sed 's/+TITLE+/Unassigned in {run} lane {wildcards.l}/' {UNASS}/page_header.html > {output}""")
-        shell("""cat {output}.tmp2 {UNASS}/page_footer.html >> {output}""")
-
-        # Clean up.
-        shell("""rm {output}.tmp{{1,2}}""")
-
-# This rule needs to run just once on the login node.
-localrules: lookup_known_barcodes
-rule lookup_known_barcodes:
-    output: "QC/known_barcodes.pdump"
-    params:
-        flag4000 = '-hiSeqRun4000' if run.split('_')[1][0] in 'KE' else ''
-    shell:
-        "{UNASS}/count -noprogress -savebc {output} {params.flag4000}"
-
 # fastqc runs on single FASTQ files, not read pairs. Apparently this is as it should be.
 rule fastqc:
     output: zip = "QC/lane{l,[0-9]+}/{fq}_fastqc.zip",
@@ -559,6 +509,7 @@ rule get_bcl2fastq_json:
 
 localrules: get_unassigned
 rule get_unassigned:
+    # Replaces the old silly unassigned report with something a lot simpler and more useful
     output: "QC/lane{lane}/{run}_{lane}_unassigned_table.txt"
     input:  "demultiplexing/lane{lane}/Stats/Stats.json"
     shell:
@@ -608,7 +559,6 @@ rule qc_main:
         cutadapt = expand( 'QC/lane{fq[lane]}/{fq[fname]}.cutadapt_out',  fq=all_1_fq ),
         fastqc   = expand( 'QC/lane{fq[lane]}/{fq[fname]}_fastqc.zip',    fq=all_fq ),
         fqscreen = expand( 'QC/lane{fq[lane]}/{fq[fname]}_screen.txt',    fq=all_1_fq ),
-        unass    = expand( 'QC/lane{fq[lane]}/{fq[fname]}.unassigned',    fq=all_u1_fq ),
         interop  = rules.interop_main.input,
         demux    = rules.demux_stats_main.input,
         meta     = rules.metadata_main.input
