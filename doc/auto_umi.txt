@@ -5,3 +5,5 @@ The proper fix here is to fix the SSG in Clarity. Or to bypass Clarity entirely 
 customers provide a sample sheet in Excel format. I'm tempted to workaround it by editing
 bcl2fastq_setup.py but no this really needs fixed at the LIMS level, and I'm not touching the SSG
 code unless I'm forced to.
+
+So, we'll let this sit for now. In the meantime, I'll keep working on umi_checker/umi_checker.py

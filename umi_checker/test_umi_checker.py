@@ -10,8 +10,7 @@ import logging
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/examples')
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
-from umi_checker import NormalCounter, cov
-from lossy_counting import LossyCounter
+from umi_checker.umi_checker import NormalCounter, cov, LossyCounter
 import random
 
 class T(unittest.TestCase):
