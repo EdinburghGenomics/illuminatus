@@ -35,19 +35,18 @@ class RunStatus:
             else:
                 self.runinfo_xml = RunInfoXMLParser( runinfo_xml_location )
 
-                #Get a list of the first cycle number of each read
+                # Get a list of the first cycle number of each read
                 for r, l in sorted(self.runinfo_xml.read_and_length.items()):
                     self.trigger_cycles.append(self.trigger_cycles[-1] + int(l))
 
-                #At some point, we might redefine read1 as ending after the last index read.
-                #For now, we have it ending after the actual first read.
-
-                # try:
-                #     self.last_read1_read = max( k for k, v in self.runinfo_xml.read_and_indexed.items()
-                #                                 where v == 'Y' )
-                # except ValueError:
-                #     # No index reads. Keep the default value of 1.
-                #     pass
+                # We can do the well dups check after 70 cycles but we can only
+                # check the indexes after the last index read is complete, so wait for that
+                try:
+                    self.last_read1_read = max( k for k, v in self.runinfo_xml.read_and_indexed.items()
+                                                if v == 'Y' )
+                except ValueError:
+                    # No index reads. Keep the default value of 1.
+                    pass
 
         except Exception:
             #if we can't read it we can't get much info
@@ -81,17 +80,15 @@ class RunStatus:
         return self._exists_cache[glob_pattern]
 
     def _is_read_finished( self, readnum ):
-        # This used to check for existence of Basecalling_Netcopy_complete_ReadX.txt or RTAReadXComplete.txt with
-        # X being the provided readnumber
-        # However, the NovaSeq doesn't seem to write any such file and the logic being different per sequencer is
-        # confusing, so we're instead looking for the actual data, even though it is possible that out-of-order
-        # copying will make this unreliable.
-        """
-        ReadLOCATION_oldMachines = os.path.join( self.run_path_folder , 'Basecalling_Netcopy_complete_Read'+str(readnum)+'.txt' ) #for miseq and hiseq2500
-        ReadLOCATION_newMachines = os.path.join( self.run_path_folder , 'RTARead'+str(readnum)+'Complete.txt' ) #for hiseq4000 and X
-        return os.path.exists( ReadLOCATION_oldMachines or ReadLOCATION_oldMachines )
+        """ This used to check for existence of Basecalling_Netcopy_complete_ReadX.txt or RTAReadXComplete.txt with
+            X being the provided readnumber
+            However, the NovaSeq doesn't seem to write any such file and the logic being different per sequencer is
+            confusing, so we're instead looking for the actual data, even though it is possible that out-of-order
+            copying will make this unreliable.
         """
         try:
+            # readnum counts from 1 so trigger_cycles[readnum] is the first cycle of the
+            # next read (trigger_cycles[0] is always 1)
             cycle = self.trigger_cycles[int(readnum)]
             return self._exists( "Data/Intensities/BaseCalls/L001/C{}.1/*".format(cycle) )
         except Exception:
