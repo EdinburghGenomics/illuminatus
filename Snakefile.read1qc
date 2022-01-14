@@ -40,7 +40,7 @@ def glob():
     return lambda p: sorted( (f.rstrip('/') for f in glob(os.path.expanduser(p))) )
 glob = glob()
 
-# Caller must set this, or else there needs to be a symlink, as with Snakefile.demux
+# Caller can set this, or else there needs to be a symlink, as with Snakefile.demux
 RUNDIR = os.path.realpath(config.get('rundir', './seqdata'))
 
 # Other settings
@@ -50,7 +50,8 @@ START_POS = 20
 LEVELS_TO_SCAN = 5
 REPORT_VERBOSE = True
 
-# We need to examine the run info. OK to do this on every cluster job.
+# We need to examine the run info. OK to do this on every cluster job and
+# fail if missing.
 run_info_root = ET.parse(RUNDIR + "/RunInfo.xml").getroot()
 
 LAST_LANE = '0' ; LAST_TILE = FIRST_TILE = '0000'
@@ -123,7 +124,7 @@ except Exception:
     pass
 
 # === Driver rules ===
-localrules: wd_main
+localrules: wd_main, bc_main
 
 if not LANES_TO_SAMPLE:
     rule wd_main:
@@ -134,10 +135,14 @@ else:
         input:
             summary = format('QC/welldups/{TARGETS_TO_SAMPLE}summary.yml')
 
-# === Rules to invoke the duplicate counter ===
-localrules: make_summary
+rule bc_main:
+    # TODO - add logic for early demux check
+    input: []
 
-rule make_summary:
+# === Rules to invoke the duplicate counter ===
+localrules: make_wd_summary
+
+rule make_wd_summary:
     output: 'QC/welldups/{targets}summary.yml'
     input: expand( "QC/welldups/{{targets}}targets_lane{lane}{side}.txt", lane=LANES_TO_SAMPLE, side=TILE_MATCH.keys() )
     run:
@@ -172,7 +177,7 @@ rule make_summary:
         with open(output[0], 'w') as yfh:
             yaml.safe_dump(res, yfh)
 
-rule prep_indices:
+rule prep_wd_indices:
     output: "QC/welldups/{targets}clusters.list"
     input:
         slocs = format("{RUNDIR}/Data/Intensities/s.locs")
@@ -190,3 +195,7 @@ rule count_well_dupl:
         """{TOOLBOX} wd_count_well_duplicates -f {input.targfile} -n {wildcards.targets} -s {LAST_TILE} \
            -r {RUNDIR} -i {wildcards.lane} -l {LEVELS_TO_SCAN} --cycles {START_POS}-{END_POS} \
            -t {params.tiles} {params.verbose} > {output}"""
+
+# === Rules to pre-demultiplex one tile to check the barcode balance ===
+
+# TODO

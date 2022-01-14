@@ -319,12 +319,16 @@ action_read1_finished() {
     mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
     BREAK=1
     set +e ; ( set +e
-        rundir="`pwd`"
         e=''
-        cd "$DEMUX_OUTPUT_FOLDER"
-        Snakefile.welldups --config rundir="$rundir" -- wd_main || e="$e welldups"
-        Snakefile.qc -- interop_main                            || e="$e interop"
-        cd "$rundir" ; run_multiqc "Waiting for RTAComplete" NONE "$per_run_log1" || e="$e multiqc"
+        pushd "$DEMUX_OUTPUT_FOLDER"
+        if ! Snakefile.read1qc -- wd_main bc_main ; then
+          # Retry and log specific failure
+          Snakefile.read1qc -- bc_main  || e="$e bc_check"
+          Snakefile.read1qc -- wd_main  || e="$e welldups"
+        fi
+        Snakefile.qc -- interop_main    || e="$e interop"
+        popd
+        run_multiqc "Waiting for RTAComplete" NONE "$per_run_log1" || e="$e multiqc"
 
         if [ -n "$e" ] ; then
             _msg="There were errors in read1 processing (${e# }) on $RUNID. See $per_run_log1"
@@ -632,15 +636,16 @@ run_qc() {
 
     # Hand over to Snakefile.qc for report generation
     # First a quick report. Continue to QC even if MultiQC fails here.
-    ( cd "$DEMUX_OUTPUT_FOLDER" && Snakefile.qc -- demux_stats_main interop_main ) || true
+    ( cd "$DEMUX_OUTPUT_FOLDER"
+      Snakefile.qc -- demux_stats_main interop_main
+    ) || true
     run_multiqc "In QC" || true
 
     # Then a full QC. Welldups should have run already but it will not
     # hurt to re-run Snakemake with nothing to do. All these steps must succeed.
-    rundir="`pwd`"
     ( cd "$DEMUX_OUTPUT_FOLDER"
       Snakefile.qc -- md5_main qc_main
-      Snakefile.welldups --config rundir="$rundir" -- wd_main
+      Snakefile.read1qc -- wd_main
     )
 
     # If we get here, the pipeline completed (or was partially complete) but a failure to

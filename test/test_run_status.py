@@ -290,15 +290,15 @@ class T(unittest.TestCase):
         expected['PipelineStatus:'] = 'new'
         self.assertEqual(gy(), expected)
 
-        # We're basing the read1 trigger on the appearance of data files for the second cycle,
-        # (until we change our minds and use the first cycle after the last index read)
-        # so for this run we need to fake something for cycle 152.
-        self.md('Data/Intensities/BaseCalls/L001/C152.1')
-        self.touch('Data/Intensities/BaseCalls/L001/C152.1/foo.bcl')
+        # We're now basing the read1 trigger on the appearance of data files for the
+        # first cycle after the last index read, so for this run we need to fake something
+        # for cycle 151 + 8 + 8 + 1 = 168.
+        self.md('Data/Intensities/BaseCalls/L001/C168.1')
+        self.touch('Data/Intensities/BaseCalls/L001/C168.1/foo.bcl')
 
         # Should still be new until we put the pipeline dir back!
         self.assertEqual(gy()['PipelineStatus:'], 'new')
-        self.assertEqual(gy()['MachineStatus:'], 'read1_complete')
+        self.assertEqual(gy()['MachineStatus:'], 'read3_complete')
         self.md('pipeline/output/seqdata/pipeline')
         no_redo('read1_finished')
 
@@ -400,11 +400,11 @@ class T(unittest.TestCase):
         self.md('pipeline/output/seqdata/pipeline')
         no_redo('reads_unfinished')
 
-        # We're basing the read1 trigger on the appearance of data files for the second cycle,
-        # (until we change our minds and use the first cycle after the last index read)
-        # so for this run we need to fake something for cycle 27.
-        self.md('Data/Intensities/BaseCalls/L001/C27.1')
-        self.touch('Data/Intensities/BaseCalls/L001/C27.1/foo.bcl')
+        # We're now basing the read1 trigger on the appearance of data files for the
+        # first cycle after the last index read, so for this run we need to fake something
+        # for cycle 26 + 8 + 8 + 1 = 43.
+        self.md('Data/Intensities/BaseCalls/L001/C43.1')
+        self.touch('Data/Intensities/BaseCalls/L001/C43.1/foo.bcl')
 
         no_redo('read1_finished')
 

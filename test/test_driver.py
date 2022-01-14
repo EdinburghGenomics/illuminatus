@@ -21,7 +21,7 @@ DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')
 
 PROGS_TO_MOCK = """
     BCL2FASTQPreprocessor.py BCL2FASTQPostprocessor.py BCL2FASTQCleanup.py
-    Snakefile.qc Snakefile.demux Snakefile.welldups
+    Snakefile.qc Snakefile.demux Snakefile.read1qc
     summarize_lane_contents.py rt_runticket_manager.py upload_report.sh
     clarity_run_id_setter.py
 """.split()
