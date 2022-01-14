@@ -71,13 +71,13 @@ class T(unittest.TestCase):
            --barcode-mismatches is set to 1
         """
         run_id = '160603_M01270_0196_000000000-AKGDE'
-        pp = BCL2FASTQPreprocessor( run_dir = self.get_ex(run_id),
+        pp = BCL2FASTQPreprocessor( run_source_dir = self.get_ex(run_id),
                                     lane = "1",
                                     revcomp = None )
 
         self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
                                                         "--use-bases-mask '1:Y300n,I10,Y300n'",
-                                                        "--tiles=s_[$LANE]",
+                                                        '--tiles "s_[$LANE]"',
                                                         "--barcode-mismatches 1" ] )
         self.assertEqual( pp.infer_revcomp(), '' )
 
@@ -98,15 +98,15 @@ class T(unittest.TestCase):
         with open( ini_file , 'w') as f:
             print("[bcl2fastq]", file=f)
             print("--barcode-mismatches: 100", file=f)
-            print("--tiles: s_[$LANE]_1101", file=f)
+            print('--tiles: "s_[$LANE]_1101"', file=f)
 
-        pp = BCL2FASTQPreprocessor( run_dir = shadow_dir,
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "1",
                                     revcomp = None )
 
         self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
                                                         "--use-bases-mask '1:Y50n,I8,I8'",
-                                                        "--tiles=s_[$LANE]_1101",
+                                                        '--tiles "s_[$LANE]_1101"',
                                                         "--barcode-mismatches 100" ] )
 
 
@@ -133,7 +133,7 @@ class T(unittest.TestCase):
             print("", file=fh)
             for l in lines: print(l, file=fh, end='')
 
-        pp = BCL2FASTQPreprocessor( run_dir = shadow_dir,
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "2",
                                     revcomp = None )
         self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
@@ -146,19 +146,19 @@ class T(unittest.TestCase):
             print("--barcode-mismatches-lane8: 8", file=fh)
 
         # This is now 9 - .ini file takes precedence
-        pp = BCL2FASTQPreprocessor( run_dir = shadow_dir,
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "2",
                                     revcomp = None )
         self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
                                                              '--barcode-mismatches 9' ] )
 
-        pp = BCL2FASTQPreprocessor( run_dir = shadow_dir,
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "8",
                                     revcomp = None )
         self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
                                                              '--barcode-mismatches 8' ] )
 
-        pp = BCL2FASTQPreprocessor( run_dir = shadow_dir,
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "1",
                                     revcomp = None )
         self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
@@ -186,13 +186,13 @@ class T(unittest.TestCase):
             print("", file=fh)
             for l in lines: print(l, file=fh, end='')
 
-        pp = BCL2FASTQPreprocessor( run_dir = shadow_dir,
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "2",
                                     revcomp = None )
         self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
                                                              '--barcode-mismatches 2' ] )
 
-        pp = BCL2FASTQPreprocessor( run_dir = shadow_dir,
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "4",
                                     revcomp = None )
         self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
@@ -202,7 +202,7 @@ class T(unittest.TestCase):
         """What if I try to demux a non-existent lane on a MiSEQ?
         """
         self.assertRaises( AssertionError,
-                BCL2FASTQPreprocessor, run_dir = self.get_ex('150602_M01270_0108_000000000-ADWKV'),
+                BCL2FASTQPreprocessor, run_source_dir = self.get_ex('150602_M01270_0108_000000000-ADWKV'),
                                        lane = '5',
                                        revcomp = None )
 
@@ -211,13 +211,13 @@ class T(unittest.TestCase):
             The --barcode-mismatch will not be set so we need to try both options.
         """
         run_id = '160607_D00248_0174_AC9E4KANXX'
-        pp = BCL2FASTQPreprocessor( run_dir = self.get_ex(run_id),
+        pp = BCL2FASTQPreprocessor( run_source_dir = self.get_ex(run_id),
                                     lane = "5",
                                     revcomp = None )
 
         self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
                                                         "--use-bases-mask '5:Y50n,n*,n*'",
-                                                        "--tiles=s_[$LANE]" ] )
+                                                        '--tiles "s_[$LANE]"' ] )
 
     def test_hiseq_lanes_5_simple(self):
         """ This has all sorts of stuff. Lane 5 has no index.
@@ -232,24 +232,24 @@ class T(unittest.TestCase):
             print("--barcode-mismatches: 1", file=f)
 
         #Run on lane 5
-        pp = BCL2FASTQPreprocessor( run_dir = shadow_dir,
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "5",
                                     revcomp = None )
         self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
                                                         "--use-bases-mask '5:Y50n,n*,n*'",
-                                                        "--tiles=s_[$LANE]",
+                                                        '--tiles "s_[$LANE]"',
                                                         "--barcode-mismatches 1" ] )
 
         #Lane 1 has 8-base dual index
-        pp = BCL2FASTQPreprocessor(shadow_dir, "1", None)
+        pp = BCL2FASTQPreprocessor(shadow_dir, lane=1, revcomp=None)
         self.assertEqual(pp.get_bcl2fastq_options()[1], "--use-bases-mask '1:Y50n,I8,I8'")
 
         #Lane 3 has 6-base single index
-        pp = BCL2FASTQPreprocessor(shadow_dir, "3", None)
+        pp = BCL2FASTQPreprocessor(shadow_dir, lane=3, revcomp=None)
         self.assertEqual(pp.get_bcl2fastq_options()[1], "--use-bases-mask '3:Y50n,I6n*,n*'")
 
         #Lane 4 has 8-base single index
-        pp = BCL2FASTQPreprocessor(shadow_dir, "4", None)
+        pp = BCL2FASTQPreprocessor(shadow_dir, lane=4, revcomp=None)
         self.assertEqual(pp.get_bcl2fastq_options()[1], "--use-bases-mask '4:Y50n,I8,n*'")
 
     def test_auto_revcomp(self):
@@ -258,7 +258,7 @@ class T(unittest.TestCase):
         run_id = '201125_A00291_0321_AHWHKYDRXX'
         run_dir = self.get_ex(run_id, shadow=False)
 
-        out_lines = BCL2FASTQPreprocessor( run_dir = run_dir,
+        out_lines = BCL2FASTQPreprocessor( run_source_dir = run_dir,
                                            lane = "1",
                                            revcomp = None ).get_output('test')
         self.assertEqual( out_lines[-4], '[Data]' )
@@ -272,14 +272,14 @@ class T(unittest.TestCase):
         self.assertEqual( out_lines[-1].split(',')[9], 'GATATCGA' )
 
         # With forced double revcomp, this
-        out_lines = BCL2FASTQPreprocessor( run_dir = run_dir,
+        out_lines = BCL2FASTQPreprocessor( run_source_dir = run_dir,
                                            lane = "1",
                                            revcomp = "12" ).get_output('test')
         self.assertEqual( out_lines[-1].split(',')[7], 'GGTTATAA' )
         self.assertEqual( out_lines[-1].split(',')[9], 'TCGATATC' )
 
         # Auto revcomp just modifies the second index
-        pp = BCL2FASTQPreprocessor( run_dir = run_dir,
+        pp = BCL2FASTQPreprocessor( run_source_dir = run_dir,
                                     lane = "1",
                                     revcomp = "auto" )
         out_lines = pp.get_output('test')
@@ -296,7 +296,7 @@ class T(unittest.TestCase):
         run_dir = self.get_ex(run_id, shadow=False)
 
         self.assertRaises( AssertionError,
-                BCL2FASTQPreprocessor, run_dir = run_dir,
+                BCL2FASTQPreprocessor, run_source_dir = run_dir,
                                        lane = "1",
                                        revcomp = None )
 

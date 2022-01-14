@@ -128,8 +128,6 @@ rule bcl2fastq:
 rule preprocess:
     output:
         ssheet = "lane{l}/SampleSheet.filtered.csv"
-    params:
-        dest = os.path.abspath('.')
     shell:
         # Override file being missing or empty results in auto revcomp
         """revcomp=$(cat {RUNDIR}/pipeline/index_revcomp.lane{wildcards.l}.OVERRIDE 2>/dev/null || true)

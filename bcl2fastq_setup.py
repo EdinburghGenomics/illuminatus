@@ -18,10 +18,10 @@ from illuminatus.RunParametersXMLParser import RunParametersXMLParser
 class BCL2FASTQPreprocessor:
     """The name is a hangover from the old script name.
     """
-    def __init__(self, run_dir, lane, revcomp):
+    def __init__(self, run_source_dir, **kwargs):
 
         #Read data_dir and check that requested lane is in the SampleSheet.
-        self.run_dir = run_dir
+        self.run_dir = run_source_dir
 
         self.samplesheet = os.path.join(self.run_dir, "SampleSheet.csv")
         self.runinfo_file = os.path.join(self.run_dir, "RunInfo.xml")
@@ -32,32 +32,33 @@ class BCL2FASTQPreprocessor:
         # Get the run name from the RunInfo.xml
         self.run_info = RunInfoXMLParser( self.run_dir ).run_info
 
-        # Check the lane is valid. Note lane must be a str
+        # Check the lane is valid.
+        self.lane = str(kwargs['lane'])
         assert self.bme.get_lanes(), \
             "SampleSheet.csv does not seem to list any lanes."
-        assert str(lane) == lane, \
-            "{!r} is not a string".format(lane)
-        assert lane  in [ str(l) for l in self.bme.get_lanes() ], \
-            "{!r} not in {!r}".format(lane, self.bme.get_lanes())
-        self.lane = lane
+        assert self.lane  in [ str(l) for l in self.bme.get_lanes() ], \
+            "{!r} not in {!r}".format(self.lane, self.bme.get_lanes())
 
         # This sets up self.ini_settings()
         self.get_ini_settings()
 
         # See if we want to revcomp at all
-        if revcomp == 'auto':
+        if kwargs['revcomp'] == 'auto':
             self.revcomp = self.infer_revcomp()
             self.revcomp_label = 'auto ' + (self.revcomp or 'none')
-        elif not revcomp:
+        elif not kwargs['revcomp']:
             self.revcomp = ''
             self.revcomp_label = 'none'
-        elif revcomp == 'none':
+        elif kwargs['revcomp'] == 'none':
             # Explicitly none as opposed to implicitly none
             self.revcomp = ''
             self.revcomp_label = 'override none'
         else:
-            self.revcomp = revcomp
-            self.revcomp_label = 'override ' + revcomp
+            self.revcomp = kwargs['revcomp']
+            self.revcomp_label = 'override ' + self.revcomp
+
+        # Save bc_check flag
+        self.bc_check = kwargs.get('bc_check', False)
 
     def get_ini_settings(self):
         """Extract the appropriate settings for embedding to the [bcl2fastq] section.
@@ -83,40 +84,31 @@ class BCL2FASTQPreprocessor:
                 if k.startswith('--barcode-mismatches-'):
                     del self.ini_settings['bcl2fastq'][k]
 
-    def get_bcl2fastq_options(self):
+    def get_bcl2fastq_opt_dict(self):
         """Get the options which will go into the [bcl2fastq] section on the sample sheet.
            Unlike get_ini_settings() this does not set a variable on the object but just returns
-           a list.
+           a list of pairs.
         """
-        bcl2fastq_opts = ["--fastq-compression-level 6"]
+        bcl2fastq_opts = {"--fastq-compression-level": "6"}
 
         # Add base mask for this lane
         bm = self.bme.get_base_mask_for_lane(self.lane)
-        bcl2fastq_opts.append("--use-bases-mask '{}:{}'".format( self.lane, bm ) )
+        bcl2fastq_opts["--use-bases-mask"] = "'{}:{}'".format(self.lane, bm)
 
         # Specify the lane to process, which is controlled by --tiles
         # Note that $LANE is going to be interpreted by the shell when the command is run.
         # Slimmed-down runs override this setting but will still include $LANE to pick up the lane number
-        bcl2fastq_opts.append("--tiles=s_[$LANE]")
+        bcl2fastq_opts["--tiles"] = '"s_[$LANE]"'
 
         # now that the bcl2fastq_opts array is complete, evaluate the pipeline_settings.ini file
-        # every setting must be either replaced or appended to the bcl2fastq_opts array
-        # this won't work with options that appear multiple times like --use-base-mask (don't think we need this though)
-        for ini_option, val in self.ini_settings['bcl2fastq'].items(): # section in the ini file is bcl2fastq
-            ## special case for option --tiles
-            delimiter = "=" if ini_option in ["--tiles"] else " "
-            replace_index = [ i for i, c in enumerate(bcl2fastq_opts)
-                              if c.split(delimiter)[0] == ini_option ]
-            replace_value = '{}{}{}'.format( ini_option, delimiter, val )
-
-            if replace_index:
-                #print ("replacing from pipeline_settings.ini option "+ ini_option)
-                bcl2fastq_opts[replace_index[0]] = replace_value
-            else: ## so must be appended
-                #print ("appending from pipeline_settings.ini " + ini_option)
-                bcl2fastq_opts.append(replace_value)
+        # and update the dict
+        bcl2fastq_opts.update(self.ini_settings['bcl2fastq'].items())
 
         return bcl2fastq_opts
+
+    def get_bcl2fastq_options(self):
+        opts_dict = self.get_bcl2fastq_opt_dict()
+        return ['{} {}'.format(*o) for o in opts_dict.items()]
 
     def infer_revcomp(self):
         """Do we need to do the thing? This is a special hack for certain NovaSeq runs.
@@ -133,15 +125,24 @@ class BCL2FASTQPreprocessor:
         # In all other cases, nowt to do.
         return ''
 
+    def get_bc_check_opts(self):
+        """TODO
+        """
+        regular_opts = self.get_bcl2fastq_opt_dict()
+        return ['{} {}'.format(*o) for o in regular_opts.items()]
 
     def get_output(self, me):
         """Return a new partial sample sheet as a list of lines.
         """
         res = ['[Header]']
 
-        # Calculate the bcl2fastq_opts:
-        # work out all the options plus --barcode-mismatches which is special.
-        bcl2fastq_opts = self.get_bcl2fastq_options()
+        if not self.bc_check:
+            # Calculate the bcl2fastq_opts:
+            # work out all the options including --barcode-mismatches which is special.
+            bcl2fastq_opts = self.get_bcl2fastq_options()
+        else:
+            # For bc_check mode we want to fudge some of those
+            bcl2fastq_opts = self.get_bc_check_opts()
 
         # OK now we can go through the input sample sheet.
         with open(self.run_dir + '/SampleSheet.csv') as ssfh:
@@ -251,13 +252,13 @@ def revcomp(seq, ttable=str.maketrans('ATCG','TAGC')):
 def main(args):
     """ Main mainness
     """
-    me = "Illuminatus " + os.path.basename(sys.argv[0])
+    this_script = "Illuminatus " + os.path.basename(sys.argv[0])
     # This always comes out as a list of 1
     run_dir, = args.run_dir
 
-    pp = BCL2FASTQPreprocessor(run_dir=run_dir, lane=args.lane, revcomp=args.revcomp)
+    pp = BCL2FASTQPreprocessor(run_source_dir=run_dir, **vars(args))
 
-    print( *pp.get_output(me), sep='\n' )
+    print( *pp.get_output(this_script), sep='\n' )
 
 def parse_args():
     description = """Outputs a sample sheet fragment for bcl2fastq for one lane"""
@@ -269,6 +270,8 @@ def parse_args():
                             help="Reverse complement index 2 and/or 1")
     argparser.add_argument("-l", "--lane", required=True, choices=list("12345678"),
                             help="Lane to be demultiplexed")
+    argparser.add_argument("-c", "--bc_check", action="store_true",
+                           help="Prepare for barcode check mode (1 tile 1 base)")
     argparser.add_argument("run_dir", nargs=1,
                             help="Directory containing the finished run")
 

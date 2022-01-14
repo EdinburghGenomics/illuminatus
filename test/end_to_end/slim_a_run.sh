@@ -79,7 +79,7 @@ done
 if [ ! -e "$DEST"/pipeline_settings.ini ] ; then
     echo "[bcl2fastq]" > "$DEST"/pipeline_settings.ini
 fi
-echo '--tiles: s_[$LANE]_1101' >> "$DEST"/pipeline_settings.ini
+echo '--tiles: "s_[$LANE]_1101"' >> "$DEST"/pipeline_settings.ini
 
 # Finally, if it's already a link, copy the SampleSheet.csv to SampleSheet.csv.XOVERRIDE
 # so it can be edited and Illuminatus won't try to replace it. This can't be in the pipeline

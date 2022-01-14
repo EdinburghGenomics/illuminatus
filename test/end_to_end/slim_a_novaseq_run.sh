@@ -70,7 +70,7 @@ done
 if [ ! -e "$DEST"/pipeline_settings.ini ] ; then
     echo "[bcl2fastq]" > "$DEST"/pipeline_settings.ini
 fi
-echo '--tiles: s_[$LANE]_2101' >> "$DEST"/pipeline_settings.ini
+echo '--tiles: "s_[$LANE]_2101"' >> "$DEST"/pipeline_settings.ini
 
 # Finally, if it's already a link, copy the SampleSheet.csv to SampleSheet.csv.OVERRIDE
 # so it can be edited and Illuminatus won't try to replace it.

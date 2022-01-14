@@ -13,18 +13,37 @@ Activated
    is fast so that's OK. It simplifies the code not having to fire an alert in the middle of all the
    QC - alerts happen at the end.
 
-Done but tests are failing.
+Done but tests are failing... fixed!
 
 3) Within this, we need a task that prepares a sample sheet, adds the appropriate settings to run
    something like:
 
    bcl2fastq -R 211216_A00291_0407_BHV2GYDRXY -o . --sample-sheet Samplesheet.lane1.csv --tiles 's_[1]_2101'  --ignore-missing-bcls
+   (no --ignore-missing-bcls is jank and produces weird output - see below!)
 
    By fiddling with the basemask it should be possible to minimize the amount of fastq.gz files created, as we only need the
-   Stats.json contents.
+   Stats.json contents. Can I emit no data at all?
+
+   Also can I be sure that all runs have a 2101 tile? Not sure. Slimmed runs have only one tile period. Fortunately I already
+   have the hacky logic calculating TILE_MATCH so use that as my basis.
+
+   bcl2fastq command is:
+
+   /lustre-gseg/software/bcl2fastq/bcl2fastq_v2.20.0.422/bcl2fastq -R 220113_A00291_0410_AHV23HDRXY -o . --sample-sheet Samplesheet.lane1.csv --tiles 's_[1]_2101' --use-bases-mask 'Yn*,I8,I8,n*' --interop-dir . --minimum-trimmed-read-length 1
+
+    I'll need to generate the --tiles and --use-bases-mask depending on the run.
+
+So my plan is to add a --bc_check option to bcl2fastq_setup.py that prepares sample sheets for index checking with the correct
+--tiles and --use-bases-mask options.
 
 4) Incorporate the Stats.json into the interim report. If there are >50% of reads in unassigned then a warning mail
    (ticket reply) should go out, otherwise the % of reads in unassigned should be logged in the RT comment
+
+Oh and we can also report the 'barcode_mismatches' at this point, so that info should be incorporated too.
+This is a very good reason to keep with using the do_demultiplex.sh script and not call bcl2fastq directly.
+
+Note - do I need to account for mixed projects in a lane? Then the logic would be to tot up the number of reads assigned to
+each project and if there are more than that unassigned then warn. I think this is more general so do this.
 
 At the moment, the interim report will have only the overview, so do I want to force per-lane reports to
 be made to essentially show the content of Stats.json? But then the numbers will be silly because we're only

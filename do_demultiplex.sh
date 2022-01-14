@@ -28,7 +28,8 @@ echo "BCL2FASTQ_REAL=$BCL2FASTQ_REAL"
 # Capture the bcl2fastq version
 "$BCL2FASTQ" --version 2>&1 | grep . > "$OUTDIR"/bcl2fastq.version
 
-# Get the bcl2fastq section from the SAMPLESHEET.
+# Get the [bcl2fastq] section from the SAMPLESHEET.
+# Remember bcl2fastq_setup.py folds all the .ini options etc. into here
 opts="$( <"$SAMPLESHEET" sed -ne '/^\[bcl2fastq\]/,/^\[/ p' | egrep '^[^[]' )"
 
 # Compile all options in a list
