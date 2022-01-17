@@ -29,8 +29,10 @@ class BCL2FASTQPreprocessor:
         # This code is a little crufty but is tested and working.
         self.bme = BaseMaskExtractor(self.samplesheet, self.runinfo_file)
 
-        # Get the run name from the RunInfo.xml
-        self.run_info = RunInfoXMLParser( self.run_dir ).run_info
+        # Get the run name and tiles list from the RunInfo.xml
+        rip = RunInfoXMLParser( self.run_dir )
+        self.run_info = rip.run_info
+        self.tiles = rip.tiles
 
         # Check the lane is valid.
         self.lane = str(kwargs['lane'])
@@ -80,25 +82,25 @@ class BCL2FASTQPreprocessor:
                 if k == '--barcode-mismatches-lane{}'.format(self.lane):
                     self.ini_settings['bcl2fastq']['--barcode-mismatches'] = \
                         self.ini_settings['bcl2fastq'][k]
-                # delete it to avoid further processing
+                # delete it and any other per-lane vals to avoid further processing
                 if k.startswith('--barcode-mismatches-'):
                     del self.ini_settings['bcl2fastq'][k]
 
     def get_bcl2fastq_opt_dict(self):
         """Get the options which will go into the [bcl2fastq] section on the sample sheet.
            Unlike get_ini_settings() this does not set a variable on the object but just returns
-           a list of pairs.
+           a dictionary of options.
         """
         bcl2fastq_opts = {"--fastq-compression-level": "6"}
 
         # Add base mask for this lane
         bm = self.bme.get_base_mask_for_lane(self.lane)
-        bcl2fastq_opts["--use-bases-mask"] = "'{}:{}'".format(self.lane, bm)
+        bcl2fastq_opts["--use-bases-mask"] = "'{}'".format(bm)
 
         # Specify the lane to process, which is controlled by --tiles
         # Note that $LANE is going to be interpreted by the shell when the command is run.
         # Slimmed-down runs override this setting but will still include $LANE to pick up the lane number
-        bcl2fastq_opts["--tiles"] = '"s_[$LANE]"'
+        bcl2fastq_opts["--tiles"] = "'s_[{}]'".format(self.lane)
 
         # now that the bcl2fastq_opts array is complete, evaluate the pipeline_settings.ini file
         # and update the dict
@@ -126,10 +128,37 @@ class BCL2FASTQPreprocessor:
         return ''
 
     def get_bc_check_opts(self):
-        """TODO
+        """Return a modified list of options suitable for the barcode check phase,
+           which can be run immediately after the final index cycle.
         """
-        regular_opts = self.get_bcl2fastq_opt_dict()
-        return ['{} {}'.format(*o) for o in regular_opts.items()]
+        # Get the regular options
+        check_opts = self.get_bcl2fastq_opt_dict()
+
+        check_opts['--interop-dir'] = '.'
+        check_opts['--minimum-trimmed-read-length'] = '1'
+
+        # Tricky ones are --tiles and --use-bases-mask
+        # For --tiles we'll take the first tile (alphabetically) in self.run_info or else
+        # assume that tile 1101 is valid (which works for MiSeq runs)
+        if self.tiles:
+            tiles_for_lane = [ t for l, t in
+                               [ t.split('_') for t in self.tiles ]
+                               if l == self.lane ]
+            check_opts['--tiles'] = "'s_[{}]_{}'".format(self.lane, tiles_for_lane[0])
+        else:
+            check_opts["--tiles"] = "'s_[{}]_1101'".format(self.lane)
+
+        # Base mask needs some munging. We should always have an initial version, but it could be
+        # supplied from outside so a little sanity checking is necessary.
+        old_bm = check_opts["--use-bases-mask"].strip("'")
+        if ':' in old_bm:
+            assert old_bm.startswith("{}:".format(self.lane))
+            old_bm = old_bm[2:]
+        new_bm = ','.join([ ('n*' if i else 'Yn*') if m.startswith('Y') else m
+                            for i, m in enumerate(old_bm.split(',')) ])
+        check_opts["--use-bases-mask"] = "'{}'".format(new_bm)
+
+        return ['{} {}'.format(*o) for o in check_opts.items()]
 
     def get_output(self, me):
         """Return a new partial sample sheet as a list of lines.

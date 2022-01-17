@@ -59,7 +59,6 @@ class T(unittest.TestCase):
     def test_revcomp(self):
         """A basic reverse complement function
         """
-
         self.assertEqual(revcomp(''), '')
         self.assertEqual(revcomp('ATCG'), 'CGAT')
         self.assertEqual(revcomp('AAANNNTTT'), 'AAANNNTTT')
@@ -76,8 +75,8 @@ class T(unittest.TestCase):
                                     revcomp = None )
 
         self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
-                                                        "--use-bases-mask '1:Y300n,I10,Y300n'",
-                                                        '--tiles "s_[$LANE]"',
+                                                        "--use-bases-mask 'Y300n,I10,Y300n'",
+                                                        "--tiles 's_[1]'",
                                                         "--barcode-mismatches 1" ] )
         self.assertEqual( pp.infer_revcomp(), '' )
 
@@ -86,6 +85,21 @@ class T(unittest.TestCase):
         self.assertEqual( [ l for l in out_lines if l.startswith('[') ],
                           [ '[Header]', '[bcl2fastq]', '[Data]' ] )
 
+    def test_miseq_1pool_c(self):
+        """Same as above but with the -c/--bc_check flag
+        """
+        run_id = '160603_M01270_0196_000000000-AKGDE'
+        pp = BCL2FASTQPreprocessor( run_source_dir = self.get_ex(run_id),
+                                    lane = "1",
+                                    revcomp = None,
+                                    bc_check = True )
+
+        self.assertEqual( pp.get_bc_check_opts(), [ "--fastq-compression-level 6",
+                                                    "--use-bases-mask 'Yn*,I10,n*'",
+                                                    "--tiles 's_[1]_1101'",
+                                                    "--barcode-mismatches 1",
+                                                    "--interop-dir .",
+                                                    "--minimum-trimmed-read-length 1" ] )
 
     def test_settings_file(self):
         """settings file test: should override the defaults
@@ -98,15 +112,15 @@ class T(unittest.TestCase):
         with open( ini_file , 'w') as f:
             print("[bcl2fastq]", file=f)
             print("--barcode-mismatches: 100", file=f)
-            print('--tiles: "s_[$LANE]_1101"', file=f)
+            print("--tiles: 's_[1]_1101'", file=f)
 
         pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "1",
                                     revcomp = None )
 
         self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
-                                                        "--use-bases-mask '1:Y50n,I8,I8'",
-                                                        '--tiles "s_[$LANE]_1101"',
+                                                        "--use-bases-mask 'Y50n,I8,I8'",
+                                                        "--tiles 's_[1]_1101'",
                                                         "--barcode-mismatches 100" ] )
 
 
@@ -164,6 +178,34 @@ class T(unittest.TestCase):
         self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
                                                              '--barcode-mismatches 9' ] )
 
+    def test_slimmed_run(self):
+        """Check a setup produced by slim_a_novaseq_run.sh
+        """
+        run_id = "220113_A00291_0410_AHV23HDRXY"
+        pp = BCL2FASTQPreprocessor( run_source_dir = self.get_ex(run_id),
+                                    lane = "1",
+                                    revcomp = None )
+
+        self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
+                                                        "--use-bases-mask 'Y150n,I8,I8,Y150n'",
+                                                        '--tiles "s_[$LANE]_2101"' ] )
+
+
+    def test_slimmed_run_c(self):
+        """Check a setup produced by slim_a_novaseq_run.sh, with the --bc_check flag
+        """
+        run_id = "220113_A00291_0410_AHV23HDRXY"
+        pp = BCL2FASTQPreprocessor( run_source_dir = self.get_ex(run_id),
+                                    lane = "1",
+                                    revcomp = None,
+                                    bc_check = True )
+
+        self.assertEqual( pp.get_bc_check_opts(), [ "--fastq-compression-level 6",
+                                                    "--use-bases-mask 'Yn*,I8,I8,n*'",
+                                                    "--tiles 's_[1]_2101'",
+                                                    "--interop-dir .",
+                                                    "--minimum-trimmed-read-length 1" ] )
+
     def test_nocolon_override(self):
         """SampleSheet.csv should be allowed to override barcode-mismatches etc.
            To be compatible with the processed format this needs to work with no colon.
@@ -216,8 +258,8 @@ class T(unittest.TestCase):
                                     revcomp = None )
 
         self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
-                                                        "--use-bases-mask '5:Y50n,n*,n*'",
-                                                        '--tiles "s_[$LANE]"' ] )
+                                                        "--use-bases-mask 'Y50n,n*,n*'",
+                                                        "--tiles 's_[5]'" ] )
 
     def test_hiseq_lanes_5_simple(self):
         """ This has all sorts of stuff. Lane 5 has no index.
@@ -236,21 +278,21 @@ class T(unittest.TestCase):
                                     lane = "5",
                                     revcomp = None )
         self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
-                                                        "--use-bases-mask '5:Y50n,n*,n*'",
-                                                        '--tiles "s_[$LANE]"',
+                                                        "--use-bases-mask 'Y50n,n*,n*'",
+                                                        "--tiles 's_[5]'",
                                                         "--barcode-mismatches 1" ] )
 
         #Lane 1 has 8-base dual index
         pp = BCL2FASTQPreprocessor(shadow_dir, lane=1, revcomp=None)
-        self.assertEqual(pp.get_bcl2fastq_options()[1], "--use-bases-mask '1:Y50n,I8,I8'")
+        self.assertEqual(pp.get_bcl2fastq_options()[1], "--use-bases-mask 'Y50n,I8,I8'")
 
         #Lane 3 has 6-base single index
         pp = BCL2FASTQPreprocessor(shadow_dir, lane=3, revcomp=None)
-        self.assertEqual(pp.get_bcl2fastq_options()[1], "--use-bases-mask '3:Y50n,I6n*,n*'")
+        self.assertEqual(pp.get_bcl2fastq_options()[1], "--use-bases-mask 'Y50n,I6n*,n*'")
 
         #Lane 4 has 8-base single index
         pp = BCL2FASTQPreprocessor(shadow_dir, lane=4, revcomp=None)
-        self.assertEqual(pp.get_bcl2fastq_options()[1], "--use-bases-mask '4:Y50n,I8,n*'")
+        self.assertEqual(pp.get_bcl2fastq_options()[1], "--use-bases-mask 'Y50n,I8,n*'")
 
     def test_auto_revcomp(self):
         """ Run 201125_A00291_0321_AHWHKYDRXX is the original one that needed a revcomp

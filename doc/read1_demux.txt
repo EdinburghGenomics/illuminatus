@@ -36,6 +36,8 @@ Done but tests are failing... fixed!
 So my plan is to add a --bc_check option to bcl2fastq_setup.py that prepares sample sheets for index checking with the correct
 --tiles and --use-bases-mask options.
 
+Done and fixed the tests
+
 4) Incorporate the Stats.json into the interim report. If there are >50% of reads in unassigned then a warning mail
    (ticket reply) should go out, otherwise the % of reads in unassigned should be logged in the RT comment
 

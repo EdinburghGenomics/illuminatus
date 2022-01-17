@@ -34,7 +34,7 @@ class RunInfoXMLParser:
             runinfo_file = os.path.join( runinfo_file, "RunInfo.xml" )
 
         tree = ET.parse(runinfo_file)
-        root = tree.getroot()
+        root = self.root = tree.getroot()
         self.read_and_length = {}
         self.read_and_indexed = {}
 
@@ -83,14 +83,20 @@ class RunInfoXMLParser:
                 # Dunno. Just use it unmodified.
                 self.run_info[ 'RunDate' ] = d
 
-        self.run_info[ 'FCType' ] = self.get_flowcell_type(root)
+        self.run_info[ 'FCType' ] = self.get_flowcell_type()
 
-    def get_flowcell_type(self, root):
+        # And get the list of tiles. We always want them in dictionary order
+        self.tiles = sorted(self.get_tiles())
+
+    def get_tiles(self):
+        return [ te.text for te in self.root.findall(".//Tiles/Tile") ]
+
+    def get_flowcell_type(self):
         """See what type of flowcell this is by the geometry. If it is recognised, give it a name.
            Looking for something like: <FlowcellLayout LaneCount="1" SurfaceCount="2" SwathCount="1" TileCount="14" />
         """
         try:
-            e, = root.iter('FlowcellLayout')
+            e, = self.root.iter('FlowcellLayout')
             layout = e.attrib
         except Exception:
             return "Unknown"

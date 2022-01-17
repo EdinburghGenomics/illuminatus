@@ -23,6 +23,7 @@ class T(unittest.TestCase):
                             'RunDate': '2015-06-02',
                             'RunId': '150602_M01270_0108_000000000-ADWKV'
         })
+        self.assertEqual(rip.tiles, [])
 
     def test_miseq_runinfo2(self):
         """ A newer MiSeq example
@@ -37,6 +38,7 @@ class T(unittest.TestCase):
                             'RunDate': '2018-04-30',
                             'RunId': '180430_M05898_0007_000000000-BR92R'
         })
+        self.assertEqual(rip.tiles, [])
 
     def test_novaseq_runinfo(self):
         """ A (more recent) NovaSeq example
@@ -51,6 +53,12 @@ class T(unittest.TestCase):
                             'RunDate': '2018-06-19',
                             'RunId': '180619_A00291_0044_BH5WJJDMXX'
         })
+
+        # We have 1408 tiles split evenly over 2 lanes
+        self.assertEqual(rip.tiles[0], '1_1101')
+        self.assertEqual(rip.tiles[704], '2_1101')
+        self.assertEqual(rip.tiles[1407], '2_2488')
+        self.assertEqual(len(rip.tiles), 1408)
 
     def test_rixp_date_bug(self):
         """ Turns out that dates before the 10th of the month were being mangled.
@@ -68,6 +76,11 @@ class T(unittest.TestCase):
                             'RunDate': '2021-06-01',
                             'RunId': '210601_A00291_0371_AHF2HCDRXY'
         })
+
+        # Also with an SP flowcell we have 312 tiles
+        self.assertEqual(rip.tiles[0], '1_2101')
+        self.assertEqual(rip.tiles[156], '2_2101')
+        self.assertEqual(len(rip.tiles), 312)
 
 
     def test_4k_runinfo(self):

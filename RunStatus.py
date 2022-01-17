@@ -45,7 +45,8 @@ class RunStatus:
                     self.last_read1_read = max( k for k, v in self.runinfo_xml.read_and_indexed.items()
                                                 if v == 'Y' )
                 except ValueError:
-                    # No index reads. Keep the default value of 1.
+                    # No index reads. Keep the default value of 1 to trigger well dups and InterOP
+                    # reporting still
                     pass
 
         except Exception:
