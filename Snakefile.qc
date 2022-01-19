@@ -114,7 +114,7 @@ def get_assigned_fq():
 
 # See what input sequences we are dealing with (if any, yet)
 # I wanted to use a hack to stop this being re-run on every cluster job,
-# but it didn't work as Snakemake somethimes re-runs itself even for local jobs.
+# but it didn't work as Snakemake sometimes re-runs itself even for local jobs.
 all_unassigned_fq  = [ split_fq_name(f) for f in glob('*_unassigned_?.fastq.gz') ]
 all_unassigned_umi = [ split_fq_name(f) for f in glob('*_unassigned_UMI.fastq.gz') ]
 all_unassigned     = ( all_unassigned_fq + all_unassigned_umi )

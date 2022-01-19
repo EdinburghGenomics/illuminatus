@@ -43,85 +43,106 @@ glob = glob()
 # Caller can set this, or else there needs to be a symlink, as with Snakefile.demux
 RUNDIR = os.path.realpath(config.get('rundir', './seqdata'))
 
-# Other settings
-TARGETS_TO_SAMPLE = 2500
-READ_LENGTH = 50
-START_POS = 20
-LEVELS_TO_SCAN = 5
-REPORT_VERBOSE = True
+def get_wd_settings(rundir):
+    """Settings for well duplicates scanning.
+    """
+    wd_settings = dict( TARGETS_TO_SAMPLE = 2500,
+                        READ_LENGTH = 50,
+                        START_POS = 20,
+                        LEVELS_TO_SCAN = 5,
+                        REPORT_VERBOSE = True )
 
-# We need to examine the run info. OK to do this on every cluster job and
-# fail if missing.
-run_info_root = ET.parse(RUNDIR + "/RunInfo.xml").getroot()
+    # We need to examine the run info. OK to do this on every cluster job and
+    # fail immediately if missing.
+    wd_settings.update(dict( LANES_TO_SAMPLE = [],
+                             END_POS = 0,
+                             TILE_MATCH = dict() ))
+    try:
+        run_info_root = ET.parse(rundir + "/RunInfo.xml").getroot()
+    except FileNotFoundError:
+        return wd_settings
 
-LAST_LANE = '0' ; LAST_TILE = FIRST_TILE = '0000'
-try:
-    LAST_LANE, LAST_TILE = max(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
-    _, FIRST_TILE = min(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
-except ValueError:
-    # If there are no tiles we can reasonably assume we're on a non-patterned
-    # Flowell (MiSeq or 2500). In this case, do nothing., which we can achieve by
-    # inserting a no-op rule if LAST_LANE == 0 - see wd_main.
-    pass
+    wd_settings['LAST_LANE'] = '0'
+    wd_settings['LAST_TILE'] = wd_settings['FIRST_TILE'] = '0000'
+    try:
+        wd_settings['LAST_LANE'], wd_settings['LAST_TILE'] = \
+            max(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
+        _, wd_settings['FIRST_TILE'] = \
+            min(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
+    except ValueError:
+        # If there are no tiles we can reasonably assume we're on a non-patterned
+        # Flowell (MiSeq or 2500). In this case, do nothing., which we can achieve by
+        # inserting a no-op rule if LAST_LANE == 0 - see wd_main.
+        pass
 
-# Lanes to sample is now variable since the arrival of Novaseq, so get it from
-# RunInfo.xml...
-LANES_TO_SAMPLE = range(1, int(LAST_LANE) + 1)
+    # Lanes to sample is now variable since the arrival of Novaseq, so get it from
+    # RunInfo.xml...
+    wd_settings['LANES_TO_SAMPLE'] = list(range(1, int(wd_settings['LAST_LANE']) + 1))
 
-if LANES_TO_SAMPLE:
-    # Find the first read that has >READ_LENGTH cycles. Normally read1 will do.
-    # If not using read1, always set START_POS to the first cycle of that read.
-    # Also scanning later reads will fail when triggered early if there are missing BCL
-    # files but that's OK as the pipeline will simply retry once the run is complete.
-    all_read_lens = [ int(r.get('NumCycles')) for r in
-                      sorted( run_info_root.findall("Run/Reads/Read"),
-                              key = lambda r: int(r.get("Number")) ) ]
-    if max(all_read_lens) > READ_LENGTH:
-        read_to_sample = [ n for n, l in enumerate(all_read_lens) if l > READ_LENGTH ][0]
+    if wd_settings['LANES_TO_SAMPLE']:
+        # Find the first read that has >READ_LENGTH cycles. Normally read1 will do.
+        # If not using read1, always set START_POS to the first cycle of that read.
+        # Also scanning later reads will fail when triggered early if there are missing BCL
+        # files but that's OK as the pipeline will simply retry once the run is complete.
+        all_read_lens = [ int(r.get('NumCycles')) for r in
+                          sorted( run_info_root.findall("Run/Reads/Read"),
+                                  key = lambda r: int(r.get("Number")) ) ]
+        if max(all_read_lens) > wd_settings['READ_LENGTH']:
+            read_to_sample = [ n for n, l in enumerate(all_read_lens)
+                               if l > wd_settings['READ_LENGTH'] ][0]
 
-        # Is it OK to start at START_POS or do we go from 0?
-        if not (read_to_sample == 0 and all_read_lens[read_to_sample] > (READ_LENGTH + START_POS)):
-            START_POS = 0
+            # Is it OK to start at START_POS or do we go from 0?
+            if read_to_sample == 0 and \
+               all_read_lens[read_to_sample] > (wd_settings['READ_LENGTH'] + wd_settings['START_POS']):
+                start_pos = wd_settings['START_POS']
+            else:
+                start_pos = 0
 
-        # Now we have the relative START_POS, calculate the absolute START_POS
-        START_POS += sum( all_read_lens[:read_to_sample] )
+            # Now we have the relative START_POS, calculate the absolute START_POS and
+            # overwrite the initial setting
+            wd_settings['START_POS'] = start_pos + sum( all_read_lens[:read_to_sample] )
+        else:
+            # We can't process this run
+            print("Cannot process run with short read lengths {}.".format(all_read_lens), file=sys.stderr)
+            wd_settings['LANES_TO_SAMPLE'] = []
+
+        wd_settings['END_POS'] = wd_settings['READ_LENGTH'] + wd_settings['START_POS']
+
+    # If there are 4 swaths per side (NovaSeq) then only do the even tiles
+    if wd_settings['LAST_TILE'] >= '2400':
+        wd_settings['TILE_MATCH'] = dict( T='1..[02468]', B='2..[02468]' )
     else:
-        # We can't process this run
-        print("Cannot process run with short read lengths {}.".format(all_read_lens), file=sys.stderr)
-        LANES_TO_SAMPLE = []
+        wd_settings['TILE_MATCH'] = dict( T='1...', B='2...' )
 
-    END_POS = READ_LENGTH + START_POS
+    # On the new NovaSeq SP flowcells they seem to be disabling one surface, so:
+    if wd_settings['LAST_TILE'][0] == '1':
+        del wd_settings['TILE_MATCH']['B']
+    elif wd_settings['FIRST_TILE'][0] == '2':
+        del wd_settings['TILE_MATCH']['T']
 
-# If there are 4 swaths per side (NovaSeq) then only do the even tiles
-if LAST_TILE >= '2400':
-    TILE_MATCH = dict( T='1..[02468]', B='2..[02468]' )
-else:
-    TILE_MATCH = dict( T='1...', B='2...' )
+    # Unfortunately there's more - for slimmed-down runs we get a line in
+    # pipeline_settings.ini like this, indicating that most tiles are missing:
+    #  --tiles: s_[$LANE]_1101
+    # I don't want to just ignore tiles with missing BCL files as this is right to
+    # trigger a genuine validation failure.
+    # Rather than re-code the logic for what goes in pipeline_settings.ini I'm just going
+    # to scan the file and interpret the line.
+    # This is dodgy in the general case but OK for test runs!
+    try:
+        with open(rundir + "/pipeline_settings.ini") as fh:
+            for l in fh:
+                mo = re.match(r'''\s*--tiles:.*]_(\d{4})['"]?$''', l)
+                if mo:
+                    tile = mo.group(1)
+                    wd_settings['TILE_MATCH'] = dict( T=tile ) if tile[0] == '1' else dict( B=tile )
+    except Exception:
+        #no matter
+        pass
 
-# On the new NovaSeq SP flowcells they seem to be disabling one surface, so:
-if LAST_TILE[0] == '1':
-    del TILE_MATCH['B']
-elif FIRST_TILE[0] == '2':
-    del TILE_MATCH['T']
+    return wd_settings
 
-# Unfortunately there's more - for slimmed-down runs we get a line in
-# pipeline_settings.ini like this, indicating that most tiles are missing:
-#  --tiles: s_[$LANE]_1101
-# I don't want to just ignore tiles with missing BCL files as this is right to
-# trigger a genuine validation failure.
-# Rather than re-code the logic for what goes in pipeline_settings.ini I'm just going
-# to scan the file and interpret the line.
-# This is not (yet) going to work in the general case!
-try:
-    with open(RUNDIR + "/pipeline_settings.ini") as fh:
-        for l in fh:
-            mo = re.match(r'\s*--tiles:.*]_(\d{4})$', l)
-            if mo:
-                tile = mo.group(1)
-                TILE_MATCH = dict( T=tile ) if tile[0] == '1' else dict( B=tile )
-except Exception:
-    #no matter
-    pass
+# Set the returned dict items as global variables
+globals().update(get_wd_settings(RUNDIR))
 
 # === Driver rules ===
 localrules: wd_main, bc_main

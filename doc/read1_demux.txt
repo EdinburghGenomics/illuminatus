@@ -47,10 +47,15 @@ This is a very good reason to keep with using the do_demultiplex.sh script and n
 Note - do I need to account for mixed projects in a lane? Then the logic would be to tot up the number of reads assigned to
 each project and if there are more than that unassigned then warn. I think this is more general so do this.
 
+Obviously we also need to account for the possibility that a lane may fail to demux for any of the usual reasons.
+
 At the moment, the interim report will have only the overview, so do I want to force per-lane reports to
 be made to essentially show the content of Stats.json? But then the numbers will be silly because we're only
 doing a single tile, so I need to make it clear that it's only one tile. And I don't want to capture the
 "clusters passing filter, according to bcl2fastq" because this will be a silly number.
+
+And I want to ensure that the old Stats.json files are not seen by the full QC cos that would make a mess,
+so I need to put them in the same location QC/lane1/Stats.json.
 
 So a lot to consider here. Hmmm.
 
