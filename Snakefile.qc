@@ -141,12 +141,12 @@ try:
     runs = set( sf['run'] for sf in all_all )
     if 'runid' in config: runs.add(config['runid'])
     assert len(runs) <= 1, "Expected to find only one run in {} but saw: {}".format(os.getcwd(), runs)
-    run, = runs
+    RUN, = runs
 except ValueError:
     # Revert to using name of CWD
-    run = os.path.basename(os.path.realpath(os.getcwd()))
+    RUN = os.path.basename(os.path.realpath(os.getcwd()))
 finally:
-    assert '_' in run
+    assert '_' in RUN
     del(runs)
 
 # Since there is a possibility that one or more lanes may fail completely and produce no FASTQ
@@ -186,7 +186,7 @@ rule run_multiqc:
         data = directory("QC/multiqc_report_{l}_data")
     input:
         config   = "QC/multiqc_config.yml",
-        runinfo  = "QC/run_info.{r}.1.yml".format(r=run),
+        runinfo  = "QC/run_info.{r}.1.yml".format(r=RUN),
     shell:
         """echo "multiqc is `which multiqc`" >&2
            rm -rf {output.data}
@@ -215,7 +215,7 @@ rule configure_multiqc:
                       dict( type = 'regex',
                             pattern = '\.(?:san|)fastq$' ),
                       dict( type = 'regex',
-                            pattern = '(^|.*/){}_._'.format(run) ),
+                            pattern = '(^|.*/){}_._'.format(RUN) ),
                       dict( type = 'regex',
                             pattern = '.*__' ),
                       dict( type = 'regex',
@@ -270,7 +270,7 @@ rule configure_multiqc:
 SEQDATA = os.path.realpath('./seqdata')
 if not os.path.isdir(SEQDATA) or ('seqdata' in config):
     # Nope, look for a match by name.
-    SEQDATA = config.get('seqdata', os.path.join(os.environ.get('SEQDATA_LOCATION', '.'), run))
+    SEQDATA = config.get('seqdata', os.path.join(os.environ.get('SEQDATA_LOCATION', '.'), RUN))
 
 rule interop_qscore_heatmap:
     output: "{foo}/qscore_heatmap.interop_plot"
@@ -502,7 +502,7 @@ localrules: get_bcl2fastq_json
 rule get_bcl2fastq_json:
     # Simply copies the file into place, for MultiQC to find
     # Doing it this way accords with the principle that everything in the QC directory
-    # should be created by this Snakefile.
+    # should be created by this Snakefile (or Snakefile.read1qc but not Snakefile.demux).
     output: "QC/lane{lane}/Stats.json"
     input: "demultiplexing/lane{lane}/Stats/Stats.json"
     shell: "cp {input} {output}"
@@ -528,7 +528,7 @@ rule md5_main:
 rule interop_main:
     input:
         plots  = expand( "QC/overview/interop/{plot}.interop_plot",
-                         run = [run],
+                         run = [RUN],
                          plot = ['qscore_heatmap', 'by_cycle', 'by_lane', 'flowcell_all' ] ),
         ytable = expand( "QC/{rep}/summarize_yield_{rep}_mqc.yaml", rep=allreps ),
         yyaml  = "QC/yield.yml"
@@ -540,17 +540,17 @@ rule demux_stats_main:
     # get_bcl2fastq_stats_old.
     input:
         stats    = "QC/bcl2fastq_stats.yml",
-        oldstats = expand("QC/lane{l}/{r}_{l}.stats.yml",  l=lanes, r=[run]),
+        oldstats = expand("QC/lane{l}/{r}_{l}.stats.yml",  l=lanes, r=[RUN]),
         json     = expand("QC/lane{l}/Stats.json",         l=lanes),
-        unass    = expand("QC/lane{l}/{r}_{l}_unassigned_table.txt", l=lanes, r=[run]),
-        runinfo  = expand("QC/{rep}/run_info.{r}.2.yml",   rep=allreps, r=[run]),
+        unass    = expand("QC/lane{l}/{r}_{l}_unassigned_table.txt", l=lanes, r=[RUN]),
+        runinfo  = expand("QC/{rep}/run_info.{r}.2.yml",   rep=allreps, r=[RUN]),
         matrices = rules.get_project_summary.output
 
 rule metadata_main:
     # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
     input:
         runinfo  = rules.run_multiqc.input.runinfo,
-        laneinfo = "QC/overview/lane_summary_{r}_mqc.yaml".format(r=run)
+        laneinfo = "QC/overview/lane_summary_{r}_mqc.yaml".format(r=RUN)
 
 rule qc_main:
     # QC inspects the actual fastq.gz files but also depends on interop and

@@ -139,7 +139,7 @@ class BCL2FASTQPreprocessor:
 
         # Tricky ones are --tiles and --use-bases-mask
         # For --tiles we'll take the first tile (alphabetically) in self.run_info or else
-        # assume that tile 1101 is valid (which works for MiSeq runs)
+        # assume that tile 1101 is valid (which works for MiSeq runs, even if slimmed)
         if self.tiles:
             tiles_for_lane = [ t for l, t in
                                [ t.split('_') for t in self.tiles ]

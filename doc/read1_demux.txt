@@ -40,22 +40,26 @@ Done and fixed the tests
 
 4) Incorporate the Stats.json into the interim report. If there are >50% of reads in unassigned then a warning mail
    (ticket reply) should go out, otherwise the % of reads in unassigned should be logged in the RT comment
+   actually this is a bit tricky - just leave it in the report
 
 Oh and we can also report the 'barcode_mismatches' at this point, so that info should be incorporated too.
 This is a very good reason to keep with using the do_demultiplex.sh script and not call bcl2fastq directly.
 
 Note - do I need to account for mixed projects in a lane? Then the logic would be to tot up the number of reads assigned to
 each project and if there are more than that unassigned then warn. I think this is more general so do this.
+DONE
 
 Obviously we also need to account for the possibility that a lane may fail to demux for any of the usual reasons.
+Yeah but here don't try to diagnose the error.
 
 At the moment, the interim report will have only the overview, so do I want to force per-lane reports to
 be made to essentially show the content of Stats.json? But then the numbers will be silly because we're only
 doing a single tile, so I need to make it clear that it's only one tile. And I don't want to capture the
 "clusters passing filter, according to bcl2fastq" because this will be a silly number.
+TODO - check what triggers this!
 
 And I want to ensure that the old Stats.json files are not seen by the full QC cos that would make a mess,
-so I need to put them in the same location QC/lane1/Stats.json.
+so I need to put them in the same location QC/lane1/Stats.json and make sure they are always overwritten.
 
 So a lot to consider here. Hmmm.
 

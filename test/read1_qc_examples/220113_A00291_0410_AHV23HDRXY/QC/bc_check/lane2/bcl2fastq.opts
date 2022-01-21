@@ -1,0 +1,4 @@
+--barcode-mismatches 1
+--fastq-compression-level 6
+--use-bases-mask 'Yn*,I8,I8,n*'
+--tiles s_[1]_2101

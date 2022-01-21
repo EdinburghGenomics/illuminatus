@@ -1,0 +1,62 @@
+{
+ "Flowcell" : "H57MVDMXX",
+ "RunNumber" : 5,
+ "RunId" : "171019_A00291_0005_AH57MVDMXX",
+ "ReadInfosForLanes" : [
+  {
+   "LaneNumber" : 1,
+   "ReadInfos" : [
+    {
+     "Number" : 1,
+     "NumCycles" : 150,
+     "IsIndexedRead" : false
+    },
+    {
+     "Number" : 2,
+     "NumCycles" : 150,
+     "IsIndexedRead" : false
+    }
+   ]
+  }
+ ],
+ "ConversionResults" : [
+  {
+   "LaneNumber" : 1,
+   "TotalClustersRaw" : 2880700416,
+   "TotalClustersPF" : 2421888072,
+   "Yield" : 726566421600,
+   "DemuxResults" : [
+    {
+     "SampleId" : "PhiX",
+     "SampleName" : "PhiX",
+     "NumberReads" : 2421888072,
+     "Yield" : 726566421600,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 363283210800,
+       "YieldQ30" : 353539135152,
+       "QualityScoreSum" : 13248507503608,
+       "TrimmedBases" : 0
+      },
+      {
+       "ReadNumber" : 2,
+       "Yield" : 363283210800,
+       "YieldQ30" : 349365274065,
+       "QualityScoreSum" : 13156093167635,
+       "TrimmedBases" : 0
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "UnknownBarcodes" : [
+  {
+   "Lane" : 1,
+   "Barcodes" : {
+    "unknown" : 2421887980
+   }
+  }
+ ]
+}

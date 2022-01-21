@@ -125,7 +125,7 @@ rule bcl2fastq:
            {TOOLBOX} do_demultiplex.sh {RUNDIR} lane{wildcards.l} {input.ssheet} {wildcards.l}
         """
 
-rule preprocess:
+rule setup:
     output:
         ssheet = "lane{l}/SampleSheet.filtered.csv"
     shell:

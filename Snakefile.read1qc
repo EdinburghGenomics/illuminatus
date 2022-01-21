@@ -27,6 +27,7 @@ snakerun_drmaa "$0" "$@"
 import yaml
 import re
 import xml.etree.ElementTree as ET
+from itertools import chain
 from snakemake.utils import format
 
 # See notes in Snakefile.qc regarding the toolbox.
@@ -43,7 +44,7 @@ glob = glob()
 # Caller can set this, or else there needs to be a symlink, as with Snakefile.demux
 RUNDIR = os.path.realpath(config.get('rundir', './seqdata'))
 
-def get_wd_settings(rundir):
+def get_wd_settings(rundir, run_info_root):
     """Settings for well duplicates scanning.
     """
     wd_settings = dict( TARGETS_TO_SAMPLE = 2500,
@@ -54,15 +55,17 @@ def get_wd_settings(rundir):
 
     # We need to examine the run info. OK to do this on every cluster job and
     # fail immediately if missing.
-    wd_settings.update(dict( LANES_TO_SAMPLE = [],
+    # We're now relying on LANES_IN_RUN being correct for the barcode check even
+    # if there is not WD check to be run.
+    wd_settings.update(dict( LANES_IN_RUN = [1],
+                             LAST_LANE = '0',
                              END_POS = 0,
                              TILE_MATCH = dict() ))
-    try:
-        run_info_root = ET.parse(rundir + "/RunInfo.xml").getroot()
-    except FileNotFoundError:
+
+    if not run_info_root:
+        # Just return the defaults
         return wd_settings
 
-    wd_settings['LAST_LANE'] = '0'
     wd_settings['LAST_TILE'] = wd_settings['FIRST_TILE'] = '0000'
     try:
         wd_settings['LAST_LANE'], wd_settings['LAST_TILE'] = \
@@ -71,42 +74,41 @@ def get_wd_settings(rundir):
             min(te.text for te in run_info_root.findall(".//Tiles/Tile")).split('_')
     except ValueError:
         # If there are no tiles we can reasonably assume we're on a non-patterned
-        # Flowell (MiSeq or 2500). In this case, do nothing., which we can achieve by
-        # inserting a no-op rule if LAST_LANE == 0 - see wd_main.
-        pass
+        # Flowell (MiSeq or 2500). In this case, no well dups scan.
+        # Of course, an update to the instrument software may change the XML...
+        return wd_settings
 
     # Lanes to sample is now variable since the arrival of Novaseq, so get it from
     # RunInfo.xml...
-    wd_settings['LANES_TO_SAMPLE'] = list(range(1, int(wd_settings['LAST_LANE']) + 1))
+    wd_settings['LANES_IN_RUN'] = list(range(1, int(wd_settings['LAST_LANE']) + 1))
 
-    if wd_settings['LANES_TO_SAMPLE']:
-        # Find the first read that has >READ_LENGTH cycles. Normally read1 will do.
-        # If not using read1, always set START_POS to the first cycle of that read.
-        # Also scanning later reads will fail when triggered early if there are missing BCL
-        # files but that's OK as the pipeline will simply retry once the run is complete.
-        all_read_lens = [ int(r.get('NumCycles')) for r in
-                          sorted( run_info_root.findall("Run/Reads/Read"),
-                                  key = lambda r: int(r.get("Number")) ) ]
-        if max(all_read_lens) > wd_settings['READ_LENGTH']:
-            read_to_sample = [ n for n, l in enumerate(all_read_lens)
-                               if l > wd_settings['READ_LENGTH'] ][0]
+    # Find the first read that has >READ_LENGTH cycles. Normally read1 will do.
+    # If not using read1, always set START_POS to the first cycle of that read.
+    # Also scanning later reads will fail when triggered early if there are missing BCL
+    # files but that's OK as the pipeline will simply retry once the run is complete.
+    all_read_lens = [ int(r.get('NumCycles')) for r in
+                      sorted( run_info_root.findall("Run/Reads/Read"),
+                              key = lambda r: int(r.get("Number")) ) ]
+    if max(all_read_lens) > wd_settings['READ_LENGTH']:
+        read_to_sample = [ n for n, l in enumerate(all_read_lens)
+                           if l > wd_settings['READ_LENGTH'] ][0]
 
-            # Is it OK to start at START_POS or do we go from 0?
-            if read_to_sample == 0 and \
-               all_read_lens[read_to_sample] > (wd_settings['READ_LENGTH'] + wd_settings['START_POS']):
-                start_pos = wd_settings['START_POS']
-            else:
-                start_pos = 0
-
-            # Now we have the relative START_POS, calculate the absolute START_POS and
-            # overwrite the initial setting
-            wd_settings['START_POS'] = start_pos + sum( all_read_lens[:read_to_sample] )
+        # Is it OK to start at START_POS or do we go from 0?
+        if read_to_sample == 0 and \
+           all_read_lens[read_to_sample] > (wd_settings['READ_LENGTH'] + wd_settings['START_POS']):
+            start_pos = wd_settings['START_POS']
         else:
-            # We can't process this run
-            print("Cannot process run with short read lengths {}.".format(all_read_lens), file=sys.stderr)
-            wd_settings['LANES_TO_SAMPLE'] = []
+            start_pos = 0
 
-        wd_settings['END_POS'] = wd_settings['READ_LENGTH'] + wd_settings['START_POS']
+        # Now we have the relative START_POS, calculate the absolute START_POS and
+        # overwrite the initial setting
+        wd_settings['START_POS'] = start_pos + sum( all_read_lens[:read_to_sample] )
+    else:
+        # We can't process this run
+        print("Cannot process run with short read lengths {}.".format(all_read_lens), file=sys.stderr)
+        return wd_settings
+
+    wd_settings['END_POS'] = wd_settings['READ_LENGTH'] + wd_settings['START_POS']
 
     # If there are 4 swaths per side (NovaSeq) then only do the even tiles
     if wd_settings['LAST_TILE'] >= '2400':
@@ -141,31 +143,44 @@ def get_wd_settings(rundir):
 
     return wd_settings
 
+try:
+    run_info_root = ET.parse(RUNDIR + "/RunInfo.xml").getroot()
+    RUN = run_info_root.find('./Run').attrib['Id']
+except FileNotFoundError:
+    # Take the run name from the CWD
+    run_info_root = None
+    RUN = os.path.basename(os.path.realpath(os.getcwd()))
+
 # Set the returned dict items as global variables
-globals().update(get_wd_settings(RUNDIR))
+globals().update(get_wd_settings(RUNDIR, run_info_root))
 
 # === Driver rules ===
 localrules: wd_main, bc_main
 
-if not LANES_TO_SAMPLE:
+if TILE_MATCH:
     rule wd_main:
         # No-op rule
-        shell: "# No lanes to be sampled. Assuming this is a MiSeq or 2500 run, or read1 is too short."
+        shell: "# No tiles to be sampled. Assuming this is a MiSeq or 2500 run, or read1 is too short."
 else:
     rule wd_main:
         input:
             summary = format('QC/welldups/{TARGETS_TO_SAMPLE}summary.yml')
 
+# For the early demultiplex barcode check. The idea is that if this file is non-empty then the driver
+# will trigger an alert message incorporating the text of the file, or if the file is missing it
+# will also send a warning.
 rule bc_main:
-    # TODO - add logic for early demux check
-    input: []
+    input:
+        summary = 'QC/bc_check/bc_check.msg'
 
 # === Rules to invoke the duplicate counter ===
-localrules: make_wd_summary
+localrules: make_wd_summary, make_bc_summary
 
 rule make_wd_summary:
     output: 'QC/welldups/{targets}summary.yml'
-    input: expand( "QC/welldups/{{targets}}targets_lane{lane}{side}.txt", lane=LANES_TO_SAMPLE, side=TILE_MATCH.keys() )
+    input:
+        expand( "QC/welldups/{{targets}}targets_lane{lane}{side}.txt", lane = LANES_IN_RUN,
+                                                                       side = TILE_MATCH.keys() )
     run:
         from collections import deque
         from time import sleep
@@ -213,10 +228,68 @@ rule count_well_dupl:
         verbose = '' if REPORT_VERBOSE else '-S',
         tiles   = lambda wc: TILE_MATCH[wc.side]
     shell:
-        """{TOOLBOX} wd_count_well_duplicates -f {input.targfile} -n {wildcards.targets} -s {LAST_TILE} \
+       r"""{TOOLBOX} wd_count_well_duplicates -f {input.targfile} -n {wildcards.targets} -s {LAST_TILE} \
            -r {RUNDIR} -i {wildcards.lane} -l {LEVELS_TO_SCAN} --cycles {START_POS}-{END_POS} \
            -t {params.tiles} {params.verbose} > {output}"""
 
 # === Rules to pre-demultiplex one tile to check the barcode balance ===
 
-# TODO
+# This copies all the Stats.json for MultiQC to find, then calls assess_bc_check.py
+# to make the summary over all Stats.json files. Note this rule has no wildcards just
+# a load of expansions.
+rule make_bc_summary:
+    output:
+        summary = "QC/bc_check/bc_check.msg",
+        json    = expand("QC/lane{l}/Stats.json", l=LANES_IN_RUN),
+        unass   = expand("QC/lane{l}/{run}_{l}_unassigned_table.txt", l=LANES_IN_RUN, run=[RUN]),
+    input:
+        json    = expand("QC/bc_check/lane{l}/Stats/Stats.json", l=LANES_IN_RUN),
+        unass   = expand("QC/bc_check/lane{l}/unassigned_table.txt", l=LANES_IN_RUN),
+        opts    = expand("QC/bc_check/lane{l}/bcl2fastq.opts",   l=LANES_IN_RUN),
+        log     = expand("QC/bc_check/lane{l}/bcl2fastq.log",    l=LANES_IN_RUN),
+    run:
+        for ij, oj in chain( zip(input.json, output.json),
+                             zip(input.unass, output.unass) ):
+            shell("cp {ij} {oj}")
+        shell("assess_bc_check.py {input.json} > {output.summary}")
+
+# Read 1 demux uses a shadow directory as we don't want to keep the reports or the FASTQ files at all.
+# Shallow shadow is tricky but here we can safely assume the QC dir already exists and bc_check_tmp
+# does not.
+rule bcl2fastq_bc_check:
+    output:
+        json    = "QC/bc_check/lane{l}/Stats/Stats.json",
+        opts    = "QC/bc_check/lane{l}/bcl2fastq.opts",
+        unass   = "QC/bc_check/lane{l}/unassigned_table.txt"
+    log:
+        version = "QC/bc_check/lane{l}/bcl2fastq.version",
+        log     = "QC/bc_check/lane{l}/bcl2fastq.log"
+    input:
+        ssheet  = "QC/bc_check/lane{l}/SampleSheet.filtered.csv"
+    threads: 2
+    shadow: "shallow"
+    shell:
+        # Run do_demultiplex.sh for this lane. The silly stuff with f=0 is just to allow us to preserve
+        # the log even if the demux fails.
+        """export PROCESSING_THREADS={threads}
+           mkdir bc_check_tmp
+           mkdir -p bc_check_tmp/QC/bc_check/lane{l}
+           f=0
+           {TOOLBOX} do_demultiplex.sh {RUNDIR} bc_check_tmp/QC/bc_check/lane{l} {input.ssheet} {wildcards.l} || f=1
+           for f in {log.log} {log.version} {output} ; do
+             mv bc_check_tmp/$f $f || true
+           done
+           unassigned_to_table.py {output.json} > {output.unass}
+           ( exit $f )
+        """
+
+rule setup:
+    output:
+        ssheet = "QC/bc_check/lane{l}/SampleSheet.filtered.csv"
+    shell:
+        # If the override file is missing or empty this results in auto revcomp logic
+        # I considered using TILE_MATCH to see which tile to sample but this is not
+        # a good idea - just leave it to bcl2fastq_setup.py to work out a sensible option.
+        """revcomp=$(cat {RUNDIR}/pipeline/index_revcomp.lane{wildcards.l}.OVERRIDE 2>/dev/null || true)
+           bcl2fastq_setup.py --bc_check --lane {wildcards.l} --revcomp "${{revcomp:-auto}}" {RUNDIR} > {output}
+        """

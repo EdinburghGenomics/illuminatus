@@ -10,12 +10,11 @@ from os import remove
 from BCL2FASTQCleanup import main as _c_main
 
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
+DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/demuxed_examples')
 
 class T(unittest.TestCase):
 
     def setUp(self):
-        # Look for test data relative to this Python file
-        self.seqdata_dir = os.path.abspath(os.path.dirname(__file__) + '/demuxed_examples')
 
         #Always make a fresh temporary folder to be working in
         oldcwd = os.getcwd()
@@ -47,7 +46,7 @@ class T(unittest.TestCase):
                 os.system("cat {}/cleanup.log".format(a[0]))
 
     def copy_run(self, run_id):
-        copytree( os.path.join(self.seqdata_dir, run_id),
+        copytree( os.path.join(DATA_DIR, run_id),
                   run_id,
                   symlinks=True )
 

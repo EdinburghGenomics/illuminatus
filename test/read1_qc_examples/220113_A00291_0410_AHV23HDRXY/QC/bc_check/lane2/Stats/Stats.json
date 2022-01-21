@@ -1,0 +1,98 @@
+{
+ "Flowcell" : "HV23HDRXY",
+ "RunNumber" : 410,
+ "RunId" : "220113_A00291_0410_AHV23HDRXY",
+ "ReadInfosForLanes" : [
+  {
+   "LaneNumber" : 2,
+   "ReadInfos" : [
+    {
+     "Number" : 1,
+     "NumCycles" : 1,
+     "IsIndexedRead" : false
+    },
+    {
+     "Number" : 1,
+     "NumCycles" : 8,
+     "IsIndexedRead" : true
+    },
+    {
+     "Number" : 2,
+     "NumCycles" : 8,
+     "IsIndexedRead" : true
+    }
+   ]
+  }
+ ],
+ "ConversionResults" : [
+  {
+   "LaneNumber" : 2,
+   "TotalClustersRaw" : 4091904,
+   "TotalClustersPF" : 3019723,
+   "Yield" : 3019723,
+   "DemuxResults" : [
+    {
+     "SampleId" : "21360GNpool01__21360GN0345L01",
+     "SampleName" : "21360GNpool01__21360GN0345L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "CTTTAACT+TGACGATT",
+       "MismatchCounts" : {
+        "0" : 6790,
+        "1" : 469
+       }
+      }
+     ],
+     "NumberReads" : 7259,
+     "Yield" : 7259,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 7259,
+       "YieldQ30" : 6917,
+       "QualityScoreSum" : 262753,
+       "TrimmedBases" : 0
+      }
+     ]
+    },
+    {
+     "SampleId" : "21360GNpool01__21360GN0346L01",
+     "SampleName" : "21360GNpool01__21360GN0346L01",
+     "IndexMetrics" : [
+      {
+       "IndexSequence" : "GCCTCTAT+AAATCAGC",
+       "MismatchCounts" : {
+        "0" : 7234,
+        "1" : 408
+       }
+      }
+     ],
+     "NumberReads" : 7642,
+     "Yield" : 7642,
+     "ReadMetrics" : [
+      {
+       "ReadNumber" : 1,
+       "Yield" : 7642,
+       "YieldQ30" : 7284,
+       "QualityScoreSum" : 276726,
+       "TrimmedBases" : 0
+      }
+     ]
+    }
+   ],
+   "Undetermined" : {
+    "NumberReads" : 416186,
+    "Yield" : 416186,
+    "ReadMetrics" : [
+     {
+      "ReadNumber" : 1,
+      "Yield" : 416186,
+      "YieldQ30" : 361885,
+      "QualityScoreSum" : 14375005,
+      "TrimmedBases" : 0
+     }
+    ]
+   }
+  }
+ ]
+}
