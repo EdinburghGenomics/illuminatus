@@ -335,7 +335,15 @@ action_read1_finished() {
         else
             _msg="Completed read1 processing on $RUNID."
         fi
-        rt_runticket_manager --comment "$_msg" || true
+
+        # Did bc_check produce any alert, or should we just log the usual comment?
+        if [ -s "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg" ] ; then
+            rt_runticket_manager --comment "$_msg" || true
+        else
+            _msg="$_msg"$'\n'"$(cat "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg")"
+            send_summary_to_rt reply "barcode issue" \
+                "$_msg"$'\n'"Report is at"
+        fi
         log "  $_msg"
     ) |& plog1
 

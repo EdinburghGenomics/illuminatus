@@ -66,6 +66,5 @@ class T(unittest.TestCase):
         ex2 = self.get_ex('220113_A00291_0410_AHV23HDRXY', 'lane2')
         self.assertEqual(check_main(ex2), expected_res)
 
-
 if __name__ == '__main__':
     unittest.main()

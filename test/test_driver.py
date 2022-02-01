@@ -726,5 +726,21 @@ class T(unittest.TestCase):
         self.assertFalse(os.path.isfile(test_data + '/pipeline/qc.started'))
         self.assertFalse(os.path.isfile(test_data + '/pipeline/failed'))
 
+    def test_rt_failures(self):
+        """My reading of the code is that calling action_reads_finished will fail if the first
+           call to send_summary_to_rt fails. But it shouldn't? Maybe it doesn't? Maybe I tested this
+           already above? Well check it anyways.
+        """
+
+        self.assertTrue(0)
+
+    def test_bc_check_msg(self):
+        """Test the new behaviour with read1 processing where barcode issues are reported to RT.
+           Do we see the right calls? What if RT is unresponsive? Does the run go on cleanly?
+           Maybe this is best rolled into tests above?
+        """
+
+        self.assertTrue(0)
+
 if __name__ == '__main__':
     unittest.main()

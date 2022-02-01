@@ -250,7 +250,7 @@ rule make_bc_summary:
     run:
         for ij, oj in chain( zip(input.json, output.json),
                              zip(input.unass, output.unass) ):
-            shell("cp {ij} {oj}")
+            shell("cp -v {ij} {oj}")
         shell("assess_bc_check.py {input.json} > {output.summary}")
 
 # Read 1 demux uses a shadow directory as we don't want to keep the reports or the FASTQ files at all.
