@@ -11,7 +11,7 @@
 # You probably also want to add --bowtie '--trim3 {N}' where N=max(readlen-50,0)
 # but to do this you need to know what readlen is.
 
-BASE="/lustre-gseg"
+BASE="/home/edg01/edg01/shared"
 export PATH="$BASE/software/bowtie/bowtie-1.2.2-beta2-linux-x86_64:$PATH"
 
 # Remove this line to disable graph generation...
