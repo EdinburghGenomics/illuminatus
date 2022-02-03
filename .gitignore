@@ -13,6 +13,7 @@ _*_venv*/
 doc/*.ps
 doc/*.pdf
 reports/*.pdf
+/toolbox*/wheels/
 
 # This is volatile and used for tinkering/testing
 /environ.sh*

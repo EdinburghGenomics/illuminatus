@@ -70,8 +70,13 @@ class MyLimsDB:
     def __init__(self):
         """Connect using the info in ~/.genologics or equivalent.
         """
-        self._conn_str = "user={} host={} dbname={}".format(
-                            *get_config("genologics-sql", "USERNAME SERVER DATABASE".split()) )
+        try:
+            self._conn_str = "user={} host={} dbname={} port={}".format(
+                                *get_config("genologics-sql", "USERNAME SERVER DATABASE PORT".split()) )
+        except KeyError:
+            self._conn_str = "user={} host={} dbname={}".format(
+                                *get_config("genologics-sql", "USERNAME SERVER DATABASE".split()) )
+
         self._conn = None
 
     def is_connected(self):
@@ -121,7 +126,7 @@ class MyLims:
         # and calling .name on every project is slow as it entails an extra GET
         # Maybe we need to bypass Clarity and hit PostgreSQL?
 
-        #Yes I'm scanning the list many times, but the key thing is I only fetch it once.
+        # Yes I'm scanning the list many times, but the key thing is I only fetch it once.
         res = []
         projects = filter_names(( p.name for p in projects ))
 

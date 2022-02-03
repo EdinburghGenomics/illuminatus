@@ -56,13 +56,21 @@ post_activate() {
     fi
 }
 
+install_wheels() {
+    if [ -d "${1:-}" ] ; then
+        echo "Installing pre-built wheel files from $1"
+        pip_install -- "$1"/*.whl
+    fi
+}
+
 if [ -e ./_illuminatus_venv/bin/activate ] ; then
 
     # We already got one!
     activate_venv
 
 else
-    (   _py3="${TOOLBOX:-`dirname $BASH_SOURCE`/toolbox}"/bootstrap_python3
+    (   _toolbox="${TOOLBOX:-`dirname $BASH_SOURCE`/toolbox}"
+        _py3="$_toolbox"/bootstrap_python3
         _py3_real="$(readlink -f "$_py3")"
         echo "Bootstrapping new VEnv from $_py3 ($_py3_real)"
 
@@ -72,6 +80,9 @@ else
 
         pip_install --upgrade 'pip<22'
         pip_install wheel
+
+        # Install any pre-built wheels
+        install_wheels "${WHEELS:-${_toolbox}/wheels}"
 
         pip_install pyyaml==5.4.1
         pip_install 'yamlloader<2'
