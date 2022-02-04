@@ -8,12 +8,13 @@ For some modules in the VEnv that won't build, I copied wheels over from edgen-l
 It's really easy - 'pip3 wheel <modulename>' and then the resulting .whl files can
 be installed with 'pip3 install *.whl'
 
-We need to be able to see the saqmple sheets but I discovered I can sshfs mount the
+We need to be able to see the sample sheets but I discovered I can sshfs mount the
 directory off clarity.genomics.ed.ac.uk (see /home/edg01/edg01/shared/mnt) and at the
 same time I can do a dirty port forward to access PostgreSQL on db2.genepool.private.
 
 I imagine the same port forwarding shenanigans will work for getting RT API access
 but I'll keep that disabled during testing to avoid extra messages in RT.
+- Actually we can just access RT directly.
 
 Can we SSH to egcloud? I can now!
 

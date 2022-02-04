@@ -19,5 +19,5 @@ export PERL5LIB="$BASE/software/fastq_screen/perl_libs/lib64/perl5/:$BASE/softwa
 
 exec "$BASE/software/fastq_screen/fastq_screen_v0.11.3_debug/fastq_screen" \
     --aligner bowtie \
-    --conf "$BASE/references/fastqscreen/fastq_screen.conf_bowtie1_20200922" \
+    --conf "$BASE/references/fastqscreen/fastq_screen.conf_bowtie1_20200922_ultra2" \
     "$@"
