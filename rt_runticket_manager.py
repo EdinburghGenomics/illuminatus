@@ -106,7 +106,7 @@ class RTManager():
            to connect implicitly.
         """
         self._config_name = config_name
-        self._queue_setting = queue_setting + '_queue' # eg. pbrun_queue, run_queue
+        self._queue_setting = queue_setting # eg. pbrun, run
         if config_name.lower() == 'none':
             # Special case for short-circuiting RT entirely, whatever the .ini
             # file says.
@@ -124,7 +124,7 @@ class RTManager():
 
         self.server_path = self._config['server']
         self.username, self.password = self._config['user'], self._config['pass']
-        self._queue = self._config[self._queue_setting]
+        self._queue = self._config[self._queue_setting + '_queue']
 
         self.tracker = Rt( '/'.join([self.server_path, 'REST', '1.0']),
                            self.username,
@@ -173,8 +173,9 @@ class RTManager():
         conf_section = cp[section_name]
 
         # A little more validation
-        if not all([conf_section.get(x) for x in ['server', 'user', 'pass', self._queue_setting]]):
-            raise AuthorizationError('file {file_name} did not contain all settings needed for RT authentication'.format(**locals()))
+        for x in ['server', 'user', 'pass', self._queue_setting + '_queue']:
+            if not conf_section.get(x):
+                raise AuthorizationError('file {file_name} did not contain setting {x} needed for RT authentication'.format(**locals()))
 
         return conf_section
 
@@ -204,7 +205,7 @@ class RTManager():
                 Subject   = subject,
                 Queue     = self._queue,
                 Requestor = c['requestor'],
-                Cc        = c.get('run_cc'),
+                Cc        = c.get(self._queue_setting + '_cc') or "",
                 Text      = text or ""      ))
 
         # Open the ticket, or we'll not find it again.
