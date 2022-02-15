@@ -341,6 +341,7 @@ action_read1_finished() {
             rt_runticket_manager --comment "$_msg" || true
         else
             _msg="$_msg"$'\n'"$(cat "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg")"
+            TODO - check error handling when RT fails
             send_summary_to_rt reply "barcode issue" \
                 "$_msg"$'\n'"Report is at"
         fi

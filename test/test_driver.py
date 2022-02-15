@@ -81,6 +81,8 @@ class T(unittest.TestCase):
         """A convenience wrapper around self.bm.runscript that sets the environment
            appropriately and runs DRIVER and returns STDOUT split into an array.
         """
+        # Use set_path=False because the driver.sh prepends to the PATH so we have
+        # to poke the mock dir in via BIN_LOCATION instead.
         retval = self.bm.runscript(DRIVER, set_path=False, env=self.environment)
 
         #Where a file is missing it's always useful to see the error.
@@ -499,8 +501,8 @@ class T(unittest.TestCase):
 
         self.bm_rundriver()
 
-        #Normally the driver should not log anything for completed runs, but in debug
-        #mode it logs a message containing 'status=complete'
+        # Normally the driver should not log anything for completed runs, but in debug
+        # mode it logs a message containing 'status=complete'
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "status=complete")
 
     def test_redo(self):
@@ -731,16 +733,88 @@ class T(unittest.TestCase):
            call to send_summary_to_rt fails. But it shouldn't? Maybe it doesn't? Maybe I tested this
            already above? Well check it anyways.
         """
+        # copied from test_reads_finished
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
 
-        self.assertTrue(0)
+        # Now we need to make the ./pipeline folder to push it out of status NEW.
+        # And the output directory needs to exist already
+        self.shell("mkdir {}", test_data + "/pipeline")
+        self.shell("mkdir {}", fastqdir)
+        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
+
+        # Make rt_runticket_manager.py always fail (as if the server is down)
+        self.bm.add_mock('rt_runticket_manager.py', fail=True)
+
+        # Run the driver once to do the read1 processing (a no-op due to the mocks)
+        # The second one will actually demultiplex.
+        self.bm_rundriver()
+        self.bm_rundriver()
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READS_FINISHED")
+
+        # Check that rt_runticket_manager.py was called twice
+        self.assertEqual( len(self.bm.last_calls['rt_runticket_manager.py']), 2 )
+
+        # Check demultiplexing folder
+        self.assertTrue( os.path.isdir(os.path.join(fastqdir, "demultiplexing")) )
+
+        # Check invoking of Snakefile.demux (in the sedata dir)
+        self.assertEqual( self.bm.last_calls['Snakefile.demux'][0],
+                          ['--config', 'lanes=[1,2,3,4,5,6,7,8]', 'rundir=' + test_data] )
+
+        # Check that the run is now ready for QC, despite the RT failure
+        retval = self.bm.runscript("cd {} ; {}".format(test_data, RUNSTATUS), env=self.environment)
+        self.assertEqual(retval, 0)
+        self.assertInStdout('status is demultiplexing_complete')
+
+        self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline', 'lane?.done')) ) )
+
 
     def test_bc_check_msg(self):
         """Test the new behaviour with read1 processing where barcode issues are reported to RT.
            Do we see the right calls? What if RT is unresponsive? Does the run go on cleanly?
            Maybe this is best rolled into tests above?
         """
+        # setup copied from test_reads_finished
+        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
 
-        self.assertTrue(0)
+        # Now we need to make the ./pipeline folder to push it out of status NEW.
+        # And the output directory needs to exist already
+        self.shell("mkdir {}", test_data + "/pipeline")
+        self.shell("mkdir {}", fastqdir)
+        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
+
+        # Make rt_runticket_manager.py always fail (as if the server is down) because RT errors
+        # at this point shouldn't jam the pipeline.
+        self.bm.add_mock('rt_runticket_manager.py', fail=True)
+
+        # We want to see an error message. Have to make this side effect of Snakefile.read1qc as
+        # we don't want to actually run Snakemake.
+        self.bm.add_mock('Snakefile.read1qc', fail=False, side_effect="echo MOCK > QC/bc_check/bc_check.msg")
+
+        # Run the driver once to do the read1 processing
+        self.bm_rundriver()
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READ1_FINISHED")
+
+        self.assertEqual( self.bm.last_calls['Snakefile.read1qc'], [ "-- wd_main bc_main".split() ] )
+        # 'Snakefile.qc -- interop' gets called twice. It's a bit scrappy but shouldn't be
+        # a problem as Snakemake will quickly determine that the files are up-to-date.
+        self.assertEqual( len(self.bm.last_calls['Snakefile.qc']), 2 + 1 )
+        self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
+
+        # Re-trigger read1 processing, this time with the Snakefile.read1qc failing
+        self.bm.add_mock('Snakefile.read1qc', fail=True)
+        self.bm_rundriver()
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READ1_FINISHED")
+
+        # Assert that the RT update sent says "There were errors in read1 processing (bc_check welldups)"
+        self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'], [ 'x' ] )
+
+        self.assertEqual( self.bm.last_calls['Snakefile.read1qc'], [ "-- wd_main bc_main".split() ] )
+        self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
+        self.assertTrue(os.path.isfile( test_data + "/pipeline/failed" ))
+
 
 if __name__ == '__main__':
     unittest.main()

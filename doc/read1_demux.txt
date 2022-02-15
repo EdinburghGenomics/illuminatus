@@ -56,7 +56,7 @@ At the moment, the interim report will have only the overview, so do I want to f
 be made to essentially show the content of Stats.json? But then the numbers will be silly because we're only
 doing a single tile, so I need to make it clear that it's only one tile. And I don't want to capture the
 "clusters passing filter, according to bcl2fastq" because this will be a silly number.
-TODO - check what triggers this!
+***** TODO ***** - check what triggers this and carefully check the output when testing.
 
 And I want to ensure that the old Stats.json files are not seen by the full QC cos that would make a mess,
 so I need to put them in the same location QC/lane1/Stats.json and make sure they are always overwritten.
