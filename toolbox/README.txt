@@ -13,7 +13,8 @@ of '/lustre/software/bin' without breaking the pipeline. We can also see exactly
 pipeline is using by just examining this directory. I'm in two minds if this directory should
 sit up in /lustre/software or should be kept in the Illuminatus GIT repository
 with the rest of the code. For now I'm doing the latter as it seems important for provenance.
+(After several years - yes this is the best idea!)
 
 If you want to test with a new version of anything and for some reason you don't want to
 do a full GIT checkout of the pipeline, you should copy the whole toolbox directory and
-set $TOOLBOX in your test environment (eg. in environ.sh).
+set the alternative $TOOLBOX in your test environment (eg. in environ.sh).
