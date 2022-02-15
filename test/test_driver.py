@@ -115,29 +115,31 @@ class T(unittest.TestCase):
                         os.path.join(self.temp_dir, 'seqdata', run),
                         symlinks = True )
 
-    def assertInStdout(self, *words):
-        """Assert that there is at least one line in stdout containing all these strings
-        """
-        o_split = self.bm.last_stdout.split("\n")
+    def assertOutput(self, stream, expected, *words):
+
+        o_split = stream.split("\n")
 
         #This loop progressively prunes down the lines, until anything left
         #must have contained each word in the list.
         for w in words:
             o_split = [ l for l in o_split if w in l ]
 
-        self.assertTrue(o_split)
+        (self.assertTrue if expected else self.assertFalse)(o_split)
+
+    def assertInStdout(self, *words):
+        """Assert that there is at least one line in stdout containing all these strings
+        """
+        self.assertOutput(self.bm.last_stdout, True, *words)
+
+    def assertNotInStdout(self, *words):
+        """Assert that there is no single line in stdout containing all these strings
+        """
+        self.assertOutput(self.bm.last_stdout, False, *words)
 
     def assertInStderr(self, *words):
         """Assert that there is at least one line in stderr containing all these strings
         """
-        o_split = self.bm.last_stderr.split("\n")
-
-        #This loop progressively prunes down the lines, until anything left
-        #must have contained each word in the list.
-        for w in words:
-            o_split = [ l for l in o_split if w in l ]
-
-        self.assertTrue(o_split)
+        self.assertOutput(self.bm.last_stderr, True, *words)
 
     def shell(self, cmd, *args):
         """Call to os.system in 'safe mode'
@@ -184,8 +186,6 @@ class T(unittest.TestCase):
     def test_no_seqdata(self):
         """If no SEQDATA_LOCATION is set, expect a fast failure.
         """
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-
         self.environment['SEQDATA_LOCATION'] = 'meh'
         self.bm_rundriver(expected_retval=1)
         self.assertEqual(self.bm.last_calls, self.bm.empty_calls())
@@ -476,15 +476,15 @@ class T(unittest.TestCase):
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
         # Mark the run as started, and let's say we're processing read1
-        self.shell("mkdir -p " + test_data + "/pipeline")
-        self.shell("touch " + test_data + "/pipeline/read1.started")
-        self.shell("touch " + test_data + "/pipeline/lane{1..8}.started")
+        self.shell("mkdir -p {}/pipeline", test_data)
+        self.shell("touch {}/pipeline/read1.started", test_data)
+        self.shell("touch {}/pipeline/lane{{1..8}}.started", test_data)
 
         self.bm_rundriver()
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "IN_DEMULTIPLEXING")
 
         # Finishing read1 shouldn't change matters
-        self.shell("touch " + test_data + "/pipeline/read1.done")
+        self.shell("touch {}/pipeline/read1.done", test_data)
 
         self.bm_rundriver()
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "IN_DEMULTIPLEXING")
@@ -493,11 +493,11 @@ class T(unittest.TestCase):
 
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
-        self.shell("mkdir -p " + test_data + "/pipeline")
-        self.shell("touch " + test_data + "/pipeline/lane{1..8}.started")
-        self.shell("touch " + test_data + "/pipeline/lane{1..8}.done")
-        self.shell("touch " + test_data + "/pipeline/read1.done")
-        self.shell("touch " + test_data + "/pipeline/qc.done")
+        self.shell("mkdir -p {}/pipeline", test_data)
+        self.shell("touch {}/pipeline/lane{{1..8}}.started", test_data)
+        self.shell("touch {}/pipeline/lane{{1..8}}.done", test_data)
+        self.shell("touch {}/pipeline/read1.done", test_data)
+        self.shell("touch {}/pipeline/qc.done", test_data)
 
         self.bm_rundriver()
 
@@ -513,15 +513,15 @@ class T(unittest.TestCase):
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
         fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
 
-        self.shell("mkdir -p " + test_data + "/pipeline")
-        self.shell("touch " + test_data + "/pipeline/read1.done")
-        self.shell("touch " + test_data + "/pipeline/lane{1..8}.started")
-        self.shell("touch " + test_data + "/pipeline/lane{2..8}.done")
+        self.shell("mkdir -p {}/pipeline", test_data)
+        self.shell("touch {}/pipeline/read1.done", test_data)
+        self.shell("touch {}/pipeline/lane{{1..8}}.started", test_data)
+        self.shell("touch {}/pipeline/lane{{2..8}}.done", test_data)
 
         # Without this failed flag, the RunStatus will be in_demultiplexing.
-        self.shell("touch " + test_data + "/pipeline/failed")
-        self.shell("touch " + test_data + "/pipeline/lane{1,2}.redo")
-        self.shell("mkdir -p " + fastqdir + "/demultiplexing")
+        self.shell("touch {}/pipeline/failed", test_data)
+        self.shell("touch {}/pipeline/lane{{1,2}}.redo", test_data)
+        self.shell("mkdir -p {}/demultiplexing", fastqdir)
 
         # And we need the pipeline/output symlink
         self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
@@ -529,7 +529,7 @@ class T(unittest.TestCase):
         # This should suppresss sending a new report to RT, since there will
         # already appear to be an up-to-date samplesheet plus a summary.
         self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
-        self.shell("touch " + test_data + "/pipeline/sample_summary.yml")
+        self.shell("touch {}/pipeline/sample_summary.yml", test_data)
 
         # This should do many things...
         self.bm_rundriver()
@@ -588,20 +588,20 @@ class T(unittest.TestCase):
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
         fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
 
-        self.shell("mkdir -p " + test_data + "/pipeline")
-        self.shell("touch " + test_data + "/pipeline/read1.done")
-        self.shell("touch " + test_data + "/pipeline/lane{1..8}.started")
-        self.shell("touch " + test_data + "/pipeline/lane{2..8}.done")
+        self.shell("mkdir -p {}/pipeline", test_data)
+        self.shell("touch {}/pipeline/read1.done", test_data)
+        self.shell("touch {}/pipeline/lane{{1..8}}.started", test_data)
+        self.shell("touch {}/pipeline/lane{{2..8}}.done", test_data)
 
         # Without this failed flag, the RunStatus will be in_demultiplexing.
-        self.shell("touch " + test_data + "/pipeline/failed")
-        self.shell("touch " + test_data + "/pipeline/lane{1,2}.redo")
-        self.shell("mkdir -p " + fastqdir + "/demultiplexing")
+        self.shell("touch {}/pipeline/failed", test_data)
+        self.shell("touch {}/pipeline/lane{{1,2}}.redo", test_data)
+        self.shell("mkdir -p {}/demultiplexing", fastqdir)
 
         # This should suppresss sending a new report to RT, since there will
         # already appear to be an up-to-date samplesheet plus a summary.
         self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
-        self.shell("touch " + test_data + "/pipeline/sample_summary.yml")
+        self.shell("touch {}/pipeline/sample_summary.yml", test_data)
 
         self.bm_rundriver()
 
@@ -624,21 +624,21 @@ class T(unittest.TestCase):
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
         fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
 
-        self.shell("mkdir -p " + test_data + "/pipeline")
-        self.shell("touch " + test_data + "/pipeline/read1.done")
-        self.shell("touch " + test_data + "/pipeline/lane{1..8}.started")
-        self.shell("touch " + test_data + "/pipeline/lane{2..8}.done")
+        self.shell("mkdir -p {}/pipeline", test_data)
+        self.shell("touch {}/pipeline/read1.done", test_data)
+        self.shell("touch {}/pipeline/lane{{1..8}}.started", test_data)
+        self.shell("touch {}/pipeline/lane{{2..8}}.done", test_data)
 
         # Without this failed flag, the RunStatus will be in_demultiplexing.
-        self.shell("touch " + test_data + "/pipeline/failed")
-        self.shell("touch " + test_data + "/pipeline/lane{1,2}.redo")
-        self.shell("mkdir -p " + fastqdir + "/demultiplexing")
+        self.shell("touch {}/pipeline/failed", test_data)
+        self.shell("touch {}/pipeline/lane{{1,2}}.redo", test_data)
+        self.shell("mkdir -p {}/demultiplexing", fastqdir)
         self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
 
         # This should suppresss sending a new report to RT, since there will
         # already appear to be an up-to-date samplesheet plus a summary.
         self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
-        self.shell("touch " + test_data + "/pipeline/sample_summary.yml")
+        self.shell("touch {}/pipeline/sample_summary.yml", test_data)
 
         # Now ensure the cleanup fails.
         self.bm.add_mock('BCL2FASTQCleanup.py', fail=True)
@@ -687,8 +687,8 @@ class T(unittest.TestCase):
 
         self.shell("mkdir {}", test_data + "/pipeline")
         self.shell("mkdir {}", fastqdir)
-        self.shell("touch " + test_data + "/pipeline/read1.done")
-        self.shell("touch " + test_data + "/pipeline/lane{1..8}.done")
+        self.shell("touch {}/pipeline/read1.done", test_data)
+        self.shell("touch {}/pipeline/lane{{1..8}}.done", test_data)
         self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
 
         # We also need this or count_10x_barcodes.py never runs at all as there
@@ -728,7 +728,7 @@ class T(unittest.TestCase):
         self.assertFalse(os.path.isfile(test_data + '/pipeline/qc.started'))
         self.assertFalse(os.path.isfile(test_data + '/pipeline/failed'))
 
-    def test_rt_failures(self):
+    def test_rt_failure_at_reads_finished(self):
         """My reading of the code is that calling action_reads_finished will fail if the first
            call to send_summary_to_rt fails. But it shouldn't? Maybe it doesn't? Maybe I tested this
            already above? Well check it anyways.
@@ -769,6 +769,46 @@ class T(unittest.TestCase):
 
         self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline', 'lane?.done')) ) )
 
+    def test_rt_failure_after_qc(self):
+        """On ultra2 I did a test run and it looks like the final RT communication failed, but
+           the error says "FAIL QC...and also failed to report the error via RT". But it should say
+           'FAIL QC_report_final_upload'.
+        """
+        test_data = self.copy_run("210827_M05898_0165_000000000-JVM38")
+
+        self.shell("touch {}/pipeline/lane1.done", test_data)
+        self.shell("touch {}/pipeline/read1.done", test_data)
+        self.shell("touch {}/pipeline/qc.done", test_data)
+        self.shell("ln -s {} {}", self.temp_dir, test_data + "/pipeline/output")
+
+        # This needs to have a side effect
+        self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK > pipeline/report_upload_url.txt")
+
+        self.bm_rundriver()
+
+        # Normally the driver should not log anything for completed runs, but in debug
+        # mode it logs a message containing 'status=complete'
+        self.assertInStdout("210827_M05898_0165_000000000-JVM38", "status=complete")
+
+        # Now run the QC and it should be OK
+        self.shell("rm {}/pipeline/qc.done", test_data)
+        self.bm_rundriver()
+        if VERBOSE:
+            self.shell("cat {}", self.temp_dir + "/pipeline.log")
+
+        self.assertInStdout("210827_M05898_0165_000000000-JVM38", "status=demultiplexed")
+        self.assertNotInStdout("FAIL")
+
+        # Now we want to re-run the QC but make rt_runticket_manager.py fail
+        self.bm.add_mock('rt_runticket_manager.py', fail=True)
+        self.shell("rm {}/pipeline/qc.done", test_data)
+        self.bm_rundriver(check_stderr=False)
+        if VERBOSE:
+            self.shell("cat {}", self.temp_dir + "/pipeline.log")
+
+        self.assertInStdout("210827_M05898_0165_000000000-JVM38", "status=demultiplexed")
+        self.assertInStdout("FAIL RT_final_message")
+        self.assertNotInStdout("FAIL QC ")
 
     def test_bc_check_msg(self):
         """Test the new behaviour with read1 processing where barcode issues are reported to RT.
@@ -814,7 +854,6 @@ class T(unittest.TestCase):
         self.assertEqual( self.bm.last_calls['Snakefile.read1qc'], [ "-- wd_main bc_main".split() ] )
         self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
         self.assertTrue(os.path.isfile( test_data + "/pipeline/failed" ))
-
 
 if __name__ == '__main__':
     unittest.main()

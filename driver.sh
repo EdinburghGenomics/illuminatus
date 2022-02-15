@@ -275,20 +275,22 @@ action_demultiplexed() {
     detect_and_keep_10x |& plog
 
     ( set -e
-        run_qc
-        log "  Completed QC on $RUNID."
-
-        if [ -s pipeline/report_upload_url.txt ] ; then
-            send_summary_to_rt reply "Finished pipeline" \
-                "Complete QC report available at"
-            # Final success is contingent on the report upload AND that message going to RT.
-            mv pipeline/qc.started pipeline/qc.done
-        else
-            # ||true avoids calling the error handler twice
-            pipeline_fail QC_report_final_upload || true
-
-        fi
+      run_qc
+      log "  Completed QC on $RUNID."
     ) |& plog ; [ $? = 0 ] || pipeline_fail QC
+
+    if [ -s pipeline/report_upload_url.txt ] ; then
+        ( set -e
+          send_summary_to_rt reply "Finished pipeline" \
+              "Complete QC report available at"
+        ) |& plog ; [ $? = 0 ] || pipeline_fail RT_final_message
+        # Final success is contingent on the report upload AND that message going to RT.
+        mv -v pipeline/qc.started pipeline/qc.done |& plog
+    else
+        debug "pipeline/report_upload_url.txt is missing or empty"
+        # ||true avoids calling the error handler twice
+        pipeline_fail QC_report_final_upload || true
+    fi
 
 }
 
@@ -645,7 +647,7 @@ run_qc() {
 
     # Hand over to Snakefile.qc for report generation
     # First a quick report. Continue to QC even if MultiQC fails here.
-    ( cd "$DEMUX_OUTPUT_FOLDER"
+    ( cd "$DEMUX_OUTPUT_FOLDER" && \
       Snakefile.qc -- demux_stats_main interop_main
     ) || true
     run_multiqc "In QC" || true
@@ -659,6 +661,7 @@ run_qc() {
 
     # If we get here, the pipeline completed (or was partially complete) but a failure to
     # upload the final report must still count as a pipeline failure (trapped by the caller)
+    debug "run_multiqc 'Completed QC' at $0 line $LINENO"
     run_multiqc "Completed QC"
 }
 
@@ -703,8 +706,8 @@ get_run_status() { # run_dir
   DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
 }
 
-# ==== And now the main processing actions, starting with a search for updated sample sheets for
-# ==== previously processed runs.
+# **** And now the main processing actions, starting with a search for updated sample sheets for
+# **** previously processed runs.
 
 if [ -n "${REDO_HOURS_TO_LOOK_BACK:-}" ] ; then
     log "Looking for new replacement sample sheets from the last $REDO_HOURS_TO_LOOK_BACK hours."

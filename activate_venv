@@ -56,13 +56,21 @@ post_activate() {
     fi
 }
 
+install_wheels() {
+    if [ -d "${1:-}" ] ; then
+        echo "Installing pre-built wheel files from $1"
+        pip_install -- "$1"/*.whl
+    fi
+}
+
 if [ -e ./_illuminatus_venv/bin/activate ] ; then
 
     # We already got one!
     activate_venv
 
 else
-    (   _py3="${TOOLBOX:-`dirname $BASH_SOURCE`/toolbox}"/bootstrap_python3
+    (   _toolbox="${TOOLBOX:-`dirname $BASH_SOURCE`/toolbox}"
+        _py3="$_toolbox"/bootstrap_python3
         _py3_real="$(readlink -f "$_py3")"
         echo "Bootstrapping new VEnv from $_py3 ($_py3_real)"
 
@@ -73,17 +81,20 @@ else
         pip_install --upgrade 'pip<22'
         pip_install wheel
 
+        # Install any pre-built wheels
+        install_wheels "${WHEELS:-${_toolbox}/wheels}"
+
         pip_install pyyaml==5.4.1
         pip_install 'yamlloader<2'
         pip_install 'rt<2'
         pip_install pyclarity_lims==0.4.8
-        pip_install psycopg2-binary==2.8.3
-        pip_install chevron     # Only needed for PDF states report
+        pip_install psycopg2-binary  # Pinning the version should not be necessary
+        pip_install chevron          # Only needed for PDF states report
         pip_install pyflakes==2.2.0
 
         # InterOP is now on PyPI so no pre-build needed :-)
         pip_install numpy==1.16.4
-        pip_install interop==1.1.8
+        pip_install interop==1.1.23
 
         # Needed if well_dups runs in the local VEnv, which it currently does.
         pip_install python-Levenshtein==0.12.1

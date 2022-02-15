@@ -369,7 +369,7 @@ rule cutadapt_scan:
         # 3' adapters: truseq 21 bases          nextera         illumina_smallrna
         adapters =    ["AGATCGGAAGAGCACACGTCT", "CTGTCTCTTATA", "TGGAATTCTCGGGTGCCAAGG"]
     shell:
-        """{TOOLBOX} cutadapt -f fastq -O 9 -o /dev/null `for a in {params.adapters} ; do echo -a $a ; done` \
+        """{TOOLBOX} cutadapt -O 9 -o /dev/null `for a in {params.adapters} ; do echo -a $a ; done` \
              {input} > {output}
         """
 
