@@ -88,13 +88,13 @@ else
         pip_install 'yamlloader<2'
         pip_install 'rt<2'
         pip_install pyclarity_lims==0.4.8
-        pip_install psycopg2-binary==2.8.3
-        pip_install chevron     # Only needed for PDF states report
+        pip_install psycopg2-binary  # Pinning the version should not be necessary
+        pip_install chevron          # Only needed for PDF states report
         pip_install pyflakes==2.2.0
 
         # InterOP is now on PyPI so no pre-build needed :-)
         pip_install numpy==1.16.4
-        pip_install interop==1.1.8
+        pip_install interop==1.1.23
 
         # Needed if well_dups runs in the local VEnv, which it currently does.
         pip_install python-Levenshtein==0.12.1
