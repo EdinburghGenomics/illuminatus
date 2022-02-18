@@ -92,6 +92,9 @@ def main(args):
 
     existing_containers = lims.get_containers(name=container_name)
 
+    # Sometimes the container in the LIMS is lower case?
+    existing_containers.extend(lims.get_containers(name=container_name.lower()))
+
     # If the container name is not in all upper case then try making it so...
     if container_name != container_name.upper():
         existing_containers.extend(lims.get_containers(name=container_name.upper()))
