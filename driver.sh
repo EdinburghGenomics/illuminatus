@@ -43,6 +43,13 @@ if [ -e "$ENVIRON_SH" ] ; then
 fi
 
 # FIXME - DRY_RUN should actually activate a dry run, rather than being ignored.
+if [ "${DRY_RUN:-0}" = 1 ] ; then
+    echo "DRY_RUN mode is not yet supported :-("
+    exit 1
+fi
+
+# Set HOSTNAME if we don't have it already
+export HOSTNAME="${HOSTNAME:-$(hostname -s)}"
 
 LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
