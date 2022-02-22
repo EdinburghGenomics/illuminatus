@@ -305,7 +305,7 @@ def scan_for_info(run_dir, project_name_list=''):
         rids['ExperimentName'] = run_params.get('Experiment Name')
         # This is a CTime based on file timestamps. RunDate on the NovaSeq also
         # gives a timestamp but not on the MiSeq, even post-upgrade. And I don't
-        # trus the MiSEQ clock in any case.
+        # trust the MiSEQ clock in any case.
         rids['RunStartTime'] = run_params.get('Start Time')
 
         rids['Chemistry'] = get_chemistry(run_params, rids['Instrument'])
