@@ -53,8 +53,8 @@ git push
 
 #2 - As well as being on master, all untracked files should be in .gitignore
 # and all changes should be pushed upstream.
-foo=`env LC_ALL=C git status -b --porcelain`
-[[ "$foo" == '## master...origin/master' ]] || \
+foo=`git status -b --porcelain`
+[[ "$foo" == "## master...origin/master" ]] || \
     die $'GIT reports that not all changes are pushed on the master branch...\n'"`git status`"
 
 #3
