@@ -11,6 +11,7 @@ from pprint import pprint
 
 from tempfile import mkdtemp
 from shutil import rmtree, copytree
+from configparser import DuplicateOptionError
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__))
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
@@ -177,6 +178,62 @@ class T(unittest.TestCase):
                                     revcomp = None )
         self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
                                                              '--barcode-mismatches 9' ] )
+
+    def test_basemask_override(self):
+        """Setting basemask per lane should work. We could make it a pseudo option
+           like --barcode-mismatches-laneN or we could use the : syntax which is already
+           in bcl2fastq. Heck, support both.
+        """
+        run_id = '160607_D00248_0174_AC9E4KANXX'
+        shadow_dir = self.get_ex(run_id, shadow=True)
+
+        ini_file = os.path.join(shadow_dir, "pipeline_settings.ini")
+        self.assertFalse(os.path.exists( ini_file ))
+
+        with open(os.path.join(shadow_dir, 'SampleSheet.csv'), "r") as fh:
+            lines = list(fh)
+
+        # Munge the SampleSheet.csv with extra headings
+        with open(os.path.join(shadow_dir, 'SampleSheet.csv'), "w") as fh:
+            print("[bcl2fastq]\n", file=fh)
+            print("--use-bases-mask-lane1: 1:Y147,I8Y11,I8,Y147", file=fh)
+            print("--use-bases-mask-lane2: Y147,I8n*,I8,Y147", file=fh)
+            print("--use-bases-mask: 'default'", file=fh)
+            print("", file=fh)
+            for l in lines: print(l, file=fh, end='')
+
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
+                                    lane = "1",
+                                    revcomp = None )
+        self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
+                                                        "--use-bases-mask 1:Y147,I8Y11,I8,Y147",
+                                                        "--tiles 's_[1]'" ] )
+
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
+                                    lane = "2",
+                                    revcomp = None )
+        self.assertEqual( pp.get_bcl2fastq_options()[1], "--use-bases-mask Y147,I8n*,I8,Y147" )
+
+        pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
+                                    lane = "3",
+                                    revcomp = None )
+        self.assertEqual( pp.get_bcl2fastq_options()[1], "--use-bases-mask 'default'"  )
+
+        # Other syntax doesn't work. This isn't so much a test as a demonstration of why
+        # it breaks.
+        with open(os.path.join(shadow_dir, 'SampleSheet.csv'), "w") as fh:
+            print("[bcl2fastq]\n", file=fh)
+            print("--use-bases-mask: 1:Y147,I8Y11,I8,Y147", file=fh)
+            print("--use-bases-mask: 2:Y147,I8n*,I8,Y147", file=fh)
+            print("--use-bases-mask: wrong", file=fh)
+            print("", file=fh)
+            for l in lines: print(l, file=fh, end='')
+
+        with self.assertRaises(DuplicateOptionError):
+            # This won't work without totally changing the option parsing logic!
+            pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
+                                        lane = "2",
+                                        revcomp = None )
 
     def test_slimmed_run(self):
         """Check a setup produced by slim_a_novaseq_run.sh

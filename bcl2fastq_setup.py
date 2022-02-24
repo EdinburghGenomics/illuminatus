@@ -5,7 +5,7 @@
     Contains a [bcl2fastq] section with all options
     Has optional revcomp of index2 (or 1)
 """
-import os, sys
+import os, sys, re
 import configparser
 from collections import defaultdict
 from itertools import dropwhile, takewhile
@@ -76,15 +76,16 @@ class BCL2FASTQPreprocessor:
                         os.path.join(self.run_dir, "pipeline_settings.lane{}.ini".format(self.lane)) ) ]:
             i()
 
-            # Special case for barcode-mismatches, even though we'll normally do this by retry.
-            for k in list(self.ini_settings['bcl2fastq'].keys()):
-                # Per-lane --barcode-mismatches overrides the default
-                if k == '--barcode-mismatches-lane{}'.format(self.lane):
-                    self.ini_settings['bcl2fastq']['--barcode-mismatches'] = \
-                        self.ini_settings['bcl2fastq'][k]
+            # Allow specification of options by specfic lane (as if the .ini file was not enough!!)
+            bcl_settings = self.ini_settings['bcl2fastq']
+            for k in list(bcl_settings.keys()):
+                # Per-lane overrides the default
+                if k.endswith('-lane{}'.format(self.lane)):
+                    k_base = re.sub('-lane{}$'.format(self.lane), '', k)
+                    bcl_settings[k_base] = bcl_settings[k]
                 # delete it and any other per-lane vals to avoid further processing
-                if k.startswith('--barcode-mismatches-'):
-                    del self.ini_settings['bcl2fastq'][k]
+                if re.match('.*-lane[1-8]$', k):
+                    del bcl_settings[k]
 
     def get_bcl2fastq_opt_dict(self):
         """Get the options which will go into the [bcl2fastq] section on the sample sheet.
