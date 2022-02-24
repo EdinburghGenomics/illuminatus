@@ -330,6 +330,7 @@ action_read1_finished() {
     set +e ; ( set +e
         e=''
         pushd "$DEMUX_OUTPUT_FOLDER"
+        rm -f "QC/bc_check/bc_check.msg"
         if ! Snakefile.read1qc -- wd_main bc_main ; then
           # Retry and log specific failure
           Snakefile.read1qc -- bc_main  || e="$e bc_check"
@@ -347,12 +348,11 @@ action_read1_finished() {
 
         # Did bc_check produce any alert, or should we just log the usual comment?
         if [ -s "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg" ] ; then
-            rt_runticket_manager --comment "$_msg" || true
-        else
             _msg="$_msg"$'\n'"$(cat "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg")"
-            TODO - check error handling when RT fails
             send_summary_to_rt reply "barcode issue" \
                 "$_msg"$'\n'"Report is at"
+        else
+            rt_runticket_manager --comment "$_msg" || true
         fi
         log "  $_msg"
     ) |& plog1
@@ -709,8 +709,12 @@ get_run_status() { # run_dir
     STATUS=unknown
   fi
 
-  # Resolve output location (this has to work for new runs so we can't follow the symlink)
-  DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
+  # Resolve output location (this has to work for new runs so we can't always follow the symlink)
+  if [ -d "pipeline/output" ] ; then
+    DEMUX_OUTPUT_FOLDER="$(readlink -f pipeline/output)"
+  else
+    DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
+  fi
 }
 
 # **** And now the main processing actions, starting with a search for updated sample sheets for

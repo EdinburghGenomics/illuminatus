@@ -831,7 +831,9 @@ class T(unittest.TestCase):
 
         # We want to see an error message. Have to make this side effect of Snakefile.read1qc as
         # we don't want to actually run Snakemake.
-        self.bm.add_mock('Snakefile.read1qc', fail=False, side_effect="echo MOCK > QC/bc_check/bc_check.msg")
+        self.bm.add_mock( 'Snakefile.read1qc',
+                           fail = False,
+                           side_effect = "mkdir -p QC/bc_check ; echo MOCK > QC/bc_check/bc_check.msg")
 
         # Run the driver once to do the read1 processing
         self.bm_rundriver()
@@ -843,17 +845,35 @@ class T(unittest.TestCase):
         self.assertEqual( len(self.bm.last_calls['Snakefile.qc']), 2 + 1 )
         self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
 
+        # Here's the main check. Do we get an alert sent to RT?
+        rt_manager_call, = self.bm.last_calls['rt_runticket_manager.py']
+        self.assertEqual( rt_manager_call[:-1], [ '-Q', 'run', '-r', '160606_K00166_0102_BHF22YBBXX',
+                                                  '--subject', 'barcode issue', '--reply' ] )
+
         # Re-trigger read1 processing, this time with the Snakefile.read1qc failing
+        # This should post a comment but not an alert.
         self.bm.add_mock('Snakefile.read1qc', fail=True)
+        self.shell("rm {}", test_data + "/pipeline/read1.done")
         self.bm_rundriver()
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READ1_FINISHED")
 
         # Assert that the RT update sent says "There were errors in read1 processing (bc_check welldups)"
-        self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'], [ 'x' ] )
+        rt_manager_call, = self.bm.last_calls['rt_runticket_manager.py']
+        self.assertEqual( rt_manager_call[:-1], [ '-Q', 'run', '-r', '160606_K00166_0102_BHF22YBBXX',
+                                                  '--comment' ] )
+        self.assertTrue(rt_manager_call[-1].startswith("There were errors in read1 processing (bc_check welldups)"))
 
-        self.assertEqual( self.bm.last_calls['Snakefile.read1qc'], [ "-- wd_main bc_main".split() ] )
+        # Due to the error the Snakefile gets called again to check
+        self.assertEqual( self.bm.last_calls['Snakefile.read1qc'], [ "-- wd_main bc_main".split(),
+                                                                     "-- bc_main".split(),
+                                                                     "-- wd_main".split() ] )
         self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
-        self.assertTrue(os.path.isfile( test_data + "/pipeline/failed" ))
+        self.assertFalse(os.path.isfile( test_data + "/pipeline/failed" ))
+
+        # And now we should go on to demultiplex anyway
+        self.bm_rundriver()
+        self.assertEqual( self.bm.last_calls['Snakefile.demux'], [] )
+
 
 if __name__ == '__main__':
     unittest.main()
