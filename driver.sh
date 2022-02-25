@@ -245,7 +245,8 @@ action_reads_finished(){
       ) |& plog
 
       for f in pipeline/lane?.started ; do
-          mv $f ${f%.started}.done
+          # Changed from 'mv' to fix the timestamp
+          mv_atomic $f ${f%.started}.done
       done
       #' I'm pretty sure RT errors could/should be non-fatal here.
       rt_runticket_manager --subject demultiplexed \
@@ -292,7 +293,8 @@ action_demultiplexed() {
               "Complete QC report available at"
         ) |& plog ; [ $? = 0 ] || pipeline_fail RT_final_message
         # Final success is contingent on the report upload AND that message going to RT.
-        mv -v pipeline/qc.started pipeline/qc.done |& plog
+        plog "pipeline/qc.started -> pipeline/qc.done"
+        mv_atomic pipeline/qc.started pipeline/qc.done |& plog
     else
         debug "pipeline/report_upload_url.txt is missing or empty"
         # ||true avoids calling the error handler twice
@@ -365,7 +367,7 @@ action_read1_finished() {
         log "  Interrupted during read1 processing on $RUNID."
     fi
 
-    mv pipeline/read1.started pipeline/read1.done
+    mv_atomic pipeline/read1.started pipeline/read1.done |& plog1
 }
 
 action_in_read1_qc() {
@@ -454,7 +456,7 @@ action_redo() {
       ) |& plog
 
       for f in pipeline/lane?.started ; do
-          mv $f ${f%.started}.done
+          mv_atomic $f ${f%.started}.done
       done
       rt_runticket_manager --subject re-demultiplexed \
         --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed" || true
@@ -475,6 +477,12 @@ touch_atomic(){
     for f in "$@" ; do
         (set -o noclobber ; >"$f")
     done
+}
+
+mv_atomic(){
+    # Used in place of "mv x.started x.done"
+    echo "renaming $1 -> $2"
+    (set -o noclobber ; >"$2") && rm "$1"
 }
 
 check_outdir(){
