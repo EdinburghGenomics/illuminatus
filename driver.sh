@@ -34,12 +34,18 @@ if [ -e "$ENVIRON_SH" ] ; then
     # Saves having to put 'export' on every line in the config.
     export SEQDATA_LOCATION    FASTQ_LOCATION    GENOLOGICSRC  SAMPLESHEETS_ROOT \
            RT_SYSTEM           PROJECT_PAGE_URL  \
-           REPORT_DESTINATION  REPORT_LINK       RSYNC_CMD     \
+           REPORT_DESTINATION  REPORT_LINK       REPORT_RSYNC     \
            RUN_NAME_REGEX      PROJECT_NAME_LIST \
            CLUSTER_QUEUE       SSPP_HOOK         TOOLBOX       VERBOSE \
            WRITE_TO_CLARITY    DRY_RUN           \
            SNAKE_THREADS       LOCAL_CORES       EXTRA_SNAKE_FLAGS   EXTRA_SLURM_FLAGS \
            REDO_HOURS_TO_LOOK_BACK
+fi
+
+# Just because I renamed it
+if [ -n "${RSYNC_CMD:-}" ] && [ -z "${REPORT_RSYNC}" ] ; then
+    echo 'RSYNC_CMD option is now REPORT_RSYNC. Please fix your config.'
+    exit 1
 fi
 
 # FIXME - DRY_RUN should actually activate a dry run, rather than being ignored.

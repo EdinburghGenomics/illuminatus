@@ -62,14 +62,14 @@ dest="${REPORT_DESTINATION}"
 
 # Allow overriding of RSYNC command. Needed for the setup on egcloud.
 # Any required SSH settings should go in ~/.ssh/config
-RSYNC_CMD="echorun ${RSYNC_CMD:-rsync}"
+REPORT_RSYNC="echorun ${REPORT_RSYNC:-rsync}"
 
 echo "Uploading report for $runname to $dest..." >&2
-$RSYNC_CMD -drvlOt multiqc_reports/ $dest/$runname/ >&2
+$REPORT_RSYNC -drvlOt multiqc_reports/ $dest/$runname/ >&2
 
 # Add the index. We now have to make this a PHP script but at least the content is totally fixed.
 index_php="$(dirname $BASH_SOURCE)/templates/index.php"
-if $RSYNC_CMD -vp "$index_php" $dest/$runname/ >&2 ; then
+if $REPORT_RSYNC -vp "$index_php" $dest/$runname/ >&2 ; then
     echo "...done. Report uploaded and index.php written to ${dest#*:}/$runname/." >&2
 else
     echo "...done. Report uploaded but failed to write index.php to ${dest#*:}/$runname/." >&2
