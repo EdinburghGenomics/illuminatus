@@ -5,7 +5,7 @@ import sys, os, re
 
 import subprocess
 from tempfile import mkdtemp
-from shutil import rmtree, copytree
+from shutil import rmtree, copytree, copyfileobj
 from glob import glob
 from shlex import quote as shell_quote
 
@@ -18,6 +18,7 @@ from binmocker import BinMocker
 
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')
+RUNSTATUS = os.path.abspath(os.path.dirname(__file__) + '/../RunStatus.py')
 
 PROGS_TO_MOCK = """
     BCL2FASTQPreprocessor.py BCL2FASTQPostprocessor.py BCL2FASTQCleanup.py
@@ -93,6 +94,14 @@ class T(unittest.TestCase):
         if VERBOSE:
             print("STDOUT:")
             print(self.bm.last_stdout)
+
+            # Find the last plog file if we can
+            plogs = glob("{}/*/pipeline.log".format(self.environment['FASTQ_LOCATION']))
+            for p in plogs:
+                print("PLOG {}:".format(p))
+                with open(p) as fh:
+                    copyfileobj(fh, sys.stdout)
+
             print("RETVAL: %s" % retval)
 
         self.assertEqual(retval, expected_retval)
@@ -737,23 +746,22 @@ class T(unittest.TestCase):
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
         fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
 
-        # Now we need to make the ./pipeline folder to push it out of status NEW.
-        # And the output directory needs to exist already
-        self.shell("mkdir {}", test_data + "/pipeline")
-        self.shell("mkdir {}", fastqdir)
-        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
-
         # Make rt_runticket_manager.py always fail (as if the server is down)
         self.bm.add_mock('rt_runticket_manager.py', fail=True)
+        self.bm.add_mock('summarize_lane_contents.py', side_effect="touch pipeline/sample_summary.yml")
 
-        # Run the driver once to do the read1 processing (a no-op due to the mocks)
-        # The second one will actually demultiplex.
+        # Run the driver once to set up, then again to do the read1 processing (a no-op due to the mocks)
+        # The third one will actually demultiplex.
+        self.bm_rundriver()
         self.bm_rundriver()
         self.bm_rundriver()
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READS_FINISHED")
 
-        # Check that rt_runticket_manager.py was called twice
-        self.assertEqual( len(self.bm.last_calls['rt_runticket_manager.py']), 2 )
+        # Check that rt_runticket_manager.py was called twice - a reply that the run finished
+        # and then a comment that demultiplexing is done. If sample_summary.yml is missing it gets
+        # called three times.
+        self.assertEqual( [ c[-2] for c in self.bm.last_calls['rt_runticket_manager.py'] ],
+                          [ "--reply", "--comment" ] )
 
         # Check demultiplexing folder
         self.assertTrue( os.path.isdir(os.path.join(fastqdir, "demultiplexing")) )
@@ -765,8 +773,9 @@ class T(unittest.TestCase):
         # Check that the run is now ready for QC, despite the RT failure
         retval = self.bm.runscript("cd {} ; {}".format(test_data, RUNSTATUS), env=self.environment)
         self.assertEqual(retval, 0)
-        self.assertInStdout('status is demultiplexing_complete')
+        self.assertInStdout('PipelineStatus: demultiplexed')
 
+        # This basically tests the same thing
         self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline', 'lane?.done')) ) )
 
     def test_rt_failure_after_qc(self):
@@ -872,7 +881,7 @@ class T(unittest.TestCase):
 
         # And now we should go on to demultiplex anyway
         self.bm_rundriver()
-        self.assertEqual( self.bm.last_calls['Snakefile.demux'], [] )
+        self.assertEqual( len(self.bm.last_calls['Snakefile.demux']), 1 )
 
 
 if __name__ == '__main__':

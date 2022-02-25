@@ -223,11 +223,12 @@ action_reads_finished(){
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
     fetch_samplesheet
-    ( run_multiqc "Reads finished, demultiplexing starting" | plog ) || true
 
-    # Karim wanted an e-mail alert here, with a lane summary.
-    # Make sure any printed output is plogged.
-    send_summary_to_rt reply demultiplexing "The run finished and demultiplexing will now start. Report is at" |& plog
+    # Karim wanted an e-mail alert here, with a lane summary, as well as the new report.
+    # Make sure any printed output is plogged, and continue on errors.
+    ( run_multiqc "Reads finished, demultiplexing starting" || true
+      send_summary_to_rt reply demultiplexing "The run finished and demultiplexing will now start. Report is at" || true
+    ) |& plog
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
     # Note that the preprocessor and runner are not aware of the 'demultiplexing'
