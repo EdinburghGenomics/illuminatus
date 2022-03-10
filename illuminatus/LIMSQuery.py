@@ -18,9 +18,6 @@ from psycopg2.extras import NamedTupleCursor
 from psycopg2.extensions import adapt
 from pyclarity_lims.lims import Lims
 
-# This is needed to make any API access work, but for now I'm just reading the
-# database.
-#from pyclarity_lims.lims import Lims
 
 def main():
     """Basic test.
