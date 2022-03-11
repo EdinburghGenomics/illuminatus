@@ -151,8 +151,10 @@ finally:
 
 # Since there is a possibility that one or more lanes may fail completely and produce no FASTQ
 # I need to look for Stats.json, which always appears.
+# FIXME - this empty case is still failing at present since BCL2FASTQPostprocessor.py sees no projects!
 all_stats_json_lanes = [ f.split('/')[1][4:] for f in glob("demultiplexing/lane*/Stats/Stats.json") ]
-lanes = sorted( set( [sf['lane'] for sf in all_all] + all_stats_json_lanes ) )
+all_bc_check_lanes   = [ f.split('/')[2][4:] for f in glob("QC/bc_check/lane*/") ]
+lanes = sorted( set( [sf['lane'] for sf in all_all] + all_stats_json_lanes + all_bc_check_lanes ) )
 
 # All report names - lane1, lane2, ..., overview
 

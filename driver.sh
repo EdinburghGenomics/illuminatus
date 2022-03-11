@@ -357,9 +357,9 @@ action_read1_finished() {
 
         # Did bc_check produce any alert, or should we just log the usual comment?
         if [ -s "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg" ] ; then
-            _msg="$_msg"$'\n'"$(cat "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg")"
+            _full_msg="$_msg"$'\n'"$(cat "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg")"
             send_summary_to_rt reply "barcode issue" \
-                "$_msg"$'\n'"Report is at"
+                "$_full_msg"$'\n'"Report is at"
         else
             rt_runticket_manager --comment "$_msg" || true
         fi
