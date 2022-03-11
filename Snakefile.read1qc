@@ -157,10 +157,10 @@ globals().update(get_wd_settings(RUNDIR, run_info_root))
 # === Driver rules ===
 localrules: wd_main, bc_main
 
-if TILE_MATCH:
+if not TILE_MATCH:
     rule wd_main:
         # No-op rule
-        shell: "# No tiles to be sampled. Assuming this is a MiSeq or 2500 run, or read1 is too short."
+        shell: "# No tiles to be sampled. Assuming this is a MiSeq run, or read1 is too short."
 else:
     rule wd_main:
         input:
@@ -174,7 +174,7 @@ rule bc_main:
         summary = 'QC/bc_check/bc_check.msg'
 
 # === Rules to invoke the duplicate counter ===
-localrules: make_wd_summary, make_bc_summary
+localrules: make_wd_summary, make_bc_summary, setup_bc_check
 
 rule make_wd_summary:
     output: 'QC/welldups/{targets}summary.yml'
@@ -273,17 +273,18 @@ rule bcl2fastq_bc_check:
         # the log even if the demux fails.
         """export PROCESSING_THREADS={threads}
            mkdir bc_check_tmp
-           mkdir -p bc_check_tmp/QC/bc_check/lane{l}
+           lanedir=bc_check_tmp/QC/bc_check/lane{wildcards.l}
+           mkdir -p "$lanedir"
            f=0
-           {TOOLBOX} do_demultiplex.sh {RUNDIR} bc_check_tmp/QC/bc_check/lane{l} {input.ssheet} {wildcards.l} || f=1
-           for f in {log.log} {log.version} {output} ; do
-             mv bc_check_tmp/$f $f || true
+           {TOOLBOX} do_demultiplex.sh {RUNDIR} "$lanedir" {input.ssheet} {wildcards.l} || f=1
+           for outfile in {log} {output} ; do
+             mv bc_check_tmp/$outfile $outfile || true
            done
            unassigned_to_table.py {output.json} > {output.unass}
            ( exit $f )
         """
 
-rule setup:
+rule setup_bc_check:
     output:
         ssheet = "QC/bc_check/lane{l}/SampleSheet.filtered.csv"
     shell:
