@@ -738,7 +738,7 @@ class T(unittest.TestCase):
         self.assertFalse(os.path.isfile(test_data + '/pipeline/failed'))
 
     def test_rt_failure_at_reads_finished(self):
-        """My reading of the code is that calling action_reads_finished will fail if the first
+        """My reading of the code is that calling action_reads_finished would fail if the first
            call to send_summary_to_rt fails. But it shouldn't? Maybe it doesn't? Maybe I tested this
            already above? Well check it anyways.
         """
@@ -751,7 +751,7 @@ class T(unittest.TestCase):
         self.bm.add_mock('summarize_lane_contents.py', side_effect="touch pipeline/sample_summary.yml")
 
         # Run the driver once to set up, then again to do the read1 processing (a no-op due to the mocks)
-        # The third one will actually demultiplex.
+        # The third one will actually "demultiplex".
         self.bm_rundriver()
         self.bm_rundriver()
         self.bm_rundriver()
@@ -781,7 +781,7 @@ class T(unittest.TestCase):
     def test_rt_failure_after_qc(self):
         """On ultra2 I did a test run and it looks like the final RT communication failed, but
            the error says "FAIL QC...and also failed to report the error via RT". But it should say
-           'FAIL QC_report_final_upload'.
+           'FAIL RT_final_message'.
         """
         test_data = self.copy_run("210827_M05898_0165_000000000-JVM38")
 

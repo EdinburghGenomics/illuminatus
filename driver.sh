@@ -628,6 +628,7 @@ send_summary_to_rt() {
     # Sends a summary to RT. It is assumed that pipeline/report_upload_url.txt and pipeline/sample_summary.yml
     # are in place and can be read.
     # Other than that, supply run_status and premble if you want this.
+    # This function will return the return value from rt_runticket_manager.py
     _reply_or_comment="${1:-}"
     _run_status="${2:-}"
     _preamble="${3:-Run report is at}"
