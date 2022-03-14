@@ -432,7 +432,7 @@ rule summarize_post_bcl2fastq:
     input: lanedir = lambda wc: "demultiplexing/" + wc.lane if wc.lane.startswith('lane') else \
                                 glob("demultiplexing/lane?")
     shell:
-        "summarize_post_bcl2fastq.py . {wildcards.lane} > {output}"
+        "summarize_post_bcl2fastq.py --lane {wildcards.lane} > {output}"
 
 # lane summary is just a munge of the .yml already made by the driver,
 # but this time we need a special mqc table format.
@@ -504,7 +504,7 @@ localrules: get_bcl2fastq_json
 rule get_bcl2fastq_json:
     # Simply copies the file into place, for MultiQC to find
     # Doing it this way accords with the principle that everything in the QC directory
-    # should be created by this Snakefile (or Snakefile.read1qc but not Snakefile.demux).
+    # should be created by this Snakefile (or Snakefile.read1qc, but not Snakefile.demux).
     output: "QC/lane{lane}/Stats.json"
     input: "demultiplexing/lane{lane}/Stats/Stats.json"
     shell: "cp {input} {output}"

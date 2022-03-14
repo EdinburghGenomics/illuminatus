@@ -78,8 +78,10 @@ and are approximate. I can leave in the legacy report code here and just disable
 
 Right, on 11th March I seem to have all the Snakefile and driver stuff behaving. Next step is to make MultiQC generate a
 lane report (not just an overview) and then look to see if any misleading numbers appear on that report (because we've
-only done one time) and how we can correct/label them.
+only done one tile) and how we can correct/label them.
 
 So firstly, how do I trigger the per-lane reports? I modified the Snakefile to make the report, but the link on the overview
 is still greyed out. And there's no indication the numbers are for 1 tile. And there's no Lane Summary in the overview.
+
+Also no pipeline version in the report.
 OK, much to do. On it next week.

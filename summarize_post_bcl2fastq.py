@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 import os, sys, re
 from glob import glob
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 import yaml, yamlloader
 
 class PostRunMetaData:
     """This Class provides information about a demultiplexing/QC process, given
-       a fastqdata folder.
+       a fastqdata folder, to make the file: run_info.{runid}.2.yml
        The info made is supposed to complement the stuff from summarize_for_overview.py
        The following sources will be checked:
          bcl2fastq.version files
@@ -14,9 +15,10 @@ class PostRunMetaData:
          laneN/SampleSheet.filtered.csv
        If you supply a lane only that lane will be checked, otherwise all will be checked.
     """
-    def __init__( self , run_folder , fastqdata_path = '', lanes = None ):
+    def __init__( self , run_folder , fastqdata_path = '', lanes = None, subdir = '.' ):
 
         self.run_path_folder = os.path.join( fastqdata_path , run_folder )
+        self.subdir = subdir
         self.lanes = lanes or []
 
         self.find_bcl2fastq_versions()
@@ -38,7 +40,7 @@ class PostRunMetaData:
 
         try:
             with open(os.path.join( self.run_path_folder,
-                                    'demultiplexing',
+                                    self.subdir,
                                     'lane{}'.format(single_lane),
                                     'SampleSheet.filtered.csv' )) as fh:
                 self.filtered_samplesheet = [ os.path.basename(fh.name),
@@ -62,7 +64,7 @@ class PostRunMetaData:
         lanes = self.lanes or '*'
         self.bcl2fastq_versions = set()
         for lane in lanes:
-            for vf in glob(os.path.join( self.run_path_folder , 'demultiplexing/lane{}/bcl2fastq.version'.format(lane) )):
+            for vf in glob(os.path.join( self.run_path_folder , self.subdir, "lane{}/bcl2fastq.version".format(lane) )):
                 with open(vf) as vfh:
                     for aline in vfh:
                         # Version lines look like "bcl2fastq v2.19.1.403"
@@ -78,7 +80,7 @@ class PostRunMetaData:
         lanes = self.lanes or '*'
         self.mismatch_flags = set()
         for lane in lanes:
-            for vf in glob(os.path.join( self.run_path_folder , 'demultiplexing/lane{}/bcl2fastq.opts'.format(lane) )):
+            for vf in glob(os.path.join( self.run_path_folder , self.subdir, "lane{}/bcl2fastq.opts".format(lane) )):
                 with open(vf) as vfh:
                     for aline in vfh:
                         # Version lines look like "bcl2fastq v2.19.1.403"
@@ -125,24 +127,46 @@ class PostRunMetaData:
                           Dumper = yamlloader.ordereddict.CSafeDumper,
                           default_flow_style = False )
 
-def munge_lanes(l):
-    """Take the lanes arguments and return a dict {'lanes': [int, int, int]} or else
-       an empty dict - ie. converts sys.argv to **kwargs format.
-    """
-    res = dict(lanes=[])
-    for al in l:
-        if al.startswith('lane'):
-            res['lanes'].append(al[4:])
-        elif al == 'overview':
-            # special case
-            return {}
-        else:
-            res['lanes'].append(al)
-    return res if res['lanes'] else {}
+def parse_args():
+    description = """This script is part of the Illuminatus pipeline.
+    It provides some information about a demultiplexing/QC process, given
+    a fastqdata folder, and is used to make the files run_info.{runid}.2.yml, one
+    per lane and one for the overview page of the MultiQC report.
+    The following sources will be checked:
+       bcl2fastq.version files
+       bcl2fastq.info files
+       laneN/SampleSheet.filtered.csv
+    You may supply a single lane to check, or else aggregate info for all lanes will
+    be scraped.
+"""
 
+    a = ArgumentParser( description = description,
+                        formatter_class = ArgumentDefaultsHelpFormatter)
+
+    a.add_argument("--fastqdata_path", help="Location of top-level directory where processed runs are found."
+                                            " If not specified, script will look in the current working directory.")
+    a.add_argument("--run", help="Run to scan", default=".")
+    a.add_argument("--lane", help="Lane to scan", default="overview")
+    a.add_argument("--subdir", help="Subdirectory where bcl2fastq outputs should be found", default="demultiplexing")
+
+    return a.parse_args()
+
+def main(args):
+    # Tinker with the lane argument. In practise we only pass either an empty list
+    # or a single lane so scan.
+
+    if args.lane == "overview":
+        lanes = []
+    elif args.lane.startswith("lane"):
+        lanes = [args.lane[4:]]
+    else:
+        lanes = [args.lane]
+
+    run_info = PostRunMetaData( run_folder = args.run,
+                                fastqdata_path = args.fastqdata_path or '',
+                                lanes = lanes,
+                                subdir = args.subdir )
+    print ( run_info.get_yaml() )
 
 if __name__ == '__main__':
-    #If no run specified, examine the CWD.
-    run = sys.argv[1] if len(sys.argv) > 1 else '.'
-    run_info = PostRunMetaData(run, **munge_lanes(sys.argv[2:]) )
-    print ( run_info.get_yaml() )
+    main(parse_args())

@@ -377,7 +377,8 @@ class T(unittest.TestCase):
 
         # Test (again) that despite the failure read1.done still appeared
         self.assertEqual(len(self.bm.last_calls['rt_runticket_manager.py']), 1)
-        self.assertEqual(len(self.bm.last_calls['Snakefile.qc']), 3)
+        self.assertEqual(self.bm.last_calls['Snakefile.qc'], [ "-- interop_main".split(),
+                                                               "-- metadata_main".split() ])
         self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
 
         # Possibly driver.sh should remove this if RT communication fails??

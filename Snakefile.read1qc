@@ -235,13 +235,16 @@ rule count_well_dupl:
 # === Rules to pre-demultiplex one tile to check the barcode balance ===
 
 # This copies all the Stats.json for MultiQC to find, then calls assess_bc_check.py
-# to make the summary over all Stats.json files. Note this rule has no wildcards just
-# a load of expansions.
+# to make the summary over all Stats.json files. It also adds QC/{rep}/run_info.{r}.2.yml
+# for all the reports which provides some metadata for the top of the report.
+# Note this rule has no wildcards just a load of expansions.
 rule make_bc_summary:
     output:
         summary = "QC/bc_check/bc_check.msg",
         json    = expand("QC/lane{l}/Stats.json", l=LANES_IN_RUN),
         unass   = expand("QC/lane{l}/{run}_{l}_unassigned_table.txt", l=LANES_IN_RUN, run=[RUN]),
+        ri2o    = expand("QC/overview/run_info.{r}.2.yml", r=[RUN]),
+        ri2l    = expand("QC/lane{l}/run_info.{r}.2.yml",  l=LANES_IN_RUN, r=[RUN]),
     input:
         json    = expand("QC/bc_check/lane{l}/Stats/Stats.json", l=LANES_IN_RUN),
         unass   = expand("QC/bc_check/lane{l}/unassigned_table.txt", l=LANES_IN_RUN),
@@ -252,6 +255,10 @@ rule make_bc_summary:
                              zip(input.unass, output.unass) ):
             shell("cp -v {ij} {oj}")
         shell("assess_bc_check.py {input.json} > {output.summary}")
+        shell("summarize_post_bcl2fastq.py --subdir QC/bc_check > {output.ri2o}")
+        for n, l in enumerate(LANES_IN_RUN):
+            shell("summarize_post_bcl2fastq.py --subdir QC/bc_check --lane {l} > {output.ri2l[n]}")
+
 
 # Read 1 demux uses a shadow directory as we don't want to keep the reports or the FASTQ files at all.
 # Shallow shadow is tricky but here we can safely assume the QC dir already exists and bc_check_tmp

@@ -575,13 +575,16 @@ run_multiqc() {
     # In this case, an error in MultiQC etc. should not prevent demultiplexing from starting.
     mkdir -vp "$DEMUX_OUTPUT_FOLDER"/QC |& debug
     # Note - running interop here is a problem because if the cluster is busy this will
-    # hang until the jobs run. I think it was redundant anyway as read1 and pre-QC trigger it
+    # hang until the jobs run. I think it would be redundant anyway as read1 and pre-QC trigger it
     # explicitly. What I do need is the metadata.
-    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- metadata_main ) 2>&1
-    ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F --config pstatus="$_pstatus" -- multiqc_main ) 2>&1
+    if ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- metadata_main ) 2>&1 ; then
+        ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F --config pstatus="$_pstatus" -- multiqc_main ) 2>&1
 
-    # Snag that return value
-    _retval=$(( $? + $_retval ))
+        # Snag that return value
+        _retval=$(( $? + $_retval ))
+    else
+        _retval=1
+    fi
 
     # Push to server and capture the result (if upload_report.sh does not error it must print a URL)
     # We want stderr from upload_report.sh to go to stdout, so it gets plogged.
