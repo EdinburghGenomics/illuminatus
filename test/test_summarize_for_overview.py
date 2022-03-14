@@ -71,7 +71,7 @@ class T(unittest.TestCase):
         self.assertEqual(dict(expected), got)
 
     ### THE TESTS ###
-    @patch('summarize_for_overview.illuminatus_version', '1.7.1-master-c15ee946')
+    @patch('summarize_for_overview.illuminatus_version', '1.2.3')
     def test_miseq1(self):
         """A run that has not been processed at all
         """

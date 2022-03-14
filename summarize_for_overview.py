@@ -30,9 +30,8 @@ def get_pipeline_info(run_path):
             last_line = list(stfh)[-1].rstrip('\n')
 
     except FileNotFoundError:
-        #OK, the pipeline didn't start. Just return the Illuminatus version
-        pipeline_info['version'] = illuminatus_version
-        return pipeline_info
+        #OK, the pipeline didn't start
+        return None
 
     if '@' in last_line:
         pipeline_info['version'], pipeline_info['start'] = last_line.split('@', 1)
@@ -98,6 +97,7 @@ def get_idict(rids, run_path, pipeline_info=None):
                      os.path.realpath( ss_path ) ]
 
     idict['pre_start_info'] = OrderedDict([
+            ('Pipeline Version', illuminatus_version),
             ('Run Date', rids['RunDate']),
             ('Run ID', rids['RunId']),
             ('Experiment', expname),
@@ -116,12 +116,12 @@ def get_idict(rids, run_path, pipeline_info=None):
         del idict['pre_start_info']['Chemistry']
 
     if pipeline_info:
+        del idict['pre_start_info']['Pipeline Version']
         idict['post_start_info'] = OrderedDict([
-            ('Pipeline Version', pipeline_info['version'])])
-        if 'finish' in pipeline_info:
-            idict['t2//Sequencer Finish'] = pipeline_info['finish']
-        if 'start' in pipeline_info:
-            idict['t3//Pipeline Start'] = pipeline_info['start']
+            ('Pipeline Version', pipeline_info['version']),
+            ('t2//Sequencer Finish', pipeline_info['finish']),
+            ('t3//Pipeline Start', pipeline_info['start']),
+        ])
 
     return idict
 
