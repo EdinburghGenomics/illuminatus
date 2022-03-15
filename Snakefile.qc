@@ -161,9 +161,6 @@ lanes = sorted( set( [sf['lane'] for sf in all_all] + all_stats_json_lanes + all
 # This will not generate the per-lane reports until the demultiplexing has been done.
 allreps = expand("lane{l}", l=lanes) + ['overview']
 
-# Also when generating the reports the driver can tell the pipeline what status it is in
-pstatus = config.get('pstatus') or 'not specified'
-
 # === Driver rules ===
 #...have migrated to the bottom so they can refer to the inputs/outputs of other rules
 
@@ -189,13 +186,17 @@ rule run_multiqc:
     input:
         config   = "QC/multiqc_config.yml",
         runinfo  = "QC/run_info.{r}.1.yml".format(r=RUN),
+    params:
+        pstatus  = config.get('pstatus') or "not specified",
+        comment  = [ "-b", config.get('comment') ] if config.get('comment') else []
     shell:
         """echo "multiqc is `which multiqc`" >&2
            rm -rf {output.data}
            mkdir -p  QC/{wildcards.l}
            ln -srf {input.runinfo} QC/{wildcards.l}/
-           {TOOLBOX} multiqc -t edgen -o QC -n `basename {output.report}` -c {input.config} QC/{wildcards.l} \
-                --lane {wildcards.l} --pipeline_status '{pstatus}'
+           {TOOLBOX} multiqc -t edgen -o QC -n `basename {output.report}` -c {input.config} {params.comment:q} \
+                QC/{wildcards.l} \
+                --lane {wildcards.l} --pipeline_status {params.pstatus:q}
         """
 
 localrules: configure_multiqc

@@ -230,10 +230,10 @@ action_reads_finished(){
     # available.
     fetch_samplesheet
 
-    # Karim wanted an e-mail alert here, with a lane summary, as well as the new report.
-    # Make sure any printed output is plogged, and continue on errors.
-    ( run_multiqc "Reads finished, demultiplexing starting" || true
-      send_summary_to_rt reply demultiplexing "The run finished and demultiplexing will now start. Report is at" || true
+    # We used to run MultiQC here, before running bcl2fastq, but I think with the expanded read1
+    # processing this is redundant. But we do still want the alert to be sent to RT.
+    ( send_summary_to_rt reply demultiplexing \
+                         "The run finished and demultiplexing will now start. Report will appear at" || true
     ) |& plog
 
     # Now kick off the demultiplexing into $FASTQ_LOCATION
@@ -330,6 +330,10 @@ action_read1_finished() {
     plog ">>> See pipeline_read1.log for details on read1 processing."
     plog1 </dev/null  #Log1 must be primed before entering subshell!
 
+    # Set up a message to be passed to the "-b" option of MultiQC because the numbers
+    # on the reports are for one tile only.
+    mqc_comment="A single tile was demultiplexed to check the barcodes. Await the final report for true numbers."
+
     # Now is the time for WellDups scanning. Note that we press on despite failure,
     # since we don't want a problem here to hold up demultiplexing.
     # A failure to contact RT is simply ignored
@@ -347,7 +351,7 @@ action_read1_finished() {
         fi
         Snakefile.qc -- interop_main    || e="$e interop"
         popd
-        run_multiqc "Waiting for RTAComplete" NONE "$per_run_log1" || e="$e multiqc"
+        run_multiqc "Waiting for RTAComplete" NONE "$per_run_log1" "$mqc_comment" || e="$e multiqc"
 
         if [ -n "$e" ] ; then
             _msg="There were errors in read1 processing (${e# }) on $RUNID. See $per_run_log1"
@@ -358,7 +362,9 @@ action_read1_finished() {
         # Did bc_check produce any alert, or should we just log the usual comment?
         if [ -s "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg" ] ; then
             _full_msg="$_msg"$'\n'"$(cat "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg")"
-            send_summary_to_rt reply "barcode issue" \
+            log '  Barcode check does not look good! Reporting to RT.'
+            echo $'Barcode problem...\n>>>\n'"$_full_msg"$'\n<<<'
+            send_summary_to_rt reply "barcode problem" \
                 "$_full_msg"$'\n'"Report is at"
         else
             rt_runticket_manager --comment "$_msg" || true
@@ -553,11 +559,13 @@ run_multiqc() {
     _rt_run_status="${2:-}"
 
     if [ "${3:--}" != - ] ; then
-        _plog="$3" # Caller may hint where the log is going.
+        _plog="$3" # Caller may hint where the log is going - ie. for read1.log
     else
         plog </dev/null #Just to set $per_run_log
         _plog="${per_run_log}"
     fi
+
+    _mqc_comment="${4:-[]}"
 
     # So this will summarize the samples into RT, but at this point there is no
     # link to the report to send to RT. We don't get the link until we do the upload
@@ -578,7 +586,8 @@ run_multiqc() {
     # hang until the jobs run. I think it would be redundant anyway as read1 and pre-QC trigger it
     # explicitly. What I do need is the metadata.
     if ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -- metadata_main ) 2>&1 ; then
-        ( cd "$DEMUX_OUTPUT_FOLDER" ; Snakefile.qc -F --config pstatus="$_pstatus" -- multiqc_main ) 2>&1
+        ( cd "$DEMUX_OUTPUT_FOLDER" ;
+          Snakefile.qc -F --config pstatus="$_pstatus" comment="$_mqc_comment" -- multiqc_main ) 2>&1
 
         # Snag that return value
         _retval=$(( $? + $_retval ))
@@ -686,7 +695,8 @@ run_qc() {
     )
 
     # If we get here, the pipeline completed (or was partially complete) but a failure to
-    # upload the final report must still count as a pipeline failure (trapped by the caller)
+    # generate or upload the final report must still count as a pipeline failure, so allow
+    # any error from run_multiqc to propogate.
     debug "run_multiqc 'Completed QC' at $0 line $LINENO"
     run_multiqc "Completed QC"
 }

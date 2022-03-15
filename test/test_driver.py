@@ -235,7 +235,7 @@ class T(unittest.TestCase):
                                                         '--from_yml pipeline/sample_summary.yml --txt -'.split()]
         expected_calls['rt_runticket_manager.py'] = ['-Q run -r 160606_K00166_0102_BHF22YBBXX --subject new --comment @???'.split()]
         expected_calls['Snakefile.qc'] = [ '-- metadata_main'.split(),
-                                           ['-F', '--config', 'pstatus=Waiting for data', '--', 'multiqc_main'] ]
+                                           ['-F', '--config', 'pstatus=Waiting for data', 'comment=[]', '--', 'multiqc_main'] ]
         expected_calls['upload_report.sh'] = [[self.temp_dir + '/fastqdata/160606_K00166_0102_BHF22YBBXX']]
         expected_calls['clarity_run_id_setter.py'] = ['-- 160606_K00166_0102_BHF22YBBXX'.split()]
 
@@ -284,7 +284,7 @@ class T(unittest.TestCase):
         self.assertTrue(os.path.isdir(test_data2 + '/pipeline'))
         self.assertEqual(self.bm.last_calls['Snakefile.qc'],
                          [['--', 'metadata_main'],
-                          ['-F', '--config', 'pstatus=Waiting for data', '--', 'multiqc_main']])
+                          ['-F', '--config', 'pstatus=Waiting for data', 'comment=[]', '--', 'multiqc_main']])
 
     def test_existing_and_new(self):
         """If a run appears new (no pipeline dir) but then has an existing output directory we shouldn't
@@ -821,7 +821,7 @@ class T(unittest.TestCase):
         self.assertNotInStdout("FAIL QC ")
 
     def test_bc_check_msg(self):
-        """Test the new behaviour with read1 processing where barcode issues are reported to RT.
+        """Test the new behaviour with read1 processing where barcode problems are reported to RT.
            Do we see the right calls? What if RT is unresponsive? Does the run go on cleanly?
            Maybe this is best rolled into tests above?
         """
@@ -858,7 +858,7 @@ class T(unittest.TestCase):
         # Here's the main check. Do we get an alert sent to RT?
         rt_manager_call, = self.bm.last_calls['rt_runticket_manager.py']
         self.assertEqual( rt_manager_call[:-1], [ '-Q', 'run', '-r', '160606_K00166_0102_BHF22YBBXX',
-                                                  '--subject', 'barcode issue', '--reply' ] )
+                                                  '--subject', 'barcode problem', '--reply' ] )
 
         # Re-trigger read1 processing, this time with the Snakefile.read1qc failing
         # This should post a comment but not an alert.

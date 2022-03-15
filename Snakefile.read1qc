@@ -257,7 +257,8 @@ rule make_bc_summary:
         shell("assess_bc_check.py {input.json} > {output.summary}")
         shell("summarize_post_bcl2fastq.py --subdir QC/bc_check > {output.ri2o}")
         for n, l in enumerate(LANES_IN_RUN):
-            shell("summarize_post_bcl2fastq.py --subdir QC/bc_check --lane {l} > {output.ri2l[n]}")
+            out_ri2l = output.ri2l[n]
+            shell("summarize_post_bcl2fastq.py --subdir QC/bc_check --lane {l} > {out_ri2l}")
 
 
 # Read 1 demux uses a shadow directory as we don't want to keep the reports or the FASTQ files at all.
