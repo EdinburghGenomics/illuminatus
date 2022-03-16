@@ -295,6 +295,8 @@ rule bcl2fastq_bc_check:
 rule setup_bc_check:
     output:
         ssheet = "QC/bc_check/lane{l}/SampleSheet.filtered.csv"
+    input:
+        ssheet = RUNDIR + "/SampleSheet.csv"
     shell:
         # If the override file is missing or empty this results in auto revcomp logic
         # I considered using TILE_MATCH to see which tile to sample but this is not
