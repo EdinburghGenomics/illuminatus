@@ -200,7 +200,7 @@ action_new(){
       chgrp ${VERBOSE:+-c} --reference="$DEMUX_OUTPUT_FOLDER" ./pipeline |& log
 
       plog_start
-      fetch_samplesheet
+      fetch_samplesheet |& plog
     ) ; [ $? = 0 ] && BREAK=1 || { pipeline_fail Scan_new_run ; return ; }
 
     # Run an initial report but don't abort the pipeline if this fails - the error
@@ -228,7 +228,7 @@ action_reads_finished(){
 
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
-    fetch_samplesheet
+    fetch_samplesheet |& plog
 
     # We used to run MultiQC here, before running bcl2fastq, but I think with the expanded read1
     # processing this is redundant. But we do still want the alert to be sent to RT.
@@ -329,6 +329,9 @@ action_read1_finished() {
     plog_start
     plog ">>> See pipeline_read1.log for details on read1 processing."
     plog1 </dev/null  #Log1 must be primed before entering subshell!
+
+    # Re-fetch the sample sheet since we're going to do a demultiplex.
+    fetch_samplesheet |& plog1
 
     # Set up a message to be passed to the "-b" option of MultiQC because the numbers
     # on the reports are for one tile only.
@@ -447,7 +450,7 @@ action_redo() {
     # might be to detect changes in the sample sheet automatically? This is now in auto_redo.sh!
     set +e ; ( set -e
         fetch_samplesheet
-    ) ; [ $? = 0 ] || { pipeline_fail Fetch_Sample_Sheet ; return ; }
+    ) |& plog ; [ $? = 0 ] || { pipeline_fail Fetch_Sample_Sheet ; return ; }
 
     set +e ; ( set -e
       if [ -e "$DEMUX_OUTPUT_FOLDER" ] ; then
@@ -534,13 +537,13 @@ fetch_samplesheet(){
     # a new one was found, delete the stale sample_summary.yml.
     old_ss_link="`readlink -q SampleSheet.csv 2>/dev/null || true`"
 
-    #Currently if samplesheet_fetch.sh returns an error the pipeline aborts, as
-    #this indicates a fundamental problem.
-    samplesheet_fetch.sh |& plog
+    # Currently if samplesheet_fetch.sh returns an error the pipeline generally aborts, as
+    # this indicates a fundamental problem.
+    samplesheet_fetch.sh
     new_ss_link="`readlink -q SampleSheet.csv || true`"
 
     if [ "$old_ss_link" != "$new_ss_link" ] ; then
-        rm -vf pipeline/sample_summary.yml |& debug
+        rm -vf pipeline/sample_summary.yml
     fi
 }
 
