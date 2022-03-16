@@ -43,7 +43,7 @@ if [ -e "$ENVIRON_SH" ] ; then
 fi
 
 # Just because I renamed it
-if [ -n "${RSYNC_CMD:-}" ] && [ -z "${REPORT_RSYNC}" ] ; then
+if [ -n "${RSYNC_CMD:-}" ] && [ -z "${REPORT_RSYNC:-}" ] ; then
     echo 'RSYNC_CMD option is now REPORT_RSYNC. Please fix your config.'
     exit 1
 fi
