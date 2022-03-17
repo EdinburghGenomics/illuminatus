@@ -21,3 +21,49 @@ to be fed in order to make me a table. Or if it won't do, make a custom module
 that eats the YAML directly.
 After checking http://multiqc.info/docs/#custom-content I've added a seconf YAML
 emitter which should result in a table appearing in MultiQC.
+
+---
+
+At version 1.9.1. It seems that the summary is not being generated when the
+"demultiplexing" mail goes out. Why not?
+
+summarize_lane_contents.py to re-make pipeline/sample_summary.yml is only called as part
+of run_multiqc(). In that case, it is only called if pipeline/sample_summary.yml is missing,
+and this also triggers a report of the flowcell contents to RT by calling send_summary_to_rt()
+
+The pipeline/sample_summary.yml is removed by fetch_samplesheet() if the sample sheet is replaced,
+but it doesn't immediately recreate the file because run_multiqc() wants to be able to know if the
+file is new and needs reporting.
+
+So the expexted pattern is to call fetch_samplesheet() and then later call run_multiqc() which
+will recreate as necessary and then call send_summary_to_rt()
+
+So how was the file missing, after action_read1_finished() then action_reads_finished()?
+Presumably fetch_samplesheet() is called and then send_summary_to_rt() is called directly,
+with no recreation of pipeline/sample_summary.yml.
+
+action_read1_finished() calls fetch_samplesheet() and then run_multiqc(), which should be fine
+
+send_summary_to_rt() is called in:
+    action_reads_finished() - this is a problem as pipeline/sample_summary.yml may be missing
+    action_demultiplexed() - this is OK as there is no re-fetch of the sample sheet between
+                             demux and QC, for obvious reasons.
+    action_read1_finished() - only for errors, so that the RT reply will have a sample summary.
+                              This is fine as run_multiqc() is called first. Note we may end up with
+                              the sample summary sent twice to RT in quick successsion but this is OK.
+    action_redo() - but again run_multiqc() is called
+    run_multiqc() - as noted above
+
+OK, so the breaking change is I decided there is no need for action_reads_finished() to call run_multiqc()
+as the report at this stage is pretty redundant (we have the read1 demultiplex already). There is also
+a race condition because action_reads_finished() can run at the same time as action_read1_finished() which
+does trigger a report.
+
+So I think we do just need to have action_reads_finished() recreate the pipeline/sample_summary.yml
+if it's missing. I could put this in send_summary_to_rt() but I think this may mask other bugs - if
+the file is missing I do want to know about it. OK.
+
+In general I think the logic that run_multiqc() conditionally calls send_summary_to_rt() is the problem.
+Probably for all calls to run_multiqc() it should be up to the caller to decide if it wants to send_summary_to_rt(),
+and then the call to summarize_lane_contents.py can be made within fetch_samplesheet() which can then report if
+it made a new sample sheet or not. But I'll worry about this later it's too much of a faffy change.

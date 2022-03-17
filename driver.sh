@@ -229,6 +229,9 @@ action_reads_finished(){
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
     fetch_samplesheet |& plog
+    if [ ! -e pipeline/sample_summary.yml ] ; then
+        summarize_lane_contents.py --yml pipeline/sample_summary.yml |& plog
+    fi
 
     # We used to run MultiQC here, before running bcl2fastq, but I think with the expanded read1
     # processing this is redundant. But we do still want the alert to be sent to RT.
