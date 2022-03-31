@@ -9,7 +9,7 @@ export DRY_RUN=${DRY_RUN:-0}
 LOCAL_CORES=${LOCAL_CORES:-4}
 SNAKE_THREADS=${SNAKE_THREADS:-100}
 EXTRA_SNAKE_FLAGS="${EXTRA_SNAKE_FLAGS:-}"
-EXTRA_SLURM_FLAGS="${EXTRA_SLURM_FLAGS:--t 24:00:00}"
+EXTRA_SLURM_FLAGS="${EXTRA_SLURM_FLAGS:---time=24:00:00 --qos=edgen}"
 
 ## Dump out the right cluster config (just now we only have one)
 function cat_cluster_yaml(){

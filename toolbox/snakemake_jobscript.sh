@@ -4,6 +4,8 @@
 # Made by Tim B on 2016-11-01
 # Updated after DRMAA fix on 2017-06-13
 
+( module purge -s ; unset module ) || true
+
 # Where am I running? Weird syntax avoids fopen on /dev/stderr
 # which is bad if /dev/stderr is a real file.
 # Could add more debugging info here, maybe?
