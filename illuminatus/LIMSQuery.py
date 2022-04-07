@@ -39,14 +39,19 @@ def get_project_names(*proj_nums):
     res = []
     with MyLimsDB() as ldb:
         for pn in proj_nums:
+
+            # Sometimes we try to look up a very short prefix
+            if len(str(pn)) < 3:
+                raise LookupError("Project prefix '{}' too short to query".format(pn))
+
             qres = ldb.select("SELECT name FROM project WHERE name LIKE %s || '_%%'", pn)
 
             projects = filter_names(( r.name for r in qres ))
 
             if len(projects) > 1:
-                raise LookupError("More than one project found with prefix %s", pn)
+                raise LookupError("More than one project found with prefix '{}'".format(pn))
             else:
-                res.append(projects.pop() if projects else None)
+                res.append(projects[0] if projects else None)
 
     return res
 

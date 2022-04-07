@@ -15,7 +15,7 @@ runcmd(){ echo "RUNNING: $@" ; "$@" ; }
 
 # Sanity checking stage...
 [ -d git_repo ] || die "No git_repo folder."\
-    "This script should normally be run in /lustre/home/pipeline/illuminatus/"
+    "This script should normally be run in /lustre-gseg/home/pipeline/illuminatus/"
 
 # Update the git_repo.  This doesn't affect any actual working files.
 # Note - if the tag doesn't appear to be fetched then make sure you

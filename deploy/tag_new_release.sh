@@ -19,8 +19,7 @@ set -u
 # 5a) echo $newversion > version.txt && git commit
 # 5b) git tag
 # 6) git push --tags
-# 7) remind the user to now do
-#     cd ~pipeline/illuminatus ; get_latest_tag.sh
+# 7) remind the user what to do next
 
 
 listtags(){
@@ -97,5 +96,5 @@ git tag "v$actual_new_version"
 git push --tags
 git push
 
-echo "All done.  Now log in as the pipeline user and do:"
+echo "All done. Now log in as the pipeline user and do:"
 echo "  cd ~/illuminatus && $(dirname $(readlink -f "$BASH_SOURCE"))/get_latest_tag.sh"
