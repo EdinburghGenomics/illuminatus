@@ -86,9 +86,12 @@ else
 
         pip_install pyyaml==5.4.1
         pip_install 'yamlloader<2'
-        pip_install 'rt<2'
+        pip_install rt==2.2.2
+
+        # For access the Clarity
         pip_install pyclarity_lims==0.4.8
         pip_install psycopg2-binary  # Pinning the version should not be necessary
+
         pip_install chevron          # Only needed for PDF states report
         pip_install pyflakes==2.2.0
 
@@ -113,9 +116,9 @@ else
     )
 
     if [ $? = 0 ] ; then
-        # We need this since we quit the subshell
-        unset -f post_activate
         echo "VEnv provisioned OK"
+        unset -f post_activate
+        # We need this since we quit the subshell
         activate_venv
     else
         unset -f post_activate upgrade_multiqc pip_install
