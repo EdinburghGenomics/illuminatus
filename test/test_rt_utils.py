@@ -134,10 +134,14 @@ class T(unittest.TestCase):
         # Make the library not connect (but not by Mocking it)
         os.environ['RT_SYSTEM'] = 'none'
 
-        self.assertRaisesRegex(SystemExit, "Ticket #999 for 'SOME_RUN' has subject: None", main, args)
+        with self.assertLogs() as loglines:
+            self.assertRaisesRegex(SystemExit, "Ticket #999 for 'SOME_RUN' has subject: None", main, args)
+
+        self.assertEqual(loglines.output,
+                         ['WARNING:root:Making dummy connection - all operations will be no-ops.'])
 
         self.assertEqual(dummy_stderr.getvalue(), '')
-        self.assertEqual(dummy_stdout.getvalue()[:23], 'Making dummy connection')
+        self.assertEqual(dummy_stdout.getvalue(), '')
 
 if __name__ == '__main__':
     unittest.main()
