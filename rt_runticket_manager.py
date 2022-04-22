@@ -5,6 +5,8 @@ from contextlib import suppress
 import configparser
 from rt import Rt, AuthorizationError
 
+import logging as L
+
 # This was copied and modified from illuminatus/rt_runticket_manager.py to smrtino
 # and then copied back to bring the two into line.
 # I'm pretty sure that:
@@ -30,6 +32,8 @@ def resolve_msg(in_val):
 
 def main(args):
 
+    L.basicConfig(level=L.INFO, stream=sys.stderr)
+
     run_id = args.run_id # eg. "r54041_20180518_115257" or "180807_A00291_0056_AHCFLYDMXX"
     subject_postfix = args.subject
     ticket_status = args.status
@@ -43,9 +47,9 @@ def main(args):
 
     # Determine subject for new ticket or else change of subject.
     if subject_postfix:
-        subject = "Run %s : %s" % (run_id, subject_postfix)
+        subject = f"{args.prefix} {run_id} : {subject_postfix}"
     else:
-        subject = "Run %s" % (run_id)
+        subject = f"{args.prefix} {run_id}"
 
     rt_config_name = 'test-rt' if args.test else os.environ.get('RT_SYSTEM', 'production-rt')
     with RTManager( config_name = rt_config_name,
@@ -54,9 +58,9 @@ def main(args):
         if check_only:
             ticket_id, ticket_dict = rtm.search_run_ticket(run_id)
             if ticket_id:
-                exit("Ticket #{} for '{}' has subject: {}".format(ticket_id, run_id, ticket_dict.get('Subject')))
+                exit(f"Ticket #{ticket_id} for '{run_id}' has subject: {ticket_dict.get('Subject')}")
             else:
-                exit("No open ticket found for '{}'".format(run_id))
+                exit(f"No open ticket found for '{run_id}'")
 
         # Or we can explicitly ask never to open a new ticket
         if args.no_create:
@@ -64,13 +68,13 @@ def main(args):
             if ticket_id:
                 created = False
             else:
-                exit("No open ticket found for '{}'".format(run_id))
+                exit(f"No open ticket found for '{run_id}'")
         else:
             # if the ticket does not exist, create it with the supplied message, be
             # that a commet or a reply, else if it does exits just get the ID
             ticket_id, created = rtm.find_or_create_run_ticket( run_id , subject, (reply_message or comment_message) )
 
-        print("{} ticket_id is {}".format('New' if created else 'Existing', ticket_id))
+        print(f"{'New' if created else 'Existing'} ticket_id is {ticket_id}")
 
         # change Subject of ticket
         # Note that it is valid to pass --subject "" to clear the postfix
@@ -119,7 +123,7 @@ class RTManager():
     def connect(self, timeout=60):
 
         if not self._config:
-            print("Making dummy connection - all operations will be no-ops.", file=sys.stderr)
+            L.warning("Making dummy connection - all operations will be no-ops.")
             return self
 
         self.server_path = self._config['server']
@@ -132,7 +136,7 @@ class RTManager():
                            default_queue = self._queue )
 
         if not self.tracker.login():
-            raise AuthorizationError('login() failed on {_config_name} ({tracker.url})'.format(**vars(self)))
+            raise AuthorizationError(f'login() failed on {self._config_name} ({self.tracker.url})')
 
         # Here comes the big monkey-patch-o-doom!
         # It will force a 60-second timeout on the Rt session, assuming the internal implementation
@@ -164,18 +168,18 @@ class RTManager():
 
         cp = configparser.ConfigParser()
         if not cp.read(file_name):
-            raise AuthorizationError('unable to read configuration file {file_name}'.format(**locals()))
+            raise AuthorizationError(f'unable to read configuration file {file_name}')
 
         # A little validation
         if section_name not in cp:
-            raise AuthorizationError('file {file_name} contains no configuration section {section_name}'.format(**locals()))
+            raise AuthorizationError(f'file {file_name} contains no configuration section {section_name}')
 
         conf_section = cp[section_name]
 
         # A little more validation
         for x in ['server', 'user', 'pass', self._queue_setting + '_queue']:
             if not conf_section.get(x):
-                raise AuthorizationError('file {file_name} did not contain setting {x} needed for RT authentication'.format(**locals()))
+                raise AuthorizationError(f'file {file_name} did not contain setting {x} needed for RT authentication')
 
         return conf_section
 
@@ -225,22 +229,29 @@ class RTManager():
         # Note - if the tickets aren't opened then 'new' tickets will just pile up in RT,
         # but I don't think that should happen.
         tickets = list(self.tracker.search( Queue = self._queue,
-                                            Subject__like = '%{}%'.format(run_id),
+                                            Subject__like = f'%{run_id}%',
                                             Status = 'open'
                                           ))
+
+        # The above logic could break if one run has a name which is a substring of another
+        # run name. This is actually possible for Promethion, so we now do a further check
+        # to ensure we really really got the right ticket.
+        for t in tickets:
+            if not re.search(r'\b{}\b'.format(run_id), t.get('Subject', '')):
+                L.warning(f"Disregarding ticket with subject {t.get('Subject')}")
+                t['id'] = None
+        tickets = [ t for t in tickets if t.get('id') ]
 
         if not tickets:
             return (None, None)
 
         # Order the tickets by tid and get the highest one
-        def get_id(t): return int(t.get('id').strip('ticket/'))
+        def get_id(t): return int(t['id'].strip('ticket/'))
         tickets.sort(key=get_id, reverse=True)
         tid = get_id(tickets[0])
 
         if len(tickets) > 1:
-            # Should use really use proper logging here
-            print("Warning: We have {} open tickets for run {}! Using the latest, {}".format(
-                                    len(tickets),           run_id,               tid), file=sys.stderr)
+            L.warning(f"Warning: We have {len(tickets)} open tickets for run {run_id}! Using the latest, {tid}")
 
         #Failing that...
         return (tid, tickets[0]) if tid > 0 else (None, None)
@@ -289,7 +300,7 @@ class RTManager():
         if not self._config: return
 
         # why the extra space?? I'm not sure but it looks to have been added deliberately.
-        kwargs = dict( Subject = "{} ".format(subject) )
+        kwargs = dict( Subject = f"{subject} " )
 
         # Ignore IndexError raised when subject is already set
         with suppress(IndexError):
@@ -318,6 +329,8 @@ def parse_args(*args):
                             help="Change the ticket subject (postfix)")
     argparser.add_argument("--status",
                             help="Change status of the ticket")
+    argparser.add_argument("-P", "--prefix", default="Run",
+                            help="Change the prefix used when making or renaming tickets")
     argparser.add_argument("--no_create", action="store_true",
                             help="Avoid creating new tickets.")
     argparser.add_argument("--test", action="store_true",
