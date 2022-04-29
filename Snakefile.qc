@@ -321,7 +321,6 @@ rule interop_flowcell_all:
            [ $i -gt 1 ] && [ -s {output} ]
         """
 
-
 # This makes use of the interop library that needs to be installed into the Python
 # VEnv - see the activate_venv script.
 # Due to the way the files are read I'm making this a one-shot thing that always

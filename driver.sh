@@ -367,7 +367,7 @@ action_read1_finished() {
 
         # Did bc_check produce any alert, or should we just log the usual comment?
         if [ -s "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg" ] ; then
-            _full_msg="$_msg"$'\n'"$(cat "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg")"
+            _full_msg="$_msg"$'\n\n'"$(cat "$DEMUX_OUTPUT_FOLDER/QC/bc_check/bc_check.msg")"
             log '  Barcode check does not look good! Reporting to RT.'
             echo $'Barcode problem...\n>>>\n'"$_full_msg"$'\n<<<'
             send_summary_to_rt reply "barcode problem" \

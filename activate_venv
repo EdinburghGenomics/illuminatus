@@ -78,13 +78,12 @@ else
         "$_py3_real" -mvenv ./_illuminatus_venv
         activate_venv
 
-        pip_install --upgrade 'pip<22'
-        pip_install wheel
+        pip_install --upgrade pip wheel
 
         # Install any pre-built wheels
         install_wheels "${WHEELS:-${_toolbox}/wheels}"
 
-        pip_install pyyaml==5.4.1
+        pip_install pyyaml==6.0
         pip_install 'yamlloader<2'
         pip_install rt==2.2.2
 
@@ -93,7 +92,7 @@ else
         pip_install psycopg2-binary  # Pinning the version should not be necessary
 
         pip_install chevron          # Only needed for PDF states report
-        pip_install pyflakes==2.2.0
+        pip_install pyflakes
 
         # InterOP is now on PyPI so no pre-build needed :-)
         pip_install numpy==1.16.4

@@ -226,11 +226,12 @@ rule count_well_dupl:
         targfile = "QC/welldups/{targets}clusters.list"
     params:
         verbose = '' if REPORT_VERBOSE else '-S',
-        tiles   = lambda wc: TILE_MATCH[wc.side]
+        tiles   = lambda wc: TILE_MATCH[wc.side],
+        cycles  = f'{START_POS}-{END_POS}'
     shell:
        r"""{TOOLBOX} wd_count_well_duplicates -f {input.targfile} -n {wildcards.targets} -s {LAST_TILE} \
-           -r {RUNDIR} -i {wildcards.lane} -l {LEVELS_TO_SCAN} --cycles {START_POS}-{END_POS} \
-           -t {params.tiles} {params.verbose} > {output}"""
+           -r {RUNDIR} -i {wildcards.lane} -l {LEVELS_TO_SCAN} --cycles {params.cycles:q} \
+           -t {params.tiles:q} {params.verbose} > {output}"""
 
 # === Rules to pre-demultiplex one tile to check the barcode balance ===
 
