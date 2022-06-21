@@ -98,14 +98,20 @@ class BCL2FASTQPreprocessor:
         bm = self.bme.get_base_mask_for_lane(self.lane)
         bcl2fastq_opts["--use-bases-mask"] = "'{}'".format(bm)
 
-        # Specify the lane to process, which is controlled by --tiles
-        # Note that $LANE is going to be interpreted by the shell when the command is run.
-        # Slimmed-down runs override this setting but will still include $LANE to pick up the lane number
-        bcl2fastq_opts["--tiles"] = "'s_[{}]'".format(self.lane)
-
         # now that the bcl2fastq_opts array is complete, evaluate the pipeline_settings.ini file
         # and update the dict
         bcl2fastq_opts.update(self.ini_settings['bcl2fastq'].items())
+
+        # The lane to process, is controlled by --tiles
+        if bcl2fastq_opts.get("--tiles"):
+            # Slimmed-down runs override this setting and include $LANE to pick up the lane number,
+            # but we substitute that here for consistency.
+            bcl2fastq_opts["--tiles"] = "'{}'".format(
+                                                bcl2fastq_opts["--tiles"].strip("\"\'")
+                                                                         .replace("$LANE", self.lane) )
+        else:
+            # The default - all tiles in the lane
+            bcl2fastq_opts["--tiles"] = "'s_[{}]'".format(self.lane)
 
         return bcl2fastq_opts
 

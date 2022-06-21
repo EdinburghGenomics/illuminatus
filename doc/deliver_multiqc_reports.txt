@@ -1,0 +1,40 @@
+See qc_tools_python/doc/deliver_multiqc_reports.txt
+
+I've decided what needs to change in the reports and now I need to test it.
+
+There are bound to be bugs in my JavaScript. What's the easiest way to test?
+
+Use ~/test_fastqdata/201021_A00291_2020_AHM00MDMXX as I have it already processed.
+
+First I need to reinstall the modules in my VEnv...
+
+$ ./_illuminatus_venv/bin/pip install \
+    'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc' \
+    'git+https://github.com/EdinburghGenomics/MultiQC_EdGen.git@master#egg=multiqc_edgen'
+
+Now re-run the run and see what we get.
+
+Renaming the file should change the appearance and hide the bits customers don't need to
+see.
+
+...
+
+Try1 - file:///run/user/1000/gvfs/sftp:host=edgen-login0.epcc.ed.ac.uk/lustre-gseg/home/tbooth2/test_fastqdata/uploaded_reports/201021_A00291_2020_AHM00MDMXX/v/0011/lane1.html
+
+This looks exactly as before. So what went wrong?
+Do I have the new module in my VEnv?
+No.
+
+As I'm not changing the version, I needed:
+
+$ ./_illuminatus_venv/bin/pip install --force-reinstall --no-deps --no-binary ':all:' \
+    'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc' \
+    'git+https://github.com/EdinburghGenomics/MultiQC_EdGen.git@master#egg=multiqc_edgen'
+
+
+And we go again...
+
+Seems to work, but run 201021_A00291_2020_AHM00MDMXX is an amalgamation and a bit of a mess. Let's slim down a more recent run...
+
+$ cd ~/test_seqdata
+$ ~/workspace/illuminatus/test/end_to_end/slim_a_novaseq_run.sh 220519_A00291_0439_AH52CVDRX2 .

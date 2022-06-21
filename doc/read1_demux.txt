@@ -136,3 +136,17 @@ do exist but they just have some interop metrics on there. In the case where the
 to look at, the links are active.
 
 OK, so there is not actually a problem. Fine, I'll leave it as it is.
+
+---
+
+On 20/5. We have the same for 220519_A00291_0439_AH52CVDRX2. So the real problem here is that the demultiplex
+failed but there was no alert to RT. The RT ticket says:
+
+"There were errors in read1 processing (bc_check) on 220519_A00291_0439_AH52CVDRX2.
+See /lustre-gseg/fastqdata/220519_A00291_0439_AH52CVDRX2/pipeline_read1.log"
+
+But it's just a comment. It should probably be a reply. In any case, lets see what the error actually is.
+
+There was no valid sample sheet. Yeah this should probably be a reply but I should communicate what the
+error actually is if poss.
+

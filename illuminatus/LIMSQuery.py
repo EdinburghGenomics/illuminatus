@@ -18,6 +18,9 @@ from psycopg2.extras import NamedTupleCursor
 from psycopg2.extensions import adapt
 from pyclarity_lims.lims import Lims
 
+from pprint import pformat
+import logging
+L = logging.getLogger(__name__)
 
 def main():
     """Basic test.
@@ -45,6 +48,8 @@ def get_project_names(*proj_nums):
                 raise LookupError("Project prefix '{}' too short to query".format(pn))
 
             qres = ldb.select("SELECT name FROM project WHERE name LIKE %s || '_%%'", pn)
+
+            L.debug("qres = " + pformat(qres))
 
             projects = filter_names(( r.name for r in qres ))
 
@@ -187,13 +192,13 @@ def filter_names(names_in):
         if not any(re.search(r, n) for r in regexes):
             res.add(n)
 
-    return res
+    return sorted(res)
 
 def get_config(section='genologics', parts=['BASEURI', 'USERNAME', 'PASSWORD']):
     """The genologics.config module is braindead and broken.
        Here's a simplistic reimplementation.
     """
-    config = configparser.SafeConfigParser()
+    config = configparser.ConfigParser()
     conf_file = config.read(os.environ.get('GENOLOGICSRC',
                             [os.path.expanduser('~/.genologicsrc'),
                              'genologics.conf', 'genologics.cfg', '/etc/genologics.conf'] ))

@@ -75,10 +75,10 @@ class T(unittest.TestCase):
                                     lane = "1",
                                     revcomp = None )
 
-        self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
-                                                        "--use-bases-mask 'Y300n,I10,Y300n'",
-                                                        "--tiles 's_[1]'",
-                                                        "--barcode-mismatches 1" ] )
+        self.assertCountEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
+                                                             "--use-bases-mask 'Y300n,I10,Y300n'",
+                                                             "--tiles 's_[1]'",
+                                                             "--barcode-mismatches 1" ] )
         self.assertEqual( pp.infer_revcomp(), '' )
 
         out_lines = pp.get_output('test')
@@ -95,12 +95,12 @@ class T(unittest.TestCase):
                                     revcomp = None,
                                     bc_check = True )
 
-        self.assertEqual( pp.get_bc_check_opts(), [ "--fastq-compression-level 6",
-                                                    "--use-bases-mask 'Yn*,I10,n*'",
-                                                    "--tiles 's_[1]_1101'",
-                                                    "--barcode-mismatches 1",
-                                                    "--interop-dir .",
-                                                    "--minimum-trimmed-read-length 1" ] )
+        self.assertCountEqual( pp.get_bc_check_opts(), [ "--fastq-compression-level 6",
+                                                         "--use-bases-mask 'Yn*,I10,n*'",
+                                                         "--tiles 's_[1]_1101'",
+                                                         "--barcode-mismatches 1",
+                                                         "--interop-dir .",
+                                                         "--minimum-trimmed-read-length 1" ] )
 
     def test_settings_file(self):
         """settings file test: should override the defaults
@@ -119,10 +119,10 @@ class T(unittest.TestCase):
                                     lane = "1",
                                     revcomp = None )
 
-        self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
-                                                        "--use-bases-mask 'Y50n,I8,I8'",
-                                                        "--tiles 's_[1]_1101'",
-                                                        "--barcode-mismatches 100" ] )
+        self.assertCountEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
+                                                             "--use-bases-mask 'Y50n,I8,I8'",
+                                                             "--tiles 's_[1]_1101'",
+                                                             "--barcode-mismatches 100" ] )
 
 
     def test_settings_override(self):
@@ -151,7 +151,10 @@ class T(unittest.TestCase):
         pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "2",
                                     revcomp = None )
-        self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
+        self.assertCountEqual( pp.get_bcl2fastq_options(), [ '--fastq-compression-level 6',
+                                                             "--use-bases-mask 'Y50n,I8,I8'",
+                                                             "--tiles 's_[2]'",
+                                                             '--foo bar',
                                                              '--barcode-mismatches 2' ] )
 
         # Now add pipeline_settings.ini
@@ -164,19 +167,28 @@ class T(unittest.TestCase):
         pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "2",
                                     revcomp = None )
-        self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
+        self.assertCountEqual( pp.get_bcl2fastq_options(), [ '--fastq-compression-level 6',
+                                                             "--use-bases-mask 'Y50n,I8,I8'",
+                                                             "--tiles 's_[2]'",
+                                                             '--foo bar',
                                                              '--barcode-mismatches 9' ] )
 
         pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "8",
                                     revcomp = None )
-        self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
+        self.assertCountEqual( pp.get_bcl2fastq_options(), [ '--fastq-compression-level 6',
+                                                             "--use-bases-mask 'Y50n,I8,n*'",
+                                                             "--tiles 's_[8]'",
+                                                             '--foo bar',
                                                              '--barcode-mismatches 8' ] )
 
         pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "1",
                                     revcomp = None )
-        self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
+        self.assertCountEqual( pp.get_bcl2fastq_options(), [ '--fastq-compression-level 6',
+                                                             "--use-bases-mask 'Y50n,I8,I8'",
+                                                             "--tiles 's_[1]'",
+                                                             '--foo bar',
                                                              '--barcode-mismatches 9' ] )
 
     def test_basemask_override(self):
@@ -245,7 +257,7 @@ class T(unittest.TestCase):
 
         self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
                                                         "--use-bases-mask 'Y150n,I8,I8,Y150n'",
-                                                        '--tiles "s_[$LANE]_2101"' ] )
+                                                        "--tiles 's_[1]_2101'" ] )
 
 
     def test_slimmed_run_c(self):
@@ -288,14 +300,20 @@ class T(unittest.TestCase):
         pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "2",
                                     revcomp = None )
-        self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
-                                                             '--barcode-mismatches 2' ] )
+        self.assertCountEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
+                                                             "--use-bases-mask 'Y50n,I8,I8'",
+                                                             "--tiles 's_[2]'",
+                                                             "--foo bar",
+                                                             "--barcode-mismatches 2" ] )
 
         pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "4",
                                     revcomp = None )
-        self.assertEqual( pp.get_bcl2fastq_options()[-2:], [ '--foo bar',
-                                                             '--barcode-mismatches 4' ] )
+        self.assertCountEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
+                                                             "--use-bases-mask 'Y50n,I8,n*'",
+                                                             "--tiles 's_[4]'",
+                                                             "--foo bar",
+                                                             "--barcode-mismatches 4" ] )
 
     def test_miseq_badlane(self):
         """What if I try to demux a non-existent lane on a MiSEQ?
@@ -334,10 +352,10 @@ class T(unittest.TestCase):
         pp = BCL2FASTQPreprocessor( run_source_dir = shadow_dir,
                                     lane = "5",
                                     revcomp = None )
-        self.assertEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
-                                                        "--use-bases-mask 'Y50n,n*,n*'",
-                                                        "--tiles 's_[5]'",
-                                                        "--barcode-mismatches 1" ] )
+        self.assertCountEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
+                                                             "--use-bases-mask 'Y50n,n*,n*'",
+                                                             "--tiles 's_[5]'",
+                                                             "--barcode-mismatches 1" ] )
 
         #Lane 1 has 8-base dual index
         pp = BCL2FASTQPreprocessor(shadow_dir, lane=1, revcomp=None)
