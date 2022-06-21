@@ -8,13 +8,19 @@ import sys, os, re
 import unittest
 import logging
 
+from collections import namedtuple
+from unittest.mock import Mock, patch
+
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/examples')
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
+# We want to prevent imports of psycopg2 and pyclarity_lims for the purposes of this test,
+# so that the CI builder doens't need to install them to run the test.
+sys.modules.update( { 'psycopg2': Mock(),
+                      'psycopg2.extras': Mock().extras,
+                      'psycopg2.extensions': Mock().extensions,
+                      'pyclarity_lims.lims': Mock().lims } )
 from illuminatus.LIMSQuery import get_project_names
-
-from collections import namedtuple
-from unittest.mock import Mock, patch
 
 class T(unittest.TestCase):
 
