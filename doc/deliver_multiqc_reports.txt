@@ -38,3 +38,23 @@ Seems to work, but run 201021_A00291_2020_AHM00MDMXX is an amalgamation and a bi
 
 $ cd ~/test_seqdata
 $ ~/workspace/illuminatus/test/end_to_end/slim_a_novaseq_run.sh 220519_A00291_0439_AH52CVDRX2 .
+
+OK now I found a couple of bugs in the code but I've dealt with those and I have a report.
+
+https://egcloud.bio.ed.ac.uk/illuminatus/test/220519_A00291_0439_AH52CVDRX2/v/0006/multiqc_report_lane1.html
+
+aka.
+
+https://egcloud.bio.ed.ac.uk/illuminatus/test/220519_A00291_0439_AH52CVDRX2/v/0006/lane1.html
+
+Any errors in the console?
+
+No and no.
+
+Overview tab hidden/shown - yes.
+Experiment, Pipeline Script, Unfiltered Sheet hidden/shown - yes
+See all versions hidden/shown - yes
+
+Any other issues I can see?
+
+Nope. Cool. Bumped MultiQC_EdGen to 1.4.0
