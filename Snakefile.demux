@@ -73,16 +73,14 @@ def get_sequential_file(pattern):
     finally:
         fh.close()
 
-# preprocess rule is run for each lane to get the script to run
-
 # bcl2fastq is run for each LANE to produce laneN/Stats/DemuxSummaryF1LN.txt,
 # laneN/Stats/DemultiplexingStats.xml and laneN/foo.json
 
 # postprocess rule is run just once to gather and rename all the fastq.gz files
 # output is renamesXXX.log where XXX starts at 000.
 
-# It's important for preprocess to run locally so it sees the right $PATH
-localrules: preprocess, postprocess
+# Setup and postprocess rules can run locally
+localrules: setup, postprocess
 
 # I accidentally put '../projects_ready.txt' as an output of this rule but then
 # the file gets clobbered on a REDO, so don't do that again! This file should
