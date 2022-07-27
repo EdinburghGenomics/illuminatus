@@ -1,4 +1,4 @@
-pyyaml==5.4.1
-yamlloader==1.0.0
+pyyaml==6.0
+yamlloader<2
 snakemake==5.5.3
-Rt==1.0.11
+rt=2.2.2
