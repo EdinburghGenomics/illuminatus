@@ -6,14 +6,14 @@
 """
 #import os, sys, re
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from collections import OrderedDict
 import json
 import yaml, yamlloader
 from statistics import mean, stdev
-from illuminatus.FixedOrderedDict import FixedOrderedDict
 from illuminatus.Formatters import rat
 
 def get_data_container():
-    return FixedOrderedDict([
+    return OrderedDict.fromkeys([
         "Number of Indexes",
         "Total Reads Raw",
         "Assigned Reads",
@@ -23,7 +23,7 @@ def get_data_container():
         "Fraction Assigned Raw",
         "Mean Reads Per Sample",
         "Barcode Balance",
-    ], allow_overwrite = True)
+    ])
 
 
 def main(args):
@@ -79,12 +79,9 @@ def main(args):
 
         s['Mean Reads Per Sample'] = mean(d["NumberReads"] for d in dres)
 
-        all_stats_out[lane] = s.to_dict()
+        all_stats_out[lane] = s
 
-    print( yaml.dump( all_stats_out,
-                      Dumper = yamlloader.ordereddict.CSafeDumper,
-                      default_flow_style = False ),
-           end = '' )
+    return all_stats_out
 
 
 def parse_args(*args):
@@ -100,4 +97,9 @@ def parse_args(*args):
     return parser.parse_args(*args)
 
 if __name__=="__main__":
-    main(parse_args())
+    all_stats_out = main(parse_args())
+
+    print( yaml.dump( all_stats_out,
+                      Dumper = yamlloader.ordereddict.CSafeDumper,
+                      default_flow_style = False ),
+           end = '' )

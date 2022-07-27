@@ -14,7 +14,6 @@ from glob import glob
 import yaml, yamlloader
 
 from collections import OrderedDict
-from illuminatus.FixedOrderedDict import FixedOrderedDict
 from illuminatus.Formatters import rat
 
 #I guess I want pstdev since I'm calculating variance over the whole run?
@@ -73,7 +72,7 @@ def get_data_container():
     # Apparently we want the coefficient of variance which is the std deviation / mean
     # or so Donald says, so blame him if it's wrong.
 
-    return FixedOrderedDict([
+    return OrderedDict.fromkeys([
         "Number of Indexes",
         "Assigned Reads Raw",
         "Unassigned Reads Raw",
@@ -84,7 +83,7 @@ def get_data_container():
         "Fraction Assigned Raw",
         "Mean Reads Per Sample",
         "Barcode Balance",
-    ], allow_overwrite = True)
+    ])
 
 def gather_fastq_stats(fastq_stats_file):
 
