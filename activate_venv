@@ -30,7 +30,10 @@ upgrade_multiqc() {
     # not properly munged and you get the error "python: bad interpreter"
 
     # For now we need specific older versions of these modules:
-    pip_install 'networkx<2' 'spectra==0.0.8' 'colormath<3' 'Jinja2<3'
+    pip_install 'networkx<2'     'spectra==0.0.8'     'colormath<3'   \
+                'Jinja2<3'       'kiwisolver<1.4'     'pillow<9'      \
+                'Markdown<3.4'   'python-dateutil<3'  'pyparsing<3.1' \
+                'matplotlib<3.4' 'simplejson<4'
 
     for url in \
         'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc' \
@@ -109,6 +112,7 @@ else
         # why not? Assume the master branch is always good, since it's simpler than
         # searching for the last release tag (though that is possible).
         # see https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support
+
         upgrade_multiqc initial
 
         post_activate
