@@ -1,0 +1,71 @@
+data:
+  '1':
+    col_01: 101
+    col_02: 253.4551544189453
+    col_03: 253.4551544189453
+    col_04: 0.1191101223230362
+    col_05: 94.85831451416016
+  '2':
+    col_01: 10
+    col_02: 22.810853958129883
+    col_03: 22.810853958129883
+    col_04: .nan
+    col_05: 93.49894714355469
+  '3':
+    col_01: 10
+    col_02: 22.807649612426758
+    col_03: 22.807649612426758
+    col_04: .nan
+    col_05: 90.0965805053711
+  '4':
+    col_01: 101
+    col_02: 253.4558563232422
+    col_03: 253.4558563232422
+    col_04: 0.29978805780410767
+    col_05: 93.63153839111328
+  Non-Index Totals:
+    col_01: 202
+    col_02: 506.9110107421875
+    col_03: 506.9110107421875
+    col_04: 0.20944909006357193
+    col_05: 94.24492645263672
+  Totals:
+    col_01: 222
+    col_02: 552.5295143127441
+    col_03: 552.5295143127441
+    col_04: .nan
+    col_05: 94.04286715306273
+description: Yield for lane 2
+headers:
+  col_01:
+    format: '{:d}'
+    scale: GnBu
+    title: Cycles
+  col_02:
+    format: '{:f}'
+    scale: GnBu
+    title: Yield GB
+  col_03:
+    format: '{:f}'
+    scale: GnBu
+    title: Projected Yield
+  col_04:
+    format: '{:f}'
+    max: 10
+    min: 0
+    scale: OrRd
+    title: Error Rate
+  col_05:
+    format: '{:f}'
+    max: 100
+    min: 0
+    scale: GnBu
+    title: Q 30
+id: yield_summary
+pconfig:
+  col1_header: Read
+  no_beeswarm: true
+  sortRows: true
+  title: ''
+plot_type: table
+section_name: Yield Summary

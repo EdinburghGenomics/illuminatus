@@ -6,9 +6,6 @@ import sys, os, re
 import unittest
 import logging
 
-from tempfile import mkdtemp
-from shutil import rmtree
-
 from binmocker import BinMocker
 from sandbox import TestSandbox
 

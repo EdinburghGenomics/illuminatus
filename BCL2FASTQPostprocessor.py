@@ -14,6 +14,7 @@ from glob import glob
 import yaml
 
 from collections import namedtuple
+from contextlib import suppress
 
 # Global error collector
 ERRORS = set()
@@ -55,13 +56,10 @@ def save_projects_ready(output_dir, proj_seen):
        and we want to maintain the contents as a sorted set (as per 'sort -u')
     """
     proj_ready_file = os.path.join(output_dir, 'projects_ready.txt')
-    try:
+    with suppress(FileNotFoundError):
         with open(proj_ready_file) as pr_fh:
             for l in pr_fh:
                 proj_seen.add(l.strip())
-    except FileNotFoundError:
-        # OK, there was no old file
-        pass
 
     with open(proj_ready_file, 'w') as pr_fh:
         for p in sorted(proj_seen):
@@ -72,10 +70,8 @@ def save_projects_ready(output_dir, proj_seen):
                 print(p, file=pr_fh)
 
     # And delete projects_pending.txt. It probably doesn't exist, which is fine.
-    try:
+    with suppress(FileNotFoundError):
         os.unlink(os.path.join(output_dir, 'projects_pending.txt'))
-    except FileNotFoundError:
-        pass
 
 def check_project_name(proj_name):
     """ BCL2FASTQ is already quite fussy about project names.
@@ -305,7 +301,6 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
                     ERRORS.add("Failed to remove all project directories from demultiplexing area.")
                     log("# could not remove dir '%s'" % root)
                     # And we cannot say the project is ready.
-                    # TODO - Should I add it to pending??
                     proj_seen.discard(proj)
 
     # Finally return the projects processed

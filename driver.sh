@@ -446,11 +446,8 @@ action_redo() {
     # Calling run_multiqc will make the new summary but I suppress the RT comment as it will be redundant.
     # I need to clean out the actual data before running multiqc so that the interim report will not contain
     # the stale results.
-    # Then I can the 'redo lanes ...' subject on the ticket and send a new sample summary as a reply,
+    # Then I can add the 'redo lanes ...' subject on the ticket and send a new sample summary as a reply,
     # not a comment.
-    # TODO - say what lanes are being demuxed in the final report, since we can't just now promise
-    # that all the lanes changed in the sample sheet are the actual ones being re-done. Or a better way
-    # might be to detect changes in the sample sheet automatically? This is now in auto_redo.sh!
     set +e ; ( set -e
         fetch_samplesheet
     ) |& plog ; [ $? = 0 ] || { pipeline_fail Fetch_Sample_Sheet ; return ; }

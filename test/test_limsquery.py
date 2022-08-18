@@ -15,7 +15,7 @@ DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/examples')
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
 # We want to prevent imports of psycopg2 and pyclarity_lims for the purposes of this test,
-# so that the CI builder doens't need to install them to run the test.
+# so that the CI builder doesn't need to install them to run the test.
 sys.modules.update( { 'psycopg2': Mock(),
                       'psycopg2.extras': Mock().extras,
                       'psycopg2.extensions': Mock().extensions,

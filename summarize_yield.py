@@ -13,21 +13,23 @@
 import os, sys
 import yaml, yamlloader
 
+from contextlib import suppress
+
 from interop import py_interop_run_metrics, py_interop_run, py_interop_summary
 
 # Also see pf_vs_occupied.py
 
-def main(run_dir, out_dir=None, always_dump=False):
+def main(run_dir='.', out_dir=None, always_dump=False):
     """Get the info from run_dir. If out_dir is set, dump individual
        files into all the laneN subdirectories. Else dump the info as
        raw YAML to stdout.
     """
     if os.path.isfile(run_dir):
-        #Load from pre-made YAML
+        # Load from pre-made YAML
         with open(run_dir) as yfh:
             res = yaml.safe_load(yfh)
     else:
-        #Actually gather the metadata
+        # Actually gather the metadata
         try:
             summary = get_run_metrics_handle(run_dir)
         except Exception:
@@ -48,9 +50,9 @@ def main(run_dir, out_dir=None, always_dump=False):
         for k, v in res.items():
             if not k.startswith('_'):
                 kod = os.path.join(out_dir, k)
-                kof = os.path.join(kod, 'summarize_yield_{}_mqc.yaml'.format(k))
-                try: os.mkdir(kod)
-                except FileExistsError: pass
+                kof = os.path.join(kod, f"summarize_yield_{k}_mqc.yaml")
+                with suppress(FileExistsError):
+                    os.mkdir(kod)
 
                 with open(kof, 'w') as kofh:
                     print( yaml.dump( format_mqc(k, v),
@@ -67,12 +69,12 @@ def format_mqc(lane, info):
         info : keys should be read numbers or 'Total ...'
     """
     lane_name = 'all lanes' if lane == 'overview' else \
-                'lane {}'.format(lane[4:]) if lane.startswith('lane') else \
+                f'lane {lane[4:]}' if lane.startswith('lane') else \
                 lane
     mqc_out = dict(
         id           = 'yield_summary',
         section_name = 'Yield Summary',
-        description  = 'Yield for {}'.format(lane_name),
+        description  = f'Yield for {lane_name}',
         plot_type    = 'table',
         pconfig      = { 'title': '', 'sortRows': True, 'no_beeswarm': True },
         data         = {},
@@ -92,12 +94,12 @@ def format_mqc(lane, info):
     mqc_out['pconfig']['col1_header'] = table_headers[0]
     for colnum, col in list(enumerate(table_headers))[1:]:
         # So colnum will start at 1...
-        d = mqc_out['headers']['col_{:02}'.format(colnum)] = dict(title = col)
+        d = mqc_out['headers'][f'col_{colnum:02}'] = dict(title = col)
         d.update(table_foo['__default__'])
         d.update(table_foo.get(table_keys[colnum], {}))
     # TODO - do we want to explicitly flag index reads?
     for read, rinfo in info.items():
-        mqc_out['data'][read] = { 'col_{:02}'.format(colnum): rinfo[key]
+        mqc_out['data'][read] = { f'col_{colnum:02}': rinfo[key]
                                   for colnum, key in list(enumerate(table_keys))[1:] }
 
     return mqc_out
@@ -107,7 +109,7 @@ def get_run_metrics_handle(run_dir):
     """ Load the goodies from the .bin files in the InterOp directory.
         This black magic is copy-pasted straight out of the tutorial linked above!
     """
-    #print("Examining: {}".format(run_dir))
+    #print(f"Examining: {run_dir}")
 
     valid_to_load = py_interop_run.uchar_vector(py_interop_run.MetricCount, 0)
     py_interop_run_metrics.list_summary_metrics_to_load(valid_to_load)
@@ -130,10 +132,10 @@ def extract_info(summary):
            We don't want nans in our output so zero them (I think??)
            Actually, scrub that, yes we do.
         """
-        try: val = val()
-        except TypeError: pass
-        try: val = val.mean()
-        except AttributeError: pass
+        with suppress(TypeError):
+            val = val()
+        with suppress(AttributeError):
+            val = val.mean()
         return val
 
     def get_dict(summ_part, **extra):
@@ -179,7 +181,7 @@ def extract_info(summary):
     # totals manually for some reason.
     for lane in range(summary.lane_count()):
         lsummary = summary.at(0).at(lane)
-        mylaneinfo = res['lane{}'.format(lsummary.lane())] = dict()
+        mylaneinfo = res[f'lane{lsummary.lane()}'] = dict()
 
         mylaneinfo['Totals']           = get_dict(None, _q30=[0,0], _e=[0,0])
         mylaneinfo['Non-Index Totals'] = get_dict(None, _q30=[0,0], _e=[0,0])

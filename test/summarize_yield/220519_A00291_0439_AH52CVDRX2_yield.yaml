@@ -1,0 +1,136 @@
+_run_dir: /lustre-gseg/home/tbooth2/test_seqdata/220519_A00291_0439_AH52CVDRX2
+lane1:
+  '1':
+    cycles: 151
+    error_rate: 0.5989804267883301
+    is_index: false
+    percent_gt_q30: 87.99479675292969
+    projected_yield_g: 58.55173873901367
+    yield_g: 58.55173873901367
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 84.74397277832031
+    projected_yield_g: 2.7322990894317627
+    yield_g: 2.7322990894317627
+  '3':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 70.3543930053711
+    projected_yield_g: 2.7320945262908936
+    yield_g: 2.7320945262908936
+  '4':
+    cycles: 151
+    error_rate: 1.6022180318832397
+    is_index: false
+    percent_gt_q30: 83.74560546875
+    projected_yield_g: 58.54721450805664
+    yield_g: 58.54721450805664
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 1.100599229335785
+    percent_gt_q30: 85.87020111083984
+    projected_yield_g: 117.09895324707031
+    yield_g: 117.09895324707031
+  Totals:
+    cycles: 318
+    density: 2961270.5
+    density_pf: 1809519.625
+    error_rate: .nan
+    percent_aligned: 3.146150588989258
+    percent_gt_q30: 85.49920029852801
+    projected_yield_g: 122.56334686279297
+    reads: 638337024
+    reads_pf: 390064245
+    yield_g: 122.56334686279297
+lane2:
+  '1':
+    cycles: 151
+    error_rate: 0.5571016669273376
+    is_index: false
+    percent_gt_q30: 87.75769805908203
+    projected_yield_g: 57.884254455566406
+    yield_g: 57.884254455566406
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 84.41476440429688
+    projected_yield_g: 2.7011051177978516
+    yield_g: 2.7011051177978516
+  '3':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 71.49882507324219
+    projected_yield_g: 2.700989007949829
+    yield_g: 2.700989007949829
+  '4':
+    cycles: 151
+    error_rate: 1.509779930114746
+    is_index: false
+    percent_gt_q30: 83.76544952392578
+    projected_yield_g: 57.87903594970703
+    yield_g: 57.87903594970703
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 1.0334407985210419
+    percent_gt_q30: 85.7615737915039
+    projected_yield_g: 115.76329040527344
+    yield_g: 115.76329040527344
+  Totals:
+    cycles: 318
+    density: 2961270.5
+    density_pf: 1792563.875
+    error_rate: .nan
+    percent_aligned: 2.836751937866211
+    percent_gt_q30: 85.41359001208262
+    projected_yield_g: 121.16538453102112
+    reads: 638337024
+    reads_pf: 386409339
+    yield_g: 121.16538453102112
+overview:
+  '1':
+    cycles: 151
+    error_rate: 0.5780410766601562
+    is_index: false
+    percent_gt_q30: 87.8769302368164
+    projected_yield_g: 116.43598937988281
+    yield_g: 116.43598937988281
+  '2':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 84.58030700683594
+    projected_yield_g: 5.433404445648193
+    yield_g: 5.433403968811035
+  '3':
+    cycles: 8
+    error_rate: .nan
+    is_index: true
+    percent_gt_q30: 70.92333221435547
+    projected_yield_g: 5.433083534240723
+    yield_g: 5.433083534240723
+  '4':
+    cycles: 151
+    error_rate: 1.5559990406036377
+    is_index: false
+    percent_gt_q30: 83.7554702758789
+    projected_yield_g: 116.42625427246094
+    yield_g: 116.42625427246094
+  Non-Index Totals:
+    cycles: 302
+    error_rate: 1.067020058631897
+    percent_gt_q30: 85.8162841796875
+    projected_yield_g: 232.8622589111328
+    yield_g: 232.86224365234375
+  Totals:
+    cycles: 318
+    error_rate: .nan
+    percent_gt_q30: 85.45674133300781
+    projected_yield_g: 243.72872924804688
+    reads: 1276674048
+    reads_pf: 776473584
+    yield_g: 243.72872924804688

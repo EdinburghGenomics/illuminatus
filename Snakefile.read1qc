@@ -186,12 +186,12 @@ rule make_wd_summary:
         from time import sleep
         sleep(2) # Avoids annoying re-running due to clock skew
 
-        # TODO - I really should make a unit test for this!
+        # TODO - I really should break this into a function and make a unit test!
         # Result will be of the form { lane: { side: { metric: 12.34 } } }
         res = dict()
 
         for f in input:
-            # Since files end in 2T.txt or whatever, populate res
+            # Since files end in 2T.txt or whatever, populate res[lane][side]
             lane = res.setdefault(f[-6], dict())
             side = lane.setdefault(f[-5], dict())
 

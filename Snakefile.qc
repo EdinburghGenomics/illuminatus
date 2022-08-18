@@ -517,17 +517,17 @@ rule get_unassigned:
     shell:
         "unassigned_to_table.py {input} > {output}"
 
-# === Driver rules ===
+# === Target rules ===
 rule md5_main:
+    # Checksumming is done at the start of QC, but probably it should be done
+    # at the end of demultiplexing.
     input:
         md5      = expand( 'md5sums/{fq[fname]}.fastq.gz.md5', fq=all_all ),
         counts   = expand( 'counts/{fq[fname]}.fastq.count',   fq=all_all )
 
-# qc_main depends on other rules so it's now down below.
-
-# Interop files in eg. /lustre/seqdata/170627_D00261_0417_ACAU93ANXX/InterOp/
-# The location will be inferred from SEQDATA/InterOp
 rule interop_main:
+    # Interop files in eg. /lustre/seqdata/170627_D00261_0417_ACAU93ANXX/InterOp/
+    # The location will be inferred from SEQDATA/InterOp
     input:
         plots  = expand( "QC/overview/interop/{plot}.interop_plot",
                          run = [RUN],
@@ -549,7 +549,7 @@ rule demux_stats_main:
         matrices = rules.get_project_summary.output
 
 rule metadata_main:
-    # TODO - assemble the metadata items for the run. Query the LIMS if necessary.
+    # Assemble the metadata items for the run. Query the LIMS if necessary.
     input:
         runinfo  = rules.run_multiqc.input.runinfo,
         laneinfo = "QC/overview/lane_summary_{r}_mqc.yaml".format(r=RUN)
