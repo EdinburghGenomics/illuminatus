@@ -117,7 +117,7 @@ class T(unittest.TestCase):
         """It's possible, if hacky, to mock out even commands referred to by
            full path. Note that this will only work for things called from
            BASH, not for things called indirectly like "env /bin/foo". And
-           it won't work on DASH or with BASH in compatibility mode.
+           it won't work on DASH, or with BASH in compatibility mode.
         """
         bm = BinMocker(shell=self.shell)
         self.addCleanup(bm.cleanup)
@@ -129,7 +129,7 @@ class T(unittest.TestCase):
         self.assertEqual(bm.last_calls['/bin/false'], [ ['123'] ])
         self.assertEqual(bm.last_stdout, 'THIS\n')
 
-        #Should also work if called from a sub-script.
+        # Should also work if called from a sub-script.
         bm.add_mock('woo',  side_effect="/bin/false 789")
         bm.add_mock('/bin/wibble',  side_effect="woo 456")
 
@@ -140,12 +140,12 @@ class T(unittest.TestCase):
         self.assertEqual(bm.last_calls['/bin/false'], [ ['789'] ])
         self.assertEqual(bm.last_stdout, 'THIS\n')
 
-        #Referring to a command stored in a var is OK
+        # Referring to a command stored in a var is OK
         res3 = bm.runscript('cmd=/bin/false ; "$cmd" 123')
         self.assertEqual(res3, 0)
         self.assertEqual(bm.last_stdout, 'THIS\n')
 
-        #But calling a command via 'env' does call the actual command
+        # But calling a command via 'env' does call the actual command
         res4 = bm.runscript('env /bin/false 123')
         self.assertEqual(res4, 1)
         self.assertEqual(bm.last_stdout, '')
@@ -179,11 +179,12 @@ class T(unittest.TestCase):
 # BASH will behave differently depending how it's called. So account for all possibilities.
 @unittest.skipUnless(os.path.exists("/bin/bash") , "no /bin/bash")
 class T_sh(T):
-    """Test with explicit calls to /bin/sh
+    """Test with explicit calls to /bin/sh, assuming this will be BASH in
+       compatibility mode.
     """
     shell = '/bin/sh'
 
-    # This hack only works in BASH. Maybe there is another hack for DASH?
+    # This hack only works in full BASH mode. Maybe there is another hack that works?
     @unittest.expectedFailure
     def test_mock_abs_path(self):
         super().test_mock_abs_path()
