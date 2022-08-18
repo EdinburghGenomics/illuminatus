@@ -52,14 +52,17 @@ done
 runcmd mkdir "$latest_tag"
 runcmd git --git-dir=git_repo --work-tree="$latest_tag" checkout -f tags/"$latest_tag"
 
-# Copy the config file
-cp -vn -t $latest_tag $latest_checked_out/environ.sh
-
-# Finally, alert the user if there were local changes in $latest_checked_out
-
 # Sanity check
 [ -d "$latest_checked_out" ] || die "Could not read folder for tag $latest_checked_out"
 
+# Copy the config file
+cp -vn -t $latest_tag $latest_checked_out/environ.sh
+
+# Bootstrap the VEnv
+echo "Bootstrapping the VirtualEnv in $latest_tag/_hesiod_venv"
+(cd $latest_tag && source ./activate_venv )
+
+# Finally, alert the user if there were local changes in $latest_checked_out
 if git --git-dir=git_repo --work-tree="$latest_checked_out" diff tags/"$latest_checked_out" -- | grep -q '' ; then
     echo "WARNING - unexpected difference between the files in $latest_checked_out/ and the matching tag in GIT!"
     echo "Maybe somebody did a cheeky in-place edit?"
@@ -68,8 +71,7 @@ if git --git-dir=git_repo --work-tree="$latest_checked_out" diff tags/"$latest_c
     echo
 fi
 
-echo "Checked out version $latest_tag.  If you are happy, check the config and bootstrap the virtualenv now:"
+echo "Checked out version $latest_tag.  If you are happy, check the config and repoint the symlink now:"
 echo "  cd `pwd`"
 echo "  cat $latest_tag/environ.sh"
-echo "  (cd $latest_tag && source ./activate_venv )"
 echo "  ln -snf $latest_tag current"

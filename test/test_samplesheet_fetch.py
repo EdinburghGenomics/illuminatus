@@ -234,12 +234,13 @@ class T(unittest.TestCase):
 
         # Assumes we have millisecond timestamps on the files. If not, these and
         # other tests will fail.
-        self.assertTrue(os.lstat('SampleSheet.csv').st_mtime < utimestamp)
+        self.assertLess(os.lstat('SampleSheet.csv').st_mtime, utimestamp)
 
         # Run the thingy again
+        time.sleep(0.1)
         second_stdout = self.bm_run_fetch()
         self.assertEqual(second_stdout[0], "SampleSheet.csv for XXXX is already up-to-date")
-        self.assertTrue(os.lstat('SampleSheet.csv').st_mtime > utimestamp)
+        self.assertGreater(os.lstat('SampleSheet.csv').st_mtime, utimestamp)
 
     def test_case_mismatch(self):
         """Test still fetching the sample sheet even when the case mismatches,
