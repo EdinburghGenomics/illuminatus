@@ -35,7 +35,7 @@ data:
     col_03: 552.5295143127441
     col_04: .nan
     col_05: 94.04286715306273
-description: Yield for lane 2
+description: 'Yield for lane 2. See page 9 of <a href="https://emea.support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/sav/sequencing-analysis-viewer-v-2-4-software-guide-15066069-04.pdf">the SAV Software Guide</a> for explanation.'
 headers:
   col_01:
     format: '{:d}'

@@ -71,10 +71,15 @@ def format_mqc(lane, info):
     lane_name = 'all lanes' if lane == 'overview' else \
                 f'lane {lane[4:]}' if lane.startswith('lane') else \
                 lane
+    sav_link = 'https://emea.support.illumina.com/content/dam/illumina-support/documents/' \
+               'documentation/software_documentation/sav/' \
+               'sequencing-analysis-viewer-v-2-4-software-guide-15066069-04.pdf'
+    sav_guide = f'<a href="{sav_link}">the SAV Software Guide</a>'
+
     mqc_out = dict(
         id           = 'yield_summary',
         section_name = 'Yield Summary',
-        description  = f'Yield for {lane_name}',
+        description  = f'Yield for {lane_name}. See page 9 of {sav_guide} for explanation.',
         plot_type    = 'table',
         pconfig      = { 'title': '', 'sortRows': True, 'no_beeswarm': True },
         data         = {},
