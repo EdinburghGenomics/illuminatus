@@ -23,8 +23,9 @@ pip_install() {
 }
 
 upgrade_multiqc() {
-    #Install/upgrade MultiQC from GIT
-    #pip_install --upgrade --no-deps 'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc'
+    # Install/upgrade MultiQC from GIT
+    # $ ./_illuminatus_venv/bin/pip install --force-reinstall --no-deps --no-binary ':all:' \
+    #   'git+https://github.com/EdinburghGenomics/MultiQC.git@tim_branch#egg=multiqc'
     # For now, use the dev branch
     # Also note that leaving out "--no-binary ':all:'" currently triggers a weird bug where the interpreter is
     # not properly munged and you get the error "python: bad interpreter"
@@ -42,7 +43,7 @@ upgrade_multiqc() {
         if [ "${1:-}" == 'initial' ] ; then
             pip_install --no-binary ':all:' "$url"
         else
-            pip_install --upgrade --no-deps --no-binary ':all:' "$url"
+            pip_install --force-reinstall --no-deps --no-binary ':all:' "$url"
         fi
     done
 
