@@ -1,7 +1,7 @@
 post_start_info:
   Pipeline Version: 1.7.1
-  t2//Sequencer Finish: Fri Jul 23 02:03:11 2021
-  t3//Pipeline Start: Fri Jul 23 02:05:06 2021
+  t2//Sequencer Finish: Fri 23-Jul-2021 02:03:11
+  t3//Pipeline Start: Fri 23-Jul-2021 02:05:06
 pre_start_info:
   Run Date: '2021-07-22'
   Run ID: 210722_A00291_0378_AHFT2CDRXY
@@ -17,4 +17,4 @@ pre_start_info:
   Sample Sheet:
   - SampleSheet.csv.1
   - SampleSheet.csv.1
-  t1//Run Start: Thu Jul 22 14:47:38 2021
+  t1//Run Start: Thu 22-Jul-2021 14:47:38

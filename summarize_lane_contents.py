@@ -7,7 +7,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from illuminatus.SampleSheetReader import SampleSheetReader
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
 from illuminatus.RunParametersXMLParser import RunParametersXMLParser
-from illuminatus.Formatters import pct
+from illuminatus.Formatters import pct, fmt_time
 
 # Project links can be set by an environment var, presumably in environ.sh
 PROJECT_PAGE_URL = os.environ.get('PROJECT_PAGE_URL', "http://foo.example.com/")
@@ -66,13 +66,11 @@ Soon it should ask the LIMS for additional details (eg. loading conc) too.
     return a.parse_args(*args)
 
 def printable_date():
-    #return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    # ctime is the standard we like for printing
-    return datetime.datetime.now().ctime()
-
+    # fmt_time sets the standard we like for printing
+    return fmt_time( datetime.datetime.now() )
 
 def main(args):
-    """Basic gist - build data structure in memeory, then serialize it as
+    """Basic gist - build data structure in memory, then serialize it as
        requested.
     """
     #Sanity check that some output mode is active.

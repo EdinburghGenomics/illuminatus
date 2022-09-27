@@ -168,7 +168,7 @@ export ILLUMINATUS_VERSION=$(illuminatus_version.py)
 save_start_time(){
     # We log each tile the pipeline starts. This is where we look to see which
     # version(s) of the pipeline processed a run.
-    ( echo -n "$ILLUMINATUS_VERSION@" ; date +'%a %b %_d %H:%M:%S %Y' ) >>pipeline/start_times
+    echo "${ILLUMINATUS_VERSION}@$(date.py)" >>pipeline/start_times
 }
 
 rt_runticket_manager(){

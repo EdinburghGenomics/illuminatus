@@ -17,3 +17,9 @@ def pct(n, d, mul=100.0, **kwargs):
         You can override mul and nan if you like.
     """
     return rat(n, d, mul=mul, **kwargs)
+
+def fmt_time(d):
+    """ Format a datetime for the report. We used to just use .ctime() but Matt
+        asked for something that Excel would recognise.
+    """
+    return d.strftime("%a %d-%h-%Y %H:%M:%S")

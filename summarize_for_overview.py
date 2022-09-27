@@ -7,6 +7,7 @@ import yaml, yamlloader
 from urllib.parse import quote as url_quote
 
 from illuminatus import illuminatus_version
+from illuminatus.Formatters import fmt_time
 
 """This script provides information about a sequencing run that appears at the top
    of each MultiQC report page.
@@ -48,7 +49,7 @@ def get_pipeline_info(run_path):
 
     # If the pipeline started, the sequencer MUST have finished.
     touch_file = os.path.join( run_path , 'RTAComplete.txt' )
-    pipeline_info['finish'] = datetime.fromtimestamp(os.stat(touch_file).st_mtime).ctime()
+    pipeline_info['finish'] = fmt_time( datetime.fromtimestamp(os.stat(touch_file).st_mtime) )
 
     return pipeline_info
 
