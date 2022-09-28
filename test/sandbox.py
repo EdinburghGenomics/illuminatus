@@ -59,6 +59,7 @@ class TestSandbox:
            Everything created will get a timestamp hours_age in the past.
            Adding a file or subdirectory to a directory will not affect the mtime of the containing
            directory.
+           Returns the full path of the new file or directory.
         """
         modtime = (datetime.datetime.now() - datetime.timedelta(hours=hours_age)).timestamp()
 
@@ -90,10 +91,13 @@ class TestSandbox:
         for d in sorted(dirtimes, key=lambda s: len(s), reverse=False):
             os.utime(d, times=(dirtimes[d], dirtimes[d]))
 
+        return os.path.join(self.sandbox, filename)
+
     def link(self, src, dest, hours_age=0):
         """Wraps os.symlink within self.sandbox and sets the age of the link.
            If the target dir does not exist, it will be created, and the the mtime will be
            preserved as above.
+           Returns the full path to the new link.
         """
         modtime = (datetime.datetime.now() - datetime.timedelta(hours=hours_age)).timestamp()
 
@@ -125,6 +129,7 @@ class TestSandbox:
         for d in sorted(dirtimes, key=lambda s: len(s), reverse=False):
             os.utime(d, times=(dirtimes[d], dirtimes[d]))
 
+        return os.path.join(self.sandbox, dest)
 
     def lsdir(self, adir, glob="*"):
         return sorted(f for f in os.listdir(os.path.join(self.sandbox, adir)) if fnmatch(f, glob))

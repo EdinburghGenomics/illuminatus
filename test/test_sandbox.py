@@ -37,8 +37,9 @@ class T(unittest.TestCase):
         sb2_dir = sb2.sandbox
         self.assertEqual(sb2.lsdir('.'), [])
 
-        sb2.make('foo777/')
-        self.assertTrue(os.path.isdir(sb2_dir + '/foo777'))
+        new_dir = sb2.make('foo777/')
+        self.assertEqual(new_dir, sb2_dir + '/foo777/')
+        self.assertTrue(os.path.isdir(new_dir))
         sb2.cleanup()
         self.assertFalse(os.path.isdir(sb2_dir))
 
@@ -74,12 +75,14 @@ class T(unittest.TestCase):
     def test_make_touch(self):
         """Do some stuff in the default sandbox
         """
-        self.sb.make('d1/d2/d3/afile', hours_age=1)
-        self.sb.make('da/db/dc/')
+        res1 = self.sb.make('d1/d2/d3/afile', hours_age=1)
+        res2 = self.sb.make('da/db/dc/')
 
         sb_dir = self.sb.sandbox + '/'
-        self.assertTrue(os.path.isfile(sb_dir + 'd1/d2/d3/afile'))
-        self.assertTrue(os.path.isdir(sb_dir + 'da/db/dc'))
+        self.assertEqual(res1, sb_dir + 'd1/d2/d3/afile')
+        self.assertTrue(os.path.isfile(res1))
+        self.assertEqual(res2, sb_dir + 'da/db/dc/')
+        self.assertTrue(os.path.isdir(res2))
 
         # Get the current system time
         unixtime = time.time()
@@ -112,6 +115,26 @@ class T(unittest.TestCase):
         self.assertFalse( os.stat(sb_dir + 'd1/d2/d3/afile').st_mtime < unixtime )
         self.assertTrue( os.stat(sb_dir + 'd1/d2/d3/bfile').st_mtime < unixtime )
 
+    def test_links(self):
+        """Make some links with the link() method
+        """
+        res1 = self.sb.link("foo2", "alink2")
+        res2 = self.sb.link("foo2", "new/dir/alink2")
+
+        # Links in subdirs should work, either because they are fixed relative or made
+        # absolute. It doesn't really matter which.
+        if VERBOSE:
+            print(res2)
+            print(os.readlink(res2))
+            print(os.lstat(res2))
+            print(os.stat(res2))
+
+        self.assertTrue( os.path.islink(res1) )
+        self.assertTrue( os.path.islink(res2) )
+
+        self.assertEqual( os.stat(res1), os.stat(os.path.join(self.sb.sandbox, "foo2")) )
+        self.assertEqual( os.stat(res2), os.stat(os.path.join(self.sb.sandbox, "foo2")) )
+
     def test_errors(self):
         """I can't make a file twice, or touch a file that doesn't exsist.
         """
@@ -119,8 +142,11 @@ class T(unittest.TestCase):
         self.assertRaises(FileExistsError, self.sb.make, "la")
         self.assertRaises(FileExistsError, self.sb.make, "la/la")
 
+        # Ditto if I try to make a link
+        self.assertRaises(FileExistsError, self.sb.link, "dummy_target", "la/la")
+
         # But making a directory that pre-exists is just a no-op
-        self.sb.make("la/")
+        self.assertEqual(self.sb.make("la/"), os.path.join(self.sb.sandbox, "la/"))
 
         # I can't touch a file that doesn't exist
         self.assertRaises(FileNotFoundError, self.sb.touch, 'notafile')
