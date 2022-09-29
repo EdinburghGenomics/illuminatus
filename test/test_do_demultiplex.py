@@ -6,7 +6,7 @@ import sys, os, re
 import unittest
 import logging
 
-from binmocker import BinMocker
+from bashmocker import BashMocker
 from sandbox import TestSandbox
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/samplesheet_filtered_examples')
@@ -29,7 +29,7 @@ class T(unittest.TestCase):
         self.maxDiff = None
 
         # Initialise the binmocker
-        self.bm = BinMocker()
+        self.bm = BashMocker()
         self.bm.add_mock( 'bcl2fastq',
                           side_effect = 'echo 123 >&2' )
 

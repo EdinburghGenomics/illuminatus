@@ -13,7 +13,7 @@ import time
    sequencer.
 """
 #We're testing a shell script here.
-from binmocker import BinMocker
+from bashmocker import BashMocker
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 FETCH = os.path.abspath(os.path.dirname(__file__) + '/../samplesheet_fetch.sh')
 
@@ -31,7 +31,7 @@ class T(unittest.TestCase):
             os.chdir(oldcwd)
             rmtree(temp_dir)
 
-        self.bm = BinMocker('RunStatus.py')
+        self.bm = BashMocker('RunStatus.py')
 
         if os.environ.get("KEEPTMP"):
             print("Temp dir = " + temp_dir, file=sys.stderr)

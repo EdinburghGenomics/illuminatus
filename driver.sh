@@ -61,7 +61,7 @@ LOG_DIR="${LOG_DIR:-${HOME}/illuminatus/logs}"
 RUN_NAME_REGEX="${RUN_NAME_REGEX:-.*_.*_.*_[^.]*}"
 
 BIN_LOCATION="${BIN_LOCATION:-$BASH_DIR}"
-MAINLOG="${MAINLOG:-${LOG_DIR}/illuminatus_driver.`date +%Y%m%d`.log}"
+MAINLOG="${MAINLOG:-${LOG_DIR}/illuminatus_driver.$(date +%Y%m%d).log}"
 
 # 1) Sanity check these directories exist and complain to STDERR (triggering CRON
 #    warning mail) if not.
@@ -110,15 +110,15 @@ plog1() {
 }
 
 plog_start() {
-    plog $'>>>\n>>>\n>>>'" $BASH_SRC starting action_$STATUS at `date`"
+    plog $'>>>\n>>>\n>>>'" $BASH_SRC starting action_$STATUS at $(date)"
 }
 
 # Print a message at the top of the log, and trigger one to print at the end.
-intro="`date`. Running $BASH_SRC; PID=$$"
-log "====`tr -c '' = <<<"$intro"`==="
+intro="$(date). Running $BASH_SRC; PID=$$"
+log "====$(tr -c '' = <<<"$intro")==="
 log "=== $intro ==="
-log "====`tr -c '' = <<<"$intro"`==="
-trap 'log "=== `date`. Finished run; PID=$$ ==="' EXIT
+log "====$(tr -c '' = <<<"$intro")==="
+trap 'log "=== $(date). Finished run; PID=$$ ==="' EXIT
 
 # We always must activate a Python VEnv, unless explicitly set to 'none'
 # Do this before other PATH manipulations.
@@ -166,9 +166,9 @@ export ILLUMINATUS_VERSION=$(illuminatus_version.py)
 # All actions can read LANES STATUS RUNID INSTRUMENT
 
 save_start_time(){
-    # We log each tile the pipeline starts. This is where we look to see which
+    # We log each time the pipeline starts. This is where we look to see which
     # version(s) of the pipeline processed a run.
-    echo "${ILLUMINATUS_VERSION}@$(date.py)" >>pipeline/start_times
+    echo "${ILLUMINATUS_VERSION}@$(date +%s)" >>pipeline/start_times
 }
 
 rt_runticket_manager(){
@@ -511,7 +511,7 @@ check_outdir(){
 
     # Modified version of pipeline_fail()
     stage="${1:-Missing_Output_Dir}"
-    echo "$stage on `date`" > pipeline/failed
+    echo "$stage on $(date)" > pipeline/failed
 
     # Send an alert to RT but obviously we can't plog anything.
     log "Attempting to notify error to RT"
@@ -707,7 +707,7 @@ run_qc() {
 pipeline_fail() {
     stage=${1:-Pipeline}
     # Mark the failure status
-    echo "$stage on `date`" > pipeline/failed
+    echo "$stage on $(date)" > pipeline/failed
 
     # Send an alert when demultiplexing fails. This always requires attention!
     # Note that after calling 'plog' we can query '$per_run_log' since all shell vars are global.

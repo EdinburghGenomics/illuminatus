@@ -14,9 +14,9 @@ from illuminatus import illuminatus_version
 """Here we're using a Python script to test a shell script.  The shell script calls
    various programs.  Ideally we want to have a cunning way of catching and detecting
    the calls to those programs, similar to the way that Test::Mock works.
-   To this end, see the BinMocker class. I've broken this out for general use.
+   To this end, see the BashMocker class. I've put this in PyPi for general use.
 """
-from binmocker import BinMocker
+from bashmocker import BashMocker
 from sandbox import TestSandbox
 
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
@@ -34,14 +34,14 @@ class T(unittest.TestCase):
 
     def setUp(self):
         """Make a shadow folder, and in it have subdirs seqdata and fastqdata and log.
-           Initialize BinMocker.
+           Initialize BashMocker.
            Calculate the test environment needed to run the driver.sh script.
         """
         self.sandbox = TestSandbox()
         for d in ['seqdata', 'fastqdata', 'log']:
             setattr(self, d, self.sandbox.make(d + '/').rstrip('/'))
 
-        self.bm = BinMocker()
+        self.bm = BashMocker()
         for p in PROGS_TO_MOCK: self.bm.add_mock(p)
 
         # Special mock for samplesheet fetcher. Emulates initial fetch.
@@ -50,8 +50,8 @@ class T(unittest.TestCase):
                                        "mv SampleSheet.csv SampleSheet.csv.0 ;" +
                                        " ln -s SampleSheet.csv.0 SampleSheet.csv )")
 
-        # And for date.py to give a fixed dummy date
-        self.bm.add_mock("date.py", side_effect="echo DUMMY_DATE")
+        # And for date to give a fixed dummy date
+        self.bm.add_mock("date", side_effect="echo DUMMY_DATE", log=False)
 
         # Set the driver to run in our test harness. Note I can set
         # $BIN_LOCATION to more than one path.
@@ -77,7 +77,7 @@ class T(unittest.TestCase):
         self.maxDiff = None
 
     def tearDown(self):
-        """Remove the sandbox folder and clean up the BinMocker
+        """Remove the sandbox folder and clean up the BashMocker
         """
         self.sandbox.cleanup()
         self.bm.cleanup()

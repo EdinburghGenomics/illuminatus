@@ -117,10 +117,15 @@ def get_idict(rids, run_path, pipeline_info=None):
         del idict['pre_start_info']['Chemistry']
 
     if pipeline_info:
+        # We'll get the definitive pipeline version from pipeline_info
         del idict['pre_start_info']['Pipeline Version']
+
+        run_duration = pipeline_info.get('run_duration', '? hours')
+
         idict['post_start_info'] = OrderedDict([
             ('Pipeline Version', pipeline_info['version']),
-            ('t2//Sequencer Finish', pipeline_info['finish']),
+            ('t2//Sequencer Finish',
+                f"{pipeline_info['finish']} ({run_duration})"),
             ('t3//Pipeline Start', pipeline_info['start']),
         ])
 

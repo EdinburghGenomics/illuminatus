@@ -18,7 +18,7 @@ AUTO_REDO = os.path.abspath(os.path.dirname(__file__) + '/../auto_redo.sh')
 BIN_PATH = os.path.abspath(os.path.dirname(__file__) + '/..')
 
 # My little test helpers
-from binmocker import BinMocker
+from bashmocker import BashMocker
 from sandbox import TestSandbox
 
 class T(unittest.TestCase):
@@ -38,7 +38,7 @@ class T(unittest.TestCase):
 
         # We want a binmocker as a conveneint way to run the script,
         # though nothing is actually mocked out
-        self.bm = BinMocker()
+        self.bm = BashMocker()
         self.addCleanup(self.bm.cleanup)
 
         # Show the script where to look for the sheets (long-windedly)
