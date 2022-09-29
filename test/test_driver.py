@@ -7,7 +7,9 @@ import subprocess
 from tempfile import mkdtemp
 from shutil import rmtree, copytree, copyfileobj
 from glob import glob
-from shlex import quote as shell_quote
+
+# See what version Illuminatus thinks it is
+from illuminatus import illuminatus_version
 
 """Here we're using a Python script to test a shell script.  The shell script calls
    various programs.  Ideally we want to have a cunning way of catching and detecting
@@ -15,6 +17,7 @@ from shlex import quote as shell_quote
    To this end, see the BinMocker class. I've broken this out for general use.
 """
 from binmocker import BinMocker
+from sandbox import TestSandbox
 
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')
@@ -34,9 +37,9 @@ class T(unittest.TestCase):
            Initialize BinMocker.
            Calculate the test environment needed to run the driver.sh script.
         """
-        self.temp_dir = mkdtemp()
+        self.sandbox = TestSandbox()
         for d in ['seqdata', 'fastqdata', 'log']:
-            os.mkdir(os.path.join(self.temp_dir, d))
+            setattr(self, d, self.sandbox.make(d + '/').rstrip('/'))
 
         self.bm = BinMocker()
         for p in PROGS_TO_MOCK: self.bm.add_mock(p)
@@ -47,14 +50,17 @@ class T(unittest.TestCase):
                                        "mv SampleSheet.csv SampleSheet.csv.0 ;" +
                                        " ln -s SampleSheet.csv.0 SampleSheet.csv )")
 
+        # And for date.py to give a fixed dummy date
+        self.bm.add_mock("date.py", side_effect="echo DUMMY_DATE")
+
         # Set the driver to run in our test harness. Note I can set
         # $BIN_LOCATION to more than one path.
         # Also we need to set VERBOSE to the driver even if it's not set for this test script.
         self.environment = dict(
-                SEQDATA_LOCATION = os.path.join(self.temp_dir, 'seqdata'),
-                FASTQ_LOCATION = os.path.join(self.temp_dir, 'fastqdata'),
+                SEQDATA_LOCATION = self.seqdata,
+                FASTQ_LOCATION = self.fastqdata,
                 BIN_LOCATION = self.bm.mock_bin_dir + ':' + os.path.dirname(DRIVER),
-                LOG_DIR = os.path.join(self.temp_dir, 'log'), #this is redundant if...
+                LOG_DIR = self.log, #this is redundant if...
                 MAINLOG = "/dev/stdout",
                 ENVIRON_SH = '/dev/null',
                 VERBOSE = 'yes',
@@ -71,12 +77,16 @@ class T(unittest.TestCase):
         self.maxDiff = None
 
     def tearDown(self):
-        """Remove the shadow folder and clean up the BinMocker
+        """Remove the sandbox folder and clean up the BinMocker
         """
-        self.shell("chmod -R u+w {}", self.temp_dir)
-        rmtree(self.temp_dir)
-
+        self.sandbox.cleanup()
         self.bm.cleanup()
+
+    def cat(fname, dest=sys.stdout):
+        """Cat a file without calling the cat command
+        """
+        with open(fname) as fh:
+            copyfileobj(fh, dest)
 
     def bm_rundriver(self, expected_retval=0, check_stderr=True):
         """A convenience wrapper around self.bm.runscript that sets the environment
@@ -116,12 +126,12 @@ class T(unittest.TestCase):
 
     def copy_run(self, run):
         """Utility function to add a run from seqdata_examples into TMP/seqdata.
-           Returns the path to the run copied.
+           Returns the full path to the run copied.
         """
         run_dir = os.path.join(os.path.dirname(__file__), 'seqdata_examples', run)
 
         return copytree(run_dir,
-                        os.path.join(self.temp_dir, 'seqdata', run),
+                        os.path.join(self.seqdata, run),
                         symlinks = True )
 
     def assertOutput(self, stream, expected, *words):
@@ -149,22 +159,6 @@ class T(unittest.TestCase):
         """Assert that there is at least one line in stderr containing all these strings
         """
         self.assertOutput(self.bm.last_stderr, True, *words)
-
-    def shell(self, cmd, *args):
-        """Call to os.system in 'safe mode'
-           Replaced by subprocess.call so we can ensure use of BASH. Using DASH breaks everything.
-        """
-        full_cmd = "set -euo pipefail ; "
-        if args:
-            full_cmd += cmd.format(*[shell_quote(a) for a in args])
-        else:
-            # Assume that any curlies are bash expansions
-            full_cmd += cmd
-        status = subprocess.call(full_cmd, shell=True, executable="/bin/bash")
-        if status:
-            raise ChildProcessError("Exit status was %s running command:\n%s" % (status, cmd))
-
-        return status
 
     ### And the actual tests ###
 
@@ -218,7 +212,7 @@ class T(unittest.TestCase):
             test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
             # We need to remove the flag file to make it look like the run is still going.
-            self.shell("rm {}", test_data + "/RTAComplete.txt")
+            os.unlink(f"{test_data}/RTAComplete.txt")
 
         self.bm_rundriver()
 
@@ -236,7 +230,7 @@ class T(unittest.TestCase):
         expected_calls['rt_runticket_manager.py'] = ['-Q run -r 160606_K00166_0102_BHF22YBBXX --subject new --comment @???'.split()]
         expected_calls['Snakefile.qc'] = [ '-- metadata_main'.split(),
                                            ['-F', '--config', 'pstatus=Waiting for data', 'comment=[]', '--', 'multiqc_main'] ]
-        expected_calls['upload_report.sh'] = [[self.temp_dir + '/fastqdata/160606_K00166_0102_BHF22YBBXX']]
+        expected_calls['upload_report.sh'] = [[self.fastqdata + '/160606_K00166_0102_BHF22YBBXX']]
         expected_calls['clarity_run_id_setter.py'] = ['-- 160606_K00166_0102_BHF22YBBXX'.split()]
 
         # This may or may not be mocked. If so, and REDO_HOURS_TO_LOOK_BACK is set, it should
@@ -260,7 +254,7 @@ class T(unittest.TestCase):
         """
         # This run comes first but we make it read-only
         test_data1 = self.copy_run("150602_M01270_0108_000000000-ADWKV")
-        self.shell("chmod u-w {}", test_data1)
+        os.chmod(test_data1, 0o500)
 
         # This can be processed
         test_data2 = self.copy_run("160606_K00166_0102_BHF22YBBXX")
@@ -294,7 +288,7 @@ class T(unittest.TestCase):
         test_data2 = self.copy_run("160606_K00166_0102_BHF22YBBXX")
 
         # The first of these has an existing output dir.
-        self.shell("mkdir {}", os.path.join(self.temp_dir, "fastqdata", "150602_M01270_0108_000000000-ADWKV"))
+        self.sandbox.make("fastqdata/150602_M01270_0108_000000000-ADWKV/")
 
         self.bm_rundriver()
 
@@ -312,17 +306,20 @@ class T(unittest.TestCase):
         self.assertTrue(os.path.isdir(test_data2 + '/pipeline'))
 
         # Second run of the driver should see the broken run as failed (once RTAComplete.txt is added)
-        self.shell("touch {}", os.path.join(test_data2, 'pipeline', 'aborted'))
-        self.shell("touch {}", os.path.join(test_data1, 'RTAComplete.txt'))
+        # Abort the second run so it won't be processed further.
+        self.sandbox.make("seqdata/150602_M01270_0108_000000000-ADWKV/RTAComplete.txt")
+        self.sandbox.make("seqdata/160606_K00166_0102_BHF22YBBXX/pipeline/aborted")
         self.bm_rundriver()
         self.assertInStdout("\_FAILED 150602_M01270_0108_000000000-ADWKV")
+        # This appears because we test driver.sh with VERBOSE output on
+        self.assertInStdout("160606_K00166_0102_BHF22YBBXX from hiseq4000_K00166 with 8 lane(s) and status=aborted")
 
     def test_new_multiqc_fail(self):
         """Same as above but MultiQC fails for some reason.
            This needs to be non-fatal as we still want demultiplexing to kick in.
         """
         test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        self.shell("rm {}", test_data + "/RTAComplete.txt")
+        os.unlink(test_data + "/RTAComplete.txt")
 
         self.bm.add_mock('Snakefile.qc', fail=True)
 
@@ -349,8 +346,9 @@ class T(unittest.TestCase):
         """A failure to run interop/multiqc when finishing up with read1 processing should
            not cause the pipeline to jam in eg. read1_processing state.
         """
-        test_data = self.copy_run("160603_M01270_0196_000000000-AKGDE")
-        self.shell("ln -s {} {}", self.temp_dir, test_data + "/pipeline/output")
+        run = "160603_M01270_0196_000000000-AKGDE"
+        test_data = self.copy_run(run)
+        self.sandbox.link(self.sandbox.make("out1/"), f"seqdata/{run}/pipeline/output")
 
         # For this, we want summarize_lane_contents.py to actually make a file
         self.bm.add_mock("summarize_lane_contents.py",
@@ -371,8 +369,8 @@ class T(unittest.TestCase):
         # Make it so Snakefile.qc and rt_runticket_manager.py fails, and remove the output files, and go once more.
         self.bm.add_mock('rt_runticket_manager.py', fail=True)
         self.bm.add_mock('Snakefile.qc', fail=True)
-        self.shell("rm {}", test_data + "/pipeline/read1.done")
-        self.shell("rm {}", test_data + "/pipeline/sample_summary.yml")
+        os.unlink(test_data + "/pipeline/read1.done")
+        os.unlink(test_data + "/pipeline/sample_summary.yml")
         self.bm_rundriver()
 
         # Test (again) that despite the failure read1.done still appeared
@@ -396,17 +394,17 @@ class T(unittest.TestCase):
              BCL2FASTQPreprocessor.py should be invoked
              The log should say "READS_FINISHED"
         """
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+        run = "160606_K00166_0102_BHF22YBBXX"
+        test_data = self.copy_run(run)
 
         #Now we need to make the ./pipeline folder to push it out of status NEW.
-        self.shell("mkdir {}", test_data + "/pipeline")
+        self.sandbox.make(f"seqdata/{run}/pipeline/")
 
         # And the output directory needs to exist already
-        self.shell("mkdir {}", fastqdir)
-        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
+        fastqdir = self.sandbox.make(f"fastqdata/{run}/")
+        self.sandbox.link(f"fastqdata/{run}/", f"seqdata/{run}/pipeline/output")
 
-        #Run the driver once to do the read1 processing (a no-op due to the mocks)
+        # Run the driver once to do the read1 processing (a no-op due to the mocks)
         self.bm_rundriver()
 
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READ1_FINISHED")
@@ -415,25 +413,29 @@ class T(unittest.TestCase):
         self.assertEqual( len(self.bm.last_calls['Snakefile.qc']), 2 + 1 )
         self.assertTrue(os.path.isfile( test_data + "/pipeline/read1.done" ))
 
-        #The second one will actually demultiplex.
+        # The second one will actually demultiplex.
         self.bm_rundriver()
 
-        #Check samplesheet link.
-        #In real operation the file will be re-fetched from the LIMS.
+        # Check samplesheet link.
+        # In real operation the file will be re-fetched from the LIMS.
         self.assertEqual( os.readlink(os.path.join(test_data, "SampleSheet.csv")),
                           "SampleSheet.csv.0" )
 
-        #Check demultiplexing folder
+        # Check demultiplexing folder
         self.assertTrue( os.path.isdir(os.path.join(fastqdir, "demultiplexing")) )
 
-        #Check presence of 8 .done files
+        # Check presence of 8 .done files
         self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline', 'lane?.done')) ) )
 
-        #Check invoking of Snakefile.demux (in the sedata dir)
+        # Check invoking of Snakefile.demux (in the sedata dir)
         self.assertEqual( self.bm.last_calls['Snakefile.demux'][0],
                           ['--config', 'lanes=[1,2,3,4,5,6,7,8]', 'rundir=' + test_data] )
 
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READS_FINISHED")
+
+        # Check the appearance of the start_times file
+        with open(os.path.join(test_data, 'pipeline', 'start_times')) as fh:
+            self.assertEqual(fh.read(), f"{illuminatus_version}@DUMMY_DATE\n")
 
     def test_demux_error(self):
         """Simulate an error in BCL2FASTQPreprocessor.py. This should lead to the
@@ -441,13 +443,13 @@ class T(unittest.TestCase):
            appearing in the log.
         """
         # Start the same as test_reads_finished...
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+        run = "160606_K00166_0102_BHF22YBBXX"
+        test_data = self.copy_run(run)
+        fastqdir = self.sandbox.make(f"fastqdata/{run}/")
 
-        self.shell("mkdir {}", test_data + "/pipeline")
-        self.shell("mkdir {}", fastqdir)
-        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
-        self.shell("touch {}", test_data + "/pipeline/read1.started")
+        self.sandbox.make(f"seqdata/{run}/pipeline/")
+        self.sandbox.link(f"fastqdata/{run}/", f"seqdata/{run}/pipeline/output")
+        self.sandbox.make(f"seqdata/{run}/pipeline/read1.started")
 
         self.bm.add_mock('Snakefile.demux', fail=True)
 
@@ -465,7 +467,7 @@ class T(unittest.TestCase):
         self.assertTrue( os.path.exists(os.path.join(test_data, 'pipeline', 'failed')) )
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'][-1],
                           "-Q run -r 160606_K00166_0102_BHF22YBBXX --subject failed --reply".split() +
-                          ["Demultiplexing failed. See log in " + fastqdir + "/pipeline.log"]
+                          [f"Demultiplexing failed. See log in {fastqdir}pipeline.log"]
                         )
         self.assertInStdout("FAIL Demultiplexing 160606_K00166_0102_BHF22YBBXX")
 
@@ -483,31 +485,33 @@ class T(unittest.TestCase):
 
     def test_in_pipeline(self):
 
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+        run = "160606_K00166_0102_BHF22YBBXX"
+        self.copy_run(run)
 
         # Mark the run as started, and let's say we're processing read1
-        self.shell("mkdir -p {}/pipeline", test_data)
-        self.shell("touch {}/pipeline/read1.started", test_data)
-        self.shell("touch {}/pipeline/lane{{1..8}}.started", test_data)
+        self.sandbox.make(f"seqdata/{run}/pipeline/read1.started")
+        for lane in "12345678":
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.started")
 
         self.bm_rundriver()
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "IN_DEMULTIPLEXING")
 
         # Finishing read1 shouldn't change matters
-        self.shell("touch {}/pipeline/read1.done", test_data)
+        self.sandbox.make(f"seqdata/{run}/pipeline/read1.done")
 
         self.bm_rundriver()
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "IN_DEMULTIPLEXING")
 
     def test_completed(self):
 
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
+        run = "160606_K00166_0102_BHF22YBBXX"
+        self.copy_run(run)
 
-        self.shell("mkdir -p {}/pipeline", test_data)
-        self.shell("touch {}/pipeline/lane{{1..8}}.started", test_data)
-        self.shell("touch {}/pipeline/lane{{1..8}}.done", test_data)
-        self.shell("touch {}/pipeline/read1.done", test_data)
-        self.shell("touch {}/pipeline/qc.done", test_data)
+        for lane in "12345678":
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.started")
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.done")
+        self.sandbox.make(f"seqdata/{run}/pipeline/read1.done")
+        self.sandbox.make(f"seqdata/{run}/pipeline/qc.done")
 
         self.bm_rundriver()
 
@@ -519,27 +523,29 @@ class T(unittest.TestCase):
         """A run which was partly completed but we want to redo lanes 1 and 2
            Lane 2 will be marked as done but lane 1 will not.
         """
+        run = "160606_K00166_0102_BHF22YBBXX"
+        test_data = self.copy_run(run)
+        fastqdir = self.sandbox.make(f"fastqdata/{run}/").rstrip('/')
 
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
-
-        self.shell("mkdir -p {}/pipeline", test_data)
-        self.shell("touch {}/pipeline/read1.done", test_data)
-        self.shell("touch {}/pipeline/lane{{1..8}}.started", test_data)
-        self.shell("touch {}/pipeline/lane{{2..8}}.done", test_data)
+        self.sandbox.make(f"seqdata/{run}/pipeline/read1.done")
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane1.started")
+        for lane in "2345678":
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.started")
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.done")
 
         # Without this failed flag, the RunStatus will be in_demultiplexing.
-        self.shell("touch {}/pipeline/failed", test_data)
-        self.shell("touch {}/pipeline/lane{{1,2}}.redo", test_data)
-        self.shell("mkdir -p {}/demultiplexing", fastqdir)
+        self.sandbox.make(f"seqdata/{run}/pipeline/failed")
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane1.redo")
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane2.redo")
+        self.sandbox.make(f"fastqdata/{run}/demultiplexing/")
 
         # And we need the pipeline/output symlink
-        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
+        self.sandbox.link(f"fastqdata/{run}/", f"seqdata/{run}/pipeline/output")
 
         # This should suppresss sending a new report to RT, since there will
         # already appear to be an up-to-date samplesheet plus a summary.
         self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
-        self.shell("touch {}/pipeline/sample_summary.yml", test_data)
+        self.sandbox.make(f"seqdata/{run}/pipeline/sample_summary.yml", content="DUMMY")
 
         # This should do many things...
         self.bm_rundriver()
@@ -561,13 +567,8 @@ class T(unittest.TestCase):
         # recreated the .done files for these two lanes.
         # The .started files for the other lanes should also be removed (in general
         # we wouldn't expect to find both a .started and a .done)
-        self.assertEqual([os.path.exists(test_data + "/pipeline/" + f) for f in [
-                            'lane1.started', 'lane1.done', 'lane1.redo',
-                            'lane2.started', 'lane2.done', 'lane2.redo',
-                            'lane3.started', 'lane3.done', 'lane3.redo' ]
-                         ], [False,           True,         False,
-                             False,           True,         False,
-                             False,           True,         False ])
+        self.assertEqual( self.sandbox.lsdir(f"seqdata/{run}/pipeline", glob="lane[123].*"),
+                          [ 'lane1.done', 'lane2.done', 'lane3.done' ] )
 
         # Check that summarize_lane_contents.py really wasn't called
         #self.assertEqual( self.bm.last_calls['summarize_lane_contents.py'], [] )
@@ -591,27 +592,34 @@ class T(unittest.TestCase):
                            ['-Q', 'run', '-r', '160606_K00166_0102_BHF22YBBXX', '--subject', 're-demultiplexed',
                             '--comment', 'Re-Demultiplexing of lanes 1 2 completed'] ])
 
+        # Check the appearance of the start_times file
+        with open(os.path.join(test_data, 'pipeline', 'start_times')) as fh:
+            self.assertEqual(fh.read(), f"{illuminatus_version}@DUMMY_DATE\n")
+
     def test_redo_missing_output(self):
         """If the output link is broken the driver needs to fail quickly.
            Use the same redo setup as before.
         """
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+        run = "160606_K00166_0102_BHF22YBBXX"
+        test_data = self.copy_run(run)
 
-        self.shell("mkdir -p {}/pipeline", test_data)
-        self.shell("touch {}/pipeline/read1.done", test_data)
-        self.shell("touch {}/pipeline/lane{{1..8}}.started", test_data)
-        self.shell("touch {}/pipeline/lane{{2..8}}.done", test_data)
+        self.sandbox.make(f"seqdata/{run}/pipeline/read1.done")
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane1.started")
+        for lane in "2345678":
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.started")
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.done")
 
         # Without this failed flag, the RunStatus will be in_demultiplexing.
-        self.shell("touch {}/pipeline/failed", test_data)
-        self.shell("touch {}/pipeline/lane{{1,2}}.redo", test_data)
-        self.shell("mkdir -p {}/demultiplexing", fastqdir)
+        self.sandbox.make(f"seqdata/{run}/pipeline/failed")
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane1.redo")
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane2.redo")
+
+        self.sandbox.make(f"fastqdata/{run}/demultiplexing/")
 
         # This should suppresss sending a new report to RT, since there will
         # already appear to be an up-to-date samplesheet plus a summary.
         self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
-        self.shell("touch {}/pipeline/sample_summary.yml", test_data)
+        self.sandbox.make(f"seqdata/{run}/pipeline/sample_summary.yml", content="dummy")
 
         self.bm_rundriver()
 
@@ -631,24 +639,27 @@ class T(unittest.TestCase):
         """If BCL2FASTQCleanup.py fails then it should stop processing the run, not continuing
            to run Snakefile.demux etc.
         """
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+        run = "160606_K00166_0102_BHF22YBBXX"
+        test_data = self.copy_run(run)
+        fastqdir = self.sandbox.make(f"fastqdata/{run}/").rstrip('/')
 
-        self.shell("mkdir -p {}/pipeline", test_data)
-        self.shell("touch {}/pipeline/read1.done", test_data)
-        self.shell("touch {}/pipeline/lane{{1..8}}.started", test_data)
-        self.shell("touch {}/pipeline/lane{{2..8}}.done", test_data)
+        self.sandbox.make(f"seqdata/{run}/pipeline/read1.done")
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane1.started")
+        for lane in "2345678":
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.started")
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.done")
 
         # Without this failed flag, the RunStatus will be in_demultiplexing.
-        self.shell("touch {}/pipeline/failed", test_data)
-        self.shell("touch {}/pipeline/lane{{1,2}}.redo", test_data)
-        self.shell("mkdir -p {}/demultiplexing", fastqdir)
-        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
+        self.sandbox.make(f"seqdata/{run}/pipeline/failed")
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane1.redo")
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane2.redo")
+        self.sandbox.make(f"fastqdata/{run}/demultiplexing/")
+        self.sandbox.link(f"fastqdata/{run}/", f"seqdata/{run}/pipeline/output")
 
         # This should suppresss sending a new report to RT, since there will
         # already appear to be an up-to-date samplesheet plus a summary.
         self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
-        self.shell("touch {}/pipeline/sample_summary.yml", test_data)
+        self.sandbox.make(f"seqdata/{run}/pipeline/sample_summary.yml", content="dummy")
 
         # Now ensure the cleanup fails.
         self.bm.add_mock('BCL2FASTQCleanup.py', fail=True)
@@ -692,19 +703,18 @@ class T(unittest.TestCase):
         """I had a bug where restarting QC on a 10X run would exit leaving the run in_qc with
            no error in the log. This was symptomatic of more general shaky error handling.
         """
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+        run = "160606_K00166_0102_BHF22YBBXX"
+        test_data = self.copy_run(run)
+        fastqdir = self.sandbox.make(f"fastqdata/{run}/").rstrip('/')
 
-        self.shell("mkdir {}", test_data + "/pipeline")
-        self.shell("mkdir {}", fastqdir)
-        self.shell("touch {}/pipeline/read1.done", test_data)
-        self.shell("touch {}/pipeline/lane{{1..8}}.done", test_data)
-        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
+        self.sandbox.make(f"seqdata/{run}/pipeline/read1.done")
+        for lane in "12345678":
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.done")
+        self.sandbox.link(f"fastqdata/{run}/", f"seqdata/{run}/pipeline/output")
 
         # We also need this or count_10x_barcodes.py never runs at all as there
         # are no input files.
-        self.shell("mkdir -p {}", fastqdir + "/demultiplexing/lane1/Stats")
-        self.shell("touch {}", fastqdir + "/demultiplexing/lane1/Stats/Stats.json")
+        self.sandbox.make(f"fastqdata/{run}/demultiplexing/lane1/Stats/Stats.json")
 
         # Now let's say that count_10x_barcodes.py returns true and Snakefile.qc fails.
         # We also need upload_report.sh to look like it did something.
@@ -727,12 +737,11 @@ class T(unittest.TestCase):
 
         # Now start again, but this time Snakefile.qc succeeds. We should be good.
         self.bm.add_mock('Snakefile.qc', fail=False)
-        self.shell("rm {}", test_data + "/pipeline/qc.started")
-        self.shell("rm {}", test_data + "/pipeline/failed")
+        os.unlink(test_data + "/pipeline/qc.started")
+        os.unlink(test_data + "/pipeline/failed")
 
         # Run again...
         self.bm_rundriver()
-        #self.shell("cat {}", test_data + "/pipeline/output/pipeline.log")
 
         self.assertTrue(os.path.isfile(test_data + '/pipeline/qc.done'))
         self.assertFalse(os.path.isfile(test_data + '/pipeline/qc.started'))
@@ -744,8 +753,8 @@ class T(unittest.TestCase):
            already above? Well check it anyways.
         """
         # copied from test_reads_finished
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+        run = "160606_K00166_0102_BHF22YBBXX"
+        test_data = self.copy_run(run)
 
         # Make rt_runticket_manager.py always fail (as if the server is down)
         self.bm.add_mock('rt_runticket_manager.py', fail=True)
@@ -765,7 +774,7 @@ class T(unittest.TestCase):
                           [ "--reply", "--comment" ] )
 
         # Check demultiplexing folder
-        self.assertTrue( os.path.isdir(os.path.join(fastqdir, "demultiplexing")) )
+        self.assertTrue( os.path.isdir(os.path.join(self.fastqdata, run, "demultiplexing")) )
 
         # Check invoking of Snakefile.demux (in the sedata dir)
         self.assertEqual( self.bm.last_calls['Snakefile.demux'][0],
@@ -777,19 +786,20 @@ class T(unittest.TestCase):
         self.assertInStdout('PipelineStatus: demultiplexed')
 
         # This basically tests the same thing
-        self.assertEqual( 8, len( glob(os.path.join(test_data, 'pipeline', 'lane?.done')) ) )
+        self.assertEqual( 8, len(self.sandbox.lsdir(f"seqdata/{run}/pipeline", glob="lane?.done")) )
 
     def test_rt_failure_after_qc(self):
         """On ultra2 I did a test run and it looks like the final RT communication failed, but
            the error says "FAIL QC...and also failed to report the error via RT". But it should say
            'FAIL RT_final_message'.
         """
-        test_data = self.copy_run("210827_M05898_0165_000000000-JVM38")
+        run = "210827_M05898_0165_000000000-JVM38"
+        test_data = self.copy_run(run)
 
-        self.shell("touch {}/pipeline/lane1.done", test_data)
-        self.shell("touch {}/pipeline/read1.done", test_data)
-        self.shell("touch {}/pipeline/qc.done", test_data)
-        self.shell("ln -s {} {}", self.temp_dir, test_data + "/pipeline/output")
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane1.done")
+        self.sandbox.make(f"seqdata/{run}/pipeline/read1.done")
+        self.sandbox.make(f"seqdata/{run}/pipeline/qc.done")
+        self.sandbox.link(self.sandbox.make("out1/"), f"seqdata/{run}/pipeline/output")
 
         # This needs to have a side effect
         self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK > pipeline/report_upload_url.txt")
@@ -801,20 +811,20 @@ class T(unittest.TestCase):
         self.assertInStdout("210827_M05898_0165_000000000-JVM38", "status=complete")
 
         # Now run the QC and it should be OK
-        self.shell("rm {}/pipeline/qc.done", test_data)
+        os.unlink(f"{test_data}/pipeline/qc.done")
         self.bm_rundriver()
         if VERBOSE:
-            self.shell("cat {}", self.temp_dir + "/pipeline.log")
+            self.cat(f"{self.temp_dir}/pipeline.log")
 
         self.assertInStdout("210827_M05898_0165_000000000-JVM38", "status=demultiplexed")
         self.assertNotInStdout("FAIL")
 
         # Now we want to re-run the QC but make rt_runticket_manager.py fail
         self.bm.add_mock('rt_runticket_manager.py', fail=True)
-        self.shell("rm {}/pipeline/qc.done", test_data)
+        os.unlink(f"{test_data}/pipeline/qc.done")
         self.bm_rundriver(check_stderr=False)
         if VERBOSE:
-            self.shell("cat {}", self.temp_dir + "/pipeline.log")
+            self.cat(f"{self.temp_dir}/pipeline.log")
 
         self.assertInStdout("210827_M05898_0165_000000000-JVM38", "status=demultiplexed")
         self.assertInStdout("FAIL RT_final_message")
@@ -826,14 +836,13 @@ class T(unittest.TestCase):
            Maybe this is best rolled into tests above?
         """
         # setup copied from test_reads_finished
-        test_data = self.copy_run("160606_K00166_0102_BHF22YBBXX")
-        fastqdir = os.path.join(self.temp_dir, "fastqdata", "160606_K00166_0102_BHF22YBBXX")
+        run = "160606_K00166_0102_BHF22YBBXX"
+        test_data = self.copy_run(run)
 
         # Now we need to make the ./pipeline folder to push it out of status NEW.
         # And the output directory needs to exist already
-        self.shell("mkdir {}", test_data + "/pipeline")
-        self.shell("mkdir {}", fastqdir)
-        self.shell("ln -s {} {}", fastqdir, test_data + "/pipeline/output")
+        self.sandbox.make(f"fastqdata/{run}/")
+        self.sandbox.link(f"fastqdata/{run}/", f"seqdata/{run}/pipeline/output")
 
         # Make rt_runticket_manager.py always fail (as if the server is down) because RT errors
         # at this point shouldn't jam the pipeline.
@@ -863,7 +872,7 @@ class T(unittest.TestCase):
         # Re-trigger read1 processing, this time with the Snakefile.read1qc failing
         # This should post a comment but not an alert.
         self.bm.add_mock('Snakefile.read1qc', fail=True)
-        self.shell("rm {}", test_data + "/pipeline/read1.done")
+        os.unlink(f"{test_data}/pipeline/read1.done")
         self.bm_rundriver()
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX", "READ1_FINISHED")
 

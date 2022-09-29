@@ -20,8 +20,8 @@ class T(unittest.TestCase):
         # Most of the time the class will be used like this
         self.sb = TestSandbox(DATA_DIR)
 
-        # Tests need to clean up explicitly (this is useful since we could skip the
-        # cleanup to manually exacmine the temp dir)
+        # Users of the TestSandbox need to clean up explicitly (this is useful since we could skip the
+        # cleanup to manually examine the temp dir)
         self.addCleanup(self.sb.cleanup)
 
     ### THE TESTS ###
@@ -154,6 +154,23 @@ class T(unittest.TestCase):
 
         # I can't recursively touch a file
         self.assertRaises(NotADirectoryError, self.sb.touch, 'la/la', recursive=True)
+
+    def test_remove_readonly(self):
+        """Cleanup should work even if a file or directory is read-only
+        """
+
+        # For this we need a second sandbox since we need to explictly call cleanup
+        sb2 = TestSandbox()
+        tmp_dir = sb2.sandbox
+
+        self.assertTrue(os.path.exists(tmp_dir))
+        sb2.make("badperms_dir/badperms_file")
+
+        os.chmod(os.path.join(sb2.sandbox, "badperms_dir/badperms_file"), 0)
+        os.chmod(os.path.join(sb2.sandbox, "badperms_dir"), 0)
+
+        sb2.cleanup()
+        self.assertFalse(os.path.exists(tmp_dir))
 
 if __name__ == '__main__':
     unittest.main()

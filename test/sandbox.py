@@ -28,9 +28,25 @@ class TestSandbox:
                                      os.path.join( self._sandbox, os.path.basename(copydir) ),
                                      symlinks = not follow_symlinks )
 
+    @classmethod
+    def _fixperm(cls, fname, minperm, setperm=None):
+        if (os.stat(fname)[0] & minperm) != minperm:
+            os.chmod(fname, setperm or minperm)
+            return True
+        return False
+
     def cleanup(self):
         """Remove the sandbox. Calling this twice will raise an exception.
         """
+        # rmtree gets upset when we hit files/directories with restrictive permissions,
+        # and the fix-via-callback is broken, so fix these first.
+        # Perms: 0o700 means u=rwx ; 0o200 means u=w
+        for dpath, dirs, files in os.walk(self._sandbox):
+            for d in dirs:
+                self._fixperm(os.path.join(dpath, d), 0o700)
+            for f in files:
+                self._fixperm(os.path.join(dpath, f), 0o200)
+
         rmtree(self._sandbox)
         self.sandbox = self._sandbox = None
 
