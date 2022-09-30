@@ -137,6 +137,7 @@ def get_idict(rids, run_path, pipeline_info=None):
             ('t2//Sequencer Finish',
                 f"{pipeline_info['seq_finish']}{seq_finish_suffix}"),
             ('t3//Pipeline Start', pipeline_info['pl_start']),
+            ('Pipeline Start Timestamp', pipeline_info['_pl_start']),
         ])
 
     return idict

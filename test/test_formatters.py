@@ -57,5 +57,8 @@ class T(unittest.TestCase):
         self.assertEqual( fmt_duration(test_time3.timestamp(), test_time1.timestamp()),
                           "invalid negative duration" )
 
+        # If called with one arg, we get the time from then til now
+        self.assertEqual( fmt_duration(datetime.now().timestamp()), "0 hours 00 minutes" )
+
 if __name__ == '__main__':
     unittest.main()

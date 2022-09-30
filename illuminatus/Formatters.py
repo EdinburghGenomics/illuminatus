@@ -32,10 +32,14 @@ def fmt_time(ts=None):
         dt = datetime.now()
     return dt.strftime("%a %d-%h-%Y %H:%M:%S")
 
-def fmt_duration(start_ts, end_ts):
+def fmt_duration(start_ts, end_ts=None):
     """Given two integers representing Unix timestamps, show the duration as
        'x hours, y minutes'
+       If only one time is given, give the duration between then and now.
     """
+    if end_ts is None:
+        end_ts = datetime.now().timestamp()
+
     if end_ts < start_ts:
         return "invalid negative duration"
 
