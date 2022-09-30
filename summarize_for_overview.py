@@ -7,7 +7,7 @@ import yaml, yamlloader
 from urllib.parse import quote as url_quote
 
 from illuminatus import illuminatus_version
-from illuminatus.Formatters import fmt_time
+from illuminatus.Formatters import fmt_time, fmt_duration
 
 """This script provides information about a sequencing run that appears at the top
    of each MultiQC report page.
@@ -34,11 +34,14 @@ def get_pipeline_info(run_path):
         #OK, the pipeline didn't start
         return None
 
-    if '@' in last_line:
-        pipeline_info['version'], pipeline_info['start'] = last_line.split('@', 1)
-    else:
-        #If the version wasn't logged, this must have been 0.0.2 (or earlier)
-        pipeline_info['version'], pipeline_info['start'] = '0.0.?', last_line
+    try:
+        pipeline_info['version'], start = last_line.split('@', 1)
+        pipeline_info['_pl_start'] = int(start)
+        pipeline_info['pl_start'] = fmt_time(pipeline_info['_pl_start'])
+    except Exception:
+        # Tolerate junk in this file
+        pipeline_info.setdefault('version', 'unknown')
+        pipeline_info.setdefault('plstart', 'unknown')
 
     # Now if this script belongs to a different version we need to say so, and we
     # end up with a version like 0.0.3+0.1.0, ie. demultiplexed with one version and
@@ -49,7 +52,8 @@ def get_pipeline_info(run_path):
 
     # If the pipeline started, the sequencer MUST have finished.
     touch_file = os.path.join( run_path , 'RTAComplete.txt' )
-    pipeline_info['finish'] = fmt_time( datetime.fromtimestamp(os.stat(touch_file).st_mtime) )
+    pipeline_info['_seq_finish'] = os.stat(touch_file).st_mtime
+    pipeline_info['seq_finish'] = fmt_time( pipeline_info['_seq_finish'] )
 
     return pipeline_info
 
@@ -109,7 +113,7 @@ def get_idict(rids, run_path, pipeline_info=None):
             ('Cycles', rids['Cycles']), # '251 [12] 251',
             ('Pipeline Script', get_pipeline_script()),
             ('Sample Sheet', sample_sheet), # [ name, path ]
-            ('t1//Run Start', rids.get('RunStartTime') or rids['RunDate']),
+            ('t1//Run Start', rids['RunStartTime']),
         ])
 
     # Eliminate empty value.
@@ -120,13 +124,19 @@ def get_idict(rids, run_path, pipeline_info=None):
         # We'll get the definitive pipeline version from pipeline_info
         del idict['pre_start_info']['Pipeline Version']
 
-        run_duration = pipeline_info.get('run_duration', '? hours')
+        if '_seq_finish' in pipeline_info and 'RunStartTimeStamp' in rids:
+            # We can work out how long the run took
+            run_duration = fmt_duration( rids['RunStartTimeStamp'],
+                                         pipeline_info['_seq_finish'] )
+            seq_finish_suffix = f" ({run_duration})"
+        else:
+            seq_finish_suffix = ""
 
         idict['post_start_info'] = OrderedDict([
             ('Pipeline Version', pipeline_info['version']),
             ('t2//Sequencer Finish',
-                f"{pipeline_info['finish']} ({run_duration})"),
-            ('t3//Pipeline Start', pipeline_info['start']),
+                f"{pipeline_info['seq_finish']}{seq_finish_suffix}"),
+            ('t3//Pipeline Start', pipeline_info['pl_start']),
         ])
 
     return idict

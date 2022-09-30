@@ -8,6 +8,6 @@ from illuminatus.Formatters import fmt_time
 """
 
 if sys.argv[1:]:
-    print( fmt_time(datetime.fromtimestamp(int(sys.argv[1]))) )
+    print( fmt_time(int(sys.argv[1])) )
 else:
-    print( fmt_time(datetime.now()) )
+    print( fmt_time() )

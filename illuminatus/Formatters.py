@@ -2,10 +2,12 @@
 
 # Some data formatters that I seem to need from time to time...
 
+from datetime import datetime, timedelta
+
 def rat(n, d, nan=float('nan'), mul=1.0):
-    """ Calculate a ratio while avoiding division by zero errors.
-        Strictly speaking we should have nan=float('nan') but for practical
-        purposes we'll maybe want to report None (or 0.0?).
+    """Calculate a ratio while avoiding division by zero errors.
+       Strictly speaking we should have nan=float('nan') but for practical
+       purposes we'll maybe want to report None (or 0.0?).
     """
     try:
         return ( float(n) * mul ) / float(d)
@@ -13,13 +15,33 @@ def rat(n, d, nan=float('nan'), mul=1.0):
         return nan
 
 def pct(n, d, mul=100.0, **kwargs):
-    """ Percentage by the same logic.
-        You can override mul and nan if you like.
+    """Percentage by the same logic.
+       You can override mul and nan if you like.
     """
     return rat(n, d, mul=mul, **kwargs)
 
-def fmt_time(d):
-    """ Format a datetime for the report. We used to just use .ctime() but Matt
-        asked for something that Excel would recognise.
+def fmt_time(ts=None):
+    """Format a timestamp for the report. We used to just use .ctime() but Matt
+       asked for something that Excel would recognise.
+
+       ts - an integer containing a Unix timestamp
     """
-    return d.strftime("%a %d-%h-%Y %H:%M:%S")
+    if ts:
+        dt = datetime.fromtimestamp(ts)
+    else:
+        dt = datetime.now()
+    return dt.strftime("%a %d-%h-%Y %H:%M:%S")
+
+def fmt_duration(start_ts, end_ts):
+    """Given two integers representing Unix timestamps, show the duration as
+       'x hours, y minutes'
+    """
+    if end_ts < start_ts:
+        return "invalid negative duration"
+
+    duration = datetime.fromtimestamp(end_ts) - datetime.fromtimestamp(start_ts)
+
+    hours = duration // timedelta(hours=1)
+    minutes = (duration % timedelta(hours=1)) // timedelta(minutes=1)
+
+    return f"{hours} hours {minutes:02d} minutes"

@@ -60,6 +60,11 @@ class T(unittest.TestCase):
         # Check the samplesheet is reported right
         self.assertRegex( 'txt', r'Active SampleSheet:.*?(\S+$)', [ 'SampleSheet.csv.1' ] )
 
+        # Check that the RunStartTimeStamp is being set correctly - just look in rids
+        self.assertEqual( self.rids['RunStartTime'], 'Fri 08-Sep-2017 13:36:55')
+        self.assertEqual( self.rids['RunStartTimeStamp'], 1504874215 )
+        self.assertEqual( type(self.rids['RunStartTimeStamp']), int )
+
     def test_scan_allprojects(self):
         """ Not all the projects we have in the examples dir are suitable to be scanned.
             But some are.
@@ -137,7 +142,7 @@ class T(unittest.TestCase):
     def scan_project(self, fname, addins=None):
         """Scan a project folder and do all the conversions at once.
            Dummy name-list of '-' will be set to avoid LIMS look-ups.
-           Text oupput will be captured to out_buf so if a test wants to examine
+           Text output will be captured to out_buf so if a test wants to examine
            the contents it needs to re-parse it.
         """
         if os.path.isdir(fname):

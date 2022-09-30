@@ -65,10 +65,6 @@ Soon it should ask the LIMS for additional details (eg. loading conc) too.
 
     return a.parse_args(*args)
 
-def printable_date():
-    # fmt_time sets the standard we like for printing
-    return fmt_time( datetime.datetime.now() )
-
 def main(args):
     """Basic gist - build data structure in memory, then serialize it as
        requested.
@@ -302,8 +298,9 @@ def scan_for_info(run_dir, project_name_list=''):
         rids['ExperimentName'] = run_params.get('Experiment Name')
         # This is a CTime based on file timestamps. RunDate on the NovaSeq also
         # gives a timestamp but not on the MiSeq, even post-upgrade. And I don't
-        # trust the MiSEQ clock in any case.
-        rids['RunStartTime'] = run_params.get('Start Time')
+        # trust the MiSeq clock in any case.
+        rids['RunStartTimeStamp'] = int(run_params.get('Start Time'))
+        rids['RunStartTime'] = fmt_time(rids['RunStartTimeStamp'])
 
         rids['Chemistry'] = get_chemistry(run_params, rids['Instrument'])
     except Exception:
@@ -328,7 +325,7 @@ def scan_for_info(run_dir, project_name_list=''):
         ss_csv = None
 
     #When is this  report being made?
-    rids['ReportDateTime'] = printable_date()
+    rids['ReportDateTime'] = fmt_time()
 
     #Slice the sample sheet by lane
     rids['Lanes'] = []

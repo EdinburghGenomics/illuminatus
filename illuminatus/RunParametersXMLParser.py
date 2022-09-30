@@ -6,8 +6,6 @@ from datetime import datetime
 import xml.etree.ElementTree as ET
 import yaml
 
-from .Formatters import fmt_time
-
 class RunParametersXMLParser:
     """Uses the python xml parser to extract some run information and store it in a dictionary
     """
@@ -61,7 +59,7 @@ class RunParametersXMLParser:
         started_times = sorted( os.stat(f).st_mtime for f in
                                 [runparameters_file] +
                                 glob(os.path.join( os.path.dirname(runparameters_file) , 'Recipe', '*' )) )
-        self.run_parameters[ 'Start Time' ] = fmt_time( datetime.fromtimestamp(started_times[0]) )
+        self.run_parameters[ 'Start Time' ] = started_times[0]
 
     def make_from_yaml(self, runparameters_file):
 

@@ -77,19 +77,19 @@ class T(unittest.TestCase):
         """
         self.sfo_check("210827_M05898_0165_111111111-JVM38")
 
-    @patch('summarize_for_overview.illuminatus_version', '1.7.1')
+    @patch('summarize_for_overview.illuminatus_version', '1.11')
     @patch('os.stat', mock_stat(1630226951))
     def test_miseq2(self):
         """Same but after processing
         """
         self.sfo_check("210827_M05898_0165_000000000-JVM38")
 
-    @patch('summarize_for_overview.illuminatus_version', '1.7.1')
+    @patch('summarize_for_overview.illuminatus_version', '1.11')
     @patch('os.stat', mock_stat(1627002191))
     def test_novaseq1(self):
         self.sfo_check("210722_A00291_0378_AHFT2CDRXY")
 
-    @patch('summarize_for_overview.illuminatus_version', '1.7.1-master-c15ee946')
+    @patch('summarize_for_overview.illuminatus_version', 'dummy-version')
     @patch('os.stat', mock_stat(1630767665))
     def test_novaseq2(self):
         """Another example. Here there is a second pipeline number
