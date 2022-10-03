@@ -50,10 +50,14 @@ class TestSandbox:
         rmtree(self._sandbox)
         self.sandbox = self._sandbox = None
 
-    def touch(self, path, hours_age=0, recursive=False):
+    def touch(self, path, hours_age=0, timestamp=None, recursive=False):
         """Update the times on a file or directory. No files will be created.
         """
-        modtime = (datetime.datetime.now() - datetime.timedelta(hours=hours_age)).timestamp()
+        if timestamp is None:
+            now = datetime.datetime.now()
+        else:
+            now = datetime.datetime.fromtimestamp(timestamp)
+        modtime = (now - datetime.timedelta(hours=hours_age)).timestamp()
 
         if not recursive:
             # The easy bit...

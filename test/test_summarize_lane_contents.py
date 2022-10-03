@@ -6,6 +6,8 @@ from glob import glob
 from pprint import pprint
 import io
 
+from sandbox import TestSandbox
+
 from summarize_lane_contents import project_real_name, scan_for_info, yaml, \
         output_yml, output_tsv, output_txt, output_mqc
 
@@ -52,7 +54,13 @@ class T(unittest.TestCase):
 
     def test_scan_project(self):
 
-        self.scan_project(LC_DIR + '/170221_K00166_0183_AHHT3HBBXX')
+        # This needs some specific timestamps so I'll copy to a sandbox
+        sb = TestSandbox(LC_DIR + '/170221_K00166_0183_AHHT3HBBXX')
+        self.addCleanup(sb.cleanup)
+
+        sb.touch("runParameters.xml", timestamp=1504874215.0)
+
+        self.scan_project(sb.sandbox)
 
         # Check there was output for all things
         self.assertTrue( all( self.formatted.values() ))

@@ -6,9 +6,9 @@ import sys, os, re
 import unittest
 import logging
 import time
+from datetime import datetime
 
 from sandbox import TestSandbox
-
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/asandbox')
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
@@ -71,6 +71,20 @@ class T(unittest.TestCase):
         self.sb.touch('foo2', hours_age=10)
         self.assertTrue( os.lstat(sb_dir + 'foo1').st_mtime < os.lstat(sb_dir + 'foo2').st_mtime )
         self.assertTrue( os.lstat(sb_dir + 'alink1').st_mtime < os.lstat(sb_dir + 'foo2').st_mtime )
+
+    def test_touch_timestamp(self):
+        """I can now specify a timestamp for touching files
+           If the timestamp and hours_age are both specified, then the hours should
+           be subtracted from the timestamp.
+        """
+        self.sb.touch('foo1', timestamp=946771200)
+        self.sb.touch('foo2', timestamp=946771200, hours_age=24)
+
+        sb_dir = self.sb.sandbox + '/'
+        self.assertEqual( datetime.utcfromtimestamp(os.stat(sb_dir + 'foo1').st_mtime),
+                          datetime(year=2000, month=1, day=2) )
+        self.assertEqual( datetime.utcfromtimestamp(os.stat(sb_dir + 'foo2').st_mtime),
+                          datetime(year=2000, month=1, day=1) )
 
     def test_make_touch(self):
         """Do some stuff in the default sandbox
