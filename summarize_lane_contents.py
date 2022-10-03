@@ -296,10 +296,10 @@ def scan_for_info(run_dir, project_name_list=''):
         if 'Flowcell Type' in run_params:
             rids['FCType'] = run_params['Flowcell Type']
         rids['ExperimentName'] = run_params.get('Experiment Name')
-        # This is a CTime based on file timestamps. RunDate on the NovaSeq also
-        # gives a timestamp but not on the MiSeq, even post-upgrade. And I don't
+        # This 'Start Time' comes from file timestamps. RunDate on the NovaSeq also
+        # gives a timestamp, but not on the MiSeq, even post-upgrade. And I don't
         # trust the MiSeq clock in any case.
-        rids['RunStartTimeStamp'] = int(run_params.get('Start Time'))
+        rids['RunStartTimeStamp'] = run_params.get('Start Time')
         rids['RunStartTime'] = fmt_time(rids['RunStartTimeStamp'])
 
         rids['Chemistry'] = get_chemistry(run_params, rids['Instrument'])

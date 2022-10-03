@@ -59,7 +59,7 @@ class RunParametersXMLParser:
         started_times = sorted( os.stat(f).st_mtime for f in
                                 [runparameters_file] +
                                 glob(os.path.join( os.path.dirname(runparameters_file) , 'Recipe', '*' )) )
-        self.run_parameters[ 'Start Time' ] = started_times[0]
+        self.run_parameters[ 'Start Time' ] = int(started_times[0])
 
     def make_from_yaml(self, runparameters_file):
 
@@ -77,10 +77,6 @@ class RunParametersXMLParser:
         for k in list(rp):
             if rp[k] is None:
                 del rp[k]
-
-        # Convert the start time
-        if type(rp['Start Time']) == int:
-            rp['Start Time'] = fmt_time( datetime.fromtimestamp(rp['Start Time']) )
 
         self.run_parameters = rp
 
