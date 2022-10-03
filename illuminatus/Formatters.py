@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Some data formatters that I seem to need from time to time...
-
+import os
 from datetime import datetime, timedelta
 
 def rat(n, d, nan=float('nan'), mul=1.0):
@@ -26,11 +26,12 @@ def fmt_time(ts=None):
 
        ts - an integer containing a Unix timestamp
     """
+    dt_format = os.environ.get("DATETIME_FORMAT", "%a %d-%h-%Y %H:%M:%S")
     if ts:
         dt = datetime.fromtimestamp(ts)
     else:
         dt = datetime.now()
-    return dt.strftime("%a %d-%h-%Y %H:%M:%S")
+    return dt.strftime(dt_format)
 
 def fmt_duration(start_ts, end_ts=None):
     """Given two integers representing Unix timestamps, show the duration as
