@@ -344,7 +344,7 @@ rule md5sum_file:
     priority: 50
     output: "md5sums/{foo}.md5"
     input: "{foo}"
-    shell: "( cd `dirname {input}` && md5sum `basename {input}` ) > {output}"
+    shell: '( cd "$(dirname {input:q})" && md5sum -- "$(basename {input:q})" ) > {output:q}'
 
 # along with the md5sums, make a count summary per file
 # For speed, we're actually reading these from the Stats.json file (the
