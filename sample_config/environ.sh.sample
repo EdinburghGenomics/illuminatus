@@ -10,9 +10,10 @@ SEQDATA_LOCATION=/lustre-gseg/seqdata
 FASTQ_LOCATION=/lustre-gseg/fastqdata
 LOG_DIR=~pipeline/illuminatus/logs
 
-# Slurm queue to use. This will be passed to Snakemake, as all cluster jobs are
-# controlled by Snakemake.
-CLUSTER_QUEUE=edgen-casava
+# SLURM partition and budget to use. This will be passed to Snakemake, as all
+# cluster jobs are controlled by Snakemake.
+CLUSTER_ACCOUNT=edg01-illumina
+EXTRA_SLURM_FLAGS="--time=24:00:00 --account=edg01-illumina"
 
 # Where to SCP the reports and how to make the links; neither should end with
 # a slash. Also use the special RSYNC shim on egcloud which sorts out the

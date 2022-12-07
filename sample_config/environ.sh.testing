@@ -7,7 +7,8 @@ MAINLOG=/dev/stdout
 SEQDATA_LOCATION=~/test_seqdata FASTQ_LOCATION=~/test_fastqdata
 
 # Bypass RT and use the global partition on SLURM
-RT_SYSTEM=none CLUSTER_QUEUE=global
+RT_SYSTEM=none
+CLUSTER_PARTITION=standard
 
 # Process all runs
 RUN_NAME_REGEX='......_.*_.*_[^._]*'

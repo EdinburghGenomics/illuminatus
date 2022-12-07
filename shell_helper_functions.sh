@@ -43,9 +43,9 @@ find_snakefile() {
 }
 
 snakerun_drmaa() {
-    CLUSTER_QUEUE="${CLUSTER_QUEUE:-edgen-casava}"
+    CLUSTER_PARTITION="${CLUSTER_PARTITION:-standard}"
 
-    if [ "$CLUSTER_QUEUE" = none ] ; then
+    if [ "$CLUSTER_PARTITION" = none ] ; then
         snakerun_single "$@"
         return
     fi
@@ -73,7 +73,7 @@ snakerun_drmaa() {
          ${EXTRA_SNAKE_FLAGS} --keep-going --cluster-config cluster.yaml \
          --resources nfscopy=1 --local-cores $LOCAL_CORES --latency-wait 10 \
          --jobname "{rulename}.snakejob.{jobid}.sh" --jobscript "$_jobscript" \
-         --drmaa " ${EXTRA_SLURM_FLAGS} -p ${CLUSTER_QUEUE} {cluster.slurm_opts} \
+         --drmaa " ${EXTRA_SLURM_FLAGS} -p ${CLUSTER_PARTITION} {cluster.slurm_opts} \
                    -e slurm_output/{rule}.snakejob.%A.err \
                    -o slurm_output/{rule}.snakejob.%A.out \
                  " \

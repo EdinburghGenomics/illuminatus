@@ -36,9 +36,10 @@ if [ -e "$ENVIRON_SH" ] ; then
            RT_SYSTEM           PROJECT_PAGE_URL  \
            REPORT_DESTINATION  REPORT_LINK       REPORT_RSYNC     \
            RUN_NAME_REGEX      PROJECT_NAME_LIST \
-           CLUSTER_QUEUE       SSPP_HOOK         TOOLBOX       VERBOSE \
+           CLUSTER_PARTITION   EXTRA_SLURM_FLAGS \
+           SSPP_HOOK           TOOLBOX           VERBOSE \
            WRITE_TO_CLARITY    DRY_RUN           \
-           SNAKE_THREADS       LOCAL_CORES       EXTRA_SNAKE_FLAGS   EXTRA_SLURM_FLAGS \
+           SNAKE_THREADS       LOCAL_CORES       EXTRA_SNAKE_FLAGS \
            REDO_HOURS_TO_LOOK_BACK
 fi
 
