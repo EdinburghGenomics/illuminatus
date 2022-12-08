@@ -1,0 +1,68 @@
+A couple of nasty bugs uncovered on 8th December after cluster outage:
+
+1) Runs failing QC are triggering a failure e-mail and an "Finished pipeline" email
+   and are being put in an inconsistent state where pipeline/failed and pipeline/qc.done
+   are both present.
+
+Obviously this is no good, even though it's easy to fix as the files can be removed to complete the QC.
+I should be able to catch this with a unit test and fix driver.sh
+
+I wrote a test but it's failing at QC_report_final_upload which is not quite what I saw before.
+This happens if "pipeline/report_upload_url.txt" is missing or empty after function run_qc is called,
+but in the live runs this file clearly was not missing or empty.
+
+run_qc() calls run_multiqc() - twice - once after getting the demux stats and once after full QC.
+Assuming there is a "pipeline/report_upload_url.txt" from the first of these, run_multiqc() should
+remove the file regardless of errors from the Snakefile. But if the function were to exit early
+then the report would still be there. Maybe that's what is happening?
+
+Hmm. Maybe this only happens when a run is on re-do? But that shouldn't make any difference as the
+QC still triggers from the action_demultiplexed state.
+
+Let's examine the logs:
+
+Erroneous success message landed at "Wed Dec 07 17:44:15 2022"
+Log is /lustre-gseg/fastqdata/171025_A00291_0007_AH57C3DMXX/pipeline.log
+
+Ah, OK, no. I'm being dense. Here's what is happening:
+
+action_demultiplexed calls run_qc() then looks to see if it worked or not. It calls the failure
+handler then continues, which is the actual bug.
+
+run_qc calls Snakefile.qc to fix up the interop, which works (but if not it would continue anyway)
+then it calls run_multiqc to report this, which also works
+then it calls "Snakefile.qc -- md5_main qc_main" which fails, and run_qc exits immediately
+(as it should) but pipeline/report_upload_url.txt is still there.
+
+So to reproduce the exact bug I need for Snakefile.qc to fail but only when called with 'qc_main'
+as the last argument. Yeah I can do this.
+
+The only bug I can see is that action_demultiplexed does not exit after calling pipeline_fail,
+but I'll test both manifestations before I fix this.  I'll also make a test case for bug 2 below before
+I edit the driver.sh. DONE. Yay.
+
+2) Run 221206_M00167_0081_000000000-KRDLY has completed but the number of cluster passing filter is wrong.
+
+This run was copied over from import_staging and then failed because /fluidfs/clarity was not mounted,
+so fetching of the sample sheet triggered an error/failure at the "action_new" stage. Rather than restarting
+by removing the directory, I touched 'pipeline/lane1.redo'. This seemed to work fine but the info in
+
+/lustre-gseg/fastqdata/221206_M00167_0081_000000000-KRDLY/QC/bcl2fastq_stats.yml
+
+is wrong. My guess is that this has come from the 1-tile demux, but I need to work out how it actually
+got there.
+
+What I'll do just now is to move the output dir into ~/test_fastqdata for inspection and re-run it.
+I suspect without the redo step it will work? Yes, it does. Now how can I reproduce this thing?
+
+For the run, pipeline_read1 was activated at 11:45
+And action_redo was activated at 11:40
+
+So it certainly looks a bit race-y. SO at what point does action_read1_finished() create QC/bcl2fastq_stats.yml?
+Could this same bug happen if it wasn't for the fail/redo?
+My first feeling is that triggering redo should prevent read1 QC from triggering (yeah it deffo should) but is
+this a full fix or a sticking plaster, if the race condition is still possible?
+And can I make a test case where the first samplesheet fetch fails but then a redo is triggered? I should at
+least check that all the files appear as expected and that read1 qc is skipped in this case.
+
+OK, jobs for tomorrow. Cool.

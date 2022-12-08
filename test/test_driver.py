@@ -720,7 +720,7 @@ class T(unittest.TestCase):
         # We also need upload_report.sh to look like it did something.
         self.bm.add_mock('count_10x_barcodes.py', fail=False)
         self.bm.add_mock('Snakefile.qc', fail=True)
-        self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK > pipeline/report_upload_url.txt")
+        self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK")
 
         # And run it.
         self.bm_rundriver()
@@ -802,7 +802,7 @@ class T(unittest.TestCase):
         self.sandbox.link(self.sandbox.make("out1/"), f"seqdata/{run}/pipeline/output")
 
         # This needs to have a side effect
-        self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK > pipeline/report_upload_url.txt")
+        self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK")
 
         self.bm_rundriver()
 
@@ -893,6 +893,50 @@ class T(unittest.TestCase):
         self.bm_rundriver()
         self.assertEqual( len(self.bm.last_calls['Snakefile.demux']), 1 )
 
+    def test_qc_fail_hiesenbug_20221206(self, variant=1):
+        """See doc/bugs_on_8th_dec_2022.txt. I needed to abort a running Snakefile.qc and the
+           result was that the pipeline declared both success and failure.
+           Hopefully this is reproducible.
+        """
+        run = "210827_M05898_0165_000000000-JVM38"
+        test_data = self.copy_run(run)
+
+        self.sandbox.make(f"seqdata/{run}/pipeline/lane1.done")
+        self.sandbox.make(f"seqdata/{run}/pipeline/read1.done")
+        self.sandbox.link(self.sandbox.make("out1/"), f"seqdata/{run}/pipeline/output")
+
+        self.sandbox.make(f"seqdata/{run}/pipeline/report_upload_url.txt",
+                            content = "Added by test")
+
+        # This needs to have a side effect
+        self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK")
+
+        if variant == 1:
+            # The QC needs to fail, but only when called with qc_main as the final arg
+            self.bm.add_mock('Snakefile.qc',
+                                side_effect = '[ "${@: -1}" != qc_main ] || exit 1' )
+        elif variant == 2:
+            self.bm.add_mock('Snakefile.qc', fail=True)
+
+        self.bm_rundriver()
+        self.assertInStdout("210827_M05898_0165_000000000-JVM38", "DEMULTIPLEXED")
+        self.assertInStdout("FAIL QC 210827_M05898_0165_000000000-JVM38")
+        self.assertTrue(os.path.isfile( test_data + "/pipeline/failed" ))
+
+        # But this was also happening in variant 1
+        self.assertFalse(os.path.isfile( test_data + "/pipeline/qc.done" ))
+
+        # And there is an extra call to rt_runticket_manager saying that QC completed (variant 1)
+        # or that "QC_report_final_upload failed" (varient 2)
+        self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'][-1],
+                            ['-Q', 'run', '-r', '210827_M05898_0165_000000000-JVM38',
+                                '--subject', 'failed',
+                                '--reply', f'QC failed. See log in {self.sandbox.sandbox}/out1/pipeline.log'] )
+
+    def test_qc_fail_hiesenbug_v2(self):
+        """Run the above test with variant=2
+        """
+        self.test_qc_fail_hiesenbug_20221206(variant=2)
 
 if __name__ == '__main__':
     unittest.main()
