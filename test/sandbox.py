@@ -152,4 +152,13 @@ class TestSandbox:
         return os.path.join(self.sandbox, dest)
 
     def lsdir(self, adir, glob="*"):
-        return sorted(f for f in os.listdir(os.path.join(self.sandbox, adir)) if fnmatch(f, glob))
+        res1 = sorted( f for f in os.listdir(os.path.join(self.sandbox, adir))
+                       if fnmatch(f, glob.rstrip('/')) )
+
+        # Add / to directories
+        if glob.endswith('/'):
+            return [ f + '/' for f in res1
+                     if os.path.isdir(os.path.join(self.sandbox, adir, f)) ]
+        else:
+            return [ f + '/' if os.path.isdir(os.path.join(self.sandbox, adir, f)) else f
+                     for f in res1 ]

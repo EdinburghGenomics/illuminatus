@@ -60,11 +60,12 @@ class T(unittest.TestCase):
 
         # Check the files are as expected
         self.assertEqual( self.tmp_dir.lsdir('.'),
-                          ['lane1', 'lane2', 'overview'] )
+                          ['lane1/', 'lane2/', 'overview/'] )
 
         # Check the content is as expected. Do this by loading the YAML data
         # rather than just diffing the files.
         for adir in self.tmp_dir.lsdir('.'):
+            adir = adir.rstrip('/')
 
             fname = f"{adir}/summarize_yield_{adir}_mqc.yaml"
             with open(f"{DATA_DIR}/{example}_expected/{fname}") as yfh:

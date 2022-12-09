@@ -66,3 +66,26 @@ And can I make a test case where the first samplesheet fetch fails but then a re
 least check that all the files appear as expected and that read1 qc is skipped in this case.
 
 OK, jobs for tomorrow. Cool.
+
+QC/bcl2fastq_stats.yml is made by the get_bcl2fastq_stats rule in Snakefile.qc
+It takes as input "QC/lane{l}/Stats.json", which is copied into place by get_bcl2fastq_json reading
+"demultiplexing/lane{lane}/Stats/Stats.json".
+But "QC/lane{l}/Stats.json" is also written by make_bc_summary in Snakefile.read1qc. The assumption
+is that it will be overwritten by Snakefile.qc but if the read1 demux finishes after the main demux then
+the files will be newer and Snakemake will just keep what it has.
+Right so it is a race condition even in normal operation. And it applies to all the outputs of make_bc_summary.
+
+How to fix?
+
+1) Run Snakefile.qc with "-R get_bcl2fastq_json get_unassigned summarize_post_bcl2fastq". This should work but it's
+a bit messy and arbitrary-looking. Also means that re-running QC will always trigger these ops even if nothing has
+changed. And it could easily break if I change things around.
+
+2) Remove the outputs of Snakefile.read1qc after making the report. But then if there is an error on Snakefile.read1qc
+then the files could still hang around and cause issues. I don't like relying on post-cleanups for consistency.
+
+3) Touch all the Stats.json files prior to runnning Snakefile.qc. If I make summarize_post_bcl2fastq depend on these
+and not the directory then this will have basically the same effect as 1. To avoid always re-running, I could touch these
+files only if they were older then read1.done. It's a little janky but it may be the best way.
+
+4) Hmmmm. Let's make my test first and then come back to this.

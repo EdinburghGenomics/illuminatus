@@ -91,7 +91,7 @@ debug(){ if [ "${VERBOSE:-0}" != 0 ] ; then log "$@" ; else [ $# = 0 ] && cat >/
 
 # Per-run log for run progress messages, goes into the output # directory.
 # Unfortunately this could get scrambled if we try to run read1 processing and demux
-# at the same time (which we want to be able to do!), so have a plog1 for that.
+# at the same time (which we want to be able to do!), so have a p|& debug log1 for that.
 plog() {
     per_run_log="$(readlink -f ./pipeline/output)/pipeline.log"
     if ! { [ $# = 0 ] && cat >> "$per_run_log" || echo "$*" >> "$per_run_log" ; } 2>/dev/null ; then
@@ -264,7 +264,7 @@ action_reads_finished(){
         --comment 'Demultiplexing completed. QC will trigger on next CRON cycle' || true
       log "  Completed bcl2fastq on $RUNID."
 
-    ) |& plog ; [ $? = 0 ] || pipeline_fail Demultiplexing
+    ) |& plog ; [ $? = 0 ] || { pipeline_fail Demultiplexing ; return ; }
 }
 
 action_in_read1_qc_reads_finished(){
@@ -296,13 +296,13 @@ action_demultiplexed() {
     ( set -e
       run_qc
       log "  Completed QC on $RUNID."
-    ) |& plog ; [ $? = 0 ] || pipeline_fail QC
+    ) |& plog ; [ $? = 0 ] || { pipeline_fail QC ; return ; }
 
     if [ -s pipeline/report_upload_url.txt ] ; then
         ( set -e
           send_summary_to_rt reply "Finished pipeline" \
               "Complete QC report available at"
-        ) |& plog ; [ $? = 0 ] || pipeline_fail RT_final_message
+        ) |& plog ; [ $? = 0 ] || { pipeline_fail RT_final_message ; return ; }
         # Final success is contingent on the report upload AND that message going to RT.
         plog "pipeline/qc.started -> pipeline/qc.done"
         mv_atomic pipeline/qc.started pipeline/qc.done |& plog
@@ -428,11 +428,13 @@ action_redo() {
     # Remove all .redo files and corresponding .done files
     # Also remove ALL old .started files since once the failed file is gone the
     # system will think these are really running. (Nothing should be running just now!)
+    # And touch read1.done to ensure we don't [re-]do the read1 processing
     ( rm -f pipeline/lane?.started ) 2>/dev/null || true
     for redo in pipeline/lane?.redo ; do
         stat -c '%n had owner %U' $redo | plog
         touch_atomic ${redo%.redo}.started
         rm -f ${redo%.redo}.done ; rm $redo
+        touch_atomic pipeline/read1.done |& plog || true
 
         [[ "$redo" =~ .*(.)\.redo ]]
         redo_list+=(${BASH_REMATCH[1]})
@@ -479,7 +481,7 @@ action_redo() {
         --comment "Re-Demultiplexing of lanes ${redo_list[*]} completed" || true
       log "  Completed demultiplexing on $RUNID lanes ${redo_list[*]}."
 
-    ) |& plog ; [ $? = 0 ] || pipeline_fail Re-demultiplexing
+    ) |& plog ; [ $? = 0 ] || { pipeline_fail Re-demultiplexing ; return ; }
 
 }
 

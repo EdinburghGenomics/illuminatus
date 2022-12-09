@@ -923,20 +923,91 @@ class T(unittest.TestCase):
         self.assertInStdout("FAIL QC 210827_M05898_0165_000000000-JVM38")
         self.assertTrue(os.path.isfile( test_data + "/pipeline/failed" ))
 
-        # But this was also happening in variant 1
+        # But qc.done was appearing in variant 1
         self.assertFalse(os.path.isfile( test_data + "/pipeline/qc.done" ))
 
-        # And there is an extra call to rt_runticket_manager saying that QC completed (variant 1)
-        # or that "QC_report_final_upload failed" (varient 2)
+        # And there was an extra call to rt_runticket_manager saying that QC completed (variant 1)
+        # or that "QC_report_final_upload failed" (variant 2)
+        # But the last message should be the failure message.
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'][-1],
                             ['-Q', 'run', '-r', '210827_M05898_0165_000000000-JVM38',
                                 '--subject', 'failed',
-                                '--reply', f'QC failed. See log in {self.sandbox.sandbox}/out1/pipeline.log'] )
+                                '--reply',
+                                f'QC failed. See log in {self.sandbox.sandbox}/out1/pipeline.log'] )
 
     def test_qc_fail_hiesenbug_v2(self):
         """Run the above test with variant=2
         """
         self.test_qc_fail_hiesenbug_20221206(variant=2)
+
+    def test_new_fail_then_redo(self):
+        """If a new run fails at the samplesheet_fetch, is it ok to use the redo mechanism?
+           It should be.
+        """
+        # First a run that works as normal.
+        run = "210601_A00291_0371_AHF2HCDRXY"
+        test_data = self.copy_run(run)
+        self.sandbox.make(f"seqdata/{run}/RTAComplete.txt")
+
+        # These need side effects to keep the driver happy
+        self.bm.add_mock('summarize_lane_contents.py', side_effect="touch pipeline/sample_summary.yml")
+        self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK")
+
+        # samplesheet_fetch can just return 0 for these tests
+        self.bm.add_mock("samplesheet_fetch.sh")
+
+        if VERBOSE:
+            print("*** Now running attempt 1 ***")
+
+        # Run the driver once to set up, then again to do the read1 processing,
+        # The third one will actually "demultiplex".
+        self.bm_rundriver()
+        self.assertInStdout(run, "NEW")
+        self.bm_rundriver()
+        self.assertInStdout(run, "READ1_FINISHED")
+        self.bm_rundriver()
+        self.assertInStdout(run, "READS_FINISHED")
+
+        self.assertEqual( self.sandbox.lsdir(f"seqdata/{run}/pipeline"),
+                          [ 'lane1.done', 'lane2.done', 'output/', 'read1.done', 'report_upload_url.txt',
+                            'sample_summary.yml', 'start_times' ] )
+
+        # Thats was just the preamble. Now go again with a redo.
+        trash = self.sandbox.make("trash/")
+        for adir in ["seqdata", "fastqdata"]:
+            os.rename( os.path.join(self.sandbox.sandbox, adir, run),
+                       os.path.join(trash, adir + "_" + run ) )
+
+        if VERBOSE:
+            print("*** Now running attempt 2 ***")
+
+        test_data = self.copy_run(run)
+        self.sandbox.make(f"seqdata/{run}/RTAComplete.txt")
+
+        # Fail samplesheet_fetch on the first try
+        self.bm.add_mock("samplesheet_fetch.sh", fail=True)
+
+        # Run the driver once to set up, then again to do the read1 processing,
+        # The third one will actually "demultiplex".
+        self.bm_rundriver()
+        self.assertInStdout(run, "NEW")
+        self.assertInStdout(run, "FAIL Scan_new_run")
+        self.bm_rundriver()
+        self.assertInStdout(run, "FAILED")
+
+        # Redo
+        self.bm.add_mock("samplesheet_fetch.sh", fail=False)
+        for l in ['1','2']:
+            self.sandbox.make(f"seqdata/{run}/pipeline/lane{l}.redo")
+
+        self.bm_rundriver()
+        self.assertInStdout(run, "REDO")
+
+        # And the pipeline files should be exactly as before
+        self.assertEqual( self.sandbox.lsdir(f"seqdata/{run}/pipeline"),
+                          [ 'lane1.done', 'lane2.done', 'output/', 'read1.done', 'report_upload_url.txt',
+                            'sample_summary.yml', 'start_times' ] )
+
 
 if __name__ == '__main__':
     unittest.main()
