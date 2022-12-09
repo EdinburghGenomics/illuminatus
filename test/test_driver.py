@@ -24,10 +24,10 @@ DRIVER = os.path.abspath(os.path.dirname(__file__) + '/../driver.sh')
 RUNSTATUS = os.path.abspath(os.path.dirname(__file__) + '/../RunStatus.py')
 
 PROGS_TO_MOCK = """
-    BCL2FASTQPreprocessor.py BCL2FASTQPostprocessor.py BCL2FASTQCleanup.py
-    Snakefile.qc Snakefile.demux Snakefile.read1qc
-    summarize_lane_contents.py rt_runticket_manager.py upload_report.sh
-    clarity_run_id_setter.py
+    BCL2FASTQPostprocessor.py  BCL2FASTQCleanup.py
+    Snakefile.qc               Snakefile.demux            Snakefile.read1qc
+    summarize_lane_contents.py rt_runticket_manager.py    upload_report.sh
+    clarity_run_id_setter.py   count_10x_barcodes.py
 """.split()
 
 class T(unittest.TestCase):
@@ -82,7 +82,7 @@ class T(unittest.TestCase):
         self.sandbox.cleanup()
         self.bm.cleanup()
 
-    def cat(fname, dest=sys.stdout):
+    def cat(self, fname, dest=sys.stdout):
         """Cat a file without calling the cat command
         """
         with open(fname) as fh:
@@ -109,8 +109,7 @@ class T(unittest.TestCase):
             plogs = glob("{}/*/pipeline.log".format(self.environment['FASTQ_LOCATION']))
             for p in plogs:
                 print("PLOG {}:".format(p))
-                with open(p) as fh:
-                    copyfileobj(fh, sys.stdout)
+                self.cat(p)
 
             print("RETVAL: %s" % retval)
 
@@ -246,7 +245,7 @@ class T(unittest.TestCase):
         self.assertEqual(self.bm.last_calls, expected_calls)
 
         # Log file should appear (here accessed via the output symlink)
-        self.assertTrue(os.path.isfile(test_data + '/pipeline/output/pipeline.log') )
+        self.assertTrue(os.path.isfile(f"{test_data}/pipeline/output/pipeline.log") )
 
     def test_broken_and_new(self):
         """If a run cannot be processed at all the driver should loop to the next one.
@@ -616,7 +615,7 @@ class T(unittest.TestCase):
 
         self.sandbox.make(f"fastqdata/{run}/demultiplexing/")
 
-        # This should suppresss sending a new report to RT, since there will
+        # This should suppress sending a new report to RT, since there will
         # already appear to be an up-to-date samplesheet plus a summary.
         self.bm.runscript("cd " + test_data + "; samplesheet_fetch.sh")
         self.sandbox.make(f"seqdata/{run}/pipeline/sample_summary.yml", content="dummy")
@@ -697,7 +696,7 @@ class T(unittest.TestCase):
         # Since the cleanup runs before the call to run_multiqc we won't get the redo notification to RT at all.
         self.assertEqual( self.bm.last_calls['rt_runticket_manager.py'],
                           ["-Q run -r 160606_K00166_0102_BHF22YBBXX --subject failed --reply".split() +
-                           ["Cleanup_for_Re-demultiplexing failed. See log in " + fastqdir + "/pipeline.log"] ] )
+                           [f"Cleanup_for_Re-demultiplexing failed. See log in {fastqdir}/pipeline.log"] ] )
 
     def test_10x_restart_bug(self):
         """I had a bug where restarting QC on a 10X run would exit leaving the run in_qc with
@@ -731,7 +730,7 @@ class T(unittest.TestCase):
         self.assertTrue(os.path.isfile(test_data + '/pipeline/keep'))
 
         # Check in the log
-        with open(test_data + '/pipeline/output/pipeline.log') as lfh:
+        with open(f"{test_data}/pipeline/output/pipeline.log") as lfh:
             loglines = [ l.rstrip() for l in lfh ]
             self.assertTrue("10X barcodes detected, so adding pipeline/keep file" in loglines)
 
@@ -800,6 +799,7 @@ class T(unittest.TestCase):
         self.sandbox.make(f"seqdata/{run}/pipeline/read1.done")
         self.sandbox.make(f"seqdata/{run}/pipeline/qc.done")
         self.sandbox.link(self.sandbox.make("out1/"), f"seqdata/{run}/pipeline/output")
+        self.sandbox.make(f"seqdata/{run}/pipeline/output/demultiplexing/lane1/Stats/Stats.json")
 
         # This needs to have a side effect
         self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK")
@@ -810,11 +810,11 @@ class T(unittest.TestCase):
         # mode it logs a message containing 'status=complete'
         self.assertInStdout("210827_M05898_0165_000000000-JVM38", "status=complete")
 
-        # Now run the QC and it should be OK
+        # Now re-run the QC and it should be OK
         os.unlink(f"{test_data}/pipeline/qc.done")
         self.bm_rundriver()
         if VERBOSE:
-            self.cat(f"{self.temp_dir}/pipeline.log")
+            self.cat(f"{test_data}/pipeline/output/pipeline.log")
 
         self.assertInStdout("210827_M05898_0165_000000000-JVM38", "status=demultiplexed")
         self.assertNotInStdout("FAIL")
@@ -824,7 +824,7 @@ class T(unittest.TestCase):
         os.unlink(f"{test_data}/pipeline/qc.done")
         self.bm_rundriver(check_stderr=False)
         if VERBOSE:
-            self.cat(f"{self.temp_dir}/pipeline.log")
+            self.cat(f"{test_data}/pipeline/output/pipeline.log")
 
         self.assertInStdout("210827_M05898_0165_000000000-JVM38", "status=demultiplexed")
         self.assertInStdout("FAIL RT_final_message")
@@ -904,6 +904,8 @@ class T(unittest.TestCase):
         self.sandbox.make(f"seqdata/{run}/pipeline/lane1.done")
         self.sandbox.make(f"seqdata/{run}/pipeline/read1.done")
         self.sandbox.link(self.sandbox.make("out1/"), f"seqdata/{run}/pipeline/output")
+        for l in ['1', '2']:
+            self.sandbox.make(f"seqdata/{run}/pipeline/output/demultiplexing/lane{l}/Stats/Stats.json")
 
         self.sandbox.make(f"seqdata/{run}/pipeline/report_upload_url.txt",
                             content = "Added by test")
@@ -922,6 +924,10 @@ class T(unittest.TestCase):
         self.assertInStdout("210827_M05898_0165_000000000-JVM38", "DEMULTIPLEXED")
         self.assertInStdout("FAIL QC 210827_M05898_0165_000000000-JVM38")
         self.assertTrue(os.path.isfile( test_data + "/pipeline/failed" ))
+
+        # Snakefile.qc should have been called 3 or 4 times - just check that the last
+        # one is right...
+        self.assertEqual( self.bm.last_calls['Snakefile.qc'][-1], ['--', 'md5_main', 'qc_main'] )
 
         # But qc.done was appearing in variant 1
         self.assertFalse(os.path.isfile( test_data + "/pipeline/qc.done" ))

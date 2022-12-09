@@ -89,3 +89,8 @@ and not the directory then this will have basically the same effect as 1. To avo
 files only if they were older then read1.done. It's a little janky but it may be the best way.
 
 4) Hmmmm. Let's make my test first and then come back to this.
+
+OK, I did option 3. It actually provides a bit of a sanity check as QC should not commence when there are no Stats.json
+files to look at. And I also found a few more minor bugs while I was at it, so I sorted them too.
+
+DONE

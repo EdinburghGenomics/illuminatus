@@ -293,6 +293,13 @@ action_demultiplexed() {
 
     detect_and_keep_10x |& plog
 
+    # In certain cases read1_qc can make a 1-tile report with a later timestamp than the full
+    # bcl2fastq output and the reduced numbers end up in the final report. To be sure, touch all
+    # the real Stats.json files so Snakemake see they are new and picks them up.
+    ( cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing && \
+      touch lane*/Stats/Stats.json
+    ) |& plog ; [ $? = 0 ] || { pipeline_fail Touch_Stats_json ; return ; }
+
     ( set -e
       run_qc
       log "  Completed QC on $RUNID."
@@ -745,8 +752,8 @@ get_run_status() { # run_dir
   fi
 
   # Resolve output location (this has to work for new runs so we can't always follow the symlink)
-  if [ -d "pipeline/output" ] ; then
-    DEMUX_OUTPUT_FOLDER="$(readlink -f pipeline/output)"
+  if [ -d "$_run/pipeline/output" ] ; then
+    DEMUX_OUTPUT_FOLDER="$(readlink -f "$_run/pipeline/output")"
   else
     DEMUX_OUTPUT_FOLDER="$FASTQ_LOCATION/$RUNID"
   fi

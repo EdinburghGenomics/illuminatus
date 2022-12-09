@@ -429,8 +429,9 @@ rule summarize_for_overview:
 # the demultiplexing directory contents change
 rule summarize_post_bcl2fastq:
     output: "QC/{lane,lane.|overview}/run_info.{runid}.2.yml"
-    input: lanedir = lambda wc: "demultiplexing/" + wc.lane if wc.lane.startswith('lane') else \
-                                glob("demultiplexing/lane?")
+    input: lanedir = lambda wc: f"demultiplexing/{lane}/Stats/Stats.json" \
+                                if wc.lane.startswith('lane') else \
+                                glob(f"demultiplexing/lane?/Stats/Stats.json")
     shell:
         "summarize_post_bcl2fastq.py --lane {wildcards.lane} > {output}"
 
