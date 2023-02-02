@@ -239,7 +239,7 @@ def output_mqc(rids, fh):
         if 'add_in_yield' in rids:
             # was: table_headers.extend(["Clusters PF", "Q30 (%)", "Yield"])
             # now: table_headers.extend(["Clusters PF", "PF (%)", "Q30 (%)", "Yield GB"])
-            lane_yield_info = rids['add_in_yield'][f"Lane {lane['LaneNumber']}"]['Totals']
+            lane_yield_info = rids['add_in_yield'][f"lane{lane['LaneNumber']}"]['Totals']
             dd['col_05'] = lane_yield_info.get('percent_aligned', 'unknown')
             dd['col_06'] = lane_yield_info['density']
             dd['col_07'] = lane_yield_info['reads_pf']
@@ -252,7 +252,7 @@ def output_mqc(rids, fh):
             # See at which index in the table this header has ended up...
             dd_col, = [ k for k, v in mqc_out['headers'].items() if v['title'].startswith("Well Dups") ]
             # Get the relevant dict from the YAML data file which is indexed by lane and surface
-            lane_wd_info = rids['add_in_wd'][f"Lane {lane['LaneNumber']}"]['mean']
+            lane_wd_info = rids['add_in_wd'][f"{lane['LaneNumber']}"]['mean']
             # Add the raw value for now - could choose v1 or v2 instead?
             dd[dd_col] = lane_wd_info['raw']
 
