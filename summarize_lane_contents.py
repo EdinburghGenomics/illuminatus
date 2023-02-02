@@ -15,8 +15,8 @@ try:
     if PROJECT_PAGE_URL.format('test') == PROJECT_PAGE_URL:
         PROJECT_PAGE_URL += '{}'
 except Exception:
-    print("The environment variable PROJECT_PAGE_URL={} is not a valid format string.".format(
-                PROJECT_PAGE_URL), file=sys.stderr)
+    print(f"The environment variable PROJECT_PAGE_URL={PROJECT_PAGE_URL} is not a valid format string.",
+          file = sys.stderr)
     raise
 
 # Non-pools may either be called 'NoPool' or ''. Other names may be added here.
@@ -86,7 +86,7 @@ def main(args):
             data_struct = scan_for_info( args.run_dir,
                                          project_name_list = pnl )
     except FileNotFoundError as e:
-        exit("Error summarizing run.\n{}".format(e) )
+        exit(f"Error summarizing run.\n{e}")
 
     #See about extra stuff that we learn as processing goes on
     for ai in (args.add_in_yaml or []):
@@ -104,7 +104,7 @@ def main(args):
                 data_struct['add_in_' + key] = yaml.safe_load(gfh)
 
         except ValueError:
-            exit("Error parsing {} as add_in_yaml.".format(ai))
+            exit(f"Error parsing {ai} as add_in_yaml.")
 
     #See where we want to put it...
     for dest, formatter in [ ( args.yml, output_yml ),
@@ -176,7 +176,7 @@ def output_mqc(rids, fh):
     # Also tack on a grand total to the description line above the table,
     # unless we have the more accurate b2f values available.
     if 'add_in_yield' in rids and 'add_in_b2f' not in rids:
-        yield_totals = [ rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals'] for lane in rids['Lanes'] ]
+        yield_totals = [ rids['add_in_yield'][f"lane{lane['LaneNumber']}"]['Totals'] for lane in rids['Lanes'] ]
         mqc_out['description'] += ", with {:,} of {:,} clusters passing filter, according to InterOP ({:.3f}%)".format(
                     sum(t['reads_pf'] for t in yield_totals),
                         sum(t['reads'] for t in yield_totals),
@@ -213,7 +213,7 @@ def output_mqc(rids, fh):
         if 'Density' in col and is_patterned_flowcell: column_settings.update(hidden=True)
 
         if table_desc[colnum]: column_settings.update(description=table_desc[colnum])
-        mqc_out['headers']['col_{:02}'.format(colnum)] = column_settings
+        mqc_out['headers'][f"col_{colnum:02}"] = column_settings
 
     # As a special case, force the Pool/Library column to be treated as text.
     # I might be asked to make the full list of libs appear in the popup, but let's
@@ -230,7 +230,7 @@ def output_mqc(rids, fh):
         num_indexes = 0 if lane.get('Unindexed') else sum(len(v) for v in pools_union.values())
         contents_str = ', '.join( squish_project_content( pools_union , 20) )
 
-        dd = mqc_out['data']['Lane {}'.format(lane['LaneNumber'])] = dict(
+        dd = mqc_out['data'][f"Lane {lane['LaneNumber']}"] = dict(
                                     col_01 = ','.join( sorted(lane['Contents']) ),
                                     col_02 = contents_str,
                                     col_03 = num_indexes,
@@ -239,7 +239,7 @@ def output_mqc(rids, fh):
         if 'add_in_yield' in rids:
             # was: table_headers.extend(["Clusters PF", "Q30 (%)", "Yield"])
             # now: table_headers.extend(["Clusters PF", "PF (%)", "Q30 (%)", "Yield GB"])
-            lane_yield_info = rids['add_in_yield']['lane{}'.format(lane['LaneNumber'])]['Totals']
+            lane_yield_info = rids['add_in_yield'][f"Lane {lane['LaneNumber']}"]['Totals']
             dd['col_05'] = lane_yield_info.get('percent_aligned', 'unknown')
             dd['col_06'] = lane_yield_info['density']
             dd['col_07'] = lane_yield_info['reads_pf']
@@ -252,7 +252,7 @@ def output_mqc(rids, fh):
             # See at which index in the table this header has ended up...
             dd_col, = [ k for k, v in mqc_out['headers'].items() if v['title'].startswith("Well Dups") ]
             # Get the relevant dict from the YAML data file which is indexed by lane and surface
-            lane_wd_info = rids['add_in_wd']['{}'.format(lane['LaneNumber'])]['mean']
+            lane_wd_info = rids['add_in_wd'][f"Lane {lane['LaneNumber']}"]['mean']
             # Add the raw value for now - could choose v1 or v2 instead?
             dd[dd_col] = lane_wd_info['raw']
 
@@ -409,35 +409,35 @@ def output_txt(rids, fh):
     # Show the pipeline version
     p( "Illuminatus {} [{}@{}:{}]".format(
                     os.environ.get("ILLUMINATUS_VERSION", "[unknown version]"),
-                           os.environ.get("USER", "[unknown user]"),
-                              os.environ.get("HOSTNAME", "[unknown host]"),
-                                 os.path.abspath(os.path.dirname(__file__)) ) )
+                        os.environ.get("USER", "[unknown user]"),
+                           os.environ.get("HOSTNAME", "[unknown host]"),
+                              os.path.abspath(os.path.dirname(__file__)) ) )
     p( "" )
 
     # Basic metadata, followed be a per-lane summary.
     expname_from_xml = rids.get('ExperimentName') or 'unknown'
     expname_from_ss  = rids.get('ExperimentSS')
 
-    p( "Run ID: {}".format(rids['RunId']) )
+    p( f"Run ID: {rids['RunId']}" )
     if expname_from_ss and expname_from_ss != expname_from_xml:
         # We have conflicting names for this experiment
-        p( "Experiment: {} ({})".format(expname_from_xml, expname_from_ss) )
+        p( f"Experiment: {expname_from_xml} ({expname_from_ss})" )
     else:
         # We have one experiment name
-        p( "Experiment: {}".format(expname_from_xml) )
-    p( "Instrument: {}".format(rids['Instrument']) )
-    p( "Flowcell Type: {}".format(rids.get('FCType', 'unknown')) )  # May be missing if the YAML file is old.
-    p( "Read length: {}".format(rids['Cycles']) )
-    p( "Active SampleSheet: SampleSheet.csv -> {}".format(rids['SampleSheet']) )
+        p( f"Experiment: {expname_from_xml}" )
+
+    p( f"Instrument: {rids['Instrument']}" )
+    p( f"Flowcell Type: {rids.get('FCType', 'unknown')}" )  # May be missing if the YAML file is old.
+    p( f"Read length: {rids['Cycles']}" )
+    p( f"Active SampleSheet: SampleSheet.csv -> {rids['SampleSheet']}" )
     p( "" )
 
-
-    p("Samplesheet report at {}:".format(rids['ReportDateTime']))
+    p( f"Samplesheet report at {rids['ReportDateTime']}:" )
 
     # Summarize each lane
     prn = rids['ProjectInfo']
     for lane in rids['Lanes']:
-        p( "Lane {}:".format(lane['LaneNumber']) )
+        p( f"Lane {lane['LaneNumber']}:" )
 
         for project, pools in sorted(lane['Contents'].items()):
             # pools will be a dict of poolname : [ library, ... ]
@@ -526,7 +526,7 @@ def get_chemistry(run_params, instrument):
         elif con_vers == '3':
             con_note = "chemistry 1.5; revcomp index2"
 
-    return "SCV{} ({})".format(con_vers, con_note)
+    return f"SCV{con_vers} ({con_note})"
 
 # A rather contorted way to get project names. We may be able to bypass
 # this by injecting them straight into the sample sheet!
