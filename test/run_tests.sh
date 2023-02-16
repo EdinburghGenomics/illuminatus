@@ -29,12 +29,14 @@ set -euo pipefail
 export PYTHONPATH='./test'
 unset BASH_ENV
 
-#Test in Py3 only
+# Test in Py3 only. Get coverage as we go.
+ut=(coverage run --source=. --omit=test/* -m unittest)
 if [ "$*" == "" ] ; then
-    python3 -munittest discover
+    "${ut[@]}" discover
+    coverage report
 else
     set -e
-    python3 -munittest test.test_"$@"
+    "${ut[@]}" test.test_"$@"
 fi
 
 
@@ -44,6 +46,7 @@ fi
 # Don't quit on error here.
 files_to_flake="*.py"
 
+echo
 if [ "$*" == "" ] ; then
     if which pyflakes ; then
         for f in $files_to_flake ; do

@@ -1,3 +1,4 @@
+coverage
 bashmocker==0.3.0
 pyyaml==6.0
 yamlloader<2

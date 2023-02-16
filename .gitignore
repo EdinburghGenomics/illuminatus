@@ -5,6 +5,7 @@ __pycache__
 .nfs*
 *.sqlite
 *.touch
+.coverage
 
 tmp/
 .snakemake

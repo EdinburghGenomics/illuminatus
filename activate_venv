@@ -90,6 +90,7 @@ else
         # My test helper
         pip_install bashmocker==0.3.0
 
+        pip_install coverage
         pip_install pyyaml==6.0
         pip_install 'yamlloader<2'
         pip_install rt==2.2.2
