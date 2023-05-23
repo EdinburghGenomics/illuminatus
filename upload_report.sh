@@ -45,7 +45,7 @@ ln -sfn "$dirtomake" multiqc_reports/latest
 # An advantage of doing it this way is it will add on labels to existing reports.
 ( cd multiqc_reports/v ;
   gawk 'BEGIN{print "IndexOptions DescriptionWidth=*"} \
-        { if (match($0,"<dt>Pipeline Status:</dt><dd>(.+)</dd>",m) && match(FILENAME,"([^/]+)",f) ) \
+        { if (match($0,"<dt>Pipeline Status:?</dt><dd>(.+)</dd>",m) && match(FILENAME,"([^/]+)",f) ) \
           print "AddDescription \""m[1]"\" "f[1] }' \
        */multiqc_report_overview.html \
   > .htaccess )

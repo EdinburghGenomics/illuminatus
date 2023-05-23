@@ -8,7 +8,7 @@ import logging as L
 # but it got a little complex so I'm breaking it out into the pipeline proper.
 
 # Note that if there are no barcodes in the run or the Stats.json contains multiple lanes the
-# output will be empty and a wraning will be logged on STDERR.
+# output will be empty and a warning will be logged on STDERR.
 
 def format_lines(json_data, maxlines=None, commentor=lambda *ub: []):
     """Given the content of a Stats.json file as a Python object,
