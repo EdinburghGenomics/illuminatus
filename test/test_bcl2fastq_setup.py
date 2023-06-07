@@ -13,7 +13,8 @@ from tempfile import mkdtemp
 from shutil import rmtree, copytree
 from configparser import DuplicateOptionError
 
-DATA_DIR = os.path.abspath(os.path.dirname(__file__))
+DATA_DIR = os.path.join( os.path.abspath(os.path.dirname(__file__)),
+                         'seqdata_examples' )
 VERBOSE = os.environ.get('VERBOSE', '0') != '0'
 
 from bcl2fastq_setup import BCL2FASTQPreprocessor, revcomp
@@ -39,7 +40,7 @@ class T(unittest.TestCase):
     def get_ex(self, run_name, shadow=False):
         """Get an example run from the examples dir
         """
-        run_dir = os.path.join(DATA_DIR, 'seqdata_examples', run_name)
+        run_dir = os.path.join(DATA_DIR, run_name)
 
         if shadow:
             # OK we want a temporary copy of the run dir to modify
@@ -416,6 +417,34 @@ class T(unittest.TestCase):
                 BCL2FASTQPreprocessor, run_source_dir = run_dir,
                                        lane = "1",
                                        revcomp = None )
+
+    def test_with_settings(self):
+        """To support the built-in UMI processing functionality of bcl2fastq we
+           need to allow for a [Settings] section to exist in the sample sheet
+           and for the default basemask to be suppressed if the settings
+           section is present.
+        """
+        for run_id in [ '230602_A00291_0400_BHKT2KDMAA',
+                        '230602_A00291_0400_BHKT2KDMBB' ]:
+            run_dir = self.get_ex(run_id, shadow=False)
+
+            pp = BCL2FASTQPreprocessor( run_source_dir = run_dir,
+                                        lane = "1",
+                                        revcomp = 'auto' )
+            out_lines = pp.get_output(created_by='test')
+
+            # Check we have the expected options, with no base mask
+            self.assertCountEqual( pp.get_bcl2fastq_options(), [ "--fastq-compression-level 6",
+                                                                 "--tiles 's_[1]'" ] )
+
+            # Check we have the [settings] as expected
+            self.assertCountEqual( [ l for l in out_lines if l.startswith('[') ],
+                                   [ '[Header]', '[bcl2fastq]', '[Settings]', '[Data]' ] )
+
+            # Check we have 8 lines beginning with 'Read' then a blank line
+            s_pos = out_lines.index('[Settings]')
+            self.assertEqual( [ l[:4] for l in out_lines[s_pos+1:s_pos+10] ],
+                              (['Read'] * 8) + [''] )
 
 if __name__ == '__main__':
     unittest.main()

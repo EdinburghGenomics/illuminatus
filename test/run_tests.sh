@@ -29,11 +29,17 @@ set -euo pipefail
 export PYTHONPATH='./test'
 unset BASH_ENV
 
-# Test in Py3 only. Get coverage as we go.
-ut=(coverage run --source=. --omit=test/* -m unittest)
+# Test in Py3 only. Get coverage as we go, if we can.
+if [ which coverage >&/dev/null ] ; then
+    ut=(coverage run --source=. --omit=test/* -m unittest)
+    coverage=(coverage)
+else
+    ut=(python3 -m unittest)
+    coverage=(true) # ie. pass
+fi
 if [ "$*" == "" ] ; then
     "${ut[@]}" discover
-    coverage report
+    "${coverage[@]}" report
 else
     set -e
     "${ut[@]}" test.test_"$@"

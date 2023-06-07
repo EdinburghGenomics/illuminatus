@@ -10,6 +10,7 @@ import configparser
 from collections import defaultdict
 from itertools import dropwhile, takewhile
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+import logging as L
 
 from illuminatus.BaseMaskExtractor import BaseMaskExtractor
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
@@ -20,7 +21,7 @@ class BCL2FASTQPreprocessor:
     """
     def __init__(self, run_source_dir, **kwargs):
 
-        #Read data_dir and check that requested lane is in the SampleSheet.
+        # Read data_dir and check that requested lane is in the SampleSheet.
         self.run_dir = run_source_dir
 
         self.samplesheet = os.path.join(self.run_dir, "SampleSheet.csv")
@@ -28,6 +29,18 @@ class BCL2FASTQPreprocessor:
 
         # This code is a little crufty but is tested and working.
         self.bme = BaseMaskExtractor(self.samplesheet, self.runinfo_file)
+
+        # If there is a settings section we don't need to make a default
+        # basemask. Only count the section if it actually has some settings
+        # after the header.
+        self.has_settings_section = False
+        with open(self.samplesheet) as sfh:
+            for l in sfh:
+                l = l.rstrip()
+                if l == '[Settings]':
+                    if next(sfh).rstrip():
+                        self.has_settings_section = True
+                    break
 
         # Get the run name and tiles list from the RunInfo.xml
         rip = RunInfoXMLParser( self.run_dir )
@@ -94,9 +107,10 @@ class BCL2FASTQPreprocessor:
         """
         bcl2fastq_opts = {"--fastq-compression-level": "6"}
 
-        # Add base mask for this lane
-        bm = self.bme.get_base_mask_for_lane(self.lane)
-        bcl2fastq_opts["--use-bases-mask"] = "'{}'".format(bm)
+        # Add base mask for this lane, unless there is a settings section
+        if not self.has_settings_section:
+            bm = self.bme.get_base_mask_for_lane(self.lane)
+            bcl2fastq_opts["--use-bases-mask"] = "'{}'".format(bm)
 
         # now that the bcl2fastq_opts array is complete, evaluate the pipeline_settings.ini file
         # and update the dict
@@ -167,7 +181,7 @@ class BCL2FASTQPreprocessor:
 
         return ['{} {}'.format(*o) for o in check_opts.items()]
 
-    def get_output(self, me):
+    def get_output(self, created_by):
         """Return a new partial sample sheet as a list of lines.
         """
         res = ['[Header]']
@@ -187,7 +201,7 @@ class BCL2FASTQPreprocessor:
                 l = l.strip()
                 if l and (not l.startswith('#')):
                     break
-            # We expect to have a [Header] section.
+            # We expect to have a [Header] section first
             assert l == '[Header]'
             for l in ssfh:
                 l = l.strip()
@@ -196,7 +210,7 @@ class BCL2FASTQPreprocessor:
                 if not any(l.startswith(x) for x in ('Description', '#')):
                     res.append(l)
             res.append("Run ID,{}".format(self.run_info['RunId']))
-            res.append("Description,Fragment processed with {}".format(me))
+            res.append("Description,Fragment processed with {}".format(created_by))
             res.append("#Lane,{}".format(self.lane))
             res.append("#Revcomp,{}".format(self.revcomp_label))
 
@@ -206,9 +220,20 @@ class BCL2FASTQPreprocessor:
             res.extend(bcl2fastq_opts)
             res.append('')
 
-            # Get to the [Data] line
+            # Get to the [Data] line, or there may be [Settings]
             for l in ssfh:
-                if l.strip() == '[Data]':
+                l = l.strip()
+                if self.has_settings_section and l in ['[Settings]']:
+                    # Dump this section until first blank line then go back to looking for [Data]
+                    res.append(l)
+                    for l in ssfh:
+                        l = l.strip()
+                        res.append(l)
+                        if not l:
+                            break
+
+                elif l == '[Data]':
+                    # Data must be the final section
                     break
             else:
                 # We never found a Data line
@@ -255,11 +280,16 @@ class BCL2FASTQPreprocessor:
         cp = configparser.ConfigParser(empty_lines_in_values=False, delimiters=(':', '=', ' '))
         try:
             with open(self.samplesheet) as sfh:
-                cp.read_file( takewhile(lambda x: not x.startswith('[Data]'),
-                                        dropwhile(lambda x: not x.startswith('[bcl2fastq]'), sfh)),
-                              self.samplesheet )
+                tail_lines = enumerate(dropwhile(lambda x: not x.startswith('[bcl2fastq]'), sfh))
+                conf_lines = map( lambda p: p[1],
+                                  takewhile( lambda x: not (x[0] > 1 and x[1].startswith('[')),
+                                             tail_lines ) )
+
+                cp.read_file(conf_lines, self.samplesheet)
 
                 for section in cp.sections():
+                    L.debug(f"Got config section [{section}] in {self.samplesheet}")
+
                     # Cast all to strings
                     self.ini_settings[section].update(cp.items(section))
         except KeyError:
@@ -288,6 +318,11 @@ def revcomp(seq, ttable=str.maketrans('ATCG','TAGC')):
 def main(args):
     """ Main mainness
     """
+    if args.debug:
+        L.basicConfig(format='{name:s} {levelname:s}: {message:s}', level=L.DEBUG, style='{')
+    else:
+        L.basicConfig(format='{message:s}', level=L.INFO, style='{')
+
     this_script = "Illuminatus " + os.path.basename(sys.argv[0])
     # This always comes out as a list of 1
     run_dir, = args.run_dir
@@ -303,13 +338,15 @@ def parse_args():
                                 formatter_class = ArgumentDefaultsHelpFormatter )
 
     argparser.add_argument("-r", "--revcomp", default="", choices=["none", "", "1", "2", "12", "auto"],
-                            help="Reverse complement index 2 and/or 1")
+                           help="Reverse complement index 2 and/or 1")
     argparser.add_argument("-l", "--lane", required=True, choices=list("12345678"),
-                            help="Lane to be demultiplexed")
+                           help="Lane to be demultiplexed")
     argparser.add_argument("-c", "--bc_check", action="store_true",
                            help="Prepare for barcode check mode (1 tile 1 base)")
     argparser.add_argument("run_dir", nargs=1,
-                            help="Directory containing the finished run")
+                           help="Directory containing the finished run")
+    argparser.add_argument("-v", "--debug", "--verbose", action="store_true",
+                           help="Be verbose (print debug messages).")
 
     return argparser.parse_args()
 

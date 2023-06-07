@@ -9,10 +9,10 @@ class BaseMaskExtractor:
 
     def __init__( self , samplesheet_file , runinfo_file ):
         self.rip = RunInfoXMLParser( runinfo_file )
-        L.debug("%s : %s", (runinfo_file, self.rip.read_and_length))
+        L.debug(f"{runinfo_file} : {self.rip.read_and_length}")
         self.ssr = SampleSheetReader( samplesheet_file )
         self.lane_length_dict = self.ssr.get_index_lengths_by_lane()
-        L.debug("LLD = %s" % self.lane_length_dict)
+        L.debug(f"LLD = {self.lane_length_dict}")
 
     def get_lanes(self):
         """Returns an ordered list of all lanes in the SampleSheet
