@@ -226,7 +226,7 @@ def output_mqc(rids, fh):
         # Logic here is just copied from output_tsv, but we also want the total num_indexes
         # like in output_txt.
         # First put all the pools in one dict (not partitioned by project)
-        pools_union = {k: v for d in lane['Contents'].values() for k, v in d.items()}
+        pools_union = dict_union(lane['Contents'].values())
         num_indexes = 0 if lane.get('Unindexed') else sum(len(v) for v in pools_union.values())
         contents_str = ', '.join( squish_project_content( pools_union , 20) )
 
@@ -477,7 +477,7 @@ def output_tsv(rids, fh):
         #This time, squish content for all projects together when listing the pools.
         #If there are more than 5 things in the lane, abbreviate the list. Users can always look
         #at the detailed table.
-        pools_union = {k: v for d in lane['Contents'].values() for k, v in d.items()}
+        pools_union = dict_union(lane['Contents'].values())
         contents_str = ','.join( squish_project_content( pools_union , 5) )
 
         p( lane['LaneNumber'],
@@ -485,6 +485,22 @@ def output_tsv(rids, fh):
            contents_str,
            lane['Loading'].get('pmol', 'unknown'),
            lane['Loading'].get('phix', 'unknown') )
+
+def dict_union(list_of_dicts):
+    """Given a list of dicts, combine them together.
+       If two dicts have a common key, sum the values.
+    """
+    # I tried the funky looking one-liner comprehension:
+    # {k: v for d in list_of_dicts for k, v in d.items()}
+    # But that just takes the last value if there is a clash
+    res = dict()
+    for d in list_of_dicts:
+        for k, v in d.items():
+            if k in res:
+                res[k] += v
+            else:
+                res[k] = v
+    return res
 
 def squish_project_content(dict_of_pools, maxlen=0):
     """Given a dict taken from rids['Lanes'][n]['Contents'] -- ie. a dict of pool: content_list

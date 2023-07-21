@@ -1,0 +1,37 @@
+data:
+  Lane 1:
+    col_01: 25474,27511
+    col_02: 25474SApool01
+    col_03: 8
+    col_04: unknown
+  Lane 2:
+    col_01: '27711'
+    col_02: 27711WFpool01
+    col_03: 16
+    col_04: unknown
+description: Content of lanes in the run
+headers:
+  col_01:
+    format: '{:s}'
+    textcell: true
+    title: Project
+  col_02:
+    description: Summary of lane contents. See per-lane pages for a full list.
+    format: '{:s}'
+    textcell: true
+    title: Pool/Library
+  col_03:
+    description: Number of samples, or 0 for a single unindexed sample.
+    format: '{:,}'
+    title: Num Indexes
+  col_04:
+    format: '{:s}'
+    title: Loaded (pmol)
+id: lane_summary
+pconfig:
+  col1_header: Lane
+  no_beeswarm: true
+  sortRows: true
+  title: ''
+plot_type: table
+section_name: Lane Summary

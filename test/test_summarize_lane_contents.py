@@ -136,6 +136,19 @@ class T(unittest.TestCase):
 
         self.assertEqual(sample_mqc_yml, yaml.safe_load(self.formatted['mqc']))
 
+    def test_bug_BHHFNHDRX3(self):
+        """The summary for this run shows only one barcode in lane 1.
+           Clearly some logic bug in this script.
+        """
+        proj_dir = LC_DIR + '/230720_A00291_0494_BHHFNHDRX3'
+        self.scan_project(proj_dir, addins = {} )
+
+        # The mqc.yaml should be as per the sample provided
+        with open(LC_DIR + '/230720_A00291_0494_BHHFNHDRX3/expected_mqc.yaml') as yfh:
+           sample_mqc_yml = yaml.safe_load(yfh)
+
+        self.assertEqual(sample_mqc_yml, yaml.safe_load(self.formatted['mqc']))
+
     def assertRegex(self, output, regex, expected):
         """Assertion based on regexes
         """
