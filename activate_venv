@@ -75,7 +75,7 @@ if [ -e ./_illuminatus_venv/bin/activate ] ; then
 else
     (   _toolbox="${TOOLBOX:-`dirname $BASH_SOURCE`/toolbox}"
         _py3="$_toolbox"/bootstrap_python3
-        _py3_real="$(readlink -f "$_py3")"
+        _py3_real="$(readlink -m "$_py3")"
         echo "Bootstrapping new VEnv from $_py3 ($_py3_real)"
 
         set -e

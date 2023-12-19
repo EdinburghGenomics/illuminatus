@@ -23,7 +23,7 @@ if ! [ -d "$from" ] ; then
 fi
 
 if ! [ -d "$to" ] ; then
-    echo "No such directory: $from"
+    echo "No such directory: $to"
     exit 1
 fi
 

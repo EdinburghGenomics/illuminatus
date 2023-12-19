@@ -565,10 +565,10 @@ def project_real_name(proj_id_list, name_list=''):
             else:
                 res[p] = dict( name = p + "_UNKNOWN" )
     else:
-        # Go to the LIMS. The current query mode hits the database as configured
-        # by ~/.genologicsrc.
+        # Go to RT. The current query mode hits the database as configured
+        # by ~/.rt_settings and looks for tickets in the eg-projects queue.
         try:
-            from illuminatus.LIMSQuery import get_project_names
+            from illuminatus.RTQuery import get_project_names
 
             for p, n in zip(proj_id_list, get_project_names(*proj_id_list)):
                 if n:

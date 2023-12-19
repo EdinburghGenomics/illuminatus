@@ -24,7 +24,7 @@ RSYNC_CMD="rsync --rsync-path=bin/rsync_reports"
 
 # RT systems as defined in ~/.rt_settings. Set RT_SYSTEM=none to disable RT.
 RT_SYSTEM=production-rt
-WRITE_TO_CLARITY=yes
+WRITE_TO_CLARITY=no
 
 # Link to project pages for use in summary e-mails and (at some point) reports.
 # This can either include a {} placeholder or else the project name will just be

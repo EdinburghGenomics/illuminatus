@@ -196,15 +196,16 @@ class BCL2FASTQPreprocessor:
 
         # OK now we can go through the input sample sheet.
         with open(self.run_dir + '/SampleSheet.csv') as ssfh:
+            # Make the iterator strip all lines
+            ssfh = (l.strip().rstrip(',') for l in ssfh)
+
             # Allow for blank lines and comments at the top
             for l in ssfh:
-                l = l.strip()
                 if l and (not l.startswith('#')):
                     break
             # We expect to have a [Header] section first
             assert l == '[Header]'
             for l in ssfh:
-                l = l.strip()
                 if l == '' or l.startswith('['):
                     break
                 if not any(l.startswith(x) for x in ('Description', '#')):
@@ -222,12 +223,10 @@ class BCL2FASTQPreprocessor:
 
             # Get to the [Data] line, or there may be [Settings]
             for l in ssfh:
-                l = l.strip()
                 if self.has_settings_section and l in ['[Settings]']:
                     # Dump this section until first blank line then go back to looking for [Data]
                     res.append(l)
                     for l in ssfh:
-                        l = l.strip()
                         res.append(l)
                         if not l:
                             break
@@ -242,7 +241,6 @@ class BCL2FASTQPreprocessor:
             # Grab the header. Allow for a blank line
             res.append('[Data]')
             for l in ssfh:
-                l = l.strip()
                 if l:
                     data_headers = [ h.lower() for h in l.split(',') ]
                     res.append(l)
@@ -259,9 +257,9 @@ class BCL2FASTQPreprocessor:
 
             # Get the actual entries
             for l in ssfh:
-                if not l.strip():
+                if not l:
                     continue
-                l = l.strip().split(',')
+                l = l.split(',')
                 if (lane_header_idx is None) or (l[lane_header_idx] == self.lane):
                     # Yeah we want this. But do we need any index munging?
                     if '1' in self.revcomp and 'index' in data_headers:
