@@ -34,11 +34,11 @@ class BCL2FASTQPreprocessor:
         # basemask. Only count the section if it actually has some settings
         # after the header.
         self.has_settings_section = False
-        with open(self.samplesheet) as sfh:
-            for l in sfh:
-                l = l.rstrip()
+        with open(self.samplesheet) as ssfh:
+            ssfh = (l.strip().rstrip(',') for l in ssfh)
+            for l in ssfh:
                 if l == '[Settings]':
-                    if next(sfh).rstrip():
+                    if next(ssfh):
                         self.has_settings_section = True
                     break
 
@@ -277,8 +277,10 @@ class BCL2FASTQPreprocessor:
         """
         cp = configparser.ConfigParser(empty_lines_in_values=False, delimiters=(':', '=', ' '))
         try:
-            with open(self.samplesheet) as sfh:
-                tail_lines = enumerate(dropwhile(lambda x: not x.startswith('[bcl2fastq]'), sfh))
+            with open(self.samplesheet) as ssfh:
+                # Make the iterator strip all lines
+                ssfh = (l.strip().rstrip(',') for l in ssfh)
+                tail_lines = enumerate(dropwhile(lambda x: x != "[bcl2fastq]", ssfh))
                 conf_lines = map( lambda p: p[1],
                                   takewhile( lambda x: not (x[0] > 1 and x[1].startswith('[')),
                                              tail_lines ) )
