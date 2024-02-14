@@ -227,11 +227,16 @@ class BCL2FASTQPreprocessor:
                     # Dump this section until first blank line then go back to looking for [Data]
                     res.append(l)
                     for l in ssfh:
+                        if l.startswith("["):
+                            res.append("")
+                            break
                         res.append(l)
                         if not l:
                             break
+                    if l == "[Data]":
+                        break
 
-                elif l == '[Data]':
+                elif l == "[Data]":
                     # Data must be the final section
                     break
             else:
