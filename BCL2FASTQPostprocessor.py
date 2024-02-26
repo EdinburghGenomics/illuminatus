@@ -19,33 +19,34 @@ from contextlib import suppress
 # Global error collector
 ERRORS = set()
 
+def time_now():
+    return time.strftime('%Y-%m-%d %H:%M', time.localtime())
+
 def main(output_dir, prefix=None):
     """ Usage BCL2FASTQPostprocessor.py <run_dir> [prefix]
     """
     output_dir = os.path.abspath(output_dir)
 
-    #The prefix is normally the run name ie. the folder name, but driver.sh
-    #will set this explicitly based on RunInfo.
+    # The prefix is normally the run name ie. the folder name, but driver.sh
+    # will set this explicitly based on RunInfo.
     if not prefix:
         prefix = os.path.basename(output_dir)
 
-    #All renames need to be logged. The log wants to live in the demultiplexing/
-    #subdirectory.
+    # All renames need to be logged. The log wants to live in the demultiplexing/
+    # subdirectory.
     demux_dir = output_dir + "/demultiplexing"
     with open(os.path.join(demux_dir, 'renames.log'), 'a') as log_fh:
         def log(m): print(m, file=log_fh)
-        log("# %s" % sys.argv[0])
-        log("# renaming files in %s on %s" % (
-                                 demux_dir,
-                                       time.strftime('%Y-%m-%d %H:%M', time.localtime()) ))
+        log(f"# {sys.argv[0]}")
+        log(f"# renaming files in {demux_dir} on {time_now()}")
 
         project_seen = do_renames(output_dir, prefix, log=log)
 
         if ERRORS:
             log("# There were errors...")
             for e in ERRORS:
-                print("Error: %s" % e)
-                log("# %s" % e)
+                print(f"Error: {e}")
+                log(f"# {e}")
         else:
             save_projects_ready(output_dir, project_seen)
             log("# DONE. And projects_ready.txt was saved out.")
@@ -79,10 +80,10 @@ def check_project_name(proj_name):
         of our folders.
     """
     if "." in proj_name:
-        raise ValueError("Invalid project name {!r} contains a period.".format(proj_name))
+        raise ValueError(f"Invalid project name {proj_name!r} contains a period.")
 
     if proj_name in "counts demultiplexing md5sums multiqc_reports QC seqdata slurm_output".split():
-        raise ValueError("Invalid project name {!r} conflicts with reserved names.".format(proj_name))
+        raise ValueError(f"Invalid project name {proj_name!r} conflicts with reserved names.")
 
 def do_renames(output_dir, runid, log = lambda m: print(m)):
     """ The main part of the code that does the renaming (moving).
@@ -145,7 +146,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         re_match = re.match( r'(.*)_(S[0-9]+)_L00(\d)_R(\d)_\d+.fastq.gz', filename, re.I)
 
         if not re_match:
-            log("# skipping (regex mismatch) %s" % fastq_file)
+            log(f"# skipping (regex mismatch) {fastq_file}")
             continue
         samplename = re_match.group(1) # e.g.: We ignore this!
         lane = re_match.group(3) # e.g.: L00(5)
@@ -153,7 +154,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
         # Check lane matches the directory name
         if not lane_dir == 'lane{}'.format(lane):
-            log("# skipping (lane mismatch) %s" % fastq_file)
+            log(f"# skipping (lane mismatch) {fastq_file}")
             continue
 
         # Add this to the collection
@@ -181,7 +182,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         re_match = re.match( r'(.*)_(S[0-9]+)_L00(\d)_R(\d)_\d+.fastq.gz', filename, re.I)
 
         if not re_match:
-            log("# skipping (regex mismatch) %s" % fastq_file)
+            log(f"# skipping (regex mismatch) {fastq_file}")
             continue
         pool_and_library = re_match.group(1) # e.g.: 10528EJpool03__10528EJ0019L01
         lane = re_match.group(3) # e.g.: L00(5)
@@ -189,7 +190,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
 
         # Check lane matches the directory name
         if not lane_dir == 'lane{}'.format(lane):
-            log("# skipping (lane mismatch) %s" % fastq_file)
+            log(f"# skipping (lane mismatch) fastq_file")
             continue
 
         # Add this to the collection
@@ -202,7 +203,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         afile_to_filename[thisfile] = fastq_file
 
 
-    for f in all_fastq:
+    for f in sorted(all_fastq):
         fastq_file = afile_to_filename[f]
         readnumber = translate_read_number(f, all_fastq)
 
@@ -214,7 +215,7 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
             #continue
             # Decided be a little less strict here. This is also needed for PhiX
             pool = 'NoPool'
-            library = pool_and_library
+            library = f.pool_and_library
 
 
         new_filename = "{runid}_{f.lane}_{library}_{readnumber}.fastq.gz".format(**locals())
@@ -228,12 +229,12 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         #That way, no possible race condition that can cause one file to be renamed over
         #another file (ignoring remote NFS race conditions).
         try:
-            log( "mv %s %s" % ('/'.join(fastq_file.split('/')[-4:]), new_filename_relative) )
+            log( "mv {} {}".format('/'.join(fastq_file.split('/')[-4:]), new_filename_relative) )
 
             with open(new_filename_absolute, 'x') as tmp_fd:
                 os.replace(fastq_file, new_filename_absolute)
         except FileExistsError:
-            log("# FileExistsError renaming %s" % new_filename_relative)
+            log(f"# FileExistsError renaming {new_filename_relative}")
             raise
 
 
@@ -246,15 +247,15 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         re_match = re.match( r'undetermined_(.*)_L00(\d)_R(\d)_\d+.fastq.gz', filename, re.I)
 
         if not re_match:
-            log("# skipping %s" % fastq_file)
+            log(f"# skipping {fastq_file}")
             continue
 
         lane = re_match.group(2)
         readnumber = re_match.group(3)
 
         # Check lane matches the directory name
-        if not lane_dir == 'lane{}'.format(lane):
-            log("# skipping (lane mismatch) %s" % fastq_file)
+        if not lane_dir == f"lane{lane}":
+            log(f"# skipping (lane mismatch) {fastq_file}")
             continue
 
         # Add this to the collection
@@ -272,18 +273,18 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
         readnumber = translate_read_number(f, undet_fastq)
 
         # eg. 160811_D00261_0355_BC9DA7ANXX_4_unassigned_1.fastq.gz
-        new_filename = "{runid}_{f.lane}_unassigned_{readnumber}.fastq.gz".format(**locals())
+        new_filename = f"{runid}_{f.lane}_unassigned_{readnumber}.fastq.gz"
 
         new_filename_absolute = os.path.join ( output_dir, new_filename )
 
         #See comment above
         try:
-            log( "mv %s %s" % ( os.path.join("demultiplexing", filename), new_filename) )
+            log( "mv {} {}".format( os.path.join("demultiplexing", filename), new_filename) )
 
             with open(new_filename_absolute, 'x') as tmp_fd:
                 os.rename(fastq_file, new_filename_absolute)
         except FileExistsError:
-            log("# FileExistsError renaming %s" % new_filename)
+            log(f"# FileExistsError renaming {new_filename}")
             raise
 
     # Cleanup empty project directories (as per Cleanup.py) then warn if any dirs
@@ -295,11 +296,11 @@ def do_renames(output_dir, runid, log = lambda m: print(m)):
                                          topdown=False ):
                 try:
                     os.rmdir(root)
-                    log("rmdir '%s'" % root)
+                    log(f"rmdir {root!r}")
                 except Exception:
                     # Assume it was non-empty.
                     ERRORS.add("Failed to remove all project directories from demultiplexing area.")
-                    log("# could not remove dir '%s'" % root)
+                    log(f"# could not remove dir {root!r}")
                     # And we cannot say the project is ready.
                     proj_seen.discard(proj)
 
