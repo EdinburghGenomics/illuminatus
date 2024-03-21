@@ -366,7 +366,8 @@ rule base_count_file:
 # cutadapt tolerance of 10% mismatches.
 rule cutadapt_scan:
     output: "QC/lane{l,[0-9]+}/{fq}.cutadapt_out"
-    input: "{fq}.fastq.gz"
+    input:  "{fq}.fastq.gz"
+    shadow: 'minimal'
     params:
         # 3' adapters: truseq 21 bases          nextera         illumina_smallrna
         adapters =    ["AGATCGGAAGAGCACACGTCT", "CTGTCTCTTATA", "TGGAATTCTCGGGTGCCAAGG"]
@@ -383,7 +384,7 @@ rule fqscreen:
         html = "QC/lane{l,[0-9]+}/{fq}_screen.html",
         png  = "QC/lane{l,[0-9]+}/{fq}_screen.png"
     input: "{fq}.fastq.gz"
-    shadow: 'shallow'
+    shadow: 'minimal'
     params:
         maxlen = 50,
         subset = 1000000,
@@ -406,10 +407,10 @@ rule fqscreen:
 rule fastqc:
     output: zip = "QC/lane{l,[0-9]+}/{fq}_fastqc.zip",
             html = "QC/lane{l,[0-9]+}/{fq}_fastqc.html"
-    input: "{fq}.fastq.gz"
-    threads: 2
+    input:  "{fq}.fastq.gz"
+    shadow: 'minimal'
     shell:
-        "{TOOLBOX} fastqc {input} --outdir `dirname {output.zip}` --noextract --nogroup --threads {threads}"
+        "{TOOLBOX} fastqc {input} --outdir `dirname {output.zip}` --noextract --nogroup"
 
 # Meta-data to go at the top of the MultiQC report.
 # this can change as the pipeline runs so make the rule depend on the pipeline
