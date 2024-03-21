@@ -135,8 +135,10 @@ class RTManager():
                            self.password,
                            default_queue = self._queue )
 
+        L.info("Starting to connect")
         if not self.tracker.login():
             raise AuthorizationError(f'login() failed on {self._config_name} ({self.tracker.url})')
+        L.info("connected")
 
         # Here comes the big monkey-patch-o-doom!
         # It will force a 60-second timeout on the Rt session, assuming the internal implementation
@@ -310,7 +312,7 @@ def parse_args(*args):
     description = """This script allows you to manipulate a ticket for an instrument run.
                      You can reply, comment, open, stall, resolve tickets.
                      Replying or commenting on a closed or non-existent ticket will create a new one,
-                     unless you specify --no-create.
+                     unless you specify --no_create.
                   """
     argparser = ArgumentParser( description=description,
                                 formatter_class = ArgumentDefaultsHelpFormatter )
