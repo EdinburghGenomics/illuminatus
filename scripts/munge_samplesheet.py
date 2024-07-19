@@ -4,7 +4,8 @@
 # one that goes into bcl2fastq.
 
 # However, some of the older runs we want to test on have the older formats, so
-# this script will just bolt the pool name onto the library name for us.
+# this script will just bolt the pool name onto the library name for us, and
+# ensure the first column is the lane number.
 
 import sys, os, re
 import traceback
@@ -46,12 +47,15 @@ def munge_lines(lines):
 
     #Check the header
     if lines[data_line+1].startswith('Sample_ID,Sample_Name,'):
-        sn_col = 1
-        si_col = 0
+        lines[data_line+1] = "Lane," + lines[data_line+1]
+        sn_col = 2
+        si_col = 1
+        prepend = ["1"]
     else:
         assert lines[data_line+1].startswith('Lane,Sample_ID,Sample_Name,')
         sn_col = 2
         si_col = 1
+        prepend = []
     assert lines[data_line+1].endswith(',Description')
 
     first_line = data_line + 2
@@ -65,7 +69,7 @@ def munge_lines(lines):
     assert last_line >= first_line
 
     for l in range(first_line, last_line+1):
-        split_line = lines[l].split(',')
+        split_line = prepend +  lines[l].split(',')
 
         if '__' in split_line[si_col]:
             # Already looks right
