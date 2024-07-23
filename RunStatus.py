@@ -39,6 +39,9 @@ class RunStatus:
                 for r, l in sorted(self.runinfo_xml.read_and_length.items()):
                     self.trigger_cycles.append(self.trigger_cycles[-1] + int(l))
 
+                # Correct the last one
+                self.trigger_cycles[-1] -= 1
+
                 # We can do the well dups check after 70 cycles but we can only
                 # check the indexes after the last index read is complete, so wait for that
                 try:
@@ -68,7 +71,13 @@ class RunStatus:
         # however there were no runs where the RTAComplete.txt was not the last file written to the run folder.
         # So will only check for this file to determine if sequencing has finished or not
         RTACOMPLETE_LOCATION = os.path.join( self.run_path_folder , 'RTAComplete.txt' )
-        return os.path.exists( RTACOMPLETE_LOCATION )
+
+        # Oh but it's no longer that simple. NovaSeq has started writing this file before all the CBCL
+        # files are in place.
+        if not os.path.exists( RTACOMPLETE_LOCATION ):
+            return False
+
+        return self._is_read_finished(-1)
 
     def _exists( self, glob_pattern ):
         """ Returns if a file exists and caches the result.
@@ -91,7 +100,7 @@ class RunStatus:
             # readnum counts from 1 so trigger_cycles[readnum] is the first cycle of the
             # next read (trigger_cycles[0] is always 1)
             cycle = self.trigger_cycles[int(readnum)]
-            return self._exists( "Data/Intensities/BaseCalls/L001/C{}.1/*".format(cycle) )
+            return self._exists( f"Data/Intensities/BaseCalls/L001/C{cycle}.1/*" )
         except Exception:
             return False
 
@@ -174,7 +183,7 @@ class RunStatus:
             return "complete"
         for n in range(len(self.trigger_cycles), 0 , -1):
             if self._is_read_finished(n):
-                return "read{}_complete".format(n)
+                return f"read{n}_complete"
         return "waiting_for_data"
 
 

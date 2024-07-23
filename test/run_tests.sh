@@ -12,7 +12,8 @@ if [ -n "$VIRTUAL_ENV" ] ; then
 elif [ -e _illuminatus_venv ] ; then
     echo "Running: source ./_illuminatus_venv/bin/activate"
     source ./_illuminatus_venv/bin/activate
-    if [ "$(which python3)" != "$(readlink -f _illuminatus_venv)/bin/python3" ] ; then
+    if [ "$(readlink -f "$(dirname "$(which python3)")")/python3" != \
+         "$(readlink -f _illuminatus_venv)/bin/python3" ] ; then
         echo "FAILED - python3 is $(which python3) not $(readlink -f _illuminatus_venv)/bin/python3"
         exit 1
     fi

@@ -1,0 +1,24 @@
+Soooo...
+
+Up until now, one of the easiest things in the Illuminatus pipeline was deciding if
+a run was ready to demultiplex. If RTAComplete.txt is there, then we go.
+
+But recently a couple of runs have failed, because a CBCL file was missing.
+
+So it seems that wating for RTAComplete.txt is not enough. In NovaSeq there is another
+file, CopyComplete.txt. But this comes in an hour after RTAComplete.txt, and it seems
+that we were only missing the CBCL file by a few minutes.
+
+11:10 240722_A00291_0576_AHVHL5DMXY/RTAComplete.txt
+11:10 240722_A00291_0576_AHVHL5DMXY/Data/Intensities/BaseCalls/L002/C222.1/L002_2.cbcl
+12:43 240722_A00291_0576_AHVHL5DMXY/CopyComplete.txt
+
+So, our choices are:
+
+1) Wait for CopyComplete.txt and add 90 minutes to processing time.
+2) Add a short delay (5 mins?) to after RTAComplete.txt appears (yuk!)
+3) Look explicitly for the CBCL file
+4) Something else??
+
+I can't see a decent option 4. I think we need to do option 3. Fortunately we already have
+code for Read1 ready detection.
