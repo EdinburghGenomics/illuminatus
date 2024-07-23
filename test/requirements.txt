@@ -1,6 +1,6 @@
 coverage
 bashmocker==0.3.0
-pyyaml==6.0
+pyyaml==6.0.1
 yamlloader<2
 snakemake==5.5.3
 rt==2.2.2

@@ -154,14 +154,14 @@ class T(unittest.TestCase):
                    '150602_M01270_0108_000000000-ADWKV',
                    '160603_M01270_0196_000000000-AKGDE',
                    '180430_M05898_0007_000000000-OVRID', ]:
-            self.assertTrue( os.lstat("{}/{}/pipeline".format(self.seqdata.sandbox, r)).st_mtime < self.unixtime )
+            self.assertTrue( os.lstat(f"{self.seqdata.sandbox}/{r}/pipeline").st_mtime < self.unixtime )
 
         # The others (3 4 6 and 7a) should be modified
         for r in [ '160614_K00368_0023_AHF724BBXX',
                    '160607_D00248_0174_AC9E4KANXX',
                    '160606_K00166_0102_BHF22YBBXX',
                    '180430_M05898_0007_000000000-BR92R', ]:
-            self.assertFalse( os.lstat("{}/{}/pipeline".format(self.seqdata.sandbox, r)).st_mtime < self.unixtime )
+            self.assertFalse( os.lstat(f"{self.seqdata.sandbox}/{r}/pipeline").st_mtime < self.unixtime )
 
 
         # 3 should have a redo on lane 8 only

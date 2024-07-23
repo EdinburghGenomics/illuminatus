@@ -113,8 +113,6 @@ class T(unittest.TestCase):
             read1 processing at all.
         """
         run_info = self.use_run('160726_K00166_0120_BHCVH2BBXX', copy=True)
-        self.md('Data/Intensities/BaseCalls/L001/C318.1')
-        self.touch('Data/Intensities/BaseCalls/L001/C318.1/foo.bcl')
 
         # So the run is failed but still waiting for data
         self.touch('pipeline/failed')
@@ -178,8 +176,6 @@ class T(unittest.TestCase):
         self.md('pipeline/output/seqdata/pipeline')
         self.touch('pipeline/read1.done')
         self.touch('RTAComplete.txt')
-        self.md('Data/Intensities/BaseCalls/L001/C318.1')
-        self.touch('Data/Intensities/BaseCalls/L001/C318.1/foo.bcl')
 
         def no_redo(status):
             """ Check the status AND also check
@@ -321,9 +317,6 @@ class T(unittest.TestCase):
 
         # Now we finish the reads
         self.touch('RTAComplete.txt')
-        self.md('Data/Intensities/BaseCalls/L001/C318.1')
-        self.touch('Data/Intensities/BaseCalls/L001/C318.1/foo.bcl')
-
         no_redo('reads_finished')
         self.assertEqual(gy()['MachineStatus:'], 'complete')
 
@@ -415,10 +408,8 @@ class T(unittest.TestCase):
 
         no_redo('read1_finished')
 
-        # Adding an RTAComplete.txt file and final BCL should not change this status
+        # Adding an RTAComplete.txt file should not change this status
         self.touch('RTAComplete.txt')
-        self.md('Data/Intensities/BaseCalls/L001/C68.1')
-        self.touch('Data/Intensities/BaseCalls/L001/C68.1/foo.bcl')
         no_redo('read1_finished')
 
         # Adding read1.started should push us to the state where ops will trigger in parallel

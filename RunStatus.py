@@ -181,7 +181,7 @@ class RunStatus:
 
         if self._is_sequencing_finished():
             return "complete"
-        for n in range(len(self.trigger_cycles), 0 , -1):
+        for n in range(len(self.trigger_cycles) - 2, 0 , -1):
             if self._is_read_finished(n):
                 return f"read{n}_complete"
         return "waiting_for_data"

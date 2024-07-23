@@ -66,7 +66,7 @@ fi
 # https://stackoverflow.com/questions/1116992/capturing-output-of-find-print0-into-a-bash-array
 candidate_ss=()
 while IFS= read -r -d '' file ; do candidate_ss+=("$file") ; done < \
-    <( find "$samplesheets_this_month" -name '*_*.csv' -mmin -$(( $htlb * 60 )) -print0 )
+    <( find "$samplesheets_this_month" -name '*_*.csv' -mmin -$(( $htlb * 60 )) -print0 | sort -z )
 
 # Just to tidy up the messages when there are no files to scan.
 if [ "${VERBOSE:-0}" = 0 ] ; then
