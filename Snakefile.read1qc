@@ -94,8 +94,10 @@ def get_wd_settings(rundir, run_info_root):
                            if l > wd_settings['READ_LENGTH'] ][0]
 
         # Is it OK to start at START_POS or do we go from 0?
-        if read_to_sample == 0 and \
-           all_read_lens[read_to_sample] > (wd_settings['READ_LENGTH'] + wd_settings['START_POS']):
+        if ( read_to_sample == 0 and
+             all_read_lens[read_to_sample] > (wd_settings['READ_LENGTH'] +
+                                              wd_settings['START_POS'])
+           ):
             start_pos = wd_settings['START_POS']
         else:
             start_pos = 0
@@ -105,7 +107,7 @@ def get_wd_settings(rundir, run_info_root):
         wd_settings['START_POS'] = start_pos + sum( all_read_lens[:read_to_sample] )
     else:
         # We can't process this run
-        print("Cannot process run with short read lengths {}.".format(all_read_lens), file=sys.stderr)
+        print(f"Cannot process run with short read lengths {all_read_lens}.", file=sys.stderr)
         return wd_settings
 
     wd_settings['END_POS'] = wd_settings['READ_LENGTH'] + wd_settings['START_POS']
@@ -136,7 +138,8 @@ def get_wd_settings(rundir, run_info_root):
                 mo = re.match(r'''\s*--tiles:.*]_(\d{4})['"]?$''', l)
                 if mo:
                     tile = mo.group(1)
-                    wd_settings['TILE_MATCH'] = dict( T=tile ) if tile[0] == '1' else dict( B=tile )
+                    wd_settings['TILE_MATCH'] = ( dict( T=tile ) if tile[0] == '1'
+                                                  else dict( B=tile ) )
     except Exception:
         #no matter
         pass
@@ -166,9 +169,9 @@ else:
         input:
             summary = format('QC/welldups/{TARGETS_TO_SAMPLE}summary.yml')
 
-# For the early demultiplex barcode check. The idea is that if this file is non-empty then the driver
-# will trigger an alert message incorporating the text of the file, or if the file is missing it
-# will also send a warning.
+# For the early demultiplex barcode check. The idea is that if this file is non-empty then the
+# driver will trigger an alert message incorporating the text of the file, or if the file is
+# missing it will also send a warning.
 rule bc_main:
     input:
         summary = 'QC/bc_check/bc_check.msg'
@@ -278,8 +281,8 @@ rule bcl2fastq_bc_check:
     threads: 2
     shadow: "shallow"
     shell:
-        # Run do_demultiplex.sh for this lane. The silly stuff with f=0 is just to allow us to preserve
-        # the log even if the demux fails.
+        # Run do_demultiplex.sh for this lane. The silly stuff with f=0 is just to allow us to
+        # preserve the log even if the demux fails.
         """export PROCESSING_THREADS={threads}
            mkdir bc_check_tmp
            lanedir=bc_check_tmp/QC/bc_check/lane{wildcards.l}
@@ -299,8 +302,8 @@ rule setup_bc_check:
     input:
         ssheet = RUNDIR + "/SampleSheet.csv"
     shell:
-        # If the override file is missing or empty this results in auto revcomp logic
-        # I considered using TILE_MATCH to see which tile to sample but this is not
+        # If the override file is missing or empty we'll apply auto revcomp logic.
+        # I considered using TILE_MATCH to configure which single tile to sample but this is not
         # a good idea - just leave it to bcl2fastq_setup.py to work out a sensible option.
         """revcomp=$(cat {RUNDIR}/pipeline/index_revcomp.lane{wildcards.l}.OVERRIDE 2>/dev/null || true)
            bcl2fastq_setup.py --bc_check --lane {wildcards.l} --revcomp "${{revcomp:-auto}}" {RUNDIR} > {output}
