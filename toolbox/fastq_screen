@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Wrapper to run the preferred version of fastq_screen with the preferred
 # selection of databases and configuration.
@@ -14,8 +15,9 @@
 BASE="/lustre-gseg"
 export PATH="$BASE/software/bowtie/bowtie-1.2.2-beta2-linux-x86_64:$PATH"
 
-# Remove this line to disable graph generation...
+# Remove these lines to disable graph generation...
 export PERL5LIB="$BASE/software/fastq_screen/perl_libs/lib64/perl5/:$BASE/software/fastq_screen/perl_libs/share/perl5/"
+perl -e 'use GD::Graph::bars'
 
 exec "$BASE/software/fastq_screen/fastq_screen_v0.11.3_debug/fastq_screen" \
     --aligner bowtie \
