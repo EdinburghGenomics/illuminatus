@@ -1,0 +1,26 @@
+#!/bin/bash
+set -euo pipefail
+
+# Wrapper to run the preferred version of fastq_screen with the preferred
+# selection of databases and configuration.
+# Note  that we expect the conf file to define databases only!
+# Note2 that the newer version of fastq_screen neither accepts nor expects
+# a --seqcount parameter, and the subsample size will be approximate.
+
+# Caller should set --threads and --subset 1000000 (or whatever)
+# Can also say --quiet to reduce log spew
+# You probably also want to add --bowtie '--trim3 {N}' where N=max(readlen-50,0)
+# but to do this you need to know what readlen is.
+
+BASE="/mnt/vdb"
+export PATH="$BASE/software/bowtie/bowtie-1.2.2-beta2-linux-x86_64:$PATH"
+
+# Remove these lines to disable graph generation...
+#export LD_LIBRARY_PATH="$BASE/software/fastq_screen/perl_libs/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+#export PERL5LIB="$BASE/software/fastq_screen/perl_libs/lib64/perl5/:$BASE/software/fastq_screen/perl_libs/share/perl5/"
+perl -e 'use GD::Graph::bars'
+
+exec "$BASE/software/fastq_screen/fastq_screen_v0.11.3_debug/fastq_screen" \
+    --aligner bowtie \
+    --conf "$BASE/references/fastqscreen/fastq_screen.conf_bowtie1_20200922" \
+    "$@"
