@@ -87,7 +87,7 @@ snakerun_single() {
     echo
     echo "Running $snakefile in `pwd -P` in local mode"
     snakemake \
-         -s "$snakefile" -j $LOCAL_CORES -p --rerun-incomplete ${EXTRA_SNAKE_FLAGS:-} \
+         -s "$snakefile" --cores $LOCAL_CORES -p --rerun-incomplete ${EXTRA_SNAKE_FLAGS:-} \
          "$@"
 }
 
