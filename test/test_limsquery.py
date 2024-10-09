@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
-"""CHANGEME: Template/boilerplate for writing new test classes"""
-
-# Note this will get discovered and run as a test. This is fine.
+"""Test the LIMSQuery module, to the extent I can"""
 
 import sys, os, re
 import unittest
@@ -20,7 +18,7 @@ sys.modules.update( { 'psycopg2': Mock(),
                       'psycopg2.extras': Mock().extras,
                       'psycopg2.extensions': Mock().extensions,
                       'pyclarity_lims.lims': Mock().lims } )
-from illuminatus.LIMSQuery import get_project_names
+from illuminatus.LIMSQuery import get_project_names_db
 
 class T(unittest.TestCase):
 
@@ -38,13 +36,13 @@ class T(unittest.TestCase):
         self.maxDiff = None
 
     @patch("illuminatus.LIMSQuery.MyLimsDB")
-    def test_get_project_names(self, mock_limsdb):
+    def test_get_project_names_db(self, mock_limsdb):
         """I added this because I carelessly introduced a bug in the function.
            Use patching to decouple the thing from the actual LIMS API
         """
         # Prior to fixing the return val we get [None] because iterating over a MagicMock
         # yields an empty iterator.
-        self.assertEqual(get_project_names('12345'), [None])
+        self.assertEqual(get_project_names_db('12345'), [None])
 
 
         Record = namedtuple("Record", ["name"])
@@ -52,7 +50,7 @@ class T(unittest.TestCase):
                                                           Record(name='12345_test_ignoreme') ]
 
         # The test value should be ignored by filter_names() we should get a good result.
-        self.assertEqual(get_project_names('12345'), ["12345_Foo_Bar"])
+        self.assertEqual(get_project_names_db('12345'), ["12345_Foo_Bar"])
 
 if __name__ == '__main__':
     unittest.main()

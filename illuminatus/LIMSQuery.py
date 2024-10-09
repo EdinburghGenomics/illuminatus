@@ -45,6 +45,33 @@ def get_project_names(*proj_nums):
     lims = MyLims()
     return lims.get_project_names(*proj_nums)
 
+def get_project_names_db(*proj_nums):
+    """Given a list of project numbers, return a corresponding
+       list of full names.
+
+       This version uses the direct SQL query. I don't bother batching
+       all the queries in one go since there is very little time to be saved.
+    """
+    res = []
+    with MyLimsDB() as ldb:
+        for pn in proj_nums:
+
+            # Sometimes we try to look up a very short prefix
+            if len(str(pn)) < 3:
+                raise LookupError("Project prefix '{}' too short to query".format(pn))
+
+            qres = ldb.select("SELECT name FROM project WHERE name LIKE %s || '_%%'", pn)
+
+            L.debug("qres = " + pformat(qres))
+
+            projects = filter_names(( r.name for r in qres ))
+
+            if len(projects) > 1:
+                raise LookupError(f"More than one project found with prefix {pn!r}")
+            else:
+                res.append(projects[0] if projects else None)
+
+    return res
 
 class MyLimsDB:
     """ Taken from BasicPGConn which was my initial stab at this, but now
