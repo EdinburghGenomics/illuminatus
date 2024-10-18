@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+
+import os, sys, re
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+import logging as L
+import json
+from datetime import date
+from pprint import pprint, pformat
+
+from illuminatus.ragic import RagicClient
+from illuminatus.aggregator import aggregator
+
+def main(args):
+
+    if args.json_file:
+        with open(args.json_file) as fh:
+            run = json.load(fh)
+
+            if run['Flowcell ID'] != args.flowcell_id:
+                exit(f"JSON {args.json_file} has flowcell {run['Flowcell ID']},"
+                     f" not {args.flowcell_id}")
+    else:
+
+        run = get_ragic_run(args.flowcell_id)
+
+    if args.save:
+        jname = f"run_{run['Flowcell ID']}.json"
+        L.info(f"Saving out {jname!r}")
+        with open(jname, "w") as save_fh:
+            json.dump(run, save_fh)
+
+    print(*gen_ss(run), sep="\n")
+
+# Lazy connect
+ragic_client = None
+def get_ragic_run(fcid):
+    """Query a run from Ragic by "Flowcell ID"
+    """
+    global ragic_client
+    if not ragic_client:
+        ragic_client = RagicClient.connect_with_creds()
+    rc = ragic_client
+
+    # Some constants. Still not sure if there is a way to introspect the field number to
+    # name mapping??
+    ir_form  = "sequencing/2"   # Illumina Run
+    ir_field = "1000011"        # Flowcell ID field
+
+    samp_form  = "sequencing/3" # List of samples, sub-form of Sequencing Project
+    proj_field = "1000003"      # Project Name
+
+    query = f"{ir_field},eq,{args.flowcell_id}"
+    runs = rc.list_entries(ir_form, query)
+
+    L.debug("Found {len(runs)} record in Ragic.")
+    if not runs:
+        raise RuntimeError(f"No record of flowcell ID {args.flowcell_id}")
+
+    # If there are multiple runs, pick the one with the highest number
+    max_record_num = sorted(runs, key=lambda p: int(p))[-1]
+    run = runs[max_record_num]
+
+    # Now add the barcode info too. We'll fetch all barcodes for all projects,
+    # which seems simpler than going through the whole list of all libraries in
+    # all lanes.
+    squery = [ f"{proj_field},eq,{proj}" for proj in run['Project'] ]
+    squery_result = rc.list_entries(samp_form, squery)
+
+    # This will yield a dict keyed off row IDs, so re-key it by 'LibName'
+    run['Samples__dict'] = { v['LibName']: v for v in squery_result.values() }
+
+    return run
+
+def mdydate():
+    """Get today's date in silly mm/dd/yyyy format
+    """
+    return date.today().strftime("%m/%d/%Y")
+
+def gen_ss(run):
+    """Turn that thing into a sample sheet let's gooooo!
+    """
+    #return([pformat(run)])
+
+    res = aggregator(ofs=",")
+
+    # Header
+    res( "[Header]" )
+    res( "IEMFileVersion", "4" )
+    res( "Investigator Name", run['Investigator'] )
+    res( "Experiment Name", run['Experiment'] )
+    res( "Date", mdydate() )
+    res( "Workflow", "GenerateFASTQ" )
+    res( "Application", "FASTQ Only" )
+    #res( "Assay", "TruSeq DNA" )
+    res( "Chemistry", run['Chemistry'])
+
+    # Read lengths
+    res()
+    res( "[Reads]" )
+    res( run['R1 Cycles'] )
+    res( run['R2 Cycles'] )
+
+    # Settings
+    res()
+    res( "[Settings]" )
+    # Nothing here just now.
+
+    # My special bcl2fastq stuff
+    res()
+    res( "[bcl2fastq]" )
+    res( *( ["#index_revcomp"] + [run[f'Lane {n} index revcomp'] for n in "1234"] ) )
+
+    # There may be a neater way to do this but the lanes correspond to the subtables,
+    # and I think I can just assume the keys are in order, or else maybe I order on
+    # '_header_Y'.
+    lane_keys = sorted([k for k in run if k.startswith("_subtable_")])
+
+    res()
+    res( "[Data]" )
+    res( "Lane", "Sample_ID", "Sample_Name", "Sample_Plate", "Sample_Well",
+         "Sample_Project", "I5_Index_ID", "index", "I7_Index_ID", "index2",
+         "Description" )
+    for lane_idx, lane_key in enumerate(lane_keys):
+        for run_elem in tabulate_lane( lane_num = lane_idx + 1,
+                                       lane = run[lane_key],
+                                       samples_dict = run['Samples__dict'],
+                                       fcid = run['Flowcell ID'] ):
+            res(run_elem)
+
+    return res
+
+def tabulate_lane(lane_num, lane, samples_dict, fcid):
+    """lane_num is the lane number (lane_idx+1)
+       lane is a subtable dict from the Ragic record
+    """
+    res = aggregator(ofs=",")
+
+    # The items are keyed by unpadded integers-as-strings, so I need to do
+    # a special numerical sort.
+    # FIXME - likely I should sort by library name, regardless of the order
+    # in the sub-table
+    run_elem_keys = sorted(lane, key=lambda k: int(k))
+
+    for k in run_elem_keys:
+        rel = lane[k]
+        proj = rel['Library'][0:5]
+        pool = rel['Pool'] or 'NoPool'
+
+        # Find the indexes. Index2 might be empty.
+        sample_dict = samples_dict[rel['Library']]
+        index1 = sample_dict['Index1']
+        index2 = sample_dict['Index2']
+
+        res( lane_num,
+             f"{pool}__{rel['Library']}",
+             "", # Sample_Name
+             fcid,
+             "", # Sample_Well
+             proj, # Sample_Project
+             f"{proj}-{index1}",
+             index1,
+             f"{proj}-{index2}",
+             index2,
+             rel['Pool'], # May be blank if no pool
+        )
+
+    return res
+
+def parse_args(*args):
+    description = """This script builds an Illumina sample sheet from info in the Ragic.
+                  """
+    argparser = ArgumentParser( description=description,
+                                formatter_class = ArgumentDefaultsHelpFormatter )
+    argparser.add_argument("-f", "--flowcell_id", required=True,
+                            help="The flowcell ID to look up.")
+    argparser.add_argument("-j", "--json_file",
+                            help="Load directly from JSON, skipping Ragic query.")
+    argparser.add_argument("--save", action="store_true",
+                            help="Save out the JSON from Ragic as run_{FCID}.json")
+
+    return argparser.parse_args(*args)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    L.basicConfig(level=L.INFO, stream=sys.stderr)
+    main(args)

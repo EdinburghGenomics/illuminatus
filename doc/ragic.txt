@@ -1,0 +1,10 @@
+Ragic is great. Let's replace all the Clarity stuff with Ragic. Yay!
+
+1) Sample sheet fetch can be replaced with samplesheet_from_ragic.py.
+
+I'll worry about how to get the sample sheets to the MiSeq later. It will probably
+require me running a little thingy on egcloud.bio.
+
+2) Get the project name from Ragic too. Easy.
+
+3) Push the run ID back into Ragic. Fairly easy.
