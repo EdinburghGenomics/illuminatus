@@ -7,11 +7,8 @@ import json
 from datetime import datetime, timezone
 from pprint import pprint, pformat
 
-from illuminatus.ragic import RagicClient
+from illuminatus import ragic
 from illuminatus.aggregator import aggregator
-
-class EmptyResultError(RuntimeError):
-    pass
 
 def main(args):
 
@@ -25,8 +22,8 @@ def main(args):
                          f" not {args.flowcell_id}")
         else:
 
-            run = get_ragic_run(args.flowcell_id)
-    except EmptyResultError as e:
+            run = ragic.get_run(args.flowcell_id, add_samples=True)
+    except ragic.EmptyResultError as e:
         if args.empty_on_missing:
             # Make life a little easier for the wrapper script
             L.warning(e)
@@ -41,46 +38,6 @@ def main(args):
             json.dump(run, save_fh)
 
     print(*gen_ss(run), sep="\n")
-
-# Lazy connect
-ragic_client = None
-def get_ragic_run(fcid):
-    """Query a run from Ragic by "Flowcell ID"
-    """
-    global ragic_client
-    if not ragic_client:
-        ragic_client = RagicClient.connect_with_creds()
-    rc = ragic_client
-
-    # Some constants. Still not sure if there is a way to introspect the field number to
-    # name mapping??
-    ir_form  = "sequencing/2"   # Illumina Run
-    ir_field = "1000011"        # Flowcell ID field
-
-    samp_form  = "sequencing/3" # List of samples, sub-form of Sequencing Project
-    proj_field = "1000003"      # Project Name
-
-    query = f"{ir_field},eq,{args.flowcell_id}"
-    runs = rc.list_entries(ir_form, query)
-
-    L.debug("Found {len(runs)} record in Ragic.")
-    if not runs:
-        raise EmptyResultError(f"No record of flowcell ID {args.flowcell_id}")
-
-    # If there are multiple runs, pick the one with the highest number
-    max_record_num = sorted(runs, key=lambda p: int(p))[-1]
-    run = runs[max_record_num]
-
-    # Now add the barcode info too. We'll fetch all barcodes for all projects,
-    # which seems simpler than going through the whole list of all libraries in
-    # all lanes.
-    squery = [ f"{proj_field},eq,{proj}" for proj in run['Project'] ]
-    squery_result = rc.list_entries(samp_form, squery)
-
-    # This will yield a dict keyed off row IDs, so re-key it by 'LibName'
-    run['Samples__dict'] = { v['LibName']: v for v in squery_result.values() }
-
-    return run
 
 def mdydate(ragicts=None):
     """Get today's date, or specified date, in silly mm/dd/yyyy format
@@ -211,6 +168,6 @@ def parse_args(*args):
 
 
 if __name__ == "__main__":
-    args = parse_args()
+    _args = parse_args()
     L.basicConfig(level=L.INFO, stream=sys.stderr)
-    main(args)
+    main(_args)

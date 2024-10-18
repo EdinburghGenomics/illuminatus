@@ -17,6 +17,9 @@ USE_RAGIC = (os.environ.get("USE_RAGIC") == "yes")
 class RequestError(RuntimeError):
     pass
 
+class EmptyResultError(RuntimeError):
+    pass
+
 def get_project_names(*pnum_list, rc=None):
     """Connect to the Ragic and translate one or more project names.
     """
@@ -47,23 +50,42 @@ def get_project_names(*pnum_list, rc=None):
 
     return res
 
-def get_project_name(pnum, rtm):
-    """Given an existing RT connection, translate a single project name
+def get_run(fcid, add_samples=False, rc=None):
+    """Query a run from Ragic by "Flowcell ID"
     """
-    pnum = "{:05d}".format(int(pnum))
+    if not rc:
+        rc = RagicClient.connect_with_creds()
 
-    ticket_id, ticket_dict = rtm.search_project_ticket(pnum)
-    if not ticket_id:
-        L.warning(f"No ticket found for '{pnum}'")
-        return None
+    # Some constants. Still not sure if there is a way to introspect the field number to
+    # name mapping??
+    ir_form  = "sequencing/2"   # Illumina Run
+    ir_field = "1000011"        # Flowcell ID field
 
-    ticket_subject = ticket_dict['Subject']
+    samp_form  = "sequencing/3" # List of samples, sub-form of Sequencing Project
+    proj_field = "1000003"      # Project Name
 
-    L.debug(f"Ticket #{ticket_id} for '{pnum}' has subject: {ticket_dict.get('Subject')}")
-    mo = re.search(rf" ({pnum}_\w+)", ticket_subject)
+    query = f"{ir_field},eq,{fcid}"
+    runs = rc.list_entries(ir_form, query)
 
-    return mo.group(1)
+    L.debug("Found {len(runs)} record in Ragic.")
+    if not runs:
+        raise EmptyResultError(f"No record of flowcell ID {fcid}")
 
+    # If there are multiple runs, pick the one with the highest number
+    max_record_num = sorted(runs, key=lambda p: int(p))[-1]
+    run = runs[max_record_num]
+
+    if add_samples:
+        # Now add the lib/barcode info too. We'll fetch all libraries for all projects,
+        # which seems simpler than going through the whole list of all libraries in
+        # all lanes.
+        squery = [ f"{proj_field},eq,{proj}" for proj in run['Project'] ]
+        squery_result = rc.list_entries(samp_form, squery)
+
+        # This will yield a dict keyed off row IDs, so re-key it by 'LibName'
+        run['Samples__dict'] = { v['LibName']: v for v in squery_result.values() }
+
+    return run
 
 class RagicClient:
 

@@ -635,9 +635,9 @@ run_multiqc() {
 
     # Tell Clarity the proper name for this run. Needs to be done at least before the second report
     # is uploaded so we may as well do it every time. But there is no need to hang around while it runs.
-    if [ "${WRITE_TO_CLARITY:-no}" = yes ] ; then
-        echo "Running: clarity_run_id_setter.py $RUNID (asynchronously)"
-        clarity_run_id_setter.py -- "$RUNID" 2>&1 &
+    if [ "${WRITE_TO_RAGIC:-no}" = yes ] ; then
+        echo "Running: ragic_run_id_setter.py $RUNID (asynchronously)"
+        ragic_run_id_setter.py -- "$RUNID" 2>&1 &
     fi
 
     # Leaving this in due to unresolved unexpected behaviour after RT timeout.

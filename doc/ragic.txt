@@ -21,3 +21,6 @@ Probably all the logic of having the project names as an env var should be buste
 here too, but I'll not worry about that today.
 
 3) Push the run ID back into Ragic. Fairly easy.
+
+I'll re-do clarity_run_id_setter.py. For this to operate we will need to set USE_RAGIC=yes
+and WRITE_TO_RAGIC=yes
