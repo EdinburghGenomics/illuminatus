@@ -6,7 +6,7 @@ import sys, os, re
 import unittest
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sandbox import TestSandbox
 
@@ -81,10 +81,10 @@ class T(unittest.TestCase):
         self.sb.touch('foo2', timestamp=946771200, hours_age=24)
 
         sb_dir = self.sb.sandbox + '/'
-        self.assertEqual( datetime.utcfromtimestamp(os.stat(sb_dir + 'foo1').st_mtime),
-                          datetime(year=2000, month=1, day=2) )
-        self.assertEqual( datetime.utcfromtimestamp(os.stat(sb_dir + 'foo2').st_mtime),
-                          datetime(year=2000, month=1, day=1) )
+        self.assertEqual( datetime.fromtimestamp(os.stat(sb_dir + 'foo1').st_mtime, timezone.utc),
+                          datetime(year=2000, month=1, day=2, tzinfo=timezone.utc) )
+        self.assertEqual( datetime.fromtimestamp(os.stat(sb_dir + 'foo2').st_mtime, timezone.utc),
+                          datetime(year=2000, month=1, day=1, tzinfo=timezone.utc) )
 
     def test_make_touch(self):
         """Do some stuff in the default sandbox

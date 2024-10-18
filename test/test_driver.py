@@ -309,7 +309,7 @@ class T(unittest.TestCase):
         self.sandbox.make("seqdata/150602_M01270_0108_000000000-ADWKV/RTAComplete.txt")
         self.sandbox.make("seqdata/160606_K00166_0102_BHF22YBBXX/pipeline/aborted")
         self.bm_rundriver()
-        self.assertInStdout("\_FAILED 150602_M01270_0108_000000000-ADWKV")
+        self.assertInStdout(r"\_FAILED 150602_M01270_0108_000000000-ADWKV")
         # This appears because we test driver.sh with VERBOSE output on
         self.assertInStdout("160606_K00166_0102_BHF22YBBXX from hiseq4000_K00166 with 8 lane(s) and status=aborted")
 

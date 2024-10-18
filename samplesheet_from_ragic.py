@@ -4,24 +4,35 @@ import os, sys, re
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import logging as L
 import json
-from datetime import date
+from datetime import datetime, timezone
 from pprint import pprint, pformat
 
 from illuminatus.ragic import RagicClient
 from illuminatus.aggregator import aggregator
 
+class EmptyResultError(RuntimeError):
+    pass
+
 def main(args):
 
-    if args.json_file:
-        with open(args.json_file) as fh:
-            run = json.load(fh)
+    try:
+        if args.json_file:
+            with open(args.json_file) as fh:
+                run = json.load(fh)
 
-            if run['Flowcell ID'] != args.flowcell_id:
-                exit(f"JSON {args.json_file} has flowcell {run['Flowcell ID']},"
-                     f" not {args.flowcell_id}")
-    else:
+                if run['Flowcell ID'] != args.flowcell_id:
+                    exit(f"JSON {args.json_file} has flowcell {run['Flowcell ID']},"
+                         f" not {args.flowcell_id}")
+        else:
 
-        run = get_ragic_run(args.flowcell_id)
+            run = get_ragic_run(args.flowcell_id)
+    except EmptyResultError as e:
+        if args.empty_on_missing:
+            # Make life a little easier for the wrapper script
+            L.warning(e)
+            exit(0)
+        else:
+            raise
 
     if args.save:
         jname = f"run_{run['Flowcell ID']}.json"
@@ -54,7 +65,7 @@ def get_ragic_run(fcid):
 
     L.debug("Found {len(runs)} record in Ragic.")
     if not runs:
-        raise RuntimeError(f"No record of flowcell ID {args.flowcell_id}")
+        raise EmptyResultError(f"No record of flowcell ID {args.flowcell_id}")
 
     # If there are multiple runs, pick the one with the highest number
     max_record_num = sorted(runs, key=lambda p: int(p))[-1]
@@ -71,13 +82,28 @@ def get_ragic_run(fcid):
 
     return run
 
-def mdydate():
-    """Get today's date in silly mm/dd/yyyy format
+def mdydate(ragicts=None):
+    """Get today's date, or specified date, in silly mm/dd/yyyy format
+       wanted by Illumina samplesheet format.
     """
-    return date.today().strftime("%m/%d/%Y")
+    if ragicts:
+        # Ragic dates always look like "2024/10/18 10:17:26" in UTC,
+        # regardless of the format and use of localtime on the form design.
+
+        # Parsing a time string known to be UTC in Python is easy but badly documented!
+        thedate = datetime.strptime(ragicts,
+                                    "%Y/%m/%d %H:%M:%S").replace(tzinfo=timezone.utc).astimezone()
+    else:
+        # Just print the local current date
+        thedate = datetime.now()
+
+    return thedate.strftime("%m/%d/%Y")
 
 def gen_ss(run):
     """Turn that thing into a sample sheet let's gooooo!
+
+       The sample sheet should be identical each time, unless Ragic is changed.
+       This means no putting the date of generation into the Date field.
     """
     #return([pformat(run)])
 
@@ -88,7 +114,7 @@ def gen_ss(run):
     res( "IEMFileVersion", "4" )
     res( "Investigator Name", run['Investigator'] )
     res( "Experiment Name", run['Experiment'] )
-    res( "Date", mdydate() )
+    res( "Date", mdydate(run['Last Update']) )
     res( "Workflow", "GenerateFASTQ" )
     res( "Application", "FASTQ Only" )
     #res( "Assay", "TruSeq DNA" )
@@ -177,6 +203,9 @@ def parse_args(*args):
                             help="Load directly from JSON, skipping Ragic query.")
     argparser.add_argument("--save", action="store_true",
                             help="Save out the JSON from Ragic as run_{FCID}.json")
+    argparser.add_argument("--empty_on_missing", action="store_true",
+                            help="Return an empty file, rather than an error, of not Ragic"
+                                 " record is found")
 
     return argparser.parse_args(*args)
 

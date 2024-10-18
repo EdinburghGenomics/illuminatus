@@ -1,8 +1,12 @@
 #!/bin/bash
 
-# This script will fetch a new SampleSheet for the current run. It must
+# This script will generate a new SampleSheet from Ragic for the current run. It must
 # be run in the folder where the sequencer data has been written. For testing, try:
 # $ cd ~/test_seqdata/170703_D00261_0418_ACB6HTANXX/ ; samplesheet_fetch.sh
+#
+# Note there is no actual Ragic stuff until way down at line 100. Before then we do a
+# ton of sanity chacking on what we already have.
+#
 set -euo pipefail
 shopt -s nullglob
 
@@ -11,10 +15,12 @@ if ! which RunStatus.py >&/dev/null ; then
     PATH="$(readlink -f $(dirname "$BASH_SOURCE")):$PATH"
 fi
 
-# Support a SampleSheet postprocessor hook. This must take one argument,
-# the file to be read, and print to stdout. I'm not really using this in production
+# Support a SampleSheet postprocessor hook. This must read the SampleSheet from stdin,
+# and print the filtered version to stdout. The full file path will also be set in SSPP_FILE
+# if the script need to see that for any reason.
+# I'm not really using this in production
 # since the samplesheets are now specifically generated for this pipeline.
-SSPP_HOOK="${SSPP_HOOK:-}"
+SSPP_HOOK="${SSPP_HOOK:-cat}"
 
 if [ -z "${FLOWCELLID:-}" ] ; then
     #Try to determine flowcell ID by asking RunStatus.py
@@ -22,21 +28,24 @@ if [ -z "${FLOWCELLID:-}" ] ; then
 fi
 
 if [ -z "${FLOWCELLID:-}" ] ; then
-    echo "No FLOWCELLID was provided, and obtaining one from RunStatus.py failed."
+    echo "No FLOWCELLID was provided, and obtaining one from RunStatus.py failed"
     exit 1
 fi
+
+# And also force the FLOWCELLID to upper case, because reasons.
+UFLOWCELLID="$(tr a-z A-Z <<<"$FLOWCELLID")"
 
 # Zerothly, remove any dangling symlink
 if [ ! -e SampleSheet.csv ] ; then
     rm -f SampleSheet.csv
 fi
 
-# List the sample sheet files we do see
+# List the sample sheet files we have here already
 all_sheets=(SampleSheet.csv.[0-9]*)
 
 # SampleSheet.csv.0 needs to contain the original file from the
-# sequencer. It is also possible to run the machine with no sample
-# sheet. In this case, if there is nothing at all, this script will make an empty file.
+# sequencer. It is also possible to run the NovaSeq with no sample
+# sheet. In that case this script will make SampleSheet.csv.0 as an empty file.
 if [ ! -e SampleSheet.csv.0 ] && [ ! -L SampleSheet.csv ] ; then
     if mv SampleSheet.csv SampleSheet.csv.0 ; then
         echo "SampleSheet.csv renamed as SampleSheet.csv.0"
@@ -84,10 +93,10 @@ fi
 
 # Support OVERRIDE with local SampleSheet
 if [ -e pipeline/SampleSheet.csv.OVERRIDE ] ; then
-    echo "Giving priority to pipeline/SampleSheet.csv.OVERRIDE."
+    echo "Giving priority to pipeline/SampleSheet.csv.OVERRIDE"
 
     ln -snf pipeline/SampleSheet.csv.OVERRIDE SampleSheet.csv
-    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to pipeline/SampleSheet.csv.OVERRIDE."
+    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to pipeline/SampleSheet.csv.OVERRIDE"
     exit 0
 fi
 
@@ -96,66 +105,48 @@ if [ -e SampleSheet.csv.XOVERRIDE ] ; then
     echo "Giving priority to SampleSheet.csv.XOVERRIDE."
 
     ln -snf SampleSheet.csv.XOVERRIDE SampleSheet.csv
-    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to SampleSheet.csv.XOVERRIDE."
+    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to SampleSheet.csv.XOVERRIDE"
     exit 0
 fi
 
-# Find a candidate sample sheet, from the files on /ifs/clarity (or wherever)
-# New logic here is:
-# 1) If SAMPLESHEETS_ROOT is set use that
-# 2) Else if SAMPLESHEETS_ROOT is set by .genologicsrc use that
-# 3) Else complain and exit (but not with an error as before)
-# 4) If the directory is set but not found, exit with an error
+# Grab the latest version of the sample sheet from Ragic
+# Logic is:
+# 1) If USE_RAGIC is not 'yes', print a warning and exit.
+# 2) If samplesheet_from_ragic.py fails, exit with an error
+# 3) If the new sample sheet is the same as SampleSheet.csv, keep the old one
+# 4) If the new sample sheet is different, save a new one
 
-if [ -z "${SAMPLESHEETS_ROOT:-}" ] ; then
-    # Read the Genologics configuration with the same priorities as the LIMSQuery.py code.
-    # This is a bit hacky, but it is effective.
-    eval `grep -h '^SAMPLESHEETS_ROOT=' /etc/genologics.conf genologics.cfg genologics.conf ~/.genologicsrc ${GENOLOGICSRC:-/dev/null} 2>/dev/null`
-fi
-# Is it set now?
-if [ -z "${SAMPLESHEETS_ROOT:-}" ] || [ "${SAMPLESHEETS_ROOT}" = none  ] ; then
-    echo "Not attempting to replace SampleSheet.csv as no \$SAMPLESHEETS_ROOT was set."
+if [ "${USE_RAGIC:-no}" != yes ] ; then
+    echo "Not attempting to replace SampleSheet.csv as Ragic is not enabled"
     exit 0
-else
-    if ! [ -d "${SAMPLESHEETS_ROOT}" ] ; then
-        echo "No such directory SAMPLESHEETS_ROOT=${SAMPLESHEETS_ROOT}. Check your .genologiscrc file." | tee >(cat >&2)
-        exit 1
-    fi
 fi
 
-# The latest one that matches the flowcell ID is the one we want.
-# Or do we want to sort on some other criterion?
-candidate_ss=$(find "$SAMPLESHEETS_ROOT" -name "*_*.csv" -print0 | \
-               { egrep -zi "_${FLOWCELLID}\.csv$" || true ; } | \
-               xargs -r0 ls -tr -- | tail -n 1)
+#Using noclobber to attempt writing to files until we find an unused name
+set -o noclobber
+counter=1
+while ( ! true > "SampleSheet.csv.$counter" ) 2>/dev/null ; do
+    counter=$(( $counter + 1 ))
 
-if [ ! -e "$candidate_ss" ] ; then
-    echo "No candidate replacement samplesheet for ${FLOWCELLID} under $SAMPLESHEETS_ROOT"
-elif [ -z "$SSPP_HOOK" ] && diff -q "$candidate_ss" SampleSheet.csv ; then
-    #Nothing to do.
+    #  To break the loop in case there was some other write error
+    test $counter -lt 1000
+done
+export SSPP_FILE="$(readlink -f "SampleSheet.csv.$counter")"
+samplesheet_from_ragic.py --empty_on_missing -f "${UFLOWCELLID}" | \
+    "$SSPP_HOOK" >> "SampleSheet.csv.$counter"
+
+if [ ! -s "SampleSheet.csv.$counter" ] ; then
+    echo "New SampleSheet.csv for ${FLOWCELLID} is empty - ie. not found in Ragic"
+    rm -f "SampleSheet.csv.$counter"
+    exit 0
+fi
+
+# Now see if the new sheet is different.
+if diff -q "SampleSheet.csv.$counter" SampleSheet.csv ; then
     echo "SampleSheet.csv for ${FLOWCELLID} is already up-to-date"
-else
-    #Using noclobber to attempt writing to files until we find an unused name
-    set -o noclobber
-    counter=1
-    while ( ! true > "SampleSheet.csv.$counter" ) 2>/dev/null ; do
-        counter=$(( $counter + 1 ))
-
-        #Just in case there was some other write error
-        test $counter -lt 1000
-    done
-    "${SSPP_HOOK:-cat}" "$candidate_ss" >> "SampleSheet.csv.$counter"
-
-    if [ -n "$SSPP_HOOK" ] ; then
-        # In this case we need to check for differences post-filtering.
-        if diff -q "SampleSheet.csv.$counter" SampleSheet.csv ; then
-            echo "SampleSheet.csv for ${FLOWCELLID} is already up-to-date (after filtering)."
-            rm -f "SampleSheet.csv.$counter"
-            exit 0
-        fi
-    fi
-
-    ln -sf "SampleSheet.csv.$counter" SampleSheet.csv #Should be safe - we checked it was only a link
-    echo "SampleSheet.csv for ${FLOWCELLID} is now linked to new SampleSheet.csv.$counter"
+    rm -f "SampleSheet.csv.$counter"
+    exit 0
 fi
+
+ln -sf "SampleSheet.csv.$counter" SampleSheet.csv # We earlier confirmed SampleSheet.csv is a link
+echo "SampleSheet.csv for ${FLOWCELLID} is now linked to new SampleSheet.csv.$counter"
 

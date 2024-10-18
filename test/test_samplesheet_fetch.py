@@ -7,8 +7,8 @@ from shutil import rmtree, copytree
 import subprocess
 import time
 
-"""This Python tool grabs updated sample sheets from the LIMS. It does this simply
-   by looking for matching files in the SMB share.
+"""This Python script wraps samplesheet_from_ragic.py.
+
    It's also responsible for renaming the original samplesheet saved out by the
    sequencer.
 """
@@ -31,7 +31,7 @@ class T(unittest.TestCase):
             os.chdir(oldcwd)
             rmtree(temp_dir)
 
-        self.bm = BashMocker('RunStatus.py')
+        self.bm = BashMocker('RunStatus.py', 'samplesheet_from_ragic.py')
 
         if os.environ.get("KEEPTMP"):
             print("Temp dir = " + temp_dir, file=sys.stderr)
@@ -40,16 +40,9 @@ class T(unittest.TestCase):
             self.addCleanup(cleanup)
             self.addCleanup(self.bm.cleanup)
 
-        #The script will find sample sheets in here...
-        self.ss_dir = "fs_root/samplesheets_bcl2fastq_format"
-        with open('genologics.conf', 'x') as cfh:
-            print("SAMPLESHEETS_ROOT=" + os.path.realpath(self.ss_dir), file=cfh)
-        os.makedirs(self.ss_dir)
-
         #The flowcell ID will always be XXXX
-        self.environment = dict(
-                FLOWCELLID = 'XXXX',
-                GENOLOGICSRC = temp_dir + '/genologics.conf' )
+        self.environment = dict( USE_RAGIC = "yes",
+                                 FLOWCELLID = "XXXX" )
 
     def bm_run_fetch(self, expected_retval=0):
         """A convenience wrapper around self.bm.runscript that sets the environment
@@ -81,8 +74,7 @@ class T(unittest.TestCase):
         """
         #Create a couple of candiate sample sheets.
         touch('SampleSheet.csv')
-        touch(self.ss_dir + '/foo_XXXX.csv')
-        touch(self.ss_dir + '/bar_XXXX.csv', 'this one')
+        self.bm.add_mock('samplesheet_from_ragic.py', side_effect='echo this one')
 
         last_stdout = self.bm_run_fetch()
 
@@ -97,17 +89,15 @@ class T(unittest.TestCase):
             self.assertEqual(fh.read().rstrip(), 'this one')
 
         # And go again. This should do nothing.
-        touch(self.ss_dir + '/bad_YXXXX.csv', 'ignore this one')
         last_stdout = self.bm_run_fetch()
-        with open("SampleSheet.csv") as fh:
-            self.assertEqual(fh.read().rstrip(), 'this one')
+        self.assertFalse(os.path.isfile('SampleSheet.csv.2'))
 
-        # And again. This should give us .2
-        touch(self.ss_dir + '/baz_XXXX.csv', 'final one')
+        # And again, with new output. This should give us .2
+        self.bm.add_mock('samplesheet_from_ragic.py', side_effect='echo different one')
         last_stdout = self.bm_run_fetch()
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.2')
         with open("SampleSheet.csv") as fh:
-            self.assertEqual(fh.read().rstrip(), 'final one')
+            self.assertEqual(fh.read().rstrip(), 'different one')
 
 
     def test_keep_original(self):
@@ -122,12 +112,11 @@ class T(unittest.TestCase):
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
 
         self.assertEqual(last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
-        self.assertEqual(last_stdout[1][:36], "No candidate replacement samplesheet")
+        self.assertEqual(last_stdout[1][:37], "New SampleSheet.csv for XXXX is empty")
 
 
     def test_none_found(self):
-        """This shouldn't happen in practise. May want to reconsider the behaviour
-           of the script?
+        """As above but we need to create an empty file 0
         """
         last_stdout = self.bm_run_fetch()
 
@@ -177,7 +166,7 @@ class T(unittest.TestCase):
         """
         touch('SampleSheet.csv', 'original')
         touch('SampleSheet.csv.OVERRIDE', 'override')
-        touch(self.ss_dir + '/foo_XXXX.csv', 'ignore this')
+        self.bm.add_mock('samplesheet_from_ragic.py', side_effect='echo ignore this')
 
         last_stdout = self.bm_run_fetch(expected_retval=1)
 
@@ -185,7 +174,8 @@ class T(unittest.TestCase):
         # SampleSheet.csv.0 and symlinked.
         self.assertTrue(os.path.isfile('SampleSheet.csv.0'))
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
-        self.assertEqual(last_stdout[2], "Please move SampleSheet.csv.OVERRIDE to the pipeline subdir then redo lanes.")
+        self.assertEqual( last_stdout[2],
+                          "Please move SampleSheet.csv.OVERRIDE to the pipeline subdir then redo lanes.")
 
     def test_override(self):
         """For testing, or if for some reason we need to amend the samplesheet outside
@@ -194,7 +184,7 @@ class T(unittest.TestCase):
         touch('SampleSheet.csv', 'original')
         os.mkdir('pipeline')
         touch('pipeline/SampleSheet.csv.OVERRIDE', 'override')
-        touch(self.ss_dir + '/foo_XXXX.csv', 'ignore this')
+        self.bm.add_mock('samplesheet_from_ragic.py', side_effect='echo ignore this')
 
         last_stdout = self.bm_run_fetch()
 
@@ -203,7 +193,7 @@ class T(unittest.TestCase):
         self.assertTrue(os.path.isfile('SampleSheet.csv.0'))
         self.assertFalse(os.path.isfile('SampleSheet.csv.1'))
         self.assertEqual(os.readlink('SampleSheet.csv'), 'pipeline/SampleSheet.csv.OVERRIDE')
-        self.assertEqual(last_stdout[1], "Giving priority to pipeline/SampleSheet.csv.OVERRIDE.")
+        self.assertEqual(last_stdout[1], "Giving priority to pipeline/SampleSheet.csv.OVERRIDE")
 
     def test_no_flowcellid(self):
         """If no flowcell ID is provided, the script should attempt to get one by running
@@ -214,7 +204,8 @@ class T(unittest.TestCase):
 
         last_stdout = self.bm_run_fetch(expected_retval=1)
 
-        self.assertEqual(last_stdout[0], "No FLOWCELLID was provided, and obtaining one from RunStatus.py failed.")
+        self.assertEqual(last_stdout[0],
+                         "No FLOWCELLID was provided, and obtaining one from RunStatus.py failed")
 
         #The script should have attempted to call RunStatus.py just once.
         expected_calls = self.bm.empty_calls()
@@ -226,7 +217,7 @@ class T(unittest.TestCase):
            is a no-op.
         """
         touch('SampleSheet.csv')
-        touch(self.ss_dir + '/bar_XXXX.csv', 'this one')
+        self.bm.add_mock('samplesheet_from_ragic.py', side_effect='echo this one')
 
         first_stdout = self.bm_run_fetch()
 
@@ -248,9 +239,7 @@ class T(unittest.TestCase):
         """
         #Create a couple of candiate sample sheets.
         touch('SampleSheet.csv')
-        touch(self.ss_dir + '/foo_jd7l6.csv')
-        touch(self.ss_dir + '/bar_JD7L6.csv', 'this one')
-
+        self.bm.add_mock('samplesheet_from_ragic.py', side_effect='echo "$@"')
         self.environment['FLOWCELLID'] = 'jd7l6'
         last_stdout = self.bm_run_fetch()
 
@@ -262,7 +251,7 @@ class T(unittest.TestCase):
         self.assertEqual(last_stdout[2], "SampleSheet.csv for jd7l6 is now linked to new SampleSheet.csv.1")
 
         with open("SampleSheet.csv") as fh:
-            self.assertEqual(fh.read().rstrip(), 'this one')
+            self.assertEqual(fh.read().rstrip(), '--empty_on_missing -f JD7L6')
 
 def touch(filename, contents="touch"):
     with open(filename, 'x') as fh:
