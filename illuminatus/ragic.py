@@ -6,11 +6,64 @@ import configparser
 import json
 from pprint import pprint
 
-# Basi client for the Ragic API - see
+import logging
+L = logging.getLogger(__name__)
+
+# Basic client for the Ragic API - see
 # https://github.com/ragic/public/blob/master/HTTP%20API%20Sample/Python-Sample/read.py
+# This client has no extra dependencies - just Py3 standard lib
+USE_RAGIC = (os.environ.get("USE_RAGIC") == "yes")
 
 class RequestError(RuntimeError):
     pass
+
+def get_project_names(*pnum_list, rc=None):
+    """Connect to the Ragic and translate one or more project names.
+    """
+    if not rc:
+        rc = RagicClient.connect_with_creds()
+
+    # re-format
+    pnum_list = ["{:05d}".format(int(pnum)) for pnum in pnum_list]
+
+    # Query on "Sequencing Project" by "Project Number". No need to specify the project
+    # type, I think, but it should be "Illumina".
+    query_form  = "sequencing/1"   # Sequencing Project
+    query_field = "1000001"        # Project Number
+
+    query_list = [ f"{query_field},eq,{pnum}" for pnum in pnum_list]
+    projects = rc.list_entries(query_form, query_list)
+    projects = sorted(projects.values(), key=lambda p: int(p['_ragicId']))
+
+    # I need to return a list of project names in the same order as the pnum_list
+    res = [None] * len(pnum_list)
+    for idx, pnum in enumerate(pnum_list):
+        matching_projects = [ p for p in projects if p['Project Number'] == pnum ]
+
+        if not matching_projects:
+            L.warning(f"No Ragic entry found for {pnum!r}")
+        else:
+            res[idx] = matching_projects[-1]['Project Name']
+
+    return res
+
+def get_project_name(pnum, rtm):
+    """Given an existing RT connection, translate a single project name
+    """
+    pnum = "{:05d}".format(int(pnum))
+
+    ticket_id, ticket_dict = rtm.search_project_ticket(pnum)
+    if not ticket_id:
+        L.warning(f"No ticket found for '{pnum}'")
+        return None
+
+    ticket_subject = ticket_dict['Subject']
+
+    L.debug(f"Ticket #{ticket_id} for '{pnum}' has subject: {ticket_dict.get('Subject')}")
+    mo = re.search(rf" ({pnum}_\w+)", ticket_subject)
+
+    return mo.group(1)
+
 
 class RagicClient:
 
@@ -37,6 +90,10 @@ class RagicClient:
     def connect_with_creds(cls, ini_section="ragic"):
         """Use ~/.ragic_api to connect
         """
+        # Master switch for this, because I don't want any tests to be connecting to Ragic.
+        if not USE_RAGIC:
+            raise RuntimeError("Ragic is turned off. Set USE_RAGIC=yes to enable it.")
+
         config = configparser.SafeConfigParser()
         conf_file = config.read(os.environ.get('RAGICAPIFILE',
                                 [os.path.expanduser('~/.ragic_api'), 'ragic_api.conf']))

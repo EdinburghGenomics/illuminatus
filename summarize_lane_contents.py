@@ -30,7 +30,6 @@ names.
 Output may be in YAML, MQC,  TSV or Text format. MQC is suitable for MultiQC custom
 content - http://multiqc.info/docs/#custom-content. YAML may be re-loaded and re-presented
 as any format.
-Soon it should ask the LIMS for additional details (eg. loading conc) too.
 """
 
 # Note that summarize_for_overview.py now obtains much of the information from the YAML
@@ -568,7 +567,7 @@ def project_real_name(proj_id_list, name_list=''):
         # Go to RT. The current query mode hits the database as configured
         # by ~/.rt_settings and looks for tickets in the eg-projects queue.
         try:
-            from illuminatus.RTQuery import get_project_names
+            from illuminatus import get_project_names
 
             for p, n in zip(proj_id_list, get_project_names(*proj_id_list)):
                 if n:

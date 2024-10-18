@@ -5,6 +5,19 @@ Ragic is great. Let's replace all the Clarity stuff with Ragic. Yay!
 I'll worry about how to get the sample sheets to the MiSeq later. It will probably
 require me running a little thingy on egcloud.bio.
 
+Sample sheet fetch is gooooooo!
+
 2) Get the project name from Ragic too. Easy.
+
+in summarize_lane_contents.py I was importing (line 570):
+from illuminatus.RTQuery import get_project_names
+
+so now I'll make an equivalent function in illuminatus.ragic
+
+Done. And now you just do from "illuminatus import get_project_names" so that
+summarize_lane_contents.py does not care from whence it gets the names.
+
+Probably all the logic of having the project names as an env var should be busted out
+here too, but I'll not worry about that today.
 
 3) Push the run ID back into Ragic. Fairly easy.

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import os, re
 
+# This controls where the project names are gotten from. Clarity, or RT, or Ragic
+from illuminatus.ragic import get_project_names
+
 def _determine_version():
     """Report the version of Illuminatus being used. Normally this is in version.txt
        but we can factor in GIT commits in the dev environment.
