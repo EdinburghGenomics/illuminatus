@@ -27,7 +27,7 @@ PROGS_TO_MOCK = """
     BCL2FASTQPostprocessor.py  BCL2FASTQCleanup.py
     Snakefile.qc               Snakefile.demux            Snakefile.read1qc
     summarize_lane_contents.py rt_runticket_manager.py    upload_report.sh
-    clarity_run_id_setter.py   count_10x_barcodes.py
+    ragic_run_id_setter.py     count_10x_barcodes.py
 """.split()
 
 class T(unittest.TestCase):
@@ -64,7 +64,7 @@ class T(unittest.TestCase):
                 MAINLOG = "/dev/stdout",
                 ENVIRON_SH = '/dev/null',
                 VERBOSE = 'yes',
-                WRITE_TO_CLARITY = 'yes',
+                WRITE_TO_RAGIC = 'yes', # but not "USE_RAGIC"
                 PY3_VENV = 'none'
             )
 
@@ -230,7 +230,7 @@ class T(unittest.TestCase):
         expected_calls['Snakefile.qc'] = [ '-- metadata_main'.split(),
                                            ['-F', '--config', 'pstatus=Waiting for data', 'comment=[]', '--', 'multiqc_main'] ]
         expected_calls['upload_report.sh'] = [[self.fastqdata + '/160606_K00166_0102_BHF22YBBXX']]
-        expected_calls['clarity_run_id_setter.py'] = ['-- 160606_K00166_0102_BHF22YBBXX'.split()]
+        expected_calls['ragic_run_id_setter.py'] = ['-- 160606_K00166_0102_BHF22YBBXX'.split()]
 
         # This may or may not be mocked. If so, and REDO_HOURS_TO_LOOK_BACK is set, it should
         # be called.

@@ -38,7 +38,7 @@ if [ -e "$ENVIRON_SH" ] ; then
            RUN_NAME_REGEX      PROJECT_NAME_LIST \
            CLUSTER_PARTITION   EXTRA_SLURM_FLAGS \
            SSPP_HOOK           TOOLBOX           VERBOSE \
-           WRITE_TO_CLARITY    DRY_RUN           \
+           USE_RAGIC           WRITE_TO_RAGIC    DRY_RUN           \
            SNAKE_THREADS       LOCAL_CORES       EXTRA_SNAKE_FLAGS \
            REDO_HOURS_TO_LOOK_BACK
 fi
@@ -148,6 +148,13 @@ PATH="$(readlink -m "$BIN_LOCATION"):$PATH"
 # the top of the log.
 export ILLUMINATUS_VERSION=$(illuminatus_version.py)
 
+# Check on Ragic
+USE_RAGIC="${USE_RAGIC:-no}"
+WRITE_TO_RAGIC="${WRITE_TO_RAGIC:-no}"
+if [ "$WRITE_TO_RAGIC" = yes ] && [ "$USE_RAGIC" != yes ] ; then
+    log "Having WRITE_TO_RAGIC=yes and USE_RAGIC=no only makes sense for unit testing"
+    log "Run IDs will not be written back to Ragic."
+fi
 
 # 3) Define an action for each possible status that a run can have:
 # new)            - this run is seen for the first time (sequencing might be done or is still in progress)

@@ -216,20 +216,20 @@ rule configure_multiqc:
                      no_version_check = True,
                      extra_fn_clean_exts = [
                       dict( type = 'regex',
-                            pattern = '\.(?:san|)fastq$' ),
+                            pattern = r'\.(?:san|)fastq$' ),
                       dict( type = 'regex',
-                            pattern = '(^|.*/){}_._'.format(RUN) ),
+                            pattern = r'(^|.*/){}_._'.format(RUN) ),
                       dict( type = 'regex',
-                            pattern = '.*__' ),
+                            pattern = r'.*__' ),
                       dict( type = 'regex',
-                            pattern = '_[12]_screen' ),
+                            pattern = r'_[12]_screen' ),
                       dict( type = 'regex',
-                            pattern = '[Uu]ndetermined$',
+                            pattern = r'[Uu]ndetermined$',
                             replace = 'unassigned' ),
                      ],
                      define_merge_groups = [
                       dict( name = 'read_pairs',
-                            regex = '_([12])$' ),
+                            regex = r'_([12])$' ),
                      ],
                      # Why did I add this? Oh, to only see the merged data, not the per run-element data.
                      # But it doesn't apply to run reports anyway.

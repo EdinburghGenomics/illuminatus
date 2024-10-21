@@ -3,6 +3,7 @@
 import sys, os
 import unittest
 
+# FIXME - in Snakemake 8 this is totally different.
 from snakemake.workflow import Workflow
 
 """ Can I unit test a Snakefile?

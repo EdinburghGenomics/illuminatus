@@ -14,13 +14,7 @@ from pprint import pprint, pformat
 
 from illuminatus import ragic
 
-# FIXME - check with PyFlakes what I'm actually using
-ragic_form  = "sequencing/2"   # Illumina Run
-ragic_query_field = "1000011"  # Flowcell ID
-ragic_runid = "Run ID"         # We fill this in.
-radic_repurl = "Run QC Report" # and this.
-
-REPORT_URL_TEMPLATE = "http://web1.genepool.private/runinfo/illuminatus_reports/{}"
+REPORT_URL_TEMPLATE = "https://egcloud.bio.ed.ac.uk/illuminatus/{}"
 # For use in Illuminatus, that should be overridden by the setting we already have in environ.sh:
 if os.environ.get("REPORT_LINK"):
     REPORT_URL_TEMPLATE = os.environ.get("REPORT_LINK") + '/{}'
@@ -79,7 +73,10 @@ def main(args):
 
     # 3
     if existing_run['Run ID']:
-        if args.force:
+        if args.clear:
+            L.warning(f"Run ID is set to {existing_run['Run ID']}"
+                      f" and it will be cleared as requested.")
+        elif args.force:
             L.warning(f"Run ID is already set to {existing_run['Run ID']}"
                       f" but forcing as requested.")
 
@@ -93,9 +90,13 @@ def main(args):
             exit(1)
 
     # 4. In Ragic, to set individual values we just pass a dict of the stuff to
-    # be changed.
-    id_and_report = { '1000037': 'hello', 'Run ID': args.runid,
-                      'Run QC Report': REPORT_URL_TEMPLATE.format(args.runid) }
+    # be changed my wrapper will switch out the field names for IDs.
+    if args.clear:
+        id_and_report = { 'Run ID': "",
+                          'Run QC Report': "" }
+    else:
+        id_and_report = { 'Run ID': args.runid,
+                          'Run QC Report': REPORT_URL_TEMPLATE.format(args.runid) }
 
     L.info(f"Updating Ragic record with ID {existing_run['_ragicId']}")
     L.debug(pformat(id_and_report))
@@ -116,6 +117,8 @@ def parse_args(*args):
     parser.add_argument("--container_name",
                         help="Attach the name to a container with the specified name, as" +
                              " opposed to extracting the flowcell name from the runid.")
+    parser.add_argument("--clear", action="store_true",
+                        help="Clear the values. Useful for resetting the demo run.")
     parser.add_argument("-f", "--force", action="store_true",
                         help="Overwrite existing value.")
     parser.add_argument("-n", "--no_act", action="store_true",

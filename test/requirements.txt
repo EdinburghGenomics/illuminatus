@@ -2,5 +2,5 @@ coverage
 bashmocker==0.3.0
 pyyaml==6.0.1
 yamlloader<2
-snakemake==5.5.3
+snakemake==7.18.2
 rt==2.2.2

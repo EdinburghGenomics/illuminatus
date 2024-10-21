@@ -62,7 +62,8 @@ def get_wd_settings(rundir, run_info_root):
                              END_POS = 0,
                              TILE_MATCH = dict() ))
 
-    if not run_info_root:
+    # Awkward test to avoid deprecation warning
+    if (run_info_root is None) or (not len(run_info_root)):
         # Just return the defaults
         return wd_settings
 

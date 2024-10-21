@@ -1,10 +1,10 @@
 import os, sys, re
 
-import http.client
-import urllib
+import urllib.parse
+import urllib.request
 import configparser
 import json
-from pprint import pprint
+from pprint import pprint, pformat
 
 import logging
 L = logging.getLogger(__name__)
@@ -21,6 +21,8 @@ forms = { 'Sequencing Project': { '_form': "sequencing/1",
                                 },
           'Illumina Run':       { '_form': "sequencing/2",
                                   'Flowcell ID': "1000011",
+                                  'Run ID': "1000037",
+                                  'Run QC Report': "1000048",
                                 },
           'List of samples':    { '_form': "sequencing/3",
                                   'Project Name': "1000003",
@@ -193,10 +195,14 @@ class RagicClient:
         """Save new items into a page.
         """
         if self.forms:
-            sheet = self.forms[sheet]['_form']
+            sheet_info = self.forms[sheet]
+            sheet = sheet_info['_form']
+
+            # I also need to translate the dict keys into IDs
+            update_items = { sheet_info[k]: v for k, v in update_items.items() }
+
         entry_page = self._get_page_url(sheet, record_id)
 
-        # TODO - need I translate the field names?
         return self._post_json(entry_page, update_items)
 
     def _munge_query(self, query, mapping):
@@ -209,53 +215,40 @@ class RagicClient:
     def _get_json(self, url, params=None):
         """Get a URL with all the right credentials and headers
         """
-        mo = re.match(r'https://([^/]+)(/.*)?', url)
-        host = mo.group(1)
-        path = mo.group(2)
-
         params = self._encode_params(params)
 
-        try:
-            conn = http.client.HTTPSConnection(host, timeout=self.http_timeout)
-
-            conn.request("GET", f"{path}?{params}", headers = self._get_headers())
-
-            resp = conn.getresponse()
+        req = urllib.request.Request( method = "GET",
+                                      url = f"{url}?{params}",
+                                      headers = self._get_headers() )
+        with urllib.request.urlopen( url = req,
+                                     timeout = self.http_timeout ) as resp:
             if resp.status != 200:
                 raise RequestError(f"{resp.status} {resp.reason}")
 
             return json.load(resp)
-        finally:
-            conn.close()
 
     def _post_json(self, url, json_data, params=None):
         """Post an update with all the right credentials and headers.
         """
-        mo = re.match(r'https://([^/]+)(/.*)?', url)
-        host = mo.group(1)
-        path = mo.group(2)
-
         params = self._encode_params(params)
 
-        try:
-            conn = http.client.HTTPSConnection(host, timeout=self.http_timeout)
+        headers = {'Content-Type': 'application/json'};
+        req = urllib.request.Request( method = "POST",
+                                      url = f"{url}?{params}",
+                                      headers = self._get_headers(**headers) )
+        with urllib.request.urlopen( url = req,
+                                     data = json.dumps(json_data).encode(),
+                                     timeout = self.http_timeout ) as resp:
 
-            conn.request("POST", f"{path}?{params}",
-                                 body = json.dumps(json_data),
-                                 headers = self._get_headers())
-
-            resp = conn.getresponse()
             if resp.status != 200:
                 raise RequestError(f"{resp.status} {resp.reason}")
 
             # In Ragic, we can have a 200 response but the update may still have been rejected,
-            # so check the actual message.
+            # so check the 'status' AND the 'msg' field.
             json_resp = json.load(resp)
-            import pdb ; pdb.set_trace()
-            if json_resp['status'] != "SUCCESS":
-                raise RequestError(json.dumps(json_resp))
-        finally:
-            conn.close()
+            L.debug(pformat(json_resp))
+            if json_resp['status'] != "SUCCESS" or json_resp['msg'] != "&nbsp;":
+                raise RequestError(f"{json_resp['status']} {json_resp['msg']}")
 
     def _get_page_url(self, sheet, record_id=None):
 
