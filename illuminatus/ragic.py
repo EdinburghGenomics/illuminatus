@@ -14,6 +14,18 @@ L = logging.getLogger(__name__)
 # This client has no extra dependencies - just Py3 standard lib
 USE_RAGIC = (os.environ.get("USE_RAGIC") == "yes")
 
+# IDs for fields in my database
+# Still not sure if there is a way to introspect the field number to name mapping??
+forms = { 'Sequencing Project': { '_form': "sequencing/1",
+                                  'Project Number': "1000001",
+                                },
+          'Illumina Run':       { '_form': "sequencing/2",
+                                  'Flowcell ID': "1000011",
+                                },
+          'List of samples':    { '_form': "sequencing/3",
+                                  'Project Name': "1000003",
+                                }}
+
 class RequestError(RuntimeError):
     pass
 
@@ -25,17 +37,15 @@ def get_project_names(*pnum_list, rc=None):
     """
     if not rc:
         rc = RagicClient.connect_with_creds()
+        rc.add_forms(forms)
 
     # re-format
     pnum_list = ["{:05d}".format(int(pnum)) for pnum in pnum_list]
 
     # Query on "Sequencing Project" by "Project Number". No need to specify the project
     # type, I think, but it should be "Illumina".
-    query_form  = "sequencing/1"   # Sequencing Project
-    query_field = "1000001"        # Project Number
-
-    query_list = [ f"{query_field},eq,{pnum}" for pnum in pnum_list]
-    projects = rc.list_entries(query_form, query_list)
+    query_list = [ f"Project Number,eq,{pnum}" for pnum in pnum_list ]
+    projects = rc.list_entries("Sequencing Project", query_list)
     projects = sorted(projects.values(), key=lambda p: int(p['_ragicId']))
 
     # I need to return a list of project names in the same order as the pnum_list
@@ -55,17 +65,10 @@ def get_run(fcid, add_samples=False, rc=None):
     """
     if not rc:
         rc = RagicClient.connect_with_creds()
+        rc.add_forms(forms)
 
-    # Some constants. Still not sure if there is a way to introspect the field number to
-    # name mapping??
-    ir_form  = "sequencing/2"   # Illumina Run
-    ir_field = "1000011"        # Flowcell ID field
-
-    samp_form  = "sequencing/3" # List of samples, sub-form of Sequencing Project
-    proj_field = "1000003"      # Project Name
-
-    query = f"{ir_field},eq,{fcid}"
-    runs = rc.list_entries(ir_form, query)
+    query = f"Flowcell ID,eq,{fcid}"
+    runs = rc.list_entries("Illumina Run", query)
 
     L.debug("Found {len(runs)} record in Ragic.")
     if not runs:
@@ -79,23 +82,43 @@ def get_run(fcid, add_samples=False, rc=None):
         # Now add the lib/barcode info too. We'll fetch all libraries for all projects,
         # which seems simpler than going through the whole list of all libraries in
         # all lanes.
-        squery = [ f"{proj_field},eq,{proj}" for proj in run['Project'] ]
-        squery_result = rc.list_entries(samp_form, squery)
+        squery = [ f"Project Name,eq,{proj}" for proj in run['Project'] ]
+        squery_result = rc.list_entries("List of samples", squery)
 
         # This will yield a dict keyed off row IDs, so re-key it by 'LibName'
         run['Samples__dict'] = { v['LibName']: v for v in squery_result.values() }
 
     return run
 
+def put_run(ragicid, update_items, rc=None):
+    """Update values in an Illumina Run
+    """
+    if not rc:
+        rc = RagicClient.connect_with_creds()
+        rc.add_forms(forms)
+
+    rc.post_update( "Illumina Run", ragicid, update_items )
+
+def get_rc():
+    """Just to avoid the generic Ragic client gaving to know about the specific forms.
+    """
+    rc = RagicClient.connect_with_creds()
+    rc.add_forms(forms)
+    return rc
+
 class RagicClient:
 
-    def __init__(self, server_url):
+    def __init__(self, server_url, forms=None):
 
         # Server may or may not have https:// part
         if '://' in server_url:
             self.server_url = server_url
         else:
             self.server_url = f"https://{server_url}"
+
+        self.forms = dict()
+        if forms:
+            self.add_forms(forms)
 
         self.http_timeout = 30
 
@@ -107,6 +130,12 @@ class RagicClient:
 
         # To allow chaining
         return self
+
+    def add_forms(self, new_forms):
+        """Tell the client about some forms.
+        """
+        # FIXME - if I ever publish this code I should probably deep-copy the dict.
+        self.forms.update(new_forms)
 
     @classmethod
     def connect_with_creds(cls, ini_section="ragic"):
@@ -127,20 +156,55 @@ class RagicClient:
                                            api_key = res['key'] )
 
     def list_entries(self, sheet, query=None):
-
+        """Search for entries by query.
+           Query may be a list of '{field},{op},{val}' strings, where
+           field may be the ID or else the name of the field in the forms dict.
+        """
+        sheet_info = None
+        if self.forms:
+            sheet_info = self.forms[sheet]
+            sheet = sheet_info['_form']
         listing_page = self._get_page_url(sheet)
 
         params = {}
         if query:
+            # Replace the named fields
+            if sheet_info:
+                if isinstance(query, str):
+                    query = [query]
+
+                query = [ self._munge_query(q, sheet_info)
+                          for q in query ]
+
             params['where'] = query
 
         return self._get_json(listing_page, params)
 
     def get_page(self, sheet, record_id):
-
+        """Fetch as specific record by ID
+        """
+        if self.forms:
+            sheet = self.forms[sheet]['_form']
         entry_page = self._get_page_url(sheet, record_id)
 
         return self._get_json(entry_page)
+
+    def post_update(self, sheet, record_id, update_items):
+        """Save new items into a page.
+        """
+        if self.forms:
+            sheet = self.forms[sheet]['_form']
+        entry_page = self._get_page_url(sheet, record_id)
+
+        # TODO - need I translate the field names?
+        return self._post_json(entry_page, update_items)
+
+    def _munge_query(self, query, mapping):
+        """Fix queries where the first part is a named field by using the mapping.
+        """
+        query_bits = query.split(",")
+        query_bits[0] = mapping[query_bits[0]]
+        return ",".join(query_bits)
 
     def _get_json(self, url, params=None):
         """Get a URL with all the right credentials and headers
@@ -149,7 +213,7 @@ class RagicClient:
         host = mo.group(1)
         path = mo.group(2)
 
-        params = urllib.parse.urlencode(params, doseq=True)
+        params = self._encode_params(params)
 
         try:
             conn = http.client.HTTPSConnection(host, timeout=self.http_timeout)
@@ -157,11 +221,39 @@ class RagicClient:
             conn.request("GET", f"{path}?{params}", headers = self._get_headers())
 
             resp = conn.getresponse()
-
             if resp.status != 200:
                 raise RequestError(f"{resp.status} {resp.reason}")
 
             return json.load(resp)
+        finally:
+            conn.close()
+
+    def _post_json(self, url, json_data, params=None):
+        """Post an update with all the right credentials and headers.
+        """
+        mo = re.match(r'https://([^/]+)(/.*)?', url)
+        host = mo.group(1)
+        path = mo.group(2)
+
+        params = self._encode_params(params)
+
+        try:
+            conn = http.client.HTTPSConnection(host, timeout=self.http_timeout)
+
+            conn.request("POST", f"{path}?{params}",
+                                 body = json.dumps(json_data),
+                                 headers = self._get_headers())
+
+            resp = conn.getresponse()
+            if resp.status != 200:
+                raise RequestError(f"{resp.status} {resp.reason}")
+
+            # In Ragic, we can have a 200 response but the update may still have been rejected,
+            # so check the actual message.
+            json_resp = json.load(resp)
+            import pdb ; pdb.set_trace()
+            if json_resp['status'] != "SUCCESS":
+                raise RequestError(json.dumps(json_resp))
         finally:
             conn.close()
 
@@ -173,11 +265,11 @@ class RagicClient:
 
         return page
 
-    def _get_params(self, **overrides):
+    def _encode_params(self, overrides):
 
         params = dict( api = "", v = "3" )
-        params.update(overrides)
-        return params
+        params.update(overrides or ())
+        return urllib.parse.urlencode(params, doseq=True)
 
     def _get_headers(self, **overrides):
 
