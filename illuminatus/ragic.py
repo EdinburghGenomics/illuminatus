@@ -203,7 +203,15 @@ class RagicClient:
 
         entry_page = self._get_page_url(sheet, record_id)
 
-        return self._post_json(entry_page, update_items)
+        json_resp = self._post_json(entry_page, update_items)
+
+        # In Ragic, we can have a 200 response but the update may still have been rejected,
+        # so check the 'status' AND the 'msg' field.
+        L.debug(pformat(json_resp))
+        if json_resp['status'] != "SUCCESS" or json_resp['msg'] != "&nbsp;":
+            raise RequestError(f"{json_resp['status']} {json_resp['msg']}")
+
+        return json_resp
 
     def _munge_query(self, query, mapping):
         """Fix queries where the first part is a named field by using the mapping.
@@ -243,12 +251,7 @@ class RagicClient:
             if resp.status != 200:
                 raise RequestError(f"{resp.status} {resp.reason}")
 
-            # In Ragic, we can have a 200 response but the update may still have been rejected,
-            # so check the 'status' AND the 'msg' field.
-            json_resp = json.load(resp)
-            L.debug(pformat(json_resp))
-            if json_resp['status'] != "SUCCESS" or json_resp['msg'] != "&nbsp;":
-                raise RequestError(f"{json_resp['status']} {json_resp['msg']}")
+            return json.load(resp)
 
     def _get_page_url(self, sheet, record_id=None):
 
