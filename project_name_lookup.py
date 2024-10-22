@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
+# This is not used in the actual pipeline but useful for testing.
+
 import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
-from illuminatus.LIMSQuery import get_project_names
+from illuminatus import get_project_names
 
 def parse_args():
-    description = """Simple client for the LIMS query code in illuminatus/LIMSQuery.py
+    description = """Simple client for the get_project_names query.
     """
     argparser = ArgumentParser( description=description,
                                 formatter_class = ArgumentDefaultsHelpFormatter )
@@ -20,7 +22,7 @@ def main(args):
 
     if args.l:
         for proj, name in zip(args.l, get_project_names(*args.l)):
-            print("%s = %s" % (proj, name))
+            print(f"{proj} = {name}")
 
 
 if __name__ == '__main__':
