@@ -3,14 +3,18 @@
 import logging as L
 import csv, sys, os
 from itertools import zip_longest
+from io import StringIO
 
 from .SampleSheetClass import SampleSheet
 
 class SampleSheetReader:
 
-    def __init__( self , SampleSheetFile ):
+    def __init__(self, sample_sheet_file=None, lines=None):
         # sets self.headers, self.column_mapping, self.samplesheet_data
-        self._get_lines_from_ssfile( SampleSheetFile )
+        if sample_sheet_file:
+            self._get_lines_from_ssfile( sample_sheet_file )
+        else:
+            self._get_lines_from_sslines( lines )
         '''
          e.g.:
         self.column_mapping =
@@ -52,41 +56,58 @@ class SampleSheetReader:
 
         return lane_number_index_length
 
-    def _get_lines_from_ssfile( self , SampleSheetFile ):
-        csvFile = SampleSheetFile
-        with open(csvFile, newline='') as csvFH:
-            csvData = csv.reader(csvFH, delimiter=',')
-            self.column_mapping = None
-            in_section = None
-            self.headers = {}
-            self.samplesheet_data = []
-            for row in csvData:
-                try:
-                    if not row or row[0] == '':
-                        continue
+    def _get_lines_from_sslines(self, lines_list):
+        """Here we turn the list of strings back into a file object to feed into
+           the csv.reader, rather than opening the file again
+        """
+        str_fh = StringIO(newline='')
+        for l in lines_list:
+            print(l, file=str_fh)
+        str_fh.seek(0)
+        csv_reader = csv.reader(str_fh, delimiter=',')
 
-                    if row[0].startswith('['):
-                        in_section = row[0].lower().strip('[]')
-                        continue
+        self._get_lines_from_csvreader(csv_reader, "<lines>")
 
-                    if in_section == 'header':
-                        if len(row) > 1:
-                            self.headers[row[0]] = row[1].strip()
-                        else:
-                            self.headers[row[0]] = ''
+    def _get_lines_from_ssfile(self, SampleSheetFile):
+        with open(SampleSheetFile, newline='') as csvFH:
+            csv_reader = csv.reader(csvFH, delimiter=',')
+            self._get_lines_from_csvreader(csv_reader, SampleSheetFile)
 
-                    if in_section == 'data':
-                        if not self.column_mapping:
-                            # Data header line
-                            assert "Sample_ID" in row or "SampleID" in row
-                            self.column_mapping = { f.lower(): idx for idx, f in enumerate(row) }
-                        else:
-                            self.samplesheet_data.append( row )
+    def _get_lines_from_csvreader(self, csvData, csvFile):
+        """Read from the reader object. csvFile is the filename just used for
+           error reporting.
+        """
+        self.column_mapping = None
+        in_section = None
+        self.headers = {}
+        self.samplesheet_data = []
+        for row in csvData:
+            try:
+                if not row or row[0] == '':
+                    continue
 
-                except Exception:
-                    #FIXME - do we really want to swallow this exception?
-                    e = str( sys.exc_info()[0] ) +": " + str( sys.exc_info()[1] )
-                    L.error("while reading "+ csvFile + "\t" + e)
+                if row[0].startswith('['):
+                    in_section = row[0].lower().strip('[]')
+                    continue
+
+                if in_section == 'header':
+                    if len(row) > 1:
+                        self.headers[row[0]] = row[1].strip()
+                    else:
+                        self.headers[row[0]] = ''
+
+                if in_section == 'data':
+                    if not self.column_mapping:
+                        # Data header line
+                        assert "Sample_ID" in row or "SampleID" in row
+                        self.column_mapping = { f.lower(): idx for idx, f in enumerate(row) }
+                    else:
+                        self.samplesheet_data.append( row )
+
+            except Exception:
+                #FIXME - do we really want to swallow this exception?
+                e = str( sys.exc_info()[0] ) +": " + str( sys.exc_info()[1] )
+                L.error("while reading "+ csvFile + "\t" + e)
 
         assert self.column_mapping, "No [Data] found in {}".format(csvFile)
 

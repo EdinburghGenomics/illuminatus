@@ -76,6 +76,8 @@ def gen_ss(run):
     res( "Application", "FASTQ Only" )
     #res( "Assay", "TruSeq DNA" )
     res( "Chemistry", run['Chemistry'])
+    res( *( ["#index_revcomp"] + [run[f'Lane {n} index revcomp'] for n in "1234"] ) )
+
 
     # Read lengths
     res()
@@ -87,11 +89,6 @@ def gen_ss(run):
     res()
     res( "[Settings]" )
     # Nothing here just now.
-
-    # My special bcl2fastq stuff
-    res()
-    res( "[bcl2fastq]" )
-    res( *( ["#index_revcomp"] + [run[f'Lane {n} index revcomp'] for n in "1234"] ) )
 
     # There may be a neater way to do this but the lanes correspond to the subtables,
     # and I think I can just assume the keys are in order, or else maybe I order on

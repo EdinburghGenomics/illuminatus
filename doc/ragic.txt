@@ -24,3 +24,12 @@ here too, but I'll not worry about that today.
 
 I'll re-do clarity_run_id_setter.py. For this to operate we will need to set USE_RAGIC=yes
 and WRITE_TO_RAGIC=yes
+
+---
+
+OK, that all went smoothly. I'll split out my Ragic client into a separate thing soon.
+Now let's:
+
+1) Implement the revcomp logic
+2) Test the whole thing on the MiSeq run
+3) Look at spreadsheet import (and thus do a much larger project)

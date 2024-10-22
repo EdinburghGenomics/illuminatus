@@ -7,10 +7,10 @@ from .SampleSheetReader import SampleSheetReader
 
 class BaseMaskExtractor:
 
-    def __init__( self , samplesheet_file , runinfo_file ):
+    def __init__(self, samplesheet_lines, runinfo_file):
         self.rip = RunInfoXMLParser( runinfo_file )
         L.debug(f"{runinfo_file} : {self.rip.read_and_length}")
-        self.ssr = SampleSheetReader( samplesheet_file )
+        self.ssr = SampleSheetReader( lines=samplesheet_lines )
         self.lane_length_dict = self.ssr.get_index_lengths_by_lane()
         L.debug(f"LLD = {self.lane_length_dict}")
 

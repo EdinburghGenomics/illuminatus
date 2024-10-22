@@ -27,20 +27,21 @@ class BCL2FASTQPreprocessor:
         self.samplesheet = os.path.join(self.run_dir, "SampleSheet.csv")
         self.runinfo_file = os.path.join(self.run_dir, "RunInfo.xml")
 
+        with open(self.samplesheet) as ssfh:
+            self.samplesheet_lines = [ l.rstrip().rstrip(',') for l in ssfh ]
+
         # This code is a little crufty but is tested and working.
-        self.bme = BaseMaskExtractor(self.samplesheet, self.runinfo_file)
+        self.bme = BaseMaskExtractor(self.samplesheet_lines, self.runinfo_file)
 
         # If there is a settings section we don't need to make a default
         # basemask. Only count the section if it actually has some settings
         # after the header.
         self.has_settings_section = False
-        with open(self.samplesheet) as ssfh:
-            ssfh = (l.strip().rstrip(',') for l in ssfh)
-            for l in ssfh:
-                if l == '[Settings]':
-                    if next(ssfh):
-                        self.has_settings_section = True
-                    break
+        try:
+            if self.samplesheet_lines[self.samplesheet_lines.index('[Settings]') + 1]:
+                self.has_settings_section = True
+        except ValueError:
+            pass # No [Settings], no problem
 
         # Get the run name and tiles list from the RunInfo.xml
         rip = RunInfoXMLParser( self.run_dir )
@@ -57,19 +58,26 @@ class BCL2FASTQPreprocessor:
         # This sets up self.ini_settings()
         self.get_ini_settings()
 
+        # See about the revcomp flag which may have come from Ragic and been
+        # saved in the sample sheet. The command line still overrides it unless
+        # set to 'auto' or ''.
+        revcomp = kwargs['revcomp']
+        if revcomp == 'auto' or (not revcomp):
+            revcomp = self.get_revcomp_setting(int(self.lane)) or revcomp
+
         # See if we want to revcomp at all
-        if kwargs['revcomp'] == 'auto':
+        if revcomp == 'auto':
             self.revcomp = self.infer_revcomp()
             self.revcomp_label = 'auto ' + (self.revcomp or 'none')
-        elif not kwargs['revcomp']:
+        elif not revcomp:
             self.revcomp = ''
             self.revcomp_label = 'none'
-        elif kwargs['revcomp'] == 'none':
+        elif revcomp == 'none':
             # Explicitly none as opposed to implicitly none
             self.revcomp = ''
             self.revcomp_label = 'override none'
         else:
-            self.revcomp = kwargs['revcomp']
+            self.revcomp = revcomp
             self.revcomp_label = 'override ' + self.revcomp
 
         # Save bc_check flag
@@ -133,8 +141,31 @@ class BCL2FASTQPreprocessor:
         opts_dict = self.get_bcl2fastq_opt_dict()
         return ['{} {}'.format(*o) for o in opts_dict.items()]
 
+    def get_revcomp_setting(self, lane):
+        """See if there is a magic comment like #index_revcomp,2,auto,auto,auto
+           in the Header part of the sample sheet.
+        """
+        assert type(lane) == int
+        revcomp_line = None
+        ssfh = iter(self.samplesheet_lines)
+        for l in ssfh:
+            if l == "[Header]":
+                break
+
+        for l in ssfh:
+            if l.startswith("["):
+                break
+            elif l.startswith("#index_revcomp"):
+                revcomp_line = l.split(",")[1:]
+
+        if revcomp_line and len(revcomp_line) >= lane:
+            return revcomp_line[lane-1]
+
+        return None
+
     def infer_revcomp(self):
-        """Do we need to do the thing? This is a special hack for certain NovaSeq runs.
+        """In the absence of any overrides, should we do a revcomp on index2?
+           This is a special hack for certain NovaSeq runs.
         """
         if self.run_info['RunId'].split('_')[1][0] != 'A':
             # Not a NovaSeq run then
@@ -194,85 +225,82 @@ class BCL2FASTQPreprocessor:
             # For bc_check mode we want to fudge some of those
             bcl2fastq_opts = self.get_bc_check_opts()
 
-        # OK now we can go through the input sample sheet.
-        with open(self.run_dir + '/SampleSheet.csv') as ssfh:
-            # Make the iterator strip all lines
-            ssfh = (l.strip().rstrip(',') for l in ssfh)
+        # Now iterate through the input sample sheet.
+        ssfh = iter(self.samplesheet_lines)
+        for l in ssfh:
+            if l and (not l.startswith('#')):
+                break
+        # We expect to have a [Header] section first
+        assert l == '[Header]'
 
-            # Allow for blank lines and comments at the top
-            for l in ssfh:
-                if l and (not l.startswith('#')):
-                    break
-            # We expect to have a [Header] section first
-            assert l == '[Header]'
-            for l in ssfh:
-                if l == '' or l.startswith('['):
-                    break
-                if not any(l.startswith(x) for x in ('Description', '#')):
-                    res.append(l)
-            res.append("Run ID,{}".format(self.run_info['RunId']))
-            res.append("Description,Fragment processed with {}".format(created_by))
-            res.append("#Lane,{}".format(self.lane))
-            res.append("#Revcomp,{}".format(self.revcomp_label))
+        for l in ssfh:
+            if l == '' or l.startswith('['):
+                break
+            if not any(l.startswith(x) for x in ('Description', '#')):
+                res.append(l)
+        res.append("Run ID,{}".format(self.run_info['RunId']))
+        res.append("Description,Fragment processed with {}".format(created_by))
+        res.append("#Lane,{}".format(self.lane))
+        res.append("#Revcomp,{}".format(self.revcomp_label))
 
-            # Now add the bcl2fastq_opts
-            res.append('')
-            res.append('[bcl2fastq]')
-            res.extend(bcl2fastq_opts)
-            res.append('')
+        # Now add the bcl2fastq_opts
+        res.append('')
+        res.append('[bcl2fastq]')
+        res.extend(bcl2fastq_opts)
+        res.append('')
 
-            # Get to the [Data] line, or there may be [Settings]
-            for l in ssfh:
-                if self.has_settings_section and l in ['[Settings]']:
-                    # Dump this section until first blank line then go back to looking for [Data]
-                    res.append(l)
-                    for l in ssfh:
-                        if l.startswith("["):
-                            res.append("")
-                            break
-                        res.append(l)
-                        if not l:
-                            break
-                    if l == "[Data]":
+        # Get to the [Data] line, or there may be [Settings]
+        for l in ssfh:
+            if self.has_settings_section and l in ['[Settings]']:
+                # Dump this section until first blank line then go back to looking for [Data]
+                res.append(l)
+                for l in ssfh:
+                    if l.startswith("["):
+                        res.append("")
                         break
-
-                elif l == "[Data]":
-                    # Data must be the final section
-                    break
-            else:
-                # We never found a Data line
-                raise Exception("No [Data] line in SampleSheet.csv")
-
-            # Grab the header. Allow for a blank line
-            res.append('[Data]')
-            for l in ssfh:
-                if l:
-                    data_headers = [ h.lower() for h in l.split(',') ]
                     res.append(l)
+                    if not l:
+                        break
+                if l == "[Data]":
                     break
-            else:
-                # We never found the headers
-                raise Exception("No headers after the [Data] line in SampleSheet.csv")
 
-            try:
-                lane_header_idx = data_headers.index('lane')
-            except ValueError:
-                # If there is no lane the semantics say that all lines apply to all lanes.
-                lane_header_idx = None
+            elif l == "[Data]":
+                # Data must be the final section
+                break
+        else:
+            # We never found a Data line
+            raise Exception("No [Data] line in SampleSheet.csv")
 
-            # Get the actual entries
-            for l in ssfh:
-                if not l:
-                    continue
-                l = l.split(',')
-                if (lane_header_idx is None) or (l[lane_header_idx] == self.lane):
-                    # Yeah we want this. But do we need any index munging?
-                    if '1' in self.revcomp and 'index' in data_headers:
-                        l[data_headers.index('index')] = revcomp(l[data_headers.index('index')])
-                    if '2' in self.revcomp and 'index2' in data_headers:
-                        l[data_headers.index('index2')] = revcomp(l[data_headers.index('index2')])
+        # Grab the header. Allow for a blank line
+        res.append('[Data]')
+        for l in ssfh:
+            if l:
+                data_headers = [ h.lower() for h in l.split(',') ]
+                res.append(l)
+                break
+        else:
+            # We never found the headers
+            raise Exception("No headers after the [Data] line in SampleSheet.csv")
 
-                    res.append(','.join(l))
+        try:
+            lane_header_idx = data_headers.index('lane')
+        except ValueError:
+            # If there is no lane the semantics say that all lines apply to all lanes.
+            lane_header_idx = None
+
+        # Get the actual entries
+        for l in ssfh:
+            if not l:
+                continue
+            l = l.split(',')
+            if (lane_header_idx is None) or (l[lane_header_idx] == self.lane):
+                # Yeah we want this. But do we need any index munging?
+                if '1' in self.revcomp and 'index' in data_headers:
+                    l[data_headers.index('index')] = revcomp(l[data_headers.index('index')])
+                if '2' in self.revcomp and 'index2' in data_headers:
+                    l[data_headers.index('index2')] = revcomp(l[data_headers.index('index2')])
+
+                res.append(','.join(l))
 
         return res
 
@@ -282,21 +310,19 @@ class BCL2FASTQPreprocessor:
         """
         cp = configparser.ConfigParser(empty_lines_in_values=False, delimiters=(':', '=', ' '))
         try:
-            with open(self.samplesheet) as ssfh:
-                # Make the iterator strip all lines
-                ssfh = (l.strip().rstrip(',') for l in ssfh)
-                tail_lines = enumerate(dropwhile(lambda x: x != "[bcl2fastq]", ssfh))
-                conf_lines = map( lambda p: p[1],
-                                  takewhile( lambda x: not (x[0] > 1 and x[1].startswith('[')),
-                                             tail_lines ) )
+            ssfh = iter(self.samplesheet_lines)
+            tail_lines = enumerate(dropwhile(lambda x: x != "[bcl2fastq]", ssfh))
+            conf_lines = map( lambda p: p[1],
+                              takewhile( lambda x: not (x[0] > 1 and x[1].startswith('[')),
+                                         tail_lines ) )
 
-                cp.read_file(conf_lines, self.samplesheet)
+            cp.read_file(conf_lines, self.samplesheet)
 
-                for section in cp.sections():
-                    L.debug(f"Got config section [{section}] in {self.samplesheet}")
+            for section in cp.sections():
+                L.debug(f"Got config section [{section}] in {self.samplesheet}")
 
-                    # Cast all to strings
-                    self.ini_settings[section].update(cp.items(section))
+                # Cast all to strings
+                self.ini_settings[section].update(cp.items(section))
         except KeyError:
             return
 

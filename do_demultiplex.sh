@@ -1,5 +1,6 @@
 #!/bin/bash
 # Run bcl2fastq on <rundir> to <outdir> with <samplesheet> for <lane>.
+# Note that <samplesheet> would normally be the output from bcl2fastq_setup.py
 
 set -euo pipefail
 
