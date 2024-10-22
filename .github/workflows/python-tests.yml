@@ -5,7 +5,7 @@ name: Python auto-test
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, ragic ]
   pull_request:
     branches: [ master ]
 
