@@ -33,3 +33,9 @@ Now let's:
 1) Implement the revcomp logic
 2) Test the whole thing on the MiSeq run
 3) Look at spreadsheet import (and thus do a much larger project)
+4) Look at auto_redo.sh
+
+4 is going to be a bit of work. I think that since there is now no explicit "generate sample sheet"
+step we want to ectually have a "re-run" button in Ragic. Then we want to be able to ask Ragic
+"which runs have a re-run flag set" and also allow the pipeline to clear off the flag as it goes.
+Not too hard to implement. Not a big priority.

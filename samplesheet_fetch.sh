@@ -133,6 +133,7 @@ done
 export SSPP_FILE="$(readlink -f "SampleSheet.csv.$counter")"
 samplesheet_from_ragic.py --empty_on_missing -f "${UFLOWCELLID}" | \
     "$SSPP_HOOK" >> "SampleSheet.csv.$counter"
+echo "Extracted new SampleSheet.csv.$counter from Ragic with filter ($SSPP_HOOK)"
 
 if [ ! -s "SampleSheet.csv.$counter" ] ; then
     echo "New SampleSheet.csv for ${FLOWCELLID} is empty - ie. not found in Ragic"
@@ -140,8 +141,9 @@ if [ ! -s "SampleSheet.csv.$counter" ] ; then
     exit 0
 fi
 
-# Now see if the new sheet is different.
-if diff -q "SampleSheet.csv.$counter" SampleSheet.csv ; then
+# Now see if the new sheet is different. We do want to ignore the Date line because
+# this can change if, for eg. we just push the run ID back.
+if diff -I '^Date,' -q "SampleSheet.csv.$counter" SampleSheet.csv ; then
     echo "SampleSheet.csv for ${FLOWCELLID} is already up-to-date"
     rm -f "SampleSheet.csv.$counter"
     exit 0

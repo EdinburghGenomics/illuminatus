@@ -83,7 +83,7 @@ class T(unittest.TestCase):
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.1')
 
         self.assertEqual(last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
-        self.assertEqual(last_stdout[2], "SampleSheet.csv for XXXX is now linked to new SampleSheet.csv.1")
+        self.assertEqual(last_stdout[3], "SampleSheet.csv for XXXX is now linked to new SampleSheet.csv.1")
 
         with open("SampleSheet.csv") as fh:
             self.assertEqual(fh.read().rstrip(), 'this one')
@@ -112,7 +112,7 @@ class T(unittest.TestCase):
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.0')
 
         self.assertEqual(last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
-        self.assertEqual(last_stdout[1][:37], "New SampleSheet.csv for XXXX is empty")
+        self.assertEqual(last_stdout[2][:37], "New SampleSheet.csv for XXXX is empty")
 
 
     def test_none_found(self):
@@ -230,7 +230,7 @@ class T(unittest.TestCase):
         # Run the thingy again
         time.sleep(0.1)
         second_stdout = self.bm_run_fetch()
-        self.assertEqual(second_stdout[0], "SampleSheet.csv for XXXX is already up-to-date")
+        self.assertEqual(second_stdout[1], "SampleSheet.csv for XXXX is already up-to-date")
         self.assertGreater(os.lstat('SampleSheet.csv').st_mtime, utimestamp)
 
     def test_case_mismatch(self):
@@ -248,7 +248,7 @@ class T(unittest.TestCase):
         self.assertEqual(os.readlink('SampleSheet.csv'), 'SampleSheet.csv.1')
 
         self.assertEqual(last_stdout[0], "SampleSheet.csv renamed as SampleSheet.csv.0")
-        self.assertEqual(last_stdout[2], "SampleSheet.csv for jd7l6 is now linked to new SampleSheet.csv.1")
+        self.assertEqual(last_stdout[3], "SampleSheet.csv for jd7l6 is now linked to new SampleSheet.csv.1")
 
         with open("SampleSheet.csv") as fh:
             self.assertEqual(fh.read().rstrip(), '--empty_on_missing -f JD7L6')

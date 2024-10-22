@@ -234,7 +234,7 @@ class T(unittest.TestCase):
 
         # This may or may not be mocked. If so, and REDO_HOURS_TO_LOOK_BACK is set, it should
         # be called.
-        if 'auto_redo.sh' in expected_calls and self.environment.get('REDO_HOURS_TO_LOOK_BACK'):
+        if 'auto_redo.sh' in expected_calls and self.environment.get('USE_RAGIC'):
             expected_calls['auto_redo.sh'] = [[]]
 
         # The call to rt_runticket_manager.py is non-deterministic, so we have to doctor it...

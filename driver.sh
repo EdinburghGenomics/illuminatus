@@ -39,8 +39,7 @@ if [ -e "$ENVIRON_SH" ] ; then
            CLUSTER_PARTITION   EXTRA_SLURM_FLAGS \
            SSPP_HOOK           TOOLBOX           VERBOSE \
            USE_RAGIC           WRITE_TO_RAGIC    DRY_RUN           \
-           SNAKE_THREADS       LOCAL_CORES       EXTRA_SNAKE_FLAGS \
-           REDO_HOURS_TO_LOOK_BACK
+           SNAKE_THREADS       LOCAL_CORES       EXTRA_SNAKE_FLAGS
 fi
 
 # Just because I renamed it
@@ -766,13 +765,9 @@ get_run_status() { # run_dir
   fi
 }
 
-# **** And now the main processing actions, starting with a search for updated sample sheets for
-# **** previously processed runs.
+# **** And now the main processing actions
 
-if [ -n "${REDO_HOURS_TO_LOOK_BACK:-}" ] ; then
-    log "Looking for new replacement sample sheets from the last $REDO_HOURS_TO_LOOK_BACK hours."
-    auto_redo.sh |& log || true
-fi
+# TODO - add a Ragic version of auto_redo.sh here
 
 log "Looking for run directories matching regex $SEQDATA_LOCATION/$RUN_NAME_REGEX/"
 

@@ -109,6 +109,7 @@ else
         pip_install python-Levenshtein==0.12.1
 
         # snakemake and drmaa (note the settings/wrapper in shell_helper_functions.sh)
+        # FIXME - I'm using Snakemake 5 for the pipeline and 7 for the unit tests!
         pip_install snakemake==5.5.3
         pip_install drmaa==0.7.9
 
