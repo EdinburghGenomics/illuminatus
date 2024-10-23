@@ -4,6 +4,7 @@ import urllib.parse
 import urllib.request
 import configparser
 import json
+import shutil
 from pprint import pprint, pformat
 
 import logging
@@ -12,7 +13,8 @@ L = logging.getLogger(__name__)
 # Basic client for the Ragic API - see
 # https://github.com/ragic/public/blob/master/HTTP%20API%20Sample/Python-Sample/read.py
 # This client has no extra dependencies - just Py3 standard lib
-USE_RAGIC = (os.environ.get("USE_RAGIC") == "yes")
+def use_ragic():
+    return os.environ.get("USE_RAGIC") == "yes"
 
 # IDs for fields in my database
 # Still not sure if there is a way to introspect the field number to name mapping??
@@ -144,7 +146,7 @@ class RagicClient:
         """Use ~/.ragic_api to connect
         """
         # Master switch for this, because I don't want any tests to be connecting to Ragic.
-        if not USE_RAGIC:
+        if not use_ragic():
             raise RuntimeError("Ragic is turned off. Set USE_RAGIC=yes to enable it.")
 
         config = configparser.SafeConfigParser()
@@ -212,6 +214,30 @@ class RagicClient:
             raise RequestError(f"{json_resp['status']} {json_resp['msg']}")
 
         return json_resp
+
+    def get_data_dict(self, destfile):
+        """Download the data dictionary
+
+           HTML will be saved out to destfile
+        """
+        # TODO - this is just messing around at the moment. We get the data dictionary
+        # as a human-readable HTML page. Ideally we want this as JSON, but scraping it
+        # for the field names and numbers is going to be pretty easy. The idea would be that
+        # I could then dump the forms dict to a JSON file rather than manually adding it at the
+        # top of the code here.
+        url = f"{self.server_url}/sims/doc.jsp?a={self.account_name}"
+        req = urllib.request.Request( method = "GET",
+                                      url = url,
+                                      headers = self._get_headers() )
+        with urllib.request.urlopen( url = req,
+                                     timeout = self.http_timeout ) as resp:
+            if resp.status != 200:
+                raise RequestError(f"{resp.status} {resp.reason}")
+
+            with open(destfile, "wb") as dfh:
+                shutil.copyfileobj(resp, dfh)
+
+            return resp.status
 
     def _munge_query(self, query, mapping):
         """Fix queries where the first part is a named field by using the mapping.
