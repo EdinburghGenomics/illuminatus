@@ -716,7 +716,7 @@ run_qc() {
     # If we get here, the pipeline completed (or was partially complete) but a failure to
     # generate or upload the final report must still count as a pipeline failure, so allow
     # any error from run_multiqc to propogate.
-    debug "run_multiqc 'Completed QC' at $0 line $LINENO"
+    debug "Now running: run_multiqc 'Completed QC' at $0 line $LINENO"
     run_multiqc "Completed QC"
 }
 

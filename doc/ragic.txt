@@ -5,6 +5,10 @@ Ragic is great. Let's replace all the Clarity stuff with Ragic. Yay!
 I'll worry about how to get the sample sheets to the MiSeq later. It will probably
 require me running a little thingy on egcloud.bio.
 
+Yes - I don't need a complex form as I can just generate a link on the Ragic page
+and then I just need a Python thingy that makes the sample sheet. I already have
+PyCGI on egcloud.
+
 Sample sheet fetch is gooooooo!
 
 2) Get the project name from Ragic too. Easy.
@@ -34,8 +38,16 @@ Now let's:
 2) Test the whole thing on the MiSeq run
 3) Look at spreadsheet import (and thus do a much larger project)
 4) Look at auto_redo.sh
+5) Fix up some links
 
 4 is going to be a bit of work. I think that since there is now no explicit "generate sample sheet"
 step we want to ectually have a "re-run" button in Ragic. Then we want to be able to ask Ragic
 "which runs have a re-run flag set" and also allow the pipeline to clear off the flag as it goes.
 Not too hard to implement. Not a big priority.
+
+5 - we have a link from the Illuminatus reports to BaseSpace (useless) so I think I'd just switch
+this for a link to Ragic or remove it. We also have the PROJECT_PAGE_URL which could also link to
+Ragic. Currently it can link to the Wiki (in prod) or Clarity (in test). But for Ragic the links are
+like "https://eu3.ragic.com/edgen/sequencing/2/N" were N is the record ID. I'd need to fetch this
+at the time when I get the project names, save it into sample_summary.yml. Again, this is a pretty
+easy job. And again, not a massive priority.

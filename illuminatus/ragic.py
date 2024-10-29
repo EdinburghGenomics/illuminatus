@@ -70,7 +70,7 @@ def get_run(fcid, add_samples=False, rc=None):
         rc.add_forms(forms)
 
     query = f"Flowcell ID,eq,{fcid}"
-    runs = rc.list_entries("Illumina Run", query)
+    runs = rc.list_entries("Illumina Run", query, subtables=add_samples)
 
     L.debug("Found {len(runs)} record in Ragic.")
     if not runs:
@@ -157,7 +157,7 @@ class RagicClient:
         return cls(res['server']).connect( account_name = res['account'],
                                            api_key = res['key'] )
 
-    def list_entries(self, sheet, query=None):
+    def list_entries(self, sheet, query=None, subtables=True):
         """Search for entries by query.
            Query may be a list of '{field},{op},{val}' strings, where
            field may be the ID or else the name of the field in the forms dict.
@@ -179,6 +179,8 @@ class RagicClient:
                           for q in query ]
 
             params['where'] = query
+        if not subtables:
+            params['subtables'] = '0'
 
         return self._get_json(listing_page, params)
 
