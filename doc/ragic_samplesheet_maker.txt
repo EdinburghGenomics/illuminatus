@@ -1,0 +1,41 @@
+Do you remember the old sample sheet maker CGI application?
+
+Well, it's coming back :)
+
+I'll maintain it as part of this codebase because it's the same as samplesheet_from_ragic.py
+just wired up to CGI.  What I need is:
+
+1) A basic Python webapp that shows an html page and provides a CSV download with correct
+Content-Disposition headers.
+2) Now wire it up to Ragic. I think I can show a table of the newest 12 Illumina runs with
+the FCID, ExpID, Projects, Date, User, Get Button
+3) Profit. If you want an older sample sheet then I could either have a free text box to enter
+the flowcell ID, or else you can update the record in Ragic (just re-save it) to make it appear
+in the list of 12.
+
+Start from ~/workspace/ansible_configs/egcloud_files/lims_run_info/lims_run_info.wsgi
+
+No need for any flash web-app stuff. This is pure old school CGI. Great!
+
+Random note - I was trying to remember the fundamental difference between Tornado and Falcon.
+Finally remembered - in both cases you define handler classes which you attach to paths.
+In Tornado, each request results in the instantiation of a new instance of the handler class and
+then you can use "self" to store context as you process the result. In Falcon, there is a singleton
+instance of each handler class and you can't store any request state in that object. You need to
+pass this between functions or else store it in request.context. Well, for this application it
+makes no difference. Falcon is good.
+
+--
+
+OK, step 1. I want a basic webapp that serves two pages:
+
+1) HTML test page
+2) CSV test data
+
+Then I want to have a way to start it for a quick local test on high port whatever.
+
+...DONE :-)
+
+Then make it do the thing.
+
+Then have a script under deploy/ that deploys it to egcloud.
