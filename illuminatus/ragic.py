@@ -25,6 +25,7 @@ forms = { 'Sequencing Project': { '_form': "sequencing/1",
                                   'Flowcell ID': "1000011",
                                   'Run ID': "1000037",
                                   'Run QC Report': "1000048",
+                                  'Last Update': "109",
                                 },
           'List of samples':    { '_form': "sequencing/3",
                                   'Project Name': "1000003",
@@ -64,6 +65,21 @@ def get_project_names(*pnum_list, rc=None):
 
     return res
 
+def get_recent_runs(count, rc=None):
+    """Get the most recent Illumina runs
+    """
+    if not rc:
+        rc = RagicClient.connect_with_creds()
+        rc.add_forms(forms)
+
+    runs = rc.list_entries( "Illumina Run",
+                            recent_n = count,
+                            subtables = False )
+
+    L.debug(f"Found {len(runs)} record in Ragic.")
+
+    return runs.values()
+
 def get_run(fcid, add_samples=False, rc=None):
     """Query a run from Ragic by "Flowcell ID"
     """
@@ -74,7 +90,7 @@ def get_run(fcid, add_samples=False, rc=None):
     query = f"Flowcell ID,eq,{fcid}"
     runs = rc.list_entries("Illumina Run", query, subtables=add_samples)
 
-    L.debug("Found {len(runs)} record in Ragic.")
+    L.debug(f"Found {len(runs)} record in Ragic.")
     if not runs:
         raise EmptyResultError(f"No record of flowcell ID {fcid}")
 
@@ -149,7 +165,7 @@ class RagicClient:
         if not use_ragic():
             raise RuntimeError("Ragic is turned off. Set USE_RAGIC=yes to enable it.")
 
-        config = configparser.SafeConfigParser()
+        config = configparser.ConfigParser()
         conf_file = config.read(os.environ.get('RAGICAPIFILE',
                                 [os.path.expanduser('~/.ragic_api'), 'ragic_api.conf']))
 
@@ -159,10 +175,12 @@ class RagicClient:
         return cls(res['server']).connect( account_name = res['account'],
                                            api_key = res['key'] )
 
-    def list_entries(self, sheet, query=None, subtables=True):
+    def list_entries(self, sheet, query=None, subtables=True, latest_n=None):
         """Search for entries by query.
            Query may be a list of '{field},{op},{val}' strings, where
            field may be the ID or else the name of the field in the forms dict.
+
+           latest_n only returns the N most recently updated records, newest first.
         """
         sheet_info = None
         if self.forms:
@@ -183,6 +201,11 @@ class RagicClient:
             params['where'] = query
         if not subtables:
             params['subtables'] = '0'
+
+        if latest_n:
+            # Used to obtain only the N most recent records
+            params['reverse'] = 'false' # apparently
+            params['limit'] = str(latest_n)
 
         return self._get_json(listing_page, params)
 

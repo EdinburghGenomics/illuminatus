@@ -35,8 +35,7 @@ html {
 
 @media (min-width: 768px) {
     html {
-        font-size: 125%;
-        max-width: 42em;
+        max-width: 60em;
  } }
 
 h1, h2, h3, h4 {
@@ -105,11 +104,6 @@ table {
 table * {
     border: none;
  }
-table thead, table tr {
-    display: table;
-    table-layout: fixed;
-    width: 100%;
- }
 table tr:nth-child(even) {
     background-color: rgba(200, 200, 200, 0.2);
  }
@@ -159,15 +153,39 @@ header a + a {
     margin-left: 1rem;
 }
 
+input[type="submit"] {
+    background-color: #e7e7e7;
+    color: black;
+    border: 1px solid;
+    border-radius: 6px;
+    padding: 2px;
+}
+
 </style>
 </head><body>
     <h1>{{page_title}}</h1>
-    <p>Text goes here.</p>
+    <p>The most recently updated {{max_rows}} runs found in Ragic are:</p>
 
-    <table style="min-width:520pt">
-        <tr><th>VM Number</th><th>Current VNC Address</th><th>State</th></tr>
+    <form action="getsheet">
+    <!--<table style="min-width:520pt">-->
+    <table>
+        <tr><th>Last Update</th>
+            <th>FCID</th>
+            <th>Experiment</th>
+            <th>Project</th>
+            <th></th>
+        </tr>
 
-        <tr><td><pre>01</pre></td><td><em>Unavailable</em></td><td>stopped</td></tr>
+        {{#table_rows}}
+        <tr><td><pre>{{date}}</pre></td>
+             <td><pre>{{fcid}}</pre></td>
+             <td><pre>{{expt}}</pre></td>
+             <td><pre>{{project}}</pre></td>
+             <td><input type="submit" name="submit_{{fcid}}" value="Go!"></td>
+        </tr>
+        {{/table_rows}}
 
     </table>
+    </form>
+
 </body></html>

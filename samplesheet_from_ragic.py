@@ -7,7 +7,7 @@ import json
 from datetime import datetime, timezone
 from pprint import pprint, pformat
 
-from illuminatus import ragic
+from illuminatus import ragic, illuminatus_version
 from illuminatus.aggregator import aggregator
 
 def main(args):
@@ -76,6 +76,7 @@ def gen_ss(run):
     res( "Application", "FASTQ Only" )
     #res( "Assay", "TruSeq DNA" )
     res( "Chemistry", run['Chemistry'])
+    res( "#illuminatus_version", illuminatus_version )
     res( *( ["#index_revcomp"] + [run[f'Lane {n} index revcomp'] for n in "1234"] ) )
 
 
@@ -160,6 +161,7 @@ def parse_args(*args):
     argparser.add_argument("--empty_on_missing", action="store_true",
                             help="Return an empty file, rather than an error, of not Ragic"
                                  " record is found")
+    argparser.add_argument("--version", action='version', version=illuminatus_version)
 
     return argparser.parse_args(*args)
 
