@@ -56,10 +56,13 @@ class T(unittest.TestCase):
         generated_lines = list(gen_ss(run))
 
         # The dates will differ, so mask them out
+        # Likewise the #illuminatus_version
         for linelist in [generated_lines, expected_lines]:
             for i in range(len(linelist)):
                 if linelist[i].startswith("Date,"):
                     linelist[i] = "Date,MASKED"
+                elif linelist[i].startswith("#illuminatus_version,"):
+                    linelist[i] = "#illuminatus_version,MASKED"
 
         self.assertEqual(generated_lines, expected_lines)
 
