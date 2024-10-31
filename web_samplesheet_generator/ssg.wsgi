@@ -64,14 +64,31 @@ class MainPageHandler:
         resp.text = self.render(recent_runs)
 
 class GenCSVHandler:
-    """There is a recipe for this in the Falcon docs
+    """There is a recipe for serving up CSV in the Falcon docs
     """
     def on_get(self, req, resp):
-        csv_string = 'head1,head2,head3\nval1,"val2",3\n'
+        # Work out which submit button was clicked. We're encoding the FCID in the
+        # button name.
+        try:
+            fcid, = [ p[len("submit_"):] for p in req.params if p.startswith("submit_") ]
+        except ValueError:
+            raise falcon.HTTPBadRequest(title="FCID not set in params") from None
+
+        try:
+            run = ragic.get_run(fcid, add_samples=True, rc=rc)
+            ss_lines = gen_ss(run)
+        except Exception as e:
+            # Problems here should be reported to the user
+            raise falcon.HTTPInternalServerError(title=f"Failed to generate a SampleSheet - {e}")
+
+        # Include both the fcid and the experiment name in the filename.
+        experiment = run.get("Experiment", "Kxxx")
 
         resp.content_type = 'text/csv'
-        resp.downloadable_as = 'not_a_sample_sheet.csv'
-        resp.text = csv_string
+        resp.downloadable_as = f"{experiment}_{fcid}_SampleSheet.csv"
+        resp.text = "\n".join(ss_lines) + "\n"
+
+        L.info("Serving file {resp.downloadable_as} with {len(ss_lines)} lines.")
 
 # Start the logging
 log_level = L.DEBUG if (__name__ == '__main__' or os.environ.get('DEBUG', '0') != '0') else L.INFO
@@ -99,7 +116,12 @@ if __name__ == '__main__':
             with make_server('127.0.0.1', port, app) as httpd:
                 L.info(f"Serving on http://localhost:{port}")
 
-                httpd.serve_forever()
+                if os.environ.get('WSGI_SINGLE_REQUEST', '0') == '0':
+                    httpd.serve_forever()
+                else:
+                    # Or for a very dirty forced reload (for local testing only):
+                    httpd.timeout = 10
+                    httpd.handle_request()
                 break
         except OSError:
             L.debug(f"Port {port} is in use; trying the next one.")

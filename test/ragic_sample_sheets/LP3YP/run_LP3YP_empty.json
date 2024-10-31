@@ -1,0 +1,96 @@
+{
+   "Chemistry" : "Amplicon",
+   "Experiment" : "K001",
+   "Flowcell ID" : "LP3YP",
+   "Investigator" : "Timothy Booth",
+   "Lane 1 index revcomp" : "auto",
+   "Lane 2 index revcomp" : "auto",
+   "Lane 3 index revcomp" : "auto",
+   "Lane 4 index revcomp" : "auto",
+   "Last Update" : "2024/10/25 14:19:46",
+   "Project" : [
+      "30453_Fahmida_Umi"
+   ],
+   "R1 Cycles" : "50",
+   "R2 Cycles" : "50",
+   "Run ID" : "",
+   "Run QC Report" : "",
+   "Samples__dict" : {
+      "30453FU00001L01" : {
+         "Default Pool" : "01",
+         "External Name" : "202.001.1",
+         "Index1" : "TCCATACCGGAA",
+         "Index2" : "",
+         "LibName" : "30453FU00001L01",
+         "Library" : "1",
+         "Pool Name" : "30453FUpool01",
+         "Project Name" : "30453_Fahmida_Umi",
+         "Sample ID" : "1",
+         "Species" : "Metagenome_0",
+         "_dataTimestamp" : 1730373258140,
+         "_index_" : "",
+         "_index_title_" : "202.001.1",
+         "_ragicId" : 192,
+         "_seq" : 145,
+         "_star" : false
+      },
+      "30453FU00002L01" : {
+         "Default Pool" : "01",
+         "External Name" : "202.005.1",
+         "Index1" : "AGCCCTGCTACA",
+         "Index2" : "",
+         "LibName" : "30453FU00002L01",
+         "Library" : "1",
+         "Pool Name" : "30453FUpool01",
+         "Project Name" : "30453_Fahmida_Umi",
+         "Sample ID" : "2",
+         "Species" : "Metagenome_0",
+         "_dataTimestamp" : 1730373258140,
+         "_index_" : "",
+         "_index_title_" : "202.005.1",
+         "_ragicId" : 193,
+         "_seq" : 144,
+         "_star" : false
+      },
+      "30453FU00145L01" : {
+         "Default Pool" : "01",
+         "External Name" : "Hub_PCRproduct_pos_control_13",
+         "Index1" : "TTAATGGATCGG",
+         "Index2" : "",
+         "LibName" : "30453FU00145L01",
+         "Library" : "1",
+         "Pool Name" : "30453FUpool01",
+         "Project Name" : "30453_Fahmida_Umi",
+         "Sample ID" : "145",
+         "Species" : "Metagenome_0",
+         "_dataTimestamp" : 1730373258101,
+         "_index_" : "",
+         "_index_title_" : "Hub_PCRproduct_pos_control_13",
+         "_ragicId" : 336,
+         "_seq" : 1,
+         "_star" : false
+      }
+   },
+   "Sequencing Type" : "Illumina",
+   "_dataTimestamp" : 1730373257798,
+   "_index_" : "",
+   "_index_calDates_" : "d109 2024/10/25 14:19:46",
+   "_index_title_" : "LP3YP",
+   "_ragicId" : 3,
+   "_seq" : 1,
+   "_star" : false,
+   "_subtable_1000056" : {
+      "7" : {
+         "Add to Lane" : "Lane 2",
+         "Pool" : "30453FUpool01",
+         "Project" : "30453_Fahmida_Umi",
+         "Samples in Pool" : "145",
+         "_header_Y" : [
+            14
+         ],
+         "_parentRagicId" : 3,
+         "_ragicId" : 7,
+         "_start_X" : 1
+      }
+   }
+}

@@ -7,7 +7,7 @@ from shutil import rmtree, copytree
 import subprocess
 import time
 
-"""This Python script wraps samplesheet_from_ragic.py.
+"""This shell script wraps samplesheet_from_ragic.py.
 
    It's also responsible for renaming the original samplesheet saved out by the
    sequencer.

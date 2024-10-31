@@ -154,7 +154,7 @@ header a + a {
 }
 
 input[type="submit"] {
-    background-color: #e7e7e7;
+    background-color: #e48a44;
     color: black;
     border: 1px solid;
     border-radius: 6px;
@@ -164,7 +164,7 @@ input[type="submit"] {
 </style>
 </head><body>
     <h1>{{page_title}}</h1>
-    <p>The most recently updated {{max_rows}} runs found in Ragic are:</p>
+    <p>The {{max_rows}} most recently updated Illumina runs found in Ragic are:</p>
 
     <form action="getsheet">
     <!--<table style="min-width:520pt">-->
@@ -181,7 +181,7 @@ input[type="submit"] {
              <td><pre>{{fcid}}</pre></td>
              <td><pre>{{expt}}</pre></td>
              <td><pre>{{project}}</pre></td>
-             <td><input type="submit" name="submit_{{fcid}}" value="Go!"></td>
+             <td><input type="submit" name="submit_{{fcid}}" value="Generate"></td>
         </tr>
         {{/table_rows}}
 

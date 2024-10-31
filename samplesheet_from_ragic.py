@@ -10,6 +10,11 @@ from pprint import pprint, pformat
 from illuminatus import ragic, illuminatus_version
 from illuminatus.aggregator import aggregator
 
+class MissingLanesError(RuntimeError):
+    """Exception to be raised by gen_ss if there are empty lanes in the run.
+    """
+    pass
+
 def main(args):
 
     try:
@@ -56,13 +61,38 @@ def mdydate(ragicts=None):
 
     return thedate.strftime("%m/%d/%Y")
 
-def gen_ss(run):
+def get_lane_keys(run, allow_empty_lanes=False):
+    """Get the lanes which have data. Check that the lanes actually have libraries in them.
+    """
+    # Original version was:
+    # lane_keys = sorted([k for k in run if k.startswith("_subtable_")])
+    # but that won't cut it.
+
+    res = dict()
+    expected_keys = ragic.forms['Illumina Run']['_lane_keys']
+
+    for i, k in enumerate(expected_keys):
+        if run.get(k):
+            # The key is present and not an empty list
+            res[str(i+1)] = k
+
+    if not allow_empty_lanes:
+        # Given the available flowcells the only acceptable lodings are:
+        #  lane1, lane1+lane2, lane1+lane2+lane3+lane4
+        # TODO - I could infer the run type based off the FCID and be even more strict
+        # but I'll leave that for now.
+        if ''.join(res) not in [ "1", "12", "1234" ]:
+            raise MissingLanesError(f"Samples only in lanes {list(res)}")
+
+    return res
+
+def gen_ss(run, allow_empty_lanes=False):
     """Turn that thing into a sample sheet let's gooooo!
 
        The sample sheet should be identical each time, unless Ragic is changed.
        This means no putting the date of generation into the Date field.
     """
-    #return([pformat(run)])
+    lane_keys = get_lane_keys(run, allow_empty_lanes=False)
 
     res = aggregator(ofs=",")
 
@@ -91,18 +121,13 @@ def gen_ss(run):
     res( "[Settings]" )
     # Nothing here just now.
 
-    # There may be a neater way to do this but the lanes correspond to the subtables,
-    # and I think I can just assume the keys are in order, or else maybe I order on
-    # '_header_Y'.
-    lane_keys = sorted([k for k in run if k.startswith("_subtable_")])
-
     res()
     res( "[Data]" )
     res( "Lane", "Sample_ID", "Sample_Name", "Sample_Plate", "Sample_Well",
          "Sample_Project", "I5_Index_ID", "index", "I7_Index_ID", "index2",
          "Description" )
-    for lane_idx, lane_key in enumerate(lane_keys):
-        for run_elem in tabulate_lane( lane_num = lane_idx + 1,
+    for lane_name, lane_key in lane_keys.items():
+        for run_elem in tabulate_lane( lane_num = lane_name,
                                        lane = run[lane_key],
                                        samples_dict = run['Samples__dict'],
                                        fcid = run['Flowcell ID'] ):
@@ -138,9 +163,9 @@ def tabulate_lane(lane_num, lane, samples_dict, fcid):
              fcid,
              "", # Sample_Well
              proj, # Sample_Project
-             f"{proj}-{index1}",
+             f"{proj}-{index1}" if index1 else "",
              index1,
-             f"{proj}-{index2}",
+             f"{proj}-{index2}" if index2 else "",
              index2,
              rel['Pool'], # May be blank if no pool
         )

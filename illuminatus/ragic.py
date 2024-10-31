@@ -26,6 +26,10 @@ forms = { 'Sequencing Project': { '_form': "sequencing/1",
                                   'Run ID': "1000037",
                                   'Run QC Report': "1000048",
                                   'Last Update': "109",
+                                  '_lane_keys' : [ "_subtable_1000015",
+                                                   "_subtable_1000034",
+                                                   "_subtable_1000035",
+                                                   "_subtable_1000036", ],
                                 },
           'List of samples':    { '_form': "sequencing/3",
                                   'Project Name': "1000003",
@@ -76,7 +80,7 @@ def get_recent_runs(count, rc=None):
                             recent_n = count,
                             subtables = False )
 
-    L.debug(f"Found {len(runs)} record in Ragic.")
+    L.debug(f"Found {len(runs)} Illumina Run record(s) in Ragic.")
 
     return runs.values()
 
@@ -90,7 +94,7 @@ def get_run(fcid, add_samples=False, rc=None):
     query = f"Flowcell ID,eq,{fcid}"
     runs = rc.list_entries("Illumina Run", query, subtables=add_samples)
 
-    L.debug(f"Found {len(runs)} record in Ragic.")
+    L.debug(f"Found {len(runs)} Illumina Run record(s) in Ragic.")
     if not runs:
         raise EmptyResultError(f"No record of flowcell ID {fcid}")
 
