@@ -26,6 +26,7 @@ forms = { 'Sequencing Project': { '_form': "sequencing/1",
                                   'Run ID': "1000037",
                                   'Run QC Report': "1000048",
                                   'Last Update': "109",
+                                  '_date_field': "109",
                                   '_lane_keys' : [ "_subtable_1000015",
                                                    "_subtable_1000034",
                                                    "_subtable_1000035",
@@ -208,8 +209,8 @@ class RagicClient:
 
         if latest_n:
             # Used to obtain only the N most recent records
-            params['reverse'] = 'false' # apparently
             params['limit'] = str(latest_n)
+            params['order'] = f"{sheet_info['_date_field']},DESC"
 
         return self._get_json(listing_page, params)
 
