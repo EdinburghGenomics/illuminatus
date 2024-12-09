@@ -19,10 +19,29 @@ class BaseMaskExtractor:
         """
         return sorted(self.lane_length_dict.keys())
 
+    def get_trim_specs(self):
+        """We only want to trim "standard" runs. This defines what we mean by
+           a standard run.
+        """
+        return [ (51,),
+                 (101,),
+                 (151,),
+                 (201,),
+                 (251,),
+                 (301,),
+                 (26, 26),
+                 (51, 51),
+                 (101, 101),
+                 (151, 151),
+                 (201, 201),
+                 (251, 251),
+                 (301, 301) ]
+
     def get_base_mask_for_lane(self,lane):
         """
         Calculates the BaseMask for a given lane.
-        The function will read the run cycles from the RunInfo.xml and the index length from the SampleSheet(csv) file.
+        The function will read the run cycles from the RunInfo.xml and the
+        index length from the SampleSheet(csv) file.
 
         Returns a string in the form of:
         "Y300n,I8,I8,Y300n"
@@ -34,6 +53,11 @@ class BaseMaskExtractor:
         # how many reads do we have on this run?
         number_of_reads = len(self.rip.read_and_length)
 
+        # what are the lengths of the non-index reads? Is this within get_trim_specs()?
+        non_index_read_lengths = tuple([ int(self.rip.read_and_length[ str(read_nr+1) ])
+                                         for read_nr in range(number_of_reads)
+                                         if self.rip.read_and_indexed[ str(read_nr+1) ]  == "N" ])
+        trim_last_base = non_index_read_lengths in self.get_trim_specs()
 
         # different approach
         base_mask = ""
@@ -50,7 +74,10 @@ class BaseMaskExtractor:
 
             if self.rip.read_and_indexed[ str(read_nr) ] == "N":
                 #this is a data-read (not index)
-                base_mask = base_mask + delimiter + "Y" + str( read_cycles - 1 )+"n"
+                if trim_last_base:
+                    base_mask = base_mask + delimiter + "Y" + str( read_cycles - 1 )+"n"
+                else:
+                    base_mask = base_mask + delimiter + "Y" + str( read_cycles )
             elif self.rip.read_and_indexed[ str(read_nr) ] == "Y":
                 index_read_length = int( self.lane_length_dict[lane][ indexed_read_counter ] ) # index length from the samplesheet
                 #this is an indexed read
