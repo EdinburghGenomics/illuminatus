@@ -23,12 +23,12 @@ def main(list_of_inputs):
     # Convert them anyway.
     stats_json = set()
     for i in list_of_inputs:
-        if os.path.exists(i + '/Stats/Stats.json'):
-            stats_json.add(i + '/Stats/Stats.json')
+        if os.path.exists(f"{i}/Stats/Stats.json"):
+            stats_json.add(f"{i}/Stats/Stats.json")
         elif i.endswith('.json'):
             stats_json.add(i)
         else:
-            exit("Invalid input: {} needs to be dir with Stats/Stats.json or a Stats.json file".format(i))
+            exit(f"Invalid input: {i} needs to be dir with Stats/Stats.json or a Stats.json file")
 
     if not stats_json:
         exit("You need to supply one or more Stats.json files to be assessed")
@@ -46,7 +46,7 @@ def main(list_of_inputs):
             # Spacer line
             res.append('')
         if diagnosis:
-            res.append("Problem in lane {}:".format(lane))
+            res.append(f"Problem in lane {lane}:")
             res.extend(diagnosis)
 
     return res
@@ -80,14 +80,13 @@ def diagnose(lane_info):
 
     if num_by_project:
         # Probably there is only one but there could be more if we start mixing lanes again
-        res = [ "Project {} has only {} total reads, compared to {} unassigned.".format(
-                         k,          v,                         num_unassigned)
+        res = [ f"Project {k} has only {v} total reads, compared to {num_unassigned} unassigned."
                 for k, v in num_by_project.items() ]
         res.append('')
 
         if lane_info['opts']:
             mismatch = lane_info['opts'].get('--barcode-mismatches', "[not_set]")
-            res.append("Barcode mismatch level was set to {} for this lane.".format(mismatch))
+            res.append(f"Barcode mismatch level was set to {mismatch} for this lane.")
             res.append('')
 
         if lane_info['unass']:
@@ -119,7 +118,7 @@ def load_stats(stats_info):
         # In general it's valid for a Stats.json file to relate to multiple lanes, but in
         # Illuminatus we only ever demux one lane at a time, so at present this script only
         # deals with the single-lane case.
-        raise RuntimeError("File {} does not contain info on a single lane as expected.".format(stats_info))
+        raise RuntimeError(f"File {stats_info} does not contain info on a single lane as expected.")
 
     # This should be an int already
     res['lane'] = int(res['cr']['LaneNumber'])

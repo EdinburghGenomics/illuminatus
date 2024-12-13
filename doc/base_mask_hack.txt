@@ -34,3 +34,19 @@ for what to do on the per-lane pages and the summary page.
 I may need to explicitly add this to the mulitqc_edgen plugin too? Easy if I do.
 
 I'll do this part first, then worry about the above stuff.
+
+--
+
+OK, so I want a script that just translates project numbers to names. I want to avoid
+repeat queries, but I want to query any project I do not have. So, we call the script
+with a list of project numbers and a .json file, and an --update flag.
+If the --update flag is not set or if there is no .json file in the call, the script
+will query the project numbers and dump them out to STDOUT as JSON.
+
+If the JSON file is provided any projects listed there will not be re-queried.
+
+If any project names are queried, and --update is in effect, then the file will be
+overwritten (or created) with the new info. Potentially there is a race condition here
+but the probability is so low I think we can just discount it and treat it as if the
+write is atomic. I think removing the file before writing and then writing in 'x' mode
+is technically more reliable - or at least fails with an error not a file corruption.
