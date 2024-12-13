@@ -19,23 +19,25 @@ class BaseMaskExtractor:
         """
         return sorted(self.lane_length_dict.keys())
 
-    def get_trim_specs(self):
+    def auto_trim(self, rl):
         """We only want to trim "standard" runs. This defines what we mean by
-           a standard run.
+           a standard run and returns True if bases shall be trimmed.
         """
-        return [ (51,),
-                 (101,),
-                 (151,),
-                 (201,),
-                 (251,),
-                 (301,),
-                 (26, 26),
-                 (51, 51),
-                 (101, 101),
-                 (151, 151),
-                 (201, 201),
-                 (251, 251),
-                 (301, 301) ]
+        return rl in [ (51,),
+                       (101,),
+                       (76,),
+                       (151,),
+                       (201,),
+                       (251,),
+                       (301,),
+                       (26, 26),
+                       (51, 51),
+                       (76, 76),
+                       (101, 101),
+                       (151, 151),
+                       (201, 201),
+                       (251, 251),
+                       (301, 301) ]
 
     def get_base_mask_for_lane(self,lane):
         """
@@ -53,11 +55,11 @@ class BaseMaskExtractor:
         # how many reads do we have on this run?
         number_of_reads = len(self.rip.read_and_length)
 
-        # what are the lengths of the non-index reads? Is this within get_trim_specs()?
+        # what are the lengths of the non-index reads? Is this within trim specs?
         non_index_read_lengths = tuple([ int(self.rip.read_and_length[ str(read_nr+1) ])
                                          for read_nr in range(number_of_reads)
                                          if self.rip.read_and_indexed[ str(read_nr+1) ]  == "N" ])
-        trim_last_base = non_index_read_lengths in self.get_trim_specs()
+        trim_last_base = self.auto_trim(non_index_read_lengths)
 
         # different approach
         base_mask = ""

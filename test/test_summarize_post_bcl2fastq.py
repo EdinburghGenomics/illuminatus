@@ -41,6 +41,7 @@ class T(unittest.TestCase):
         self.assertEqual( run_info_yaml,
                           { 'post_demux_info': {
                                 'barcode mismatches': 'unknown',
+                                'bases mask': 'not set',
                                 'bcl2fastq version': 'unknown' } } )
 
     def test_novaseq_1(self):
@@ -56,6 +57,7 @@ class T(unittest.TestCase):
         self.assertEqual( run_info_yaml,
                           { 'post_demux_info': {
                                 'barcode mismatches': 'standard (1)',
+                                'bases mask': 'Y150n,I8,I8,Y150n',
                                 'bcl2fastq version': '2.20.0.422' } } )
 
         # Should be the same if we ask for multiple lanes
@@ -63,6 +65,7 @@ class T(unittest.TestCase):
         self.assertEqual( yaml.safe_load(run_info.get_yaml()),
                           { 'post_demux_info': {
                                 'barcode mismatches': '1',
+                                'bases mask': 'Y150n,I8,I8,Y150n',
                                 'bcl2fastq version': '2.20.0.422' } } )
 
         # Now for lanes 1, 2, 3
@@ -70,6 +73,7 @@ class T(unittest.TestCase):
         self.assertEqual( yaml.safe_load(run_info.get_yaml()),
                           { 'post_demux_info': {
                                 'barcode mismatches': '1',
+                                'bases mask': 'Y150n,I8,I8,Y150n',
                                 'bcl2fastq version': '2.20.0.422',
                                 'filtered samplesheet': [ 'SampleSheet.filtered.csv',
                                                           run_dir + '/demultiplexing/lane1/SampleSheet.filtered.csv'],
@@ -79,6 +83,7 @@ class T(unittest.TestCase):
         self.assertEqual( yaml.safe_load(run_info.get_yaml()),
                           { 'post_demux_info': {
                                 'barcode mismatches': '1',
+                                'bases mask': 'Y150n,I8,I8,Y150n',
                                 'bcl2fastq version': '2.20.0.422',
                                 'filtered samplesheet': [ 'SampleSheet.filtered.csv',
                                                           run_dir + '/demultiplexing/lane2/SampleSheet.filtered.csv'],
@@ -88,6 +93,7 @@ class T(unittest.TestCase):
         self.assertEqual( yaml.safe_load(run_info.get_yaml()),
                           { 'post_demux_info': {
                                 'barcode mismatches': '1',
+                                'bases mask': 'Y150n,I8,I8,Y150n',
                                 'bcl2fastq version': '2.20.0.422' } } )
 
 if __name__ == '__main__':

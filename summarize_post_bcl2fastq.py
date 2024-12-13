@@ -75,18 +75,28 @@ class PostRunMetaData:
     def find_bcl2fastq_opts(self):
         """If bcl2fastq ran already, some info will be recorded (if there was a cleanup, these files need to
            be purged before this script is run). It's possible we will find multiple opts in different lanes.
-           At the moment we only care about --barcode-mismatches
+           At the moment we care about --barcode-mismatches and --use-bases-mask
         """
         lanes = self.lanes or '*'
         self.mismatch_flags = set()
+        self.bases_mask = set()
         for lane in lanes:
-            for vf in glob(os.path.join( self.run_path_folder , self.subdir, "lane{}/bcl2fastq.opts".format(lane) )):
+            for vf in glob(os.path.join( self.run_path_folder , self.subdir, f"lane{lane}/bcl2fastq.opts" )):
+                actual_lane = vf.split("/")[-2][4:]
                 with open(vf) as vfh:
                     for aline in vfh:
                         # Version lines look like "bcl2fastq v2.19.1.403"
                         mo = re.match("--barcode-mismatches +(.*)", aline.rstrip())
                         if mo:
                             self.mismatch_flags.add(mo.group(1))
+
+                        mo = re.match("--use-bases-mask +(.*)", aline.rstrip())
+                        if mo:
+                            # The mask might begin with "{lane}:" in which case lop that off
+                            bm = mo.group(1).strip("'\"")
+                            if bm.startswith(f"{actual_lane}:"):
+                                bm = bm[2:]
+                            self.bases_mask.add(bm)
 
     def get_yaml(self):
 
@@ -115,6 +125,15 @@ class PostRunMetaData:
             else:
                 mf = ', '.join(self.mismatch_flags)
         idict['post_demux_info']['barcode mismatches'] = mf or 'unknown'
+
+        bm = None
+        if self.bases_mask:
+            if not self.lanes and len(self.bases_mask) > 1:
+                # This is for the overview
+                bm = "see individual lanes"
+            else:
+                bm = ', '.join(sorted(self.bases_mask))
+        idict['post_demux_info']['bases mask'] = bm or 'not set'
 
         # Also we want to include the processed sample sheet.
         if self.filtered_samplesheet:
