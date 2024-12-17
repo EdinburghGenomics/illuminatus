@@ -48,7 +48,9 @@ class RTManager():
            to connect implicitly.
         """
         self._config_name = config_name or os.environ.get('RT_SYSTEM', "production-rt")
-        self._queue_setting = queue_setting or "eg-projects" # eg. pbrun, run
+        # Queue can be given directly or as an alias in ~/.rt_settings
+        self._queue_setting = ( queue_setting or
+                                "eg-projects:eg-pb-projects:eg-promethion-projects" )
         if self._config_name.lower() == "none":
             # Special case for short-circuiting RT entirely, whatever the .ini
             # file says, by setting RT_SYSTEM=none
@@ -66,12 +68,13 @@ class RTManager():
 
         self.server_path = self._config['server']
         self.username, self.password = self._config['user'], self._config['pass']
-        self._queue = self._config.get(f"{self._queue_setting}_queue", self._queue_setting)
+        self._queues = self._config.get(f"{self._queue_setting}_queue",
+                                        self._queue_setting).split(":")
 
         self.tracker = Rt( '/'.join([self.server_path, 'REST', '1.0']),
                            self.username,
                            self.password,
-                           default_queue = self._queue )
+                           default_queue = self._queues[0] )
 
         if not self.tracker.login():
             raise AuthorizationError(f'login() failed on {self._config_name} ({self.tracker.url})')
@@ -130,9 +133,11 @@ class RTManager():
         """
         c = self._config
 
-        tickets = list(self.tracker.search( Queue = self._queue,
-                                            Subject__like = f'% {project_number}_%',
-                                          ))
+        tickets = []
+        for queue in self._queues:
+            tickets.extend(self.tracker.search( Queue = queue,
+                                                Subject__like = f'% {project_number}_%',
+                                              ))
 
         if not tickets:
             return (None, None)

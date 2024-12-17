@@ -51,23 +51,24 @@ def main(args):
     for pn in json_data:
         # Re-make the URL for the existing project names to see if it
         # needs changing
-        proj_url = gen_url(son_data[pn], project_page_url)
+        proj_url = gen_url(json_data[pn], project_page_url)
 
-        if proj_url != son_data[pn].get('url'):
+        if proj_url != json_data[pn].get('url'):
             save_needed = True
             json_data[pn]['url'] = proj_url
 
     if save_needed and args.update:
         L.info(f"Updating the info in {args.json}")
         try:
-            os.path.unlink(args.json)
+            os.unlink(args.json)
         except FileNotFoundError:
             pass
         with open(args.json, "x") as fh:
-            json.dump(json_data, fh)
-    else:
+            json.dump(json_data, fh, sort_keys=True, indent=4)
+            fh.write("\n")
+    elif not args.update:
         # Just print the result
-        print( json.dumps(json_data) )
+        print( json.dumps(json_data, sort_keys=True, indent=4) )
 
 def is_special_name(project_name):
     """Names that we treat specially
@@ -145,7 +146,7 @@ def project_real_names(proj_id_list, name_list=''):
             for p in proj_id_list:
                 if p not in res:
                     res[p] = dict( name = p + "_LOOKUP_ERROR",
-                                   erro = repr(e) )
+                                   error = repr(e) )
 
     return res
 
@@ -168,12 +169,12 @@ def parse_args(*args):
                    help="Template for making URL links to projects. May contain a single"
                         " {} placeholder or else the project name will be appended")
     a.add_argument("--json",
-                   help="File to store to the retrieved project names.")
+                   help="File to read for previously retrieved project names.")
     a.add_argument("--update", action="store_true",
-                   help="Save now info back to the JSON file")
+                   help="Save new info back to the JSON file")
     a.add_argument("--fetchall", action="store_true",
                    help="Fetch info even if projects are already listed in the JSON file")
-    a.add_argument("proj_numbers",
+    a.add_argument("proj_numbers", nargs='+',
                    help="Projects to get the names for")
 
     pa = a.parse_args(*args)
