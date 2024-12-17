@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 import sys, os
 import datetime
-import yaml, yamlloader
+import json
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 from illuminatus.SampleSheetReader import SampleSheetReader
 from illuminatus.RunInfoXMLParser import RunInfoXMLParser
 from illuminatus.RunParametersXMLParser import RunParametersXMLParser
 from illuminatus.Formatters import pct, fmt_time
+from illuminatus.yaml import load_yaml, dump_yaml, ParserError
 
 # Project links can be set by an environment var, presumably in environ.sh
 PROJECT_PAGE_URL = os.environ.get('PROJECT_PAGE_URL', "http://foo.example.com/")
@@ -41,10 +42,10 @@ Soon it should ask the LIMS for additional details (eg. loading conc) too.
 
     a = ArgumentParser( description=description,
                         formatter_class = ArgumentDefaultsHelpFormatter )
-    a.add_argument("--project_name_list",
-                   help="Supply a comma-separated list of project names." +
-                        " If you do this, the LIMS will not be queried." +
-                        " You can equivalently setenv PROJECT_NAME_LIST." )
+    a.add_argument("--project_json",
+                   help="Location of a JSON file with project info (real names)")
+    a.add_argument("--add_basemask", action="store_true",
+                   help="Look for basemask setting in pipeline/output/demultiplexing/")
     a.add_argument("--from_yml",
                    help="Get the info from the supplied YAML file, not by" +
                         " scanning the directory and the LIMS." )
@@ -76,15 +77,16 @@ def main(args):
     #See where we want to get our info
     try:
         if args.from_yml:
-            if args.from_yml == '-':
-                data_struct = yaml.safe_load(sys.stdin)
-            else:
-                with open(args.from_yml) as yfh:
-                    data_struct = yaml.safe_load(yfh)
+            data_struct = load_yaml( sys.stdin if args.from_yml == '-'
+                                     else args.from_yml )
         else:
-            pnl = args.project_name_list or os.environ.get('PROJECT_NAME_LIST', '')
+            project_json = None
+            if args.project_json:
+                with open(args.project_json) as jfh:
+                    project_json = json.load(jfh)
             data_struct = scan_for_info( args.run_dir,
-                                         project_name_list = pnl )
+                                         project_name_list = pnl,
+                                         project_json = project_json )
     except FileNotFoundError as e:
         exit(f"Error summarizing run.\n{e}")
 
@@ -100,34 +102,24 @@ def main(args):
                 #Empty val can be an artifact of the way Snakemake is calling this script
                 continue
 
-            with open(filename) as gfh:
-                data_struct['add_in_' + key] = yaml.safe_load(gfh)
+            data_struct['add_in_' + key] = load_yaml(filename)
 
         except ValueError:
             exit(f"Error parsing {ai} as add_in_yaml.")
 
     #See where we want to put it...
-    for dest, formatter in [ ( args.yml, output_yml ),
+    for dest, formatter in [ ( args.yml, dump_yaml ),
                              ( args.mqc, output_mqc ),
                              ( args.txt, output_txt ),
                              ( args.tsv, output_tsv ) ]:
         if dest:
             if dest == '-':
-                formatter(data_struct, sys.stdout)
+                formatter(data_struct, fh=sys.stdout)
             else:
                 with open(dest, 'w') as ofh:
-                    formatter(data_struct, ofh)
+                    formatter(data_struct, fh=ofh)
 
     #DONE!
-
-def output_yml(rids, fh):
-    """Simply dump the whole data structure as YAML
-    """
-    print( yaml.dump( rids,
-                      Dumper = yamlloader.ordereddict.CSafeDumper,
-                      default_flow_style = False),
-           file = fh,
-           end = '' )
 
 def output_mqc(rids, fh):
     """This also happens to be YAML but is specifically for display
@@ -271,12 +263,7 @@ def output_mqc(rids, fh):
             if 'add_in_yield' in rids:
                 dd['col_07'] = lane_b2f_totals.get('Assigned Reads',0) + lane_b2f_totals.get('Unassigned Reads PF',0)
 
-
-    print( yaml.dump( mqc_out,
-                      Dumper = yamlloader.ordereddict.CSafeDumper,
-                      default_flow_style = False ),
-           file = fh,
-           end='' )
+    dump_yaml(mqc_out, fh=fh)
 
 def scan_for_info(run_dir, project_name_list=''):
     """Hoovers up the info and builds a data structure which can

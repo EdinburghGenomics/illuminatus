@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 import os, sys, re
-import json
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from urllib.parse import quote as url_quote
 import logging as L
 
 from illuminatus.RTQuery import get_project_names
+from illuminatus.yaml import load_yaml, dump_yaml, ParserError
 
 def main(args):
     L.basicConfig(level = L.WARNING)
 
-    if args.json:
-        json_data = load_json(args.json)
+    if args.yaml:
+        yaml_data = try_load_yaml(args.yaml)
     else:
-        json_data = dict()
+        yaml_data = dict()
 
     # See what projects are in args.proj_numbers that we still need info for
     projects_already_known = set()
     projects_to_fetch = set()
     for pn in args.proj_numbers:
-        if (not args.fetchall) and (pn in json_data):
-            if json_data[pn].get('name') and not json_data[pn].get('error'):
+        if (not args.fetchall) and (pn in yaml_data):
+            if yaml_data[pn].get('name') and not yaml_data[pn].get('error'):
                 L.info(f"Project {pn} already known")
                 projects_already_known.add(pn)
     projects_to_fetch = set([ pn for pn in args.proj_numbers
@@ -41,34 +41,32 @@ def main(args):
                  " is not a valid format string.")
         raise
 
-    # Now update json_data. This involves adding the missing projects and also
+    # Now update yaml_data. This involves adding the missing projects and also
     # updating the URLs for everything, just in case the URL template changed.
     save_needed = bool(projects_to_fetch)
     for pn in projects_to_fetch:
         # Add in new project and set the URL correctly
-        json_data[pn] = real_names[pn]
-        json_data[pn]['url'] = gen_url(json_data[pn], project_page_url)
-    for pn in json_data:
+        yaml_data[pn] = real_names[pn]
+        yaml_data[pn]['url'] = gen_url(yaml_data[pn], project_page_url)
+    for pn in yaml_data:
         # Re-make the URL for the existing project names to see if it
         # needs changing
-        proj_url = gen_url(json_data[pn], project_page_url)
+        proj_url = gen_url(yaml_data[pn], project_page_url)
 
-        if proj_url != json_data[pn].get('url'):
+        if proj_url != yaml_data[pn].get('url'):
             save_needed = True
-            json_data[pn]['url'] = proj_url
+            yaml_data[pn]['url'] = proj_url
 
     if save_needed and args.update:
-        L.info(f"Updating the info in {args.json}")
+        L.info(f"Updating the info in {args.yaml}")
         try:
-            os.unlink(args.json)
+            os.unlink(args.yaml)
         except FileNotFoundError:
             pass
-        with open(args.json, "x") as fh:
-            json.dump(json_data, fh, sort_keys=True, indent=4)
-            fh.write("\n")
+        dump_yaml(yaml_data, filename=args.yaml, mode="x")
     elif not args.update:
         # Just print the result
-        print( json.dumps(json_data, sort_keys=True, indent=4) )
+        dump_yaml(yaml_data, fh=sys.stdout)
 
 def is_special_name(project_name):
     """Names that we treat specially
@@ -87,24 +85,23 @@ def gen_url(proj_info, url_template):
         return url_template.format(url_quote(proj_info['name']))
 
 
-def load_json(json_file):
+def try_load_yaml(yaml_file):
     """This is a bit overblown but there we go.
     """
     try:
-        with open(json_file) as fh:
-            json_data = json.load(fh)
-            json_data.values() # make sure we do have a dict
-            return json_data
+        yaml_data = load_yaml(yaml_file)
+        yaml_data.values() # make sure we do have a dict
+        return yaml_data
     except FileNotFoundError:
         # This is fine.
-        L.info("File {args.json} does not (yet) exist")
-    except json.decoder.JSONDecodeError as e:
+        L.info("File {yaml_file} does not (yet) exist")
+    except ParserError as e:
         # This is also ok, but a bit funky
-        L.warning(f"Failed to load the JSON from {args.json}")
+        L.warning(f"Failed to load the JSON from {yaml_file}")
         L.warning(str(e))
     except AttributeError:
         # Ditto
-        L.warning(f"{args.json} did not contain a dict")
+        L.warning(f"{yaml_file} did not contain a dict")
 
     # In case of problems, return empty dict
     return dict()
@@ -168,7 +165,7 @@ def parse_args(*args):
     a.add_argument("--project_page_url",
                    help="Template for making URL links to projects. May contain a single"
                         " {} placeholder or else the project name will be appended")
-    a.add_argument("--json",
+    a.add_argument("--yaml",
                    help="File to read for previously retrieved project names.")
     a.add_argument("--update", action="store_true",
                    help="Save new info back to the JSON file")
@@ -179,8 +176,8 @@ def parse_args(*args):
 
     pa = a.parse_args(*args)
 
-    if pa.update and not pa.json:
-        exit("If using the --update option, you need to also give a --json file")
+    if pa.update and not pa.yaml:
+        exit("If using the --update option, you need to also give a --yaml file")
 
     return pa
 

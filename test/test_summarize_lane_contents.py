@@ -6,10 +6,15 @@ from glob import glob
 from pprint import pprint
 import io
 
+import yaml
 from sandbox import TestSandbox
 
-from summarize_lane_contents import project_real_name, scan_for_info, yaml, \
-        output_yml, output_tsv, output_txt, output_mqc
+from summarize_lane_contents import ( project_real_name,
+                                      scan_for_info,
+                                      dump_yaml,
+                                      output_tsv,
+                                      output_txt,
+                                      output_mqc )
 
 DATA_DIR = os.path.abspath(os.path.dirname(__file__) + '/seqdata_examples')
 LC_DIR =  os.path.abspath(os.path.dirname(__file__) + '/summarize_lane_contents')
@@ -180,7 +185,10 @@ class T(unittest.TestCase):
 
         for formatter in list(self.formatted):
             out_buf = io.StringIO()
-            globals()['output_'+formatter](rids, out_buf)
+            if formatter == 'yml':
+                dump_yaml(rids, fh=out_buf)
+            else:
+                globals()['output_'+formatter](rids, fh=out_buf)
 
             self.formatted[formatter] = out_buf.getvalue()
             self.formatted_as_list[formatter] = out_buf.getvalue().rstrip('\n').split('\n')

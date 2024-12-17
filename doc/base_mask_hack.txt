@@ -50,3 +50,12 @@ overwritten (or created) with the new info. Potentially there is a race conditio
 but the probability is so low I think we can just discount it and treat it as if the
 write is atomic. I think removing the file before writing and then writing in 'x' mode
 is technically more reliable - or at least fails with an error not a file corruption.
+
+--
+
+Script is done. Now I need to wire it into the pipeline.
+
+1) Modify summarize_lane_contents.py to get passed this file
+2) Re-generate the file before each update
+3) Now worry about feeding the basemasks to this script too (just have it scan for
+   pipeline/output/demultiplexing/laneN/bcl2fastq.opts)
