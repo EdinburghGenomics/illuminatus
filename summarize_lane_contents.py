@@ -451,7 +451,7 @@ def output_txt(rids, fh):
     for lane in rids['Lanes']:
         # If we have info on the BaseMask, add it
         if lane.get('BaseMask'):
-            p( f"Lane {lane['LaneNumber']} -- {lane['BaseMask']}:" )
+            p( f"Lane {lane['LaneNumber']} with --use-bases-mask={lane['BaseMask']}:" )
         else:
             p( f"Lane {lane['LaneNumber']}:" )
 

@@ -32,17 +32,17 @@ class T(unittest.TestCase):
            on a few examples. Actually this comes from the RunParametersXMLParser
            so the unit test should really be at that level.
         """
-        self.scan_project(DATA_DIR + '/210722_A00291_0378_AHFT2CDRXY')
+        self.scan_rundir(DATA_DIR + '/210722_A00291_0378_AHFT2CDRXY')
         self.assertEqual(self.rids['RunDate'], '2021-07-22')
 
-        self.scan_project(DATA_DIR + '/210827_M05898_0165_000000000-JVM38')
+        self.scan_rundir(DATA_DIR + '/210827_M05898_0165_000000000-JVM38')
         self.assertEqual(self.rids['RunDate'], '2021-08-27')
 
         # This one was broken. But now fixed.
-        self.scan_project(DATA_DIR + '/210903_A00291_0383_BHCYNNDRXY')
+        self.scan_rundir(DATA_DIR + '/210903_A00291_0383_BHCYNNDRXY')
         self.assertEqual(self.rids['RunDate'], '2021-09-03')
 
-    def test_scan_project(self):
+    def test_scan_rundir(self):
 
         # This needs some specific timestamps so I'll copy to a sandbox
         sb = TestSandbox(LC_DIR + '/170221_K00166_0183_AHHT3HBBXX')
@@ -50,7 +50,7 @@ class T(unittest.TestCase):
 
         sb.touch("runParameters.xml", timestamp=1504874215.0)
 
-        self.scan_project(sb.sandbox)
+        self.scan_rundir(sb.sandbox)
 
         # Check there was output for all things
         self.assertTrue( all( self.formatted.values() ))
@@ -63,30 +63,45 @@ class T(unittest.TestCase):
         self.assertEqual( self.rids['RunStartTimeStamp'], 1504874215 )
         self.assertEqual( type(self.rids['RunStartTimeStamp']), int )
 
-    def test_scan_allprojects(self):
-        """ Not all the projects we have in the examples dir are suitable to be scanned.
+    def test_scan_allrundirs(self):
+        """ Not all the rundirs we have in the examples dir are suitable to be scanned.
             But some are.
             TODO - add at least a MiSeq run.
         """
         for d in (DATA_DIR + '/160614_K00368_0023_AHF724BBXX',
                   DATA_DIR + '/160606_K00166_0102_BHF22YBBXX' ):
 
-            proj = os.path.basename(d.rstrip('./'))
+            dbase = os.path.basename(d.rstrip('./'))
 
             try:
-                self.scan_project(d)
+                self.scan_rundir(d)
             except:
-                print("Exception while scanning project {}.".format( proj ))
+                print(f"Exception while scanning rundir {dbase}")
                 raise
 
             self.assertTrue( all( self.formatted.values() ),
-                            "Did not get all values for project {} -- {}".format(
-                                 proj, self.formatted ))
+                             f"Did not get all values for rundir {dbase} -- {self.formatted}" )
 
+
+    def test_bases_mask(self):
+        """Run 160614_K00368_0023_AHF724BBXX has a basemask for lanes 1 and 2, as if
+           reported by bcl2fastq
+        """
+        run = "160614_K00368_0023_AHF724BBXX"
+        d = f"{DATA_DIR}/{run}"
+
+        self.scan_rundir(d)
+
+        # Now look to see that self.rids captured the basemasks
+        bm_map = { l['LaneNumber']: l['BaseMask']
+                   for l in self.rids['Lanes']
+                   if l.get('BaseMask') }
+        self.assertEqual(bm_map, {'1': 'Y*,I*,I*,Y*',
+                                  '2': 'Y*,I*,I*,Y*'} )
 
     def test_load_from_yml(self):
 
-        self.scan_project(LC_DIR + '/170221_K00166_0183_AHHT3HBBXX.yml')
+        self.scan_rundir(LC_DIR + '/170221_K00166_0183_AHHT3HBBXX.yml')
 
         # At present, just check there was output
         self.assertTrue( all( self.formatted.values() ))
@@ -97,10 +112,10 @@ class T(unittest.TestCase):
             Basically, trust the b2f value over the InterOP.
         """
         proj_dir = LC_DIR + '/180209_E00397_0086_AHHMYHCCXY'
-        self.scan_project(proj_dir + '/sample_summary.yml',
-                            addins = { 'wd':    proj_dir + '/2500summary.yml',
-                                       'b2f':   proj_dir + '/bcl2fastq_stats.yml',
-                                       'yield': proj_dir + '/yield.yml' } )
+        self.scan_rundir(proj_dir + '/sample_summary.yml',
+                         addins = { 'wd':    proj_dir + '/2500summary.yml',
+                                    'b2f':   proj_dir + '/bcl2fastq_stats.yml',
+                                    'yield': proj_dir + '/yield.yml' } )
 
         # The mqc.yaml should be as per the sample provided
         with open(LC_DIR + '/180209_E00397_0086_AHHMYHCCXY/ls_mqc.yaml') as yfh:
@@ -115,10 +130,10 @@ class T(unittest.TestCase):
             from the IterOP. Otherwise as above.
         """
         proj_dir = LC_DIR + '/180209_E00397_0086_AHHMYHCCXY'
-        self.scan_project(proj_dir + '/sample_summary.yml',
-                            addins = { 'wd':    proj_dir + '/2500summary.yml',
-                                       'b2f':   None,
-                                       'yield': proj_dir + '/yield.yml' } )
+        self.scan_rundir(proj_dir + '/sample_summary.yml',
+                         addins = { 'wd':    proj_dir + '/2500summary.yml',
+                                    'b2f':   None,
+                                    'yield': proj_dir + '/yield.yml' } )
 
         # The mqc.yaml should be as per the sample provided
         with open(LC_DIR + '/180209_E00397_0086_AHHMYHCCXY/ls_nob2f_mqc.yaml') as yfh:
@@ -131,7 +146,7 @@ class T(unittest.TestCase):
            Clearly some logic bug in this script.
         """
         proj_dir = LC_DIR + '/230720_A00291_0494_BHHFNHDRX3'
-        self.scan_project(proj_dir, addins = {} )
+        self.scan_rundir(proj_dir, addins = {} )
 
         # The mqc.yaml should be as per the sample provided
         with open(LC_DIR + '/230720_A00291_0494_BHHFNHDRX3/expected_mqc.yaml') as yfh:
@@ -150,8 +165,8 @@ class T(unittest.TestCase):
 
         self.assertEqual(matches, expected)
 
-    def scan_project(self, fname, addins=None):
-        """Scan a project folder and do all the conversions at once.
+    def scan_rundir(self, fname, addins=None):
+        """Scan a run directory and do all the conversions at once.
            Text output will be captured to out_buf so if a test wants to examine
            the contents it needs to re-parse it.
         """
