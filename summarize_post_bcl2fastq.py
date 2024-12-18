@@ -3,6 +3,7 @@ import os, sys, re
 from glob import glob
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
+from packaging.version import parse as parse_version
 import yaml, yamlloader
 
 class PostRunMetaData:
@@ -102,9 +103,10 @@ class PostRunMetaData:
 
         idict = dict()
 
-        # Only one thing to report for now, but I'm sure there will be more.
+        # What version or versions of Illuminatus worked on this run
+        version_list = sorted(self.bcl2fastq_versions, key=parse_version)
         idict['post_demux_info'] = {
-                'bcl2fastq version': ', '.join(sorted(self.bcl2fastq_versions)) or 'unknown'
+                'bcl2fastq version': ', '.join(version_list) or 'unknown'
             }
 
         # I thought about adding the pipeline finish time, but it doesn't belong here.
