@@ -460,8 +460,12 @@ def output_txt(rids, fh):
                 p( "    - PhiX")
 
             else:
-                prn_name = prn.get(project, dict()).get('name', project)
-                prn_url = prn.get(project, dict()).get('url', prn_name)
+                if prn.get(project):
+                    prn_name = prn[project].get('name', project)
+                    prn_url = prn[project].get('url', '[no link]')
+                else:
+                    prn_name = project
+                    prn_url = '[no link]'
 
                 contents_str = ' '.join(squish_project_content(pools))
 

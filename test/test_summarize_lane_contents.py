@@ -9,8 +9,7 @@ import io
 import yaml
 from sandbox import TestSandbox
 
-from summarize_lane_contents import ( project_real_name,
-                                      scan_for_info,
+from summarize_lane_contents import ( scan_for_info,
                                       dump_yaml,
                                       output_tsv,
                                       output_txt,
@@ -27,20 +26,6 @@ class T(unittest.TestCase):
         self.formatted_as_list = self.formatted.copy()
 
         self.maxDiff = None
-
-    def test_name_lookup(self):
-        """Test the name lookup logic
-        """
-
-        res = project_real_name(['123', '456'], name_list='123_Example_Project')
-
-        #Ignore the url value for now. Or rather, just test it exists.
-        self.assertEqual( res,
-                          { '123' : dict( name = '123_Example_Project',
-                                          url = res['123']['url'] ),
-                            '456' : dict( name = '456_UNKNOWN' )        })
-
-        # TODO - test mock LIMS connection
 
     def test_date_conversion(self):
         """Test the date formatting logic for rids['RunDate']
@@ -167,12 +152,11 @@ class T(unittest.TestCase):
 
     def scan_project(self, fname, addins=None):
         """Scan a project folder and do all the conversions at once.
-           Dummy name-list of '-' will be set to avoid LIMS look-ups.
            Text output will be captured to out_buf so if a test wants to examine
            the contents it needs to re-parse it.
         """
         if os.path.isdir(fname):
-            rids = scan_for_info(fname, '-')
+            rids = scan_for_info(fname)
         else:
             with open(fname) as yfh:
                 rids = yaml.safe_load(yfh)

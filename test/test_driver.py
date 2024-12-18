@@ -26,8 +26,8 @@ RUNSTATUS = os.path.abspath(os.path.dirname(__file__) + '/../RunStatus.py')
 PROGS_TO_MOCK = """
     BCL2FASTQPostprocessor.py  BCL2FASTQCleanup.py
     Snakefile.qc               Snakefile.demux            Snakefile.read1qc
-    summarize_lane_contents.py rt_runticket_manager.py    upload_report.sh
-    clarity_run_id_setter.py   count_10x_barcodes.py
+    summarize_lane_contents.py rt_runticket_manager.py    project_real_names.py
+    upload_report.sh           clarity_run_id_setter.py   count_10x_barcodes.py
 """.split()
 
 class T(unittest.TestCase):
@@ -224,6 +224,9 @@ class T(unittest.TestCase):
         # Sample sheet should be summarized
         expected_calls = self.bm.empty_calls()
         expected_calls['samplesheet_fetch.sh'] = [[]]
+        expected_calls['project_real_names.py'] = [['--sample_sheet', 'SampleSheet.csv',
+                                                    '--yaml', 'pipeline/project_names.yaml',
+                                                    '--update']]
         expected_calls['summarize_lane_contents.py'] = ['--yml pipeline/sample_summary.yml'.split(),
                                                         '--from_yml pipeline/sample_summary.yml --txt -'.split()]
         expected_calls['rt_runticket_manager.py'] = ['-Q run -r 160606_K00166_0102_BHF22YBBXX --subject new --comment @???'.split()]
@@ -569,13 +572,11 @@ class T(unittest.TestCase):
         self.assertEqual( self.sandbox.lsdir(f"seqdata/{run}/pipeline", glob="lane[123].*"),
                           [ 'lane1.done', 'lane2.done', 'lane3.done' ] )
 
-        # Check that summarize_lane_contents.py really wasn't called
-        #self.assertEqual( self.bm.last_calls['summarize_lane_contents.py'], [] )
-        #
-        # Nope - I'm now deleting the summary on redo because the links might have changed.
-        # And since we now send the summary each time anyway it doesn't make sense to bother
-        # detecting if the sample sheet changed or not.
-        # So check the summary is re-made and then read back to make the e-mail:
+        # Check the summary is re-made and then read back to make the e-mail:
+        self.assertEqual( self.bm.last_calls['project_real_names.py'], [
+                                [ '--sample_sheet', 'SampleSheet.csv',
+                                  '--yaml', 'pipeline/project_names.yaml',
+                                  '--update' ] ] )
         self.assertEqual( self.bm.last_calls['summarize_lane_contents.py'], [
                                 '--yml pipeline/sample_summary.yml'.split(),
                                 '--from_yml pipeline/sample_summary.yml --txt -'.split() ] )
