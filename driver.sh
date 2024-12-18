@@ -289,8 +289,6 @@ action_demultiplexed() {
 
     set +e
 
-    detect_and_keep_10x |& plog
-
     # In certain cases read1_qc can make a 1-tile report with a later timestamp than the full
     # bcl2fastq output and the reduced numbers end up in the final report. To be sure, touch all
     # the real Stats.json files so Snakemake sees they are new and picks them up.
@@ -678,18 +676,6 @@ send_summary_to_rt() {
            echo ;
            summarize_lane_contents.py --from_yml pipeline/sample_summary.yml --txt - \
            || echo "Error while summarizing lane contents." ) ) 2>&1
-}
-
-detect_and_keep_10x() {
-    # Attempt to avoid accidental deletion of 10x runs following the incident where
-    # they were left unprocessed and the run was deleted.
-    # Note this might resonably fail so set +e before running it, and redirect outputs
-    # to the plog.
-    if count_10x_barcodes.py "$DEMUX_OUTPUT_FOLDER"/demultiplexing/lane*/Stats/Stats.json ; then
-        echo "10X barcodes detected, so adding pipeline/keep file"
-        ( set -o noclobber ;
-          echo "10X barcodes detected by Illuminatus" > pipeline/keep )
-    fi
 }
 
 run_qc() {

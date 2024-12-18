@@ -702,6 +702,9 @@ class T(unittest.TestCase):
     def test_10x_restart_bug(self):
         """I had a bug where restarting QC on a 10X run would exit leaving the run in_qc with
            no error in the log. This was symptomatic of more general shaky error handling.
+
+           This test is probably nonsense now that 10x detection is ripped out, but I'll not
+           remove it quite yet - just bodged it to work.
         """
         run = "160606_K00166_0102_BHF22YBBXX"
         test_data = self.copy_run(run)
@@ -712,28 +715,20 @@ class T(unittest.TestCase):
             self.sandbox.make(f"seqdata/{run}/pipeline/lane{lane}.done")
         self.sandbox.link(f"fastqdata/{run}/", f"seqdata/{run}/pipeline/output")
 
-        # We also need this or count_10x_barcodes.py never runs at all as there
-        # are no input files.
+        # We also need this
         self.sandbox.make(f"fastqdata/{run}/demultiplexing/lane1/Stats/Stats.json")
 
-        # Now let's say that count_10x_barcodes.py returns true and Snakefile.qc fails.
+        # Now let's say that Snakefile.qc fails.
         # We also need upload_report.sh to look like it did something.
-        self.bm.add_mock('count_10x_barcodes.py', fail=False)
         self.bm.add_mock('Snakefile.qc', fail=True)
         self.bm.add_mock('upload_report.sh', side_effect = "echo MOCK")
 
         # And run it.
         self.bm_rundriver()
 
-        # We should see qc.started and failed touch files, and a keep file
+        # We should see qc.started and failed touch files
         self.assertTrue(os.path.isfile(test_data + '/pipeline/failed'))
         self.assertTrue(os.path.isfile(test_data + '/pipeline/qc.started'))
-        self.assertTrue(os.path.isfile(test_data + '/pipeline/keep'))
-
-        # Check in the log
-        with open(f"{test_data}/pipeline/output/pipeline.log") as lfh:
-            loglines = [ l.rstrip() for l in lfh ]
-            self.assertTrue("10X barcodes detected, so adding pipeline/keep file" in loglines)
 
         # Now start again, but this time Snakefile.qc succeeds. We should be good.
         self.bm.add_mock('Snakefile.qc', fail=False)
