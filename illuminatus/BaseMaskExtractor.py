@@ -23,21 +23,14 @@ class BaseMaskExtractor:
         """We only want to trim "standard" runs. This defines what we mean by
            a standard run and returns True if bases shall be trimmed.
         """
-        return rl in [ (51,),
-                       (101,),
-                       (76,),
-                       (151,),
-                       (201,),
-                       (251,),
-                       (301,),
-                       (26, 26),
-                       (51, 51),
-                       (76, 76),
-                       (101, 101),
-                       (151, 151),
-                       (201, 201),
-                       (251, 251),
-                       (301, 301) ]
+        # These are the untrimmed lengths, of course
+        standard_lengths = [26, 51, 76, 101, 151, 201, 251, 301]
+        others = [] # You can add other exceptions to this list as tuples
+
+        # Account for single-end and paired-end runs
+        return ( rl in [ (l,) for l in standard_lengths ] or
+                 rl in [ (l,l) for l in standard_lengths ] or
+                 rl in others )
 
     def get_base_mask_for_lane(self,lane):
         """
