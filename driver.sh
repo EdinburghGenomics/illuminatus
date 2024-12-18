@@ -293,7 +293,7 @@ action_demultiplexed() {
 
     # In certain cases read1_qc can make a 1-tile report with a later timestamp than the full
     # bcl2fastq output and the reduced numbers end up in the final report. To be sure, touch all
-    # the real Stats.json files so Snakemake see they are new and picks them up.
+    # the real Stats.json files so Snakemake sees they are new and picks them up.
     ( cd "$DEMUX_OUTPUT_FOLDER"/demultiplexing && \
       touch lane*/Stats/Stats.json
     ) |& plog ; [ $? = 0 ] || { pipeline_fail Touch_Stats_json ; return ; }

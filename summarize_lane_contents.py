@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys, os
+import os, sys, re
 import datetime
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
@@ -258,8 +258,9 @@ def scan_for_info(run_dir):
        be serialized to YAML or converted to the various output formats.
     """
     try:
-        # File must be valid YAMl or empty (which loads as None)
-        project_names = load_yaml(f"{run_dir}/project_names.yaml") or dict()
+        # File must be valid YAML or empty (which loads as None)
+        pnfile = os.path.join(run_dir, "pipeline/project_names.yaml")
+        project_names = load_yaml(pnfile) or dict()
     except FileNotFoundError:
         # No matter we go without it
         project_names = dict()
