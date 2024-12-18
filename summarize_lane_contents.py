@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys, os
 import datetime
-import json
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 from illuminatus.SampleSheetReader import SampleSheetReader
@@ -26,12 +25,11 @@ NON_POOLS = ['NoPool', 'None', '']
 def parse_args(*args):
     description = """This script is part of the Illuminatus pipeline.
 It gathers an overview of the run by parsing the SampleSheet.csv, RunParameters.xml
-and RunInfo.xml in the current directory and by asking the LIMS for proper project
-names.
+and RunInfo.xml in the current directory, and by looking for proper project names
+in pipeline/project_names.yaml, and for basemasks in pipeline/output/demultiplexing
 Output may be in YAML, MQC,  TSV or Text format. MQC is suitable for MultiQC custom
 content - http://multiqc.info/docs/#custom-content. YAML may be re-loaded and re-presented
 as any format.
-Soon it should ask the LIMS for additional details (eg. loading conc) too.
 """
 
 # Note that summarize_for_overview.py now obtains much of the information from the YAML
@@ -42,13 +40,9 @@ Soon it should ask the LIMS for additional details (eg. loading conc) too.
 
     a = ArgumentParser( description=description,
                         formatter_class = ArgumentDefaultsHelpFormatter )
-    a.add_argument("--project_json",
-                   help="Location of a JSON file with project info (real names)")
-    a.add_argument("--add_basemask", action="store_true",
-                   help="Look for basemask setting in pipeline/output/demultiplexing/")
     a.add_argument("--from_yml",
-                   help="Get the info from the supplied YAML file, not by" +
-                        " scanning the directory and the LIMS." )
+                   help="Get all the info from the supplied YAML file, not by" +
+                        " scanning the directory." )
     a.add_argument("--yml",
                    help="Output in YAML format to the specified file (- for stdout)." )
     a.add_argument("--mqc",
@@ -80,13 +74,7 @@ def main(args):
             data_struct = load_yaml( sys.stdin if args.from_yml == '-'
                                      else args.from_yml )
         else:
-            project_json = None
-            if args.project_json:
-                with open(args.project_json) as jfh:
-                    project_json = json.load(jfh)
-            data_struct = scan_for_info( args.run_dir,
-                                         project_name_list = pnl,
-                                         project_json = project_json )
+            data_struct = scan_for_info(args.run_dir)
     except FileNotFoundError as e:
         exit(f"Error summarizing run.\n{e}")
 
@@ -265,10 +253,17 @@ def output_mqc(rids, fh):
 
     dump_yaml(mqc_out, fh=fh)
 
-def scan_for_info(run_dir, project_name_list=''):
+def scan_for_info(run_dir):
     """Hoovers up the info and builds a data structure which can
-       be serialized to YAML.
+       be serialized to YAML or converted to the various output formats.
     """
+    try:
+        # File must be valid YAMl or empty (which loads as None)
+        project_names = load_yaml(f"{run_dir}/project_names.yaml") or dict()
+    except FileNotFoundError:
+        # No matter we go without it
+        project_names = dict()
+
     # Load both the RunInfo.xml and (a little later) the SampleSheet.csv
     ri_xml = RunInfoXMLParser(run_dir)
 
@@ -301,7 +296,7 @@ def scan_for_info(run_dir, project_name_list=''):
 
     #Which file is actually providing the SampleSheet?
     try:
-        rids['SampleSheet'] = os.path.basename(os.readlink(run_dir + "/SampleSheet.csv"))
+        rids['SampleSheet'] = os.path.basename(os.readlink(f"{run_dir}/SampleSheet.csv"))
     except OSError:
         # Weird - maybe not a link?
         rids['SampleSheet'] = "SampleSheet.csv"
@@ -326,10 +321,12 @@ def scan_for_info(run_dir, project_name_list=''):
         #If you try to feed this script an old 2500 Sample Sheet this is where it will fail.
         assert 'sampleproject' not in ss_csv.column_mapping, \
             "A sampleproject (without the underscore) column was found. Is this an old 2500 SampleSheet?"
-        rids['ProjectInfo'] = project_real_name(
+
+        # Filter project_names to just the ones in the ss_csv. They should match already
+        # but don't depend on it.
+        rids['ProjectInfo'] = { n: project_names.get(n) for n in
                                 set([ line[ss_csv.column_mapping['sample_project']]
-                                      for line in ss_csv.samplesheet_data ]),
-                                project_name_list )
+                                      for line in ss_csv.samplesheet_data ]) }
 
         # NOTE - if a samplesheet has no 'lane' column then we shouldn't really be processing it,
         # but as far as bcl2fastq is concerned this just means all lanes are identical, so for
@@ -341,6 +338,11 @@ def scan_for_info(run_dir, project_name_list=''):
 
         for lanenum in sorted(set(ss_lanes)):
             thislane = {'LaneNumber': lanenum}
+
+            # See if there is a Basemask. This breaks the original idea of this script as showing
+            # pre-demultiplexing data but we really want to see the BaseMask in the e-mail text
+            # when the final mail is sent.
+            thislane['BaseMask'] = get_lane_basemask(run_dir, lanenum)
 
             #Add lane loading. In reality we probably need to get all lanes in one fetch,
             #but here's a placeholder.
@@ -364,6 +366,28 @@ def scan_for_info(run_dir, project_name_list=''):
             rids['Lanes'].append(thislane)
 
     return rids
+
+def get_lane_basemask(run_dir, lanenum):
+    """Code is copied from summarize_post_bcl2fastq.py but I want to keep these
+       functionalities separate.
+    """
+    try:
+        with open(os.path.join( run_dir, "pipeline/output/demultiplexing",
+                                f"lane{lanenum}/bcl2fastq.opts" )) as vfh:
+            for aline in vfh:
+                mo = re.match("--use-bases-mask +(.*)", aline.rstrip())
+                if mo:
+                    # The mask might begin with "{lane}:" in which case lop that off
+                    bm = mo.group(1).strip("'\"")
+                    if bm.startswith(f"{lanenum}:"):
+                        bm = bm[2:]
+                    return bm
+    except FileNotFoundError:
+        # Fine.
+        return None
+
+    # If no matching line was found
+    return None
 
 def summarize_lane(lane_lines, column_mapping):
     """Given a list of lines, summarize what they contain, returning
@@ -419,12 +443,14 @@ def output_txt(rids, fh):
     p( f"Active SampleSheet: SampleSheet.csv -> {rids['SampleSheet']}" )
     p( "" )
 
-    p( f"Samplesheet report at {rids['ReportDateTime']}:" )
-
     # Summarize each lane
     prn = rids['ProjectInfo']
     for lane in rids['Lanes']:
-        p( f"Lane {lane['LaneNumber']}:" )
+        # If we have info on the BaseMask, add it
+        if lane.get('BaseMask'):
+            p( f"Lane {lane['LaneNumber']} -- {lane['BaseMask']}:" )
+        else:
+            p( f"Lane {lane['LaneNumber']}:" )
 
         for project, pools in sorted(lane['Contents'].items()):
             # pools will be a dict of poolname : [ library, ... ]
@@ -434,6 +460,8 @@ def output_txt(rids, fh):
                 p( "    - PhiX")
 
             else:
+                prn_name = prn.get(project, dict()).get('name', project)
+                prn_url = prn.get(project, dict()).get('url', prn_name)
 
                 contents_str = ' '.join(squish_project_content(pools))
 
@@ -443,13 +471,12 @@ def output_txt(rids, fh):
 
                 num_indexes = 0 if lane.get('Unindexed') else sum( len(p) for p in pools.values() )
 
-                p( "    - Project {p} -- {cl} {l} -- Number of indexes {ni}".format(
-                                    p  = project,
+                p( "    - Project {p} -- {cl} {l} -- Indexes {ni}".format(
+                                    p  = prn_name,
                                     l  = contents_str,
                                     cl = contents_label,
                                     ni = num_indexes ) )
-                p( "    - See {link}".format(link = prn[project].get('url', prn[project]['name'])) )
-
+                p( "    - See {link}".format(link = prn_url) )
 
 def output_tsv(rids, fh):
     """TSV table for the run report.
@@ -530,48 +557,6 @@ def get_chemistry(run_params, instrument):
             con_note = "chemistry 1.5; revcomp index2"
 
     return f"SCV{con_vers} ({con_note})"
-
-# A rather contorted way to get project names. We may be able to bypass
-# this by injecting them straight into the sample sheet!
-def project_real_name(proj_id_list, name_list=''):
-    """Resolves a list of project IDs to a name and URL
-    """
-    res = dict()
-    if name_list:
-        name_list_split = name_list.split(',')
-        # Resolve without going to the LIMS. Note that if you want to disable
-        # LIMS look-up without supplying an actuall list of names you can just
-        # say "--project_names dummy" or some such thing.
-        for p in proj_id_list:
-            name_match = [ n for n in name_list_split if n.startswith(p) ]
-            if len(name_match) == 1:
-                res[p] = dict( name = name_match[0],
-                               url  = PROJECT_PAGE_URL.format(name_match[0]) )
-            elif p == "ControlLane":
-                res[p] = dict( name = p )
-            else:
-                res[p] = dict( name = p + "_UNKNOWN" )
-    else:
-        # Go to RT. The current query mode hits the database as configured
-        # by ~/.rt_settings and looks for tickets in the eg-projects queue.
-        try:
-            from illuminatus.RTQuery import get_project_names
-
-            for p, n in zip(proj_id_list, get_project_names(*proj_id_list)):
-                if n:
-                    res[p] = dict( name = n,
-                                   url = PROJECT_PAGE_URL.format(n) )
-                elif p == "ControlLane":
-                    res[p] = dict( name = p )
-                else:
-                    res[p] = dict( name = p + "_UNKNOWN" )
-        except Exception as e:
-            for p in proj_id_list:
-                if p not in res:
-                    res[p] = dict( name = p + "_LOOKUP_ERROR",
-                                   url = "error://" + repr(e) )
-
-    return res
 
 if __name__ == "__main__":
     main(parse_args())

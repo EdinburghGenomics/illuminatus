@@ -4,6 +4,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from urllib.parse import quote as url_quote
 import logging as L
 
+from illuminatus.SampleSheetReader import SampleSheetReader
 from illuminatus.RTQuery import get_project_names
 from illuminatus.yaml import load_yaml, dump_yaml, ParserError
 
@@ -15,16 +16,24 @@ def main(args):
     else:
         yaml_data = dict()
 
-    # See what projects are in args.proj_numbers that we still need info for
+    proj_numbers = set(args.proj_numbers)
+
+    if args.sample_sheet:
+        # Allow any exceptions to propagate. This means if the sample
+        # sheet is invalid no YAML file will be saved.
+        ss_csv = SampleSheetReader(args.sample_sheet)
+
+        for line in ss_csv.samplesheet_data:
+            proj_numbers.add(line[ss_csv.column_mapping['sample_project']])
+
+    # See what projects are in proj_numbers that we still need info for
     projects_already_known = set()
-    projects_to_fetch = set()
-    for pn in args.proj_numbers:
+    for pn in proj_numbers:
         if (not args.fetchall) and (pn in yaml_data):
             if yaml_data[pn].get('name') and not yaml_data[pn].get('error'):
                 L.info(f"Project {pn} already known")
                 projects_already_known.add(pn)
-    projects_to_fetch = set([ pn for pn in args.proj_numbers
-                              if pn not in projects_already_known ])
+    projects_to_fetch = proj_numbers.difference(projects_already_known)
 
     # Load what we need to load
     pnl = args.project_name_list or os.environ.get('PROJECT_NAME_LIST', '')
@@ -171,11 +180,15 @@ def parse_args(*args):
                    help="Save new info back to the JSON file")
     a.add_argument("--fetchall", action="store_true",
                    help="Fetch info even if projects are already listed in the JSON file")
-    a.add_argument("proj_numbers", nargs='+',
+    a.add_argument("--sample_sheet",
+                   help="Read the SampleSheet.csv to see what projects to look up")
+    a.add_argument("proj_numbers", nargs='*',
                    help="Projects to get the names for")
 
     pa = a.parse_args(*args)
 
+    if not pa.sample_sheet and not pa.proj_numbers:
+        exit("You must provide a list of project numbers or else a SampleSheet.csv to scan")
     if pa.update and not pa.yaml:
         exit("If using the --update option, you need to also give a --yaml file")
 

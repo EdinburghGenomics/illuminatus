@@ -59,3 +59,16 @@ Script is done. Now I need to wire it into the pipeline.
 2) Re-generate the file before each update
 3) Now worry about feeding the basemasks to this script too (just have it scan for
    pipeline/output/demultiplexing/laneN/bcl2fastq.opts)
+
+Oh hang on. Part 2 is problematic because I need the list of projects to get names
+for but it's being generated within summarize_lane_contents.py. How did I not spot this
+before?
+Ah well, in that case I need to modify project_real_names.py to read a sample sheet.
+So maybe splitting the functionality out of summarize_lane_contents.py was not so
+smart, but I still think disconnecting this from the other logic is better.
+
+OK, I did that but I need to have a reconsider about summarize_lane_contents.py
+
+When I use --from_yaml, should I re-scan the basemask and project names, or should
+I just save them into there with all the other data. I think probably the second,
+as I can re-scan as often as I like. OK, let's do that.

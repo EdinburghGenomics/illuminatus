@@ -230,9 +230,7 @@ action_reads_finished(){
     # Sort out the SampleSheet and replace with a new one from the LIMS if
     # available.
     fetch_samplesheet |& plog
-    if [ ! -e pipeline/sample_summary.yml ] ; then
-        summarize_lane_contents.py --yml pipeline/sample_summary.yml |& plog
-    fi
+    summarize_lane_contents.py --yml pipeline/sample_summary.yml |& plog
 
     # We used to run MultiQC here, before running bcl2fastq, but I think with the expanded read1
     # processing this is redundant. But we do still want the alert to be sent to RT.
@@ -555,6 +553,12 @@ fetch_samplesheet(){
     if [ "$old_ss_link" != "$new_ss_link" ] ; then
         rm -vf pipeline/sample_summary.yml
     fi
+
+    # In any case, ensure we know what all the projects in the sample sheet
+    # are called.
+    project_real_names.py --sample_sheet SampleSheet.csv \
+                          --yaml pipeline/project_names.yaml \
+                          --update || true
 }
 
 run_multiqc() {
@@ -587,8 +591,8 @@ run_multiqc() {
     send_summary=0
     if [ ! -e pipeline/sample_summary.yml ] ; then
         send_summary=1 #Note for later.
-        summarize_lane_contents.py --yml pipeline/sample_summary.yml 2>&1
     fi
+    summarize_lane_contents.py --yml pipeline/sample_summary.yml 2>&1
     _retval=$?
 
     # Push any new metadata into the run report.
