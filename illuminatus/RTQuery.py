@@ -131,7 +131,9 @@ class RTManager():
            as an integer, along with the ticket metadata as a dict,
            or return (None, None) if there is no such ticket.
         """
-        c = self._config
+        if not self._config:
+            # RT is disabled (RT_SYSTEM=none) so we cannot look up projects
+            return (None, None)
 
         tickets = []
         for queue in self._queues:

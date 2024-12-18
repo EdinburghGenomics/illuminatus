@@ -371,6 +371,8 @@ def get_lane_basemask(run_dir, lanenum):
     """Code is copied from summarize_post_bcl2fastq.py but I want to keep these
        functionalities separate.
     """
+    # I could also look in pipeline/output/QC/bc_check for the read1 basemask
+    # to get this a little earlier but I don't think it's worth it.
     try:
         with open(os.path.join( run_dir, "pipeline/output/demultiplexing",
                                 f"lane{lanenum}/bcl2fastq.opts" )) as vfh:
