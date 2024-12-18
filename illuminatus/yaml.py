@@ -23,7 +23,7 @@ monkey-patch the global YAML loader object but now it doesn't
 do that any more - it uses yamlloader instead.
 
 """
-
+import os
 import yaml as real_yaml
 import yamlloader
 from collections import defaultdict

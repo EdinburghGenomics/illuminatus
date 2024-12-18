@@ -46,7 +46,7 @@ def main(args):
         if project_page_url.format('test') == project_page_url:
             project_page_url += '{}'
     except Exception:
-        L.error(f"The environment variable PROJECT_PAGE_URL={PROJECT_PAGE_URL}"
+        L.error(f"The setting for PROJECT_PAGE_URL={project_page_url}"
                  " is not a valid format string.")
         raise
 
