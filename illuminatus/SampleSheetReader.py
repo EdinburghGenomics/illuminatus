@@ -27,7 +27,7 @@ class SampleSheetReader:
         'i5_index_id': 8
         }
         '''
-        self.samplesheet = self._get_samplesheet_data_object_from_column_mapping()
+        self.samplesheet = SampleSheet()
 
     def get_index_lengths_by_lane(self):
         '''
@@ -89,20 +89,6 @@ class SampleSheetReader:
                     L.error("while reading "+ csvFile + "\t" + e)
 
         assert self.column_mapping, "No [Data] found in {}".format(csvFile)
-
-    def _get_samplesheet_data_object_from_column_mapping(self):
-        '''
-        The Samplesheet data and column headers are now in memory and are passed on to this function.
-        Will construct a general SampleSheet Object that can then be used to access Lanes/Pools/Indexes/etc.
-        '''
-        samplesheet = SampleSheet()
-
-        for row in self.samplesheet_data:
-            lane = self._get_lane_from_data_row( row , self.column_mapping )
-            index_sequences = self._get_index_sequences_from_data_row( row , self.column_mapping )
-
-        # todo: should return a real SampleSheet object here after filling it up
-        return samplesheet
 
     def _get_lane_from_data_row( self , row , column_header_mapping ):
         '''
