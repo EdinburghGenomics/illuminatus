@@ -6,8 +6,8 @@
 # FASTQ_LOCATION.
 # LOG_DIR will collect daily logs, or you can set MAINLOG directly. For testing,
 # set MAINLOG=/dev/stdout to see progress in the terminal.
-SEQDATA_LOCATION=/lustre-gseg/seqdata
-FASTQ_LOCATION=/lustre-gseg/fastqdata
+SEQDATA_LOCATION=/mnt/lustre/e1000/home/edg01/edg01/shared/seqdata
+FASTQ_LOCATION=/mnt/lustre/e1000/home/edg01/edg01/shared/fastqdata
 LOG_DIR=~pipeline/illuminatus/logs
 
 # SLURM partition and budget to use. This will be passed to Snakemake, as all

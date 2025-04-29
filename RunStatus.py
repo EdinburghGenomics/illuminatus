@@ -335,11 +335,6 @@ class QuickInfo:
         elif instr0 in 'D':
             lane_count = 2 if runid.split('_')[3][1] == 'H' else 8
         elif instr0 in 'A':
-            # FIXME - this is a wild guess. Also what about the single-lane flowcell?
-            # This was what I used to see the pattern (Donald thinks it's right):
-            #  for f in `find /lustre/seqdata -maxdepth 2 -type d -name '*_A00*'` ; do
-            #     echo -n "${f##*_}  " ; egrep -o 'LaneCount[^ ]+' "$f"/RunInfo.xml
-            #  done
             # DRX = S1, DMX = S2, DSX = S4
             lane_count = 4 if runid.split('_')[3][6:9] in ['DSX'] else 2
 

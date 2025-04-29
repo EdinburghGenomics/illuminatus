@@ -13,7 +13,7 @@ echo "Running on `hostname`" | tee >(cat >&2)
 
 # Set TMPDIR, which most programs will respect, including Picard if run
 # via my wrapper scripts.
-export TMPDIR=/lustre-gseg/tmp/"$USER@$HOSTNAME"
+export TMPDIR=/mnt/lustre/e1000/home/edg01/edg01/shared/tmp/"$USER@$HOSTNAME"
 mkdir -p "$TMPDIR"
 
 # Also, we can have a pre-run script.  Useful for qc_tools_python/activate

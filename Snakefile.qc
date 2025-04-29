@@ -528,7 +528,7 @@ rule md5_main:
         counts   = expand( 'counts/{fq[fname]}.fastq.count',   fq=all_all )
 
 rule interop_main:
-    # Interop files in eg. /lustre/seqdata/170627_D00261_0417_ACAU93ANXX/InterOp/
+    # Interop files in eg. $SEQDATA_LOCATION/170627_D00261_0417_ACAU93ANXX/InterOp/
     # The location will be inferred from SEQDATA/InterOp
     input:
         plots  = expand( "QC/overview/interop/{plot}.interop_plot",
