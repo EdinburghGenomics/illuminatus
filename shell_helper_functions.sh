@@ -71,7 +71,7 @@ snakerun_drmaa() {
     snakemake \
          -s "$snakefile" -j $SNAKE_THREADS -p --rerun-incomplete \
          ${EXTRA_SNAKE_FLAGS} --keep-going --cluster-config cluster.yaml \
-         --resources nfscopy=1 --local-cores $LOCAL_CORES --latency-wait 30 \
+         --resources nfscopy=1 --local-cores $LOCAL_CORES --latency-wait 120 \
          --jobname "{rulename}.snakejob.{jobid}.sh" --jobscript "$_jobscript" \
          --drmaa " ${EXTRA_SLURM_FLAGS} -p ${CLUSTER_PARTITION} {cluster.slurm_opts} \
                    -e slurm_output/{rule}.snakejob.%A.err \
