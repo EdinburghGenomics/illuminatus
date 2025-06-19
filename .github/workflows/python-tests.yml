@@ -42,4 +42,5 @@ jobs:
     - name: Test with run_tests.sh
       run: |
         export RUN_NETWORK_TESTS=0
+        export UNITTEST_FLAGS="--verbose"
         ./test/run_tests.sh

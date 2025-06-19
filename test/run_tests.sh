@@ -39,11 +39,11 @@ else
     coverage=(true) # ie. pass
 fi
 if [ "$*" == "" ] ; then
-    "${ut[@]}" discover
+    "${ut[@]}" discover ${UNITTEST_FLAGS:-}
     "${coverage[@]}" report
 else
     set -e
-    "${ut[@]}" test.test_"$@"
+    "${ut[@]}" ${UNITTEST_FLAGS:-} test.test_"$@"
 fi
 
 
