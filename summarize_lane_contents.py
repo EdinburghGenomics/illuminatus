@@ -9,16 +9,6 @@ from illuminatus.RunParametersXMLParser import RunParametersXMLParser
 from illuminatus.Formatters import pct, fmt_time
 from illuminatus.yaml import load_yaml, dump_yaml, ParserError
 
-# Project links can be set by an environment var, presumably in environ.sh
-PROJECT_PAGE_URL = os.environ.get('PROJECT_PAGE_URL', "http://foo.example.com/")
-try:
-    if PROJECT_PAGE_URL.format('test') == PROJECT_PAGE_URL:
-        PROJECT_PAGE_URL += '{}'
-except Exception:
-    print(f"The environment variable PROJECT_PAGE_URL={PROJECT_PAGE_URL} is not a valid format string.",
-          file = sys.stderr)
-    raise
-
 # Non-pools may either be called 'NoPool' or ''. Other names may be added here.
 NON_POOLS = ['NoPool', 'None', '']
 
